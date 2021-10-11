@@ -160,9 +160,6 @@ target_link_libraries(normal-ssb-query-generate-file PRIVATE normal-ssb-query-ge
 # Experiment
 #-----------------------------------------------------------------------------------------------------------------------
 
-set(OPENSSL_USE_STATIC_LIBS TRUE)
-find_package(OpenSSL REQUIRED)
-
 add_executable(normal-ssb-experiment
         experiment/ExperimentMain.cpp
         experiment/Tests.cpp
