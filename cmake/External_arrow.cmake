@@ -38,6 +38,12 @@ set(ARROW_PARQUET_STATIC_LIB ${ARROW_LIB_DIR}/${CMAKE_STATIC_LIBRARY_PREFIX}parq
 set(ARROW_DEPENDENCIES_SHARED_LIBS ${ARROW_LIB_DIR}/${CMAKE_SHARED_LIBRARY_PREFIX}arrow_bundled_dependencies${CMAKE_SHARED_LIBRARY_SUFFIX})
 set(ARROW_DEPENDENCIES_STATIC_LIBS ${ARROW_LIB_DIR}/${CMAKE_STATIC_LIBRARY_PREFIX}arrow_bundled_dependencies${CMAKE_STATIC_LIBRARY_SUFFIX})
 
+# need to set llvm dir on mac, making it a duplicated arg as default
+# TODO: probably can do more elegantly? but didn't find a way to set to empty string...
+set(arg_llvm_dir -DARROW_USE_CCACHE:BOOL=ON)
+if (${APPLE})
+  set(arg_llvm_dir -DLLVM_DIR=/usr/local/opt/llvm@11)
+endif()
 ExternalProject_Add(${ARROW_BASE}
         PREFIX ${ARROW_PREFIX}
         GIT_REPOSITORY ${ARROW_GIT_URL}
@@ -61,6 +67,7 @@ ExternalProject_Add(${ARROW_BASE}
         ${ARROW_DEPENDENCIES_SHARED_LIBS}
         ${ARROW_DEPENDENCIES_STATIC_LIBS}
         CMAKE_ARGS
+        ${arg_llvm_dir}
         -DARROW_USE_CCACHE:BOOL=ON
         -DARROW_CSV:BOOL=ON
         -DARROW_DATASET:BOOL=OFF

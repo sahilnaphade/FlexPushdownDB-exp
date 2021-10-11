@@ -1,12 +1,5 @@
 project(normal-ssb VERSION "${PROJECT_VERSION}" LANGUAGES C CXX)
 
-# need to add and link libraries on mac
-LINK_DIRECTORIES(/usr/local/opt/llvm@11/lib)
-LINK_DIRECTORIES(/usr/local/opt/binutils/lib)
-LINK_DIRECTORIES(/usr/local/opt/libdeflate/lib)
-LINK_DIRECTORIES(/usr/local/lib)
-INCLUDE_DIRECTORIES(/usr/local/include)
-
 #-----------------------------------------------------------------------------------------------------------------------
 # SSB common classes
 #-----------------------------------------------------------------------------------------------------------------------
@@ -41,7 +34,6 @@ target_link_libraries(normal-ssb PRIVATE sqlite3_csv_static)
 target_link_libraries(normal-ssb PUBLIC normal-pushdown)
 target_link_libraries(normal-ssb PUBLIC spdlog::spdlog)
 target_link_libraries(normal-ssb PRIVATE ssl crypto)
-
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Benchmark
@@ -184,7 +176,24 @@ target_link_libraries(normal-ssb-experiment Backward::Backward)
 target_link_libraries(normal-ssb-experiment normal-ssb)
 target_link_libraries(normal-ssb-experiment normal-sql)
 target_link_libraries(normal-ssb-experiment normal-ssb-query-generate)
-#target_link_libraries(normal-ssb-experiment PRIVATE ssl crypto)
+# need to add and link libraries on mac
+if (${APPLE})
+  target_link_directories(normal-ssb-experiment PRIVATE /usr/local/opt/binutils/lib)
+  target_link_directories(normal-ssb-experiment PRIVATE /usr/local/opt/openssl/lib)
+  target_link_directories(normal-ssb-experiment PRIVATE /usr/local/opt/llvm@11/lib)
+  target_link_directories(normal-ssb-experiment PRIVATE /usr/local/opt/libdeflate/lib)
+  target_link_directories(normal-ssb-experiment PRIVATE /usr/local/lib)
+  # fix "dyld: Library not loaded" on mac
+  get_filename_component(CMAKE_CURRENT_BINARY_DIR_PARENT ${CMAKE_CURRENT_BINARY_DIR} DIRECTORY)
+  set(path_to_libs libgvplugin_neato_layout.6.dylib
+          libgvplugin_core.6.dylib)
+  set(change_libs ${CMAKE_CURRENT_BINARY_DIR_PARENT}/_deps/graphviz_ep/install/lib/graphviz/libgvplugin_neato_layout.6.dylib
+          ${CMAKE_CURRENT_BINARY_DIR_PARENT}/_deps/graphviz_ep/install/lib/graphviz/libgvplugin_core.6.dylib)
+  foreach(path_to_lib change_lib IN ZIP_LISTS path_to_libs change_libs)
+  add_custom_command(TARGET normal-ssb-experiment
+          COMMAND install_name_tool -change ${path_to_lib} ${change_lib} normal-ssb-experiment)
+  endforeach()
+endif()
 
 # Copy ssb query files to runtime directory
 
