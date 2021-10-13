@@ -58,3 +58,10 @@ add_subdirectory(normal-sql)
 add_subdirectory(ATTIC/normal-test)
 add_subdirectory(normal-ssb)
 add_subdirectory(normal-cache)
+add_subdirectory(normal-frontend)
+
+#-----------------------------------------------------------------------------------------------------------------------
+# Resource files
+#-----------------------------------------------------------------------------------------------------------------------
+
+file(COPY resources DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
