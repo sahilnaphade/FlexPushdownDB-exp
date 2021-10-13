@@ -51,7 +51,7 @@ public:
   tl::expected<long, std::string> getElapsedTime();
   S3SelectScanStats getAggregateS3SelectScanStats();
   std::tuple<size_t, size_t, size_t> getFilterTimeNSInputOutputBytes();
-  std::string showMetrics(bool showOpTimes, bool showScanMetrics);
+  std::string showMetrics(bool showOpTimes = true, bool showScanMetrics = true);
   [[nodiscard]] const long &getId() const;
   std::shared_ptr<TupleSet> getQueryResult() const;
 
