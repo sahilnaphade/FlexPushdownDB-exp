@@ -1,7 +1,7 @@
 # Boost
 
-set(BOOST_VERSION "boost-1.75.0")
-set(BOOST_GIT_URL "https://github.com/boostorg/iostreams.git")
+set(BOOST_VERSION "boost-1.77.0")
+set(BOOST_GIT_URL "https://github.com/boostorg/boost.git")
 
 
 include(ExternalProject)

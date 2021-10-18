@@ -38,6 +38,8 @@ include(External_primesieve)
 include(Dependency_SQLite3)
 include(External_Backward)
 include(External_CallableTraits)
+include(External_boost)
+include(External_thrift)
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -59,6 +61,7 @@ add_subdirectory(ATTIC/normal-test)
 add_subdirectory(normal-ssb)
 add_subdirectory(normal-cache)
 add_subdirectory(normal-frontend)
+add_subdirectory(normal-calcite/cpp)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Resource files

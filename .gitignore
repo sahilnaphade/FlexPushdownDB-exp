@@ -274,3 +274,12 @@ Temporary Items
 
 # Local copy of keys etc
 /private/
+
+# project .idea
+/.idea/
+
+# normal-calcite .idea
+/normal-calcite/java/.idea/
+*.class
+/normal-calcite/cpp/gen-cpp/
+/normal-calcite/java/main/java/com/thrift/calciteserver/

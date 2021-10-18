@@ -1,0 +1,35 @@
+{
+  "schemaName": "ssb-sf10-sortlineorder/csv/",
+  "tables": [
+    {
+      "name": "date",
+      "stats": {
+        "rowCount": 2557
+      }
+    },
+    {
+      "name": "supplier",
+      "stats": {
+        "rowCount": 20000
+      }
+    },
+    {
+      "name": "customer",
+      "stats": {
+        "rowCount": 300000
+      }
+    },
+    {
+      "name": "part",
+      "stats": {
+        "rowCount": 800000
+      }
+    },
+    {
+      "name": "lineorder",
+      "stats": {
+        "rowCount": 59986217
+      }
+    }
+  ]
+}

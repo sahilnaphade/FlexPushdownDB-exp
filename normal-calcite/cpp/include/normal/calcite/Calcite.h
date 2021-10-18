@@ -1,0 +1,14 @@
+//
+// Created by Yifei Yang on 10/13/21.
+//
+
+#ifndef NORMAL_CALCITE_CPP_INCLUDE_CALCITE_H
+#define NORMAL_CALCITE_CPP_INCLUDE_CALCITE_H
+
+
+class Calcite {
+
+};
+
+
+#endif //NORMAL_CALCITE_CPP_INCLUDE_CALCITE_H
