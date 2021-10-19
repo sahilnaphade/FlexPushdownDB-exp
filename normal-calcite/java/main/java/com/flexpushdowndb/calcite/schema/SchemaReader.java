@@ -1,7 +1,6 @@
-package com.flexpushdowndb.calcite;
+package com.flexpushdowndb.calcite.schema;
 
 import com.flexpushdowndb.util.FileUtils;
-import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.json.simple.JSONArray;

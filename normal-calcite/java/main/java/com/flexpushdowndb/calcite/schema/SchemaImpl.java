@@ -1,4 +1,4 @@
-package com.flexpushdowndb.calcite;
+package com.flexpushdowndb.calcite.schema;
 
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.schema.impl.AbstractSchema;

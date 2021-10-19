@@ -1,4 +1,4 @@
-package com.flexpushdowndb.calcite;
+package com.flexpushdowndb.calcite.schema;
 
 import org.apache.calcite.DataContext;
 import org.apache.calcite.linq4j.Enumerable;

@@ -1,5 +1,6 @@
 package com.flexpushdowndb.calcite;
 
+import com.flexpushdowndb.calcite.optimizer.Optimizer;
 import com.flexpushdowndb.util.FileUtils;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
@@ -11,11 +12,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public class TestOptimizer {
-  private static Path ssbQueryDirPath = Paths.get(System.getProperty("user.dir")).resolve("test/resources/query/ssb");
+  private static final Path ssbQueryDirPath = Paths.get(System.getProperty("user.dir"))
+          .resolve("test/resources/query/ssb");
 
   @Test
   public void testSsbSingle() throws Exception {
-    Path queryPath = ssbQueryDirPath.resolve("4.3.sql");
+    Path queryPath = ssbQueryDirPath.resolve("3.1.sql");
     String query = FileUtils.readFile(queryPath);
     String schemaName = "ssb-sf1-sortlineorder/csv";
     Optimizer optimizer = new Optimizer();

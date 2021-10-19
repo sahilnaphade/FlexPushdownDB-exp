@@ -1,4 +1,4 @@
-package com.flexpushdowndb.calcite;
+package com.flexpushdowndb.calcite.server;
 
 import com.thrift.calciteserver.CalciteServer;
 import com.thrift.calciteserver.InvalidParseRequest;
