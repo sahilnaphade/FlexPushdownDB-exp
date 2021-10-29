@@ -3,14 +3,8 @@ package com.flexpushdowndb.calcite.schema;
 import com.flexpushdowndb.util.FileUtils;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.sql.type.SqlTypeName;
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
+import org.json.JSONObject;
 
-import java.io.FileReader;
-import java.io.IOException;
-import java.math.BigDecimal;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
@@ -61,17 +55,15 @@ public class SchemaReader {
     return fieldTypesMap;
   }
 
-  private static Map<String, Double> readRowCounts(Path statsPath) throws IOException, ParseException {
+  private static Map<String, Double> readRowCounts(Path statsPath) throws Exception {
     Map<String, Double> rowCounts = new HashMap<>();
-    Object obj = new JSONParser().parse(new FileReader(statsPath.toFile()));
-    JSONObject jObj = (JSONObject) obj;
-    for (Object o: (JSONArray) jObj.get("tables")) {
+    JSONObject jObj = new JSONObject(FileUtils.readFile(statsPath));
+    for (Object o: jObj.getJSONArray("tables")) {
       JSONObject tableStats = (JSONObject) o;
-      String tableName = (String) tableStats.get("name");
-      JSONObject statsMap = (JSONObject) tableStats.get("stats");
-      long rowCount = (long) statsMap.get("rowCount");
-      double castRowCount = BigDecimal.valueOf(rowCount).doubleValue();
-      rowCounts.put(tableName, castRowCount);
+      String tableName = tableStats.getString("name");
+      JSONObject statsMap = tableStats.getJSONObject("stats");
+      double rowCount = statsMap.getDouble("rowCount");
+      rowCounts.put(tableName, rowCount);
     }
     return rowCounts;
   }

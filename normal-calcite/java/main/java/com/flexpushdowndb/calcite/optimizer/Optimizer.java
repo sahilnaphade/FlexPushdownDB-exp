@@ -7,6 +7,7 @@ import org.apache.calcite.adapter.enumerable.EnumerableConvention;
 import org.apache.calcite.adapter.enumerable.EnumerableRules;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.config.CalciteConnectionProperty;
+import org.apache.calcite.jdbc.CalcitePrepare;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.plan.*;
@@ -23,12 +24,10 @@ import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
+import org.apache.calcite.sql2rel.RelFieldTrimmer;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.sql2rel.StandardConvertletTable;
-import org.apache.calcite.tools.Program;
-import org.apache.calcite.tools.Programs;
-import org.apache.calcite.tools.RuleSet;
-import org.apache.calcite.tools.RuleSets;
+import org.apache.calcite.tools.*;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -39,12 +38,14 @@ public class Optimizer {
   private final RelDataTypeFactory typeFactory;
   private final RelOptCluster cluster;
   private final RelOptPlanner planner;
+  private final RelBuilder relBuilder;
   private final CalciteSchema rootSchema;
 
   public Optimizer() {
     this.typeFactory = new JavaTypeFactoryImpl();
     this.cluster = newCluster(typeFactory);
     this.planner = cluster.getPlanner();
+    this.relBuilder = RelBuilder.proto(planner.getContext()).create(cluster, null);
     this.rootSchema = CalciteSchema.createRootSchema(false, true);
   }
 
@@ -62,13 +63,13 @@ public class Optimizer {
     // Create a CatalogReader and an SQL validator to validate the AST
     CalciteCatalogReader catalogReader = new CalciteCatalogReader(rootSchema, Collections.singletonList(schemaName),
             typeFactory, CalciteConnectionConfig.DEFAULT.set(CalciteConnectionProperty.CASE_SENSITIVE, "false"));
-    SqlValidator validator = SqlValidatorUtil.newValidator(SqlStdOperatorTable.instance(), catalogReader,
+    SqlValidator sqlValidator = SqlValidatorUtil.newValidator(SqlStdOperatorTable.instance(), catalogReader,
             typeFactory, SqlValidator.Config.DEFAULT);
-    SqlNode validAst = validator.validate(parseAst);
+    SqlNode validAst = sqlValidator.validate(parseAst);
 
     // Convert the AST into a RelNode
     SqlToRelConverter sqlToRelConverter = new SqlToRelConverter(NOOP_EXPANDER,
-            validator,
+            sqlValidator,
             catalogReader,
             cluster,
             StandardConvertletTable.INSTANCE,
@@ -76,11 +77,25 @@ public class Optimizer {
     RelNode logicalPlan = sqlToRelConverter.convertQuery(validAst, false, true).rel;
 
     // Volcano cost-based optimization
-    Program program = Programs.of(RuleSets.ofList(getDefaultRuleSet()));
+    Program program = Programs.of(getDefaultRuleSet());
     RelNode volOptPlan = program.run(
             planner,
             logicalPlan,
             logicalPlan.getTraitSet().plus(EnumerableConvention.INSTANCE),
+            Collections.emptyList(),
+            Collections.emptyList()
+    );
+
+    // Trim unused fields
+    RelFieldTrimmer trimmer = new RelFieldTrimmer(sqlValidator, relBuilder);
+    RelNode trimmedPlan = trimmer.trim(volOptPlan);
+
+    // Convert trimmedPlan to physical
+    program = Programs.of(getConvertToPhysicalRuleSet());
+    RelNode trimmedPhysicalPlan = program.run(
+            planner,
+            trimmedPlan,
+            trimmedPlan.getTraitSet().plus(EnumerableConvention.INSTANCE),
             Collections.emptyList(),
             Collections.emptyList()
     );
@@ -91,8 +106,10 @@ public class Optimizer {
             .addRuleInstance(EnumerableRules.ENUMERABLE_PROJECT_RULE)
             .build();
     HepPlanner hepPlanner = new HepPlanner(hepProgram);
-    hepPlanner.setRoot(volOptPlan);
-    return hepPlanner.findBestExp();
+    hepPlanner.setRoot(trimmedPhysicalPlan);
+    RelNode hepConvertedPlan = hepPlanner.findBestExp();
+
+    return hepConvertedPlan;
   }
 
   private static RuleSet getDefaultRuleSet() {
@@ -103,6 +120,18 @@ public class Optimizer {
         ruleList.add(rule);
       }
     }
+    return RuleSets.ofList(ruleList);
+  }
+
+
+  private static RuleSet getConvertToPhysicalRuleSet() {
+    List<RelOptRule> ruleList = new ArrayList<>();
+    ruleList.add(EnumerableRules.ENUMERABLE_TABLE_SCAN_RULE);
+    ruleList.add(EnumerableRules.ENUMERABLE_FILTER_RULE);
+    ruleList.add(EnumerableRules.ENUMERABLE_PROJECT_RULE);
+    ruleList.add(EnumerableRules.ENUMERABLE_JOIN_RULE);
+    ruleList.add(EnumerableRules.ENUMERABLE_AGGREGATE_RULE);
+    ruleList.add(EnumerableRules.ENUMERABLE_SORT_RULE);
     return RuleSets.ofList(ruleList);
   }
 

@@ -1,6 +1,7 @@
 package com.flexpushdowndb.calcite;
 
 import com.flexpushdowndb.calcite.optimizer.Optimizer;
+import com.flexpushdowndb.calcite.serializer.RelJsonSerializer;
 import com.flexpushdowndb.util.FileUtils;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
@@ -24,6 +25,7 @@ public class TestOptimizer {
     RelNode queryPlan = optimizer.optimize(query, schemaName);
     System.out.println(RelOptUtil.dumpPlan("[Optimized plan]", queryPlan, SqlExplainFormat.TEXT,
             SqlExplainLevel.ALL_ATTRIBUTES));
+    System.out.println(RelJsonSerializer.serializeRelNode(queryPlan).toString(2));
   }
 
   @Test
