@@ -22,7 +22,7 @@ public class TestOptimizer {
     String query = FileUtils.readFile(queryPath);
     String schemaName = "ssb-sf1-sortlineorder/csv";
     Optimizer optimizer = new Optimizer();
-    RelNode queryPlan = optimizer.optimize(query, schemaName);
+    RelNode queryPlan = optimizer.planQuery(query, schemaName);
     System.out.println(RelOptUtil.dumpPlan("[Optimized plan]", queryPlan, SqlExplainFormat.TEXT,
             SqlExplainLevel.ALL_ATTRIBUTES));
     System.out.println(RelJsonSerializer.serializeRelNode(queryPlan).toString(2));
@@ -34,10 +34,10 @@ public class TestOptimizer {
     String query = FileUtils.readFile(queryPath);
     String schemaName = "ssb-sf1-sortlineorder/csv";
     Optimizer optimizer = new Optimizer();
-    RelNode queryPlan = optimizer.optimize(query, schemaName);
+    RelNode queryPlan = optimizer.planQuery(query, schemaName);
     System.out.println(RelOptUtil.dumpPlan("[Optimized plan]", queryPlan, SqlExplainFormat.TEXT,
             SqlExplainLevel.ALL_ATTRIBUTES));
-    queryPlan = optimizer.optimize(query, schemaName);
+    queryPlan = optimizer.planQuery(query, schemaName);
     System.out.println(RelOptUtil.dumpPlan("[Optimized plan]", queryPlan, SqlExplainFormat.TEXT,
             SqlExplainLevel.ALL_ATTRIBUTES));
   }
@@ -49,10 +49,10 @@ public class TestOptimizer {
     String schemaName1 = "ssb-sf1-sortlineorder/csv";
     String schemaName2 = "ssb-sf10-sortlineorder/csv";
     Optimizer optimizer = new Optimizer();
-    RelNode queryPlan = optimizer.optimize(query, schemaName1);
+    RelNode queryPlan = optimizer.planQuery(query, schemaName1);
     System.out.println(RelOptUtil.dumpPlan("[Optimized plan]", queryPlan, SqlExplainFormat.TEXT,
             SqlExplainLevel.ALL_ATTRIBUTES));
-    queryPlan = optimizer.optimize(query, schemaName2);
+    queryPlan = optimizer.planQuery(query, schemaName2);
     System.out.println(RelOptUtil.dumpPlan("[Optimized plan]", queryPlan, SqlExplainFormat.TEXT,
             SqlExplainLevel.ALL_ATTRIBUTES));
   }

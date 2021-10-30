@@ -49,7 +49,7 @@ public class Optimizer {
     this.rootSchema = CalciteSchema.createRootSchema(false, true);
   }
 
-  public RelNode optimize(String query, String schemaName) throws Exception {
+  public RelNode planQuery(String query, String schemaName) throws Exception {
     // Load schema if not loaded
     if (!rootSchema.getSubSchemaMap().containsKey(schemaName)) {
       SchemaImpl schema = SchemaReader.readSchema(schemaName);

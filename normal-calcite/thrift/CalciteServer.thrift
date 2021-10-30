@@ -1,8 +1,7 @@
 namespace java com.thrift.calciteserver
 
-exception InvalidParseRequest {
-  1: i32 whatUp,
-  2: string whyUp
+exception ParsePlanningError {
+  1: string msg
 }
 
 struct TPlanResult {
@@ -11,9 +10,8 @@ struct TPlanResult {
 }
 
 service CalciteServer {
-   void ping(),
-   void shutdown(),
-   TPlanResult sql2Plan(1:string user 2:string passwd 3:string catalog 4:string sql_text
-                        5:bool legacySyntax 6:bool isexplain) throws (1:InvalidParseRequest parseErr),
-   void updateMetadata(1: string catalog, 2:string table)
+  void ping(),
+  void shutdown(),
+  TPlanResult sql2Plan(1: string query 2: string schemaName) throws (1: ParsePlanningError parsePlanningErr),
+  void updateMetadata(1: string catalog, 2: string table)
 }

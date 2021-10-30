@@ -34,7 +34,7 @@ add_custom_target(
 # Calcite
 #-----------------------------------------------------------------------------------------------------------------------
 
-add_library(normal-calcite
+add_executable(normal-calcite
         src/Calcite.cpp include/normal/calcite/Calcite.h)
 
 target_include_directories(normal-calcite PUBLIC include)

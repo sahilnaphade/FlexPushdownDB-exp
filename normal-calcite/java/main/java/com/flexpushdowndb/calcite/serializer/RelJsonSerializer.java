@@ -102,8 +102,10 @@ public final class RelJsonSerializer {
     for (AggregateCall aggCall: aggregate.getAggCallList()){
       JSONObject aggCallJObj = new JSONObject();
       aggCallJObj.put("function", aggCall.getAggregation().kind.name());
-      // Haven't got an aggregation function with multiple arguments
-      aggCallJObj.put("aggField", aggCall.getArgList().get(0));
+      if (!aggCall.getArgList().isEmpty()) {
+        // Haven't got an aggregation function with multiple arguments
+        aggCallJObj.put("aggField", aggCall.getArgList().get(0));
+      }
       aggListJArr.put(aggCallJObj);
     }
     jo.put("aggregations", aggListJArr);
