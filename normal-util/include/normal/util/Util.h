@@ -12,7 +12,7 @@
 namespace normal::util {
   std::string readFile(const std::string& filePath);
   std::vector<std::string> readFileByLine(const std::string& filePath);
-  std::unordered_map<std::string, std::string> readConfig();
+  std::unordered_map<std::string, std::string> readConfig(const std::string &fileName);
   bool isInteger(const std::string& str);
   std::string getLocalIp();
 }

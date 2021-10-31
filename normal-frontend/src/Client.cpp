@@ -3,7 +3,7 @@
 //
 
 #include <normal/frontend/Client.h>
-#include <normal/frontend/Config.h>
+#include <normal/frontend/ExecConfig.h>
 #include <normal/connector/MiniCatalogue.h>
 #include <normal/connector/s3/S3SelectConnector.h>
 #include <normal/connector/s3/S3Util.h>
@@ -19,15 +19,15 @@ using namespace normal::util;
 using namespace normal::pushdown;
 
 Client::Client(){
-  config_ = parseConfig();
+  execConfig_ = parseExecConfig();
 }
 
 std::string Client::boot() {
   /* Initialize query processing */
   DefaultS3Client = AWSClient::defaultS3Client();
-  defaultMiniCatalogue = MiniCatalogue::defaultMiniCatalogue(config_->getS3Bucket(), config_->getS3Dir());
-  interpreter_ = std::make_shared<Interpreter>(config_->getMode(), config_->getCachingPolicy());
-  configureS3ConnectorMultiPartition(interpreter_, config_->getS3Bucket(), config_->getS3Dir());
+  defaultMiniCatalogue = MiniCatalogue::defaultMiniCatalogue(execConfig_->getS3Bucket(), execConfig_->getS3Dir());
+  interpreter_ = std::make_shared<Interpreter>(execConfig_->getMode(), execConfig_->getCachingPolicy());
+  configureS3ConnectorMultiPartition(interpreter_, execConfig_->getS3Bucket(), execConfig_->getS3Dir());
   interpreter_->boot();
   std::string output = "Client booted";
   return output;
@@ -64,7 +64,7 @@ std::string Client::executeSql(const std::string &sql) {
   std::string output = fmt::format("Result |\n{}", tupleSet->showString(
           TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
   output += fmt::format("{}", interpreter_->getOperatorGraph()->showMetrics(
-          config_->showOpTimes(), config_->showScanMetrics()));
+          execConfig_->showOpTimes(), execConfig_->showScanMetrics()));
   output += fmt::format("\nFinished, time: {} secs",
                         (double) (interpreter_->getOperatorGraph()->getElapsedTime().value()) / 1000000000.0);
   return output;

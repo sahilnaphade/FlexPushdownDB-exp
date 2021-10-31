@@ -6,9 +6,19 @@ import org.apache.thrift.server.TServer.Args;
 import org.apache.thrift.server.TSimpleServer;
 import org.apache.thrift.transport.TServerSocket;
 import org.apache.thrift.transport.TServerTransport;
+import org.ini4j.Ini;
+
+import java.io.IOException;
+import java.io.InputStream;
 
 public class Server {
-  private final static int SERVER_PORT = 8099;
+  private final int SERVER_PORT;
+
+  public Server() throws IOException {
+    InputStream is = getClass().getResourceAsStream("/config/exec.conf");
+    Ini ini = new Ini(is);
+    this.SERVER_PORT = Integer.parseInt(ini.get("conf", "SERVER_PORT"));
+  }
 
   public void start() {
     try {
@@ -26,7 +36,7 @@ public class Server {
     }
   }
 
-  public static void main(String[] args) {
+  public static void main(String[] args) throws IOException {
     Server server = new Server();
     server.start();
   }

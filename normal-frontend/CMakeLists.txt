@@ -7,7 +7,7 @@ project(normal-frontend VERSION "${PROJECT_VERSION}" LANGUAGES C CXX)
 add_executable(normal-frontend src/Main.cpp
         include/normal/frontend/Client.h src/Client.cpp
         include/normal/frontend/Global.h
-        src/Config.cpp include/normal/frontend/Config.h)
+        src/ExecConfig.cpp include/normal/frontend/ExecConfig.h src/TestCalcite.cpp)
 
 target_include_directories(normal-frontend PUBLIC include)
 
@@ -34,3 +34,6 @@ if (${APPLE})
             COMMAND install_name_tool -change ${path_to_lib} ${change_lib} normal-frontend)
   endforeach()
 endif()
+
+add_executable(TestCalcite src/TestCalcite.cpp)
+target_link_libraries(TestCalcite PRIVATE normal-calcite)

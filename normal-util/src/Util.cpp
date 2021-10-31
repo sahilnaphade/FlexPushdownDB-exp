@@ -35,11 +35,12 @@ std::vector<std::string> normal::util::readFileByLine(const std::string &filePat
   return lines;
 }
 
-std::unordered_map<std::string, std::string> normal::util::readConfig() {
+std::unordered_map<std::string, std::string> normal::util::readConfig(const std::string &fileName) {
   std::unordered_map<std::string, std::string> configMap;
   std::string configPath = std::filesystem::current_path()
           .parent_path()
-          .append("resources/config/exec.conf")
+          .append("resources/config")
+          .append(fileName)
           .string();
   std::vector<std::string> lines = readFileByLine(configPath);
   for(auto const &line: lines) {

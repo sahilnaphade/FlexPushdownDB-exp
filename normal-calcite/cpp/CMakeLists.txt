@@ -34,13 +34,15 @@ add_custom_target(
 # Calcite
 #-----------------------------------------------------------------------------------------------------------------------
 
-add_executable(normal-calcite
-        src/Calcite.cpp include/normal/calcite/Calcite.h)
+add_library(normal-calcite
+        src/CalciteClient.cpp include/normal/calcite/CalciteClient.h
+        src/CalciteConfig.cpp include/normal/calcite/CalciteConfig.h)
 
 target_include_directories(normal-calcite PUBLIC include)
 
-target_link_libraries(normal-calcite PRIVATE calciteserver_thrift_cpp)
-target_link_libraries(normal-calcite PRIVATE thrift_static)
-target_link_libraries(normal-calcite PRIVATE boost)
+target_link_libraries(normal-calcite PUBLIC calciteserver_thrift_cpp)
+target_link_libraries(normal-calcite PUBLIC thrift_static)
+target_link_libraries(normal-calcite PUBLIC boost)
+target_link_libraries(normal-calcite PRIVATE normal-util)
 
 add_dependencies(normal-calcite calciteserver_thrift_java)

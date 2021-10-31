@@ -284,3 +284,4 @@ Temporary Items
 /normal-calcite/cpp/gen-cpp/
 /normal-calcite/java/main/java/com/thrift/calciteserver/
 /normal-calcite/java/target/
+/normal-calcite/java/dependency-reduced-pom.xml

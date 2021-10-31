@@ -2,8 +2,8 @@
 // Created by Yifei Yang on 10/12/21.
 //
 
-#ifndef NORMAL_NORMAL_FRONTEND_INCLUDE_NORMAL_FRONTEND_CONFIG_H
-#define NORMAL_NORMAL_FRONTEND_INCLUDE_NORMAL_FRONTEND_CONFIG_H
+#ifndef NORMAL_NORMAL_FRONTEND_INCLUDE_NORMAL_FRONTEND_EXECCONFIG_H
+#define NORMAL_NORMAL_FRONTEND_INCLUDE_NORMAL_FRONTEND_EXECCONFIG_H
 
 #include <normal/plan/mode/Mode.h>
 #include <normal/cache/CachingPolicy.h>
@@ -15,9 +15,9 @@ using namespace normal::cache;
 
 namespace normal::frontend{
 
-class Config {
+class ExecConfig {
 public:
-  Config(const std::shared_ptr<Mode> &mode, const std::shared_ptr<CachingPolicy> &cachingPolicy, std::string s3Bucket,
+  ExecConfig(const std::shared_ptr<Mode> &mode, const std::shared_ptr<CachingPolicy> &cachingPolicy, std::string s3Bucket,
          std::string s3Dir, bool showOpTimes, bool showScanMetrics);
 
   const std::shared_ptr<Mode> &getMode() const;
@@ -37,9 +37,8 @@ private:
 
 };
 
-std::shared_ptr<Config> parseConfig();
-size_t parseCacheSize(std::unordered_map<std::string, std::string> configMap);
+std::shared_ptr<ExecConfig> parseExecConfig();
 }
 
 
-#endif //NORMAL_NORMAL_FRONTEND_INCLUDE_NORMAL_FRONTEND_CONFIG_H
+#endif //NORMAL_NORMAL_FRONTEND_INCLUDE_NORMAL_FRONTEND_EXECCONFIG_H

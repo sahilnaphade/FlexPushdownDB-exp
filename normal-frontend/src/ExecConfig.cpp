@@ -2,7 +2,7 @@
 // Created by Yifei Yang on 10/12/21.
 //
 
-#include <normal/frontend/Config.h>
+#include <normal/frontend/ExecConfig.h>
 #include <normal/util/Util.h>
 #include <normal/plan/mode/Modes.h>
 #include <string>
@@ -18,32 +18,32 @@ using namespace normal::util;
 
 namespace normal::frontend {
 
-Config::Config(const shared_ptr<Mode> &mode, const shared_ptr<CachingPolicy> &cachingPolicy, string s3Bucket,
+ExecConfig::ExecConfig(const shared_ptr<Mode> &mode, const shared_ptr<CachingPolicy> &cachingPolicy, string s3Bucket,
                string s3Dir, bool showOpTimes, bool showScanMetrics) :
                mode_(mode), cachingPolicy_(cachingPolicy), s3Bucket_(std::move(s3Bucket)), s3Dir_(std::move(s3Dir)),
                showOpTimes_(showOpTimes), showScanMetrics_(showScanMetrics) {}
 
-const shared_ptr<Mode> &Config::getMode() const {
+const shared_ptr<Mode> &ExecConfig::getMode() const {
   return mode_;
 }
 
-const shared_ptr<CachingPolicy> &Config::getCachingPolicy() const {
+const shared_ptr<CachingPolicy> &ExecConfig::getCachingPolicy() const {
   return cachingPolicy_;
 }
 
-const string &Config::getS3Bucket() const {
+const string &ExecConfig::getS3Bucket() const {
   return s3Bucket_;
 }
 
-const string &Config::getS3Dir() const {
+const string &ExecConfig::getS3Dir() const {
   return s3Dir_;
 }
 
-bool Config::showOpTimes() const {
+bool ExecConfig::showOpTimes() const {
   return showOpTimes_;
 }
 
-bool Config::showScanMetrics() const {
+bool ExecConfig::showScanMetrics() const {
   return showScanMetrics_;
 }
 
@@ -106,8 +106,8 @@ bool parseBool(const string& stringToParse) {
   }
 }
 
-std::shared_ptr<Config> parseConfig() {
-  unordered_map<string, string> configMap = readConfig();
+std::shared_ptr<ExecConfig> parseExecConfig() {
+  unordered_map<string, string> configMap = readConfig("exec.conf");
   size_t cacheSize = parseCacheSize(configMap["CACHE_SIZE"]);
   std::shared_ptr<Mode> mode = parseMode(configMap["MODE"]);
   std::shared_ptr<CachingPolicy> cachingPolicy = parseCachingPolicy(configMap["CACHING_POLICY"], cacheSize, mode);
@@ -115,6 +115,6 @@ std::shared_ptr<Config> parseConfig() {
   string s3Dir = configMap["S3_DIR"];
   bool showOpTimes = parseBool(configMap["SHOW_OP_TIMES"]);
   bool showScanMetrics = parseBool(configMap["SHOW_SCAN_METRICS"]);
-  return std::make_shared<Config>(mode, cachingPolicy, s3Bucket, s3Dir, showOpTimes, showScanMetrics);
+  return std::make_shared<ExecConfig>(mode, cachingPolicy, s3Bucket, s3Dir, showOpTimes, showScanMetrics);
 }
 }

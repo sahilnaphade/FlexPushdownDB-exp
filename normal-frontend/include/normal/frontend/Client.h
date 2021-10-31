@@ -6,7 +6,7 @@
 #define NORMAL_FRONTEND_CLIENT_H
 
 #include <normal/frontend/Global.h>
-#include <normal/frontend/Config.h>
+#include <normal/frontend/ExecConfig.h>
 #include <normal/cache/CachingPolicy.h>
 #include <normal/plan/mode/Modes.h>
 #include <normal/sql/Interpreter.h>
@@ -33,7 +33,7 @@ public:
 
 private:
   /* Config parameters */
-  std::shared_ptr<Config> config_;
+  std::shared_ptr<ExecConfig> execConfig_;
 
   std::shared_ptr<Interpreter> interpreter_;
 
