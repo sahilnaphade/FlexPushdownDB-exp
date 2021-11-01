@@ -7,15 +7,16 @@ import org.apache.calcite.util.Sarg;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.util.List;
 import java.util.Objects;
 
 public class RexJsonSerializer {
-  public static JSONObject serializeRexNode(RexNode rexNode) {
+  public static JSONObject serialize(RexNode rexNode, List<String> fieldNames) {
     return rexNode.accept(new RexVisitor<JSONObject>() {
       @Override
       public JSONObject visitInputRef(RexInputRef inputRef) {
         JSONObject jo = new JSONObject();
-        jo.put("inputRef", inputRef.getIndex());
+        jo.put("inputRef", fieldNames.get(inputRef.getIndex()));
         return jo;
       }
 
@@ -42,7 +43,7 @@ public class RexJsonSerializer {
             // operands
             JSONArray operandsJArr = new JSONArray();
             for (RexNode operand : call.getOperands()) {
-              operandsJArr.put(serializeRexNode(operand));
+              operandsJArr.put(serialize(operand, fieldNames));
             }
             jo.put("operands", operandsJArr);
             return jo;

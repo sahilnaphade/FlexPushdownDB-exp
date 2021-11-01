@@ -5,10 +5,7 @@ import com.flexpushdowndb.calcite.serializer.RelJsonSerializer;
 import com.thrift.calciteserver.CalciteServer;
 import com.thrift.calciteserver.ParsePlanningError;
 import com.thrift.calciteserver.TPlanResult;
-import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.sql.SqlExplainFormat;
-import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.thrift.TException;
 import org.apache.thrift.server.TServer;
 import org.apache.thrift.transport.TServerTransport;
@@ -48,7 +45,7 @@ public class CalciteServerHandler implements CalciteServer.Iface{
     TPlanResult tPlanResult = new TPlanResult();
     try {
       RelNode queryPlan = optimizer.planQuery(query, schemaName);
-      tPlanResult.plan_result = RelJsonSerializer.serializeRelNode(queryPlan).toString();
+      tPlanResult.plan_result = RelJsonSerializer.serialize(queryPlan).toString(2);
     } catch (Exception e) {
       e.printStackTrace();
       throw new ParsePlanningError(Arrays.toString(e.getStackTrace()));

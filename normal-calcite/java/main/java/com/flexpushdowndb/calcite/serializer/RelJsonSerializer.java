@@ -8,8 +8,10 @@ import org.apache.calcite.rex.*;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.util.List;
+
 public final class RelJsonSerializer {
-  public static JSONObject serializeRelNode(RelNode relNode) {
+  public static JSONObject serialize(RelNode relNode) {
     JSONObject jo;
     if (relNode instanceof EnumerableTableScan) {
       jo = serializeEnumerableTableScan((EnumerableTableScan) relNode);
@@ -32,7 +34,7 @@ public final class RelJsonSerializer {
   private static JSONArray serializeRelInputs(RelNode relNode) {
     JSONArray jArr = new JSONArray();
     for (RelNode input: relNode.getInputs()) {
-      jArr.put(serializeRelNode(input));
+      jArr.put(serialize(input));
     }
     return jArr;
   }
@@ -45,6 +47,8 @@ public final class RelJsonSerializer {
     jo.put("schema", scan.getTable().getQualifiedName().get(0));
     // table
     jo.put("table", scan.getTable().getQualifiedName().get(1));
+    // input operators
+    jo.put("inputs", serializeRelInputs(scan));
     return jo;
   }
 
@@ -53,7 +57,7 @@ public final class RelJsonSerializer {
     // operator name
     jo.put("operator", filter.getClass().getSimpleName());
     // filter condition
-    jo.put("condition", RexJsonSerializer.serializeRexNode(filter.getCondition()));
+    jo.put("condition", RexJsonSerializer.serialize(filter.getCondition(), filter.getRowType().getFieldNames()));
     // input operators
     jo.put("inputs", serializeRelInputs(filter));
     return jo;
@@ -64,7 +68,7 @@ public final class RelJsonSerializer {
     // operator name
     jo.put("operator", join.getClass().getSimpleName());
     // join condition
-    jo.put("condition", RexJsonSerializer.serializeRexNode(join.getCondition()));
+    jo.put("condition", RexJsonSerializer.serialize(join.getCondition(), join.getRowType().getFieldNames()));
     // join type
     jo.put("joinType", join.getJoinType());
     // input operators
@@ -77,9 +81,10 @@ public final class RelJsonSerializer {
     // operator name
     jo.put("operator", project.getClass().getSimpleName());
     // project fields
+    List<String> inputFieldNames = project.getInput().getRowType().getFieldNames();
     JSONArray fields = new JSONArray();
     for (RexNode rexNode: project.getProjects()) {
-      fields.put(RexJsonSerializer.serializeRexNode(rexNode));
+      fields.put(RexJsonSerializer.serialize(rexNode, inputFieldNames));
     }
     jo.put("fields", fields);
     // input operators
@@ -92,9 +97,10 @@ public final class RelJsonSerializer {
     // operator name
     jo.put("operator", aggregate.getClass().getSimpleName());
     // group fields
+    List<String> inputFieldNames = aggregate.getInput().getRowType().getFieldNames();
     JSONArray groupFieldsJArr = new JSONArray();
     for (int fieldIndex: aggregate.getGroupSet().asList()) {
-      groupFieldsJArr.put(fieldIndex);
+      groupFieldsJArr.put(inputFieldNames.get(fieldIndex));
     }
     jo.put("groupFields", groupFieldsJArr);
     // aggregations
@@ -104,7 +110,8 @@ public final class RelJsonSerializer {
       aggCallJObj.put("function", aggCall.getAggregation().kind.name());
       if (!aggCall.getArgList().isEmpty()) {
         // Haven't got an aggregation function with multiple arguments
-        aggCallJObj.put("aggField", aggCall.getArgList().get(0));
+        int aggFieldId = aggCall.getArgList().get(0);
+        aggCallJObj.put("aggField", inputFieldNames.get(aggFieldId));
       }
       aggListJArr.put(aggCallJObj);
     }
@@ -119,10 +126,11 @@ public final class RelJsonSerializer {
     // operator name
     jo.put("operator", sort.getClass().getSimpleName());
     // sort fields
+    List<String> inputFieldNames = sort.getInput().getRowType().getFieldNames();
     JSONArray sortFieldsJArr = new JSONArray();
     for (RelFieldCollation collation: sort.getCollation().getFieldCollations()) {
       JSONObject sortFieldJObj = new JSONObject();
-      sortFieldJObj.put("field", collation.getFieldIndex());
+      sortFieldJObj.put("field", inputFieldNames.get(collation.getFieldIndex()));
       sortFieldJObj.put("direction", collation.getDirection());
       sortFieldsJArr.put(sortFieldJObj);
     }

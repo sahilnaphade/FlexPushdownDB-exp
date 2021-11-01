@@ -25,7 +25,7 @@ public class TestOptimizer {
     RelNode queryPlan = optimizer.planQuery(query, schemaName);
     System.out.println(RelOptUtil.dumpPlan("[Optimized plan]", queryPlan, SqlExplainFormat.TEXT,
             SqlExplainLevel.ALL_ATTRIBUTES));
-    System.out.println(RelJsonSerializer.serializeRelNode(queryPlan).toString(2));
+    System.out.println(RelJsonSerializer.serialize(queryPlan).toString(2));
   }
 
   @Test
