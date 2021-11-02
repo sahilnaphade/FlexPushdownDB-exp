@@ -35,5 +35,16 @@ if (${APPLE})
   endforeach()
 endif()
 
+
 add_executable(TestCalcite src/TestCalcite.cpp)
+
 target_link_libraries(TestCalcite PRIVATE normal-calcite)
+target_link_libraries(TestCalcite PRIVATE normal-util)
+target_link_libraries(TestCalcite PRIVATE normal-cplan)
+# need to add and link libraries on mac
+if (${APPLE})
+  target_link_directories(TestCalcite PRIVATE /usr/local/opt/openssl/lib)
+  target_link_directories(TestCalcite PRIVATE /usr/local/opt/llvm@11/lib)
+  target_link_directories(TestCalcite PRIVATE /usr/local/opt/libdeflate/lib)
+  target_link_directories(TestCalcite PRIVATE /usr/local/lib)
+endif()

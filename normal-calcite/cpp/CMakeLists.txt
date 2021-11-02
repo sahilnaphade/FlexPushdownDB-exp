@@ -12,7 +12,7 @@ add_custom_command(
           ${CMAKE_CURRENT_SOURCE_DIR}/gen-cpp/CalciteServer_server.skeleton.cpp
         COMMAND thrift --gen cpp -r -o ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/../thrift/CalciteServer.thrift)
 
-add_library(calciteserver_thrift_cpp
+add_library(calciteserver_thrift_cpp STATIC
         ${CMAKE_CURRENT_SOURCE_DIR}/gen-cpp/CalciteServer.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/gen-cpp/CalciteServer_types.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/gen-cpp/CalciteServer_server.skeleton.cpp)
@@ -34,7 +34,7 @@ add_custom_target(
 # Calcite
 #-----------------------------------------------------------------------------------------------------------------------
 
-add_library(normal-calcite
+add_library(normal-calcite STATIC
         src/CalciteClient.cpp include/normal/calcite/CalciteClient.h
         src/CalciteConfig.cpp include/normal/calcite/CalciteConfig.h)
 

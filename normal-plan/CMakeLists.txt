@@ -47,6 +47,24 @@ target_link_libraries(normal-plan PUBLIC normal-pushdown)
 target_link_libraries(normal-plan PUBLIC normal-connector)
 
 
+add_library(normal-cplan STATIC
+        include/normal/plan/Util.h
+        include/normal/plan/prephysical/PrePOpType.h
+        src/calcite/CalcitePlanJsonDeserializer.cpp include/normal/plan/calcite/CalcitePlanJsonDeserializer.h
+        src/prephysical/PrePhysicalPlan.cpp include/normal/plan/prephysical/PrePhysicalPlan.h
+        src/prephysical/PrePhysicalOp.cpp include/normal/plan/prephysical/PrePhysicalOp.h
+        src/prephysical/SortPrePOp.cpp include/normal/plan/prephysical/SortPrePOp.h
+        src/prephysical/AggregatePrePOp.cpp include/normal/plan/prephysical/AggregatePrePOp.h
+        src/prephysical/GroupPrePOp.cpp include/normal/plan/prephysical/GroupPrePOp.h
+        src/prephysical/AggregatePrePFunction.cpp include/normal/plan/prephysical/AggregatePrePFunction.h)
+
+target_include_directories(normal-cplan PUBLIC include)
+
+target_link_libraries(normal-cplan PUBLIC nlohmann_json)
+target_link_libraries(normal-cplan PUBLIC normal-expression-gandiva)
+target_link_libraries(normal-cplan PUBLIC normal-util)
+
+
 #-----------------------------------------------------------------------------------------------------------------------
 # Diagnostics
 #-----------------------------------------------------------------------------------------------------------------------

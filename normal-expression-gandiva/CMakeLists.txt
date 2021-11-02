@@ -29,11 +29,7 @@ add_library(normal-expression-gandiva STATIC
 
 target_include_directories(normal-expression-gandiva PUBLIC include)
 
-target_link_libraries(normal-expression-gandiva PRIVATE spdlog::spdlog)
-target_link_libraries(normal-expression-gandiva PUBLIC arrow_static)
 target_link_libraries(normal-expression-gandiva PUBLIC gandiva_static)
-target_link_libraries(normal-expression-gandiva PUBLIC expected)
-target_link_libraries(normal-expression-gandiva PUBLIC normal-core)
 target_link_libraries(normal-expression-gandiva PUBLIC normal-expression)
 
 

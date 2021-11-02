@@ -40,6 +40,7 @@ include(External_Backward)
 include(External_CallableTraits)
 include(External_boost)
 include(External_thrift)
+include(External_nlohmannjson)
 
 
 #-----------------------------------------------------------------------------------------------------------------------

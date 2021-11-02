@@ -23,12 +23,6 @@ add_library(normal-core STATIC
         src/OperatorRelationshipType.cpp include/normal/core/OperatorRelationshipType.h
         src/LocalOperatorDirectory.cpp include/normal/core/LocalOperatorDirectory.h
         src/LocalOperatorDirectoryEntry.cpp include/normal/core/LocalOperatorDirectoryEntry.h
-        include/normal/core/type/Type.h
-        src/type/DecimalType.cpp include/normal/core/type/DecimalType.h
-        src/type/Types.cpp include/normal/core/type/Types.h
-        src/type/Float64Type.cpp include/normal/core/type/Float64Type.h
-        src/type/Integer32Type.cpp include/normal/core/type/Integer32Type.h
-        src/type/Integer64Type.cpp include/normal/core/type/Integer64Type.h
         src/cache/LoadRequestMessage.cpp include/normal/core/cache/LoadRequestMessage.h
         src/cache/StoreRequestMessage.cpp include/normal/core/cache/StoreRequestMessage.h
         src/cache/LoadResponseMessage.cpp include/normal/core/cache/LoadResponseMessage.h

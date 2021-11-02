@@ -51,9 +51,9 @@ add_library(normal-tuple STATIC
 target_include_directories(normal-tuple PUBLIC include)
 
 
-target_link_libraries(normal-tuple PRIVATE spdlog::spdlog)
-target_link_libraries(normal-tuple PRIVATE fmt::fmt)
-target_link_libraries(normal-tuple PRIVATE LLVM-filesystem)
+target_link_libraries(normal-tuple PUBLIC spdlog::spdlog)
+target_link_libraries(normal-tuple PUBLIC fmt::fmt)
+target_link_libraries(normal-tuple PUBLIC LLVM-filesystem)
 target_link_libraries(normal-tuple PUBLIC expected)
 target_link_libraries(normal-tuple PUBLIC arrow_static)
 target_link_libraries(normal-tuple PUBLIC parquet_static)

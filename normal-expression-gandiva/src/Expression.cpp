@@ -12,8 +12,6 @@
 #include <normal/expression/gandiva/LessThan.h>
 #include <normal/expression/gandiva/LessThanOrEqualTo.h>
 #include <normal/expression/gandiva/NumericLiteral.h>
-#include <normal/core/type/Integer32Type.h>
-#include <normal/core/type/Float64Type.h>
 
 using namespace normal::expression::gandiva;
 
@@ -41,13 +39,13 @@ std::shared_ptr<std::string> normal::expression::gandiva::removePrefixFloat(cons
   }
 }
 
-std::shared_ptr<normal::core::type::Type> getType(const std::shared_ptr<normal::expression::gandiva::Expression>& expr) {
-  if (typeid(*expr) == typeid(normal::expression::gandiva::NumericLiteral<::arrow::Int32Type>)) {
-    return normal::core::type::integer32Type();
-  } else if (typeid(*expr) == typeid(normal::expression::gandiva::NumericLiteral<::arrow::Int64Type>)) {
-    return normal::core::type::integer32Type();
-  } else if (typeid(*expr) == typeid(normal::expression::gandiva::NumericLiteral<::arrow::FloatType>)) {
-    return normal::core::type::float64Type();
+std::shared_ptr<arrow::DataType> getType(const std::shared_ptr<normal::expression::gandiva::Expression>& expr) {
+  if (typeid(*expr) == typeid(normal::expression::gandiva::NumericLiteral<arrow::Int32Type>)) {
+    return arrow::int32();
+  } else if (typeid(*expr) == typeid(normal::expression::gandiva::NumericLiteral<arrow::Int64Type>)) {
+    return arrow::int64();
+  } else if (typeid(*expr) == typeid(normal::expression::gandiva::NumericLiteral<arrow::FloatType>)) {
+    return arrow::float64();
   } else {
     return nullptr;
   }

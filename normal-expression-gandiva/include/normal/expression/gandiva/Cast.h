@@ -5,21 +5,20 @@
 #ifndef NORMAL_NORMAL_EXPRESSION_GANDIVA_INCLUDE_NORMAL_EXPRESSION_GANDIVA_CAST_H
 #define NORMAL_NORMAL_EXPRESSION_GANDIVA_INCLUDE_NORMAL_EXPRESSION_GANDIVA_CAST_H
 
-#include <string>
-#include <memory>
+#include <normal/expression/gandiva/Expression.h>
 
 #include <arrow/api.h>
 #include <gandiva/node.h>
-#include <normal/core/type/Type.h>
 
-#include "Expression.h"
+#include <string>
+#include <memory>
 
 namespace normal::expression::gandiva {
 
 class Cast : public Expression {
 
 public:
-  Cast(std::shared_ptr<Expression> expr, std::shared_ptr<normal::core::type::Type> type);
+  Cast(std::shared_ptr<Expression> expr, std::shared_ptr<arrow::DataType> type);
 
   void compile(std::shared_ptr<arrow::Schema> schema) override;
   std::string alias() override;
@@ -32,11 +31,12 @@ private:
 
 private:
   std::shared_ptr<Expression> expr_;
-  std::shared_ptr<normal::core::type::Type> type_;
+  std::shared_ptr<arrow::DataType> type_;
 
 };
 
-std::shared_ptr<Expression> cast(const std::shared_ptr<Expression>& expr, const std::shared_ptr<normal::core::type::Type>& type);
+std::shared_ptr<Expression> cast(const std::shared_ptr<Expression>& expr,
+                                 const std::shared_ptr<arrow::DataType>& type);
 
 }
 

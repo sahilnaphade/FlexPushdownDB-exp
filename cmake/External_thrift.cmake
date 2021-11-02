@@ -36,8 +36,6 @@ ExternalProject_Add(${THRIFT_BASE}
         -DCMAKE_CXX_FLAGS=-isystem\ ${BOOST_INCLUDE_DIR}
         -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
         -DCMAKE_INSTALL_MESSAGE=NEVER
-        -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
-        -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
         -DCMAKE_INSTALL_PREFIX=${THRIFT_INSTALL_DIR}
         )
 
@@ -48,6 +46,3 @@ add_library(thrift_static STATIC IMPORTED)
 set_target_properties(thrift_static PROPERTIES IMPORTED_LOCATION ${THRIFT_STATIC_LIB})
 target_include_directories(thrift_static INTERFACE ${THRIFT_INCLUDE_DIR})
 add_dependencies(thrift_static ${THRIFT_BASE})
-
-
-#showTargetProps(thrift::thrift)

@@ -1,0 +1,20 @@
+//
+// Created by Yifei Yang on 10/31/21.
+//
+
+#include <normal/plan/prephysical/SortPrePOp.h>
+#include <normal/plan/prephysical/PrePOpType.h>
+
+using namespace std;
+
+namespace normal::plan::prephysical {
+
+SortPrePOp::SortPrePOp(const vector<pair<string, FieldDirection>> &sortColumns) :
+  PrePhysicalOp(Sort),
+  sortColumns_(sortColumns) {}
+
+string SortPrePOp::getName() {
+  return "SortPrePOp";
+}
+
+}

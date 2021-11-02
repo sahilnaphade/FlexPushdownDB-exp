@@ -6,11 +6,8 @@
 #define NORMAL_NORMAL_EXPRESSION_INCLUDE_NORMAL_EXPRESSION_EXPRESSION_H
 
 #include <utility>
-
 #include <arrow/api.h>
 #include <gandiva/node.h>
-
-#include <normal/core/type/Type.h>
 
 namespace normal::expression {
 

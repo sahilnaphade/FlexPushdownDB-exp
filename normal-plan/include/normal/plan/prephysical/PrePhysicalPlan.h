@@ -1,0 +1,17 @@
+//
+// Created by Yifei Yang on 10/31/21.
+//
+
+#ifndef NORMAL_NORMAL_PLAN_INCLUDE_NORMAL_PLAN_PREPHYSICALPLAN_H
+#define NORMAL_NORMAL_PLAN_INCLUDE_NORMAL_PLAN_PREPHYSICALPLAN_H
+
+namespace normal::plan::prephysical {
+
+class PrePhysicalPlan {
+
+};
+
+}
+
+
+#endif //NORMAL_NORMAL_PLAN_INCLUDE_NORMAL_PLAN_PREPHYSICALPLAN_H
