@@ -98,6 +98,7 @@ public final class RelJsonSerializer {
     jo.put("operator", aggregate.getClass().getSimpleName());
     // group fields
     List<String> inputFieldNames = aggregate.getInput().getRowType().getFieldNames();
+    List<String> outputFieldNames = aggregate.getRowType().getFieldNames();
     JSONArray groupFieldsJArr = new JSONArray();
     for (int fieldIndex: aggregate.getGroupSet().asList()) {
       groupFieldsJArr.put(inputFieldNames.get(fieldIndex));
@@ -111,7 +112,8 @@ public final class RelJsonSerializer {
       if (!aggCall.getArgList().isEmpty()) {
         // Haven't got an aggregation function with multiple arguments
         int aggFieldId = aggCall.getArgList().get(0);
-        aggCallJObj.put("aggField", inputFieldNames.get(aggFieldId));
+        aggCallJObj.put("aggInputField", inputFieldNames.get(aggFieldId));
+        aggCallJObj.put("aggOutputField", outputFieldNames.get(aggFieldId));
       }
       aggListJArr.put(aggCallJObj);
     }

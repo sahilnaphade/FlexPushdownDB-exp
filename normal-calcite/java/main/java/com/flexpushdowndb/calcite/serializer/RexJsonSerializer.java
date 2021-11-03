@@ -1,15 +1,22 @@
 package com.flexpushdowndb.calcite.serializer;
 
+import com.google.common.collect.BoundType;
 import com.google.common.collect.Range;
+import jdk.nashorn.internal.runtime.regexp.joni.ast.StringNode;
 import org.apache.calcite.rex.*;
+import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.util.NlsString;
 import org.apache.calcite.util.Sarg;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
+@SuppressWarnings({"BetaApi", "type.argument.type.incompatible", "UnstableApiUsage"})
 public class RexJsonSerializer {
   public static JSONObject serialize(RexNode rexNode, List<String> fieldNames) {
     return rexNode.accept(new RexVisitor<JSONObject>() {
@@ -22,7 +29,6 @@ public class RexJsonSerializer {
 
       @Override
       public JSONObject visitCall(RexCall call) {
-        JSONObject jo = new JSONObject();
         switch (call.getKind()) {
           case LESS_THAN:
           case GREATER_THAN:
@@ -33,11 +39,11 @@ public class RexJsonSerializer {
           case AND:
           case OR:
           case NOT:
-          case SEARCH:
           case PLUS:
           case MINUS:
           case TIMES:
           case DIVIDE: {
+            JSONObject jo = new JSONObject();
             // op
             jo.put("op", call.getKind());
             // operands
@@ -47,6 +53,12 @@ public class RexJsonSerializer {
             }
             jo.put("operands", operandsJArr);
             return jo;
+          }
+          case SEARCH: {
+            RexInputRef searchRef = (RexInputRef) call.getOperands().get(0);
+            String searchFieldName = fieldNames.get(searchRef.getIndex());
+            RexLiteral literal = (RexLiteral) call.getOperands().get(1);
+            return serializeSearch(searchFieldName, literal);
           }
           default: {
             throw new UnsupportedOperationException("Serialize unsupported RexCall: " + call.getKind());
@@ -61,53 +73,33 @@ public class RexJsonSerializer {
 
       @Override
       public JSONObject visitLiteral(RexLiteral literal) {
-        SqlTypeName typeName = literal.getTypeName();
-        JSONObject jo = new JSONObject();
-        jo.put("type", typeName);
-        switch (typeName) {
-          case CHAR: {
-            jo.put("value", literal.getValueAs(String.class));
-            return jo;
+        JSONObject literalJObj = new JSONObject();
+        SqlTypeName basicTypeName = literal.getType().getSqlTypeName();
+        literalJObj.put("type", basicTypeName);
+
+        switch (basicTypeName) {
+          case VARCHAR: {
+            literalJObj.put("value", literal.getValueAs(String.class));
+            break;
+          }
+          case INTEGER: {
+            literalJObj.put("value", literal.getValueAs(Integer.class));
+            break;
+          }
+          case BIGINT: {
+            literalJObj.put("value", literal.getValueAs(Long.class));
+            break;
           }
           case DECIMAL: {
-            SqlTypeName basicTypeName = literal.getType().getSqlTypeName();
-            switch (basicTypeName) {
-              case INTEGER: {
-                jo.put("value", literal.getValueAs(Integer.class));
-                return jo;
-              }
-              case BIGINT: {
-                jo.put("value", literal.getValueAs(Long.class));
-                return jo;
-              }
-              case DECIMAL: {
-                jo.put("value", literal.getValueAs(Double.class));
-                return jo;
-              }
-              default:
-                throw new UnsupportedOperationException("Serialize unsupported RexLiteral with basicTypeName: "
-                        + basicTypeName);
-            }
-          }
-          case SARG: {
-            JSONObject rangeJObj = new JSONObject();
-            Range range = ((Sarg) Objects.requireNonNull(literal.getValue())).rangeSet.span();
-            // lower
-            JSONObject lowerJObj = new JSONObject();
-            lowerJObj.put("boundType", range.lowerBoundType());
-            lowerJObj.put("value", range.lowerEndpoint());
-            rangeJObj.put("lower", lowerJObj);
-            // upper
-            JSONObject upperJObj = new JSONObject();
-            upperJObj.put("boundType", range.upperBoundType());
-            upperJObj.put("value", range.upperEndpoint());
-            rangeJObj.put("upper", upperJObj);
-            jo.put("range", rangeJObj);
-            return jo;
+            literalJObj.put("value", literal.getValueAs(Double.class));
+            break;
           }
           default:
-            throw new UnsupportedOperationException("Serialize unsupported RexLiteral with typeName: " + typeName);
+            throw new UnsupportedOperationException("Serialize unsupported RexLiteral with basicTypeName: "
+                    + basicTypeName);
         }
+
+        return new JSONObject().put("literal", literalJObj);
       }
 
       @Override
@@ -150,5 +142,102 @@ public class RexJsonSerializer {
         throw new UnsupportedOperationException("Serialize unsupported RexNode: " + fieldRef.getClass().getSimpleName());
       }
     });
+  }
+
+  private static JSONObject serializeSearch(String fieldName, RexLiteral literal) {
+    Sarg<?> sarg = literal.getValueAs(Sarg.class);
+    if (sarg == null) {
+      throw new NullPointerException("Invalid Sarg: null");
+    }
+    SqlTypeName basicTypeName = literal.getType().getSqlTypeName();
+    JSONObject rangeSetJObj = null;
+
+    for (Object rangeObj: sarg.rangeSet.asRanges()) {
+      Range<?> range = (Range<?>) rangeObj;
+      Comparable<?> lowerValue = serializeSargEndPoint(basicTypeName, range.lowerEndpoint());
+      Comparable<?> upperValue = serializeSargEndPoint(basicTypeName, range.upperEndpoint());
+      JSONObject rangeJObj = new JSONObject();
+      JSONObject inputRefOperand = new JSONObject()
+              .put("inputRef", fieldName);
+
+      if (lowerValue.equals(upperValue)) {
+        // lower value = upper value
+        JSONObject literalOperand = new JSONObject()
+                .put("literal", new JSONObject()
+                        .put("type", basicTypeName)
+                        .put("value", lowerValue));
+        rangeJObj.put("op", SqlKind.EQUALS)
+                .put("operands", new JSONArray()
+                        .put(inputRefOperand)
+                        .put(literalOperand));
+      } else {
+        // lower value != upper value
+        // lower
+        SqlKind lowerOp = range.lowerBoundType() == BoundType.OPEN ?
+                SqlKind.GREATER_THAN : SqlKind.GREATER_THAN_OR_EQUAL;
+        JSONObject lowerLiteralOperand = new JSONObject()
+                .put("literal", new JSONObject()
+                        .put("type", basicTypeName)
+                        .put("value", lowerValue));
+        JSONObject rangeLowerJObj = new JSONObject()
+                .put("op", lowerOp)
+                .put("operands", new JSONArray()
+                        .put(inputRefOperand)
+                        .put(lowerLiteralOperand));
+
+        // upper
+        SqlKind upperOp = range.upperBoundType() == BoundType.OPEN ?
+                SqlKind.LESS_THAN : SqlKind.LESS_THAN_OR_EQUAL;
+        JSONObject upperLiteralOperand = new JSONObject()
+                .put("literal", new JSONObject()
+                        .put("type", basicTypeName)
+                        .put("value", upperValue));
+        JSONObject rangeUpperJObj = new JSONObject()
+                .put("op", upperOp)
+                .put("operands", new JSONArray()
+                        .put(inputRefOperand)
+                        .put(upperLiteralOperand));
+
+        // make lower and upper an And
+        rangeJObj.put("op", SqlKind.AND)
+                .put("operands", new JSONArray()
+                        .put(rangeLowerJObj)
+                        .put(rangeUpperJObj));
+      }
+
+      // if more than one range, make them an Or
+      if (rangeSetJObj == null) {
+        rangeSetJObj = rangeJObj;
+      } else {
+        rangeSetJObj = new JSONObject()
+                .put("op", SqlKind.OR)
+                .put("operands", new JSONArray()
+                        .put(rangeSetJObj)
+                        .put(rangeJObj));
+      }
+    }
+
+    return rangeSetJObj;
+  }
+
+  private static Comparable<?> serializeSargEndPoint(SqlTypeName basicTypeName, Comparable<?> endpoint) {
+    switch (basicTypeName) {
+      case VARCHAR: {
+        return ((NlsString) endpoint).getValue();
+      }
+      case INTEGER: {
+        return ((BigDecimal) endpoint).intValue();
+      }
+      case BIGINT: {
+        return ((BigDecimal) endpoint).longValue();
+      }
+      case DECIMAL: {
+        return ((BigDecimal) endpoint).doubleValue();
+      }
+      default: {
+        throw new UnsupportedOperationException("Serialize unsupported RexLiteral with basicTypeName: "
+                + basicTypeName);
+      }
+    }
   }
 }
