@@ -6,10 +6,10 @@
 
 namespace normal::plan::prephysical {
 
-AggregatePrePOp::AggregatePrePOp(const vector<string> &aggregateColumnNames,
+AggregatePrePOp::AggregatePrePOp(const vector<string> &aggOutputColumnNames,
                                  const vector<shared_ptr<AggregatePrePFunction>> &functions):
   PrePhysicalOp(Aggregate),
-  aggregateColumnNames_(aggregateColumnNames),
+  aggOutputColumnNames_(aggOutputColumnNames),
   functions_(functions) {}
 
 string AggregatePrePOp::getName() {

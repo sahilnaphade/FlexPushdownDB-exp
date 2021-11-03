@@ -5,7 +5,7 @@
 #ifndef NORMAL_NORMAL_PLAN_INCLUDE_NORMAL_PLAN_PREPHYSICALOP_SORTPREPOP_H
 #define NORMAL_NORMAL_PLAN_INCLUDE_NORMAL_PLAN_PREPHYSICALOP_SORTPREPOP_H
 
-#include <normal/plan/Util.h>
+#include <normal/plan/prephysical/FieldDirection.h>
 #include <normal/plan/prephysical/PrePhysicalOp.h>
 
 using namespace std;

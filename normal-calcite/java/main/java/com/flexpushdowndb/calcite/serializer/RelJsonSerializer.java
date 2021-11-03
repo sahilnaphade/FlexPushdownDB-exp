@@ -108,7 +108,7 @@ public final class RelJsonSerializer {
     JSONArray aggListJArr = new JSONArray();
     for (AggregateCall aggCall: aggregate.getAggCallList()){
       JSONObject aggCallJObj = new JSONObject();
-      aggCallJObj.put("function", aggCall.getAggregation().kind.name());
+      aggCallJObj.put("aggFunction", aggCall.getAggregation().kind.name());
       if (!aggCall.getArgList().isEmpty()) {
         // Haven't got an aggregation function with multiple arguments
         int aggFieldId = aggCall.getArgList().get(0);

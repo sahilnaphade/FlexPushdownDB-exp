@@ -14,6 +14,7 @@
 
 using json = nlohmann::json;
 using namespace std;
+using namespace normal::expression::gandiva;
 
 namespace normal::plan::calcite {
 
@@ -24,10 +25,9 @@ public:
 private:
   static shared_ptr<prephysical::PrePhysicalOp> deserializeDfs(const json &jObj);
   static vector<shared_ptr<prephysical::PrePhysicalOp>> deserializeProducers(const json &jObj);
+  static shared_ptr<Expression> deserializeExpression(const json &jObj);
   static shared_ptr<prephysical::SortPrePOp> deserializeSort(const json &jObj);
   static shared_ptr<prephysical::PrePhysicalOp> deserializeAggregateOrGroup(const json &jObj);
-  static shared_ptr<prephysical::AggregatePrePOp> deserializeAggregate(const json &jObj);
-  static shared_ptr<prephysical::GroupPrePOp> deserializeGroup(const json &jObj);
 };
 
 

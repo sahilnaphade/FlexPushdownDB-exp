@@ -5,12 +5,12 @@
 #ifndef NORMAL_NORMAL_SQL_INCLUDE_NORMAL_SQL_LOGICAL_AGGREGATELOGICALFUNCTION_H
 #define NORMAL_NORMAL_SQL_INCLUDE_NORMAL_SQL_LOGICAL_AGGREGATELOGICALFUNCTION_H
 
-#include <string>
-#include <memory>
-
+#include <normal/plan/prephysical/AggregatePrePFunctionType.h>
 #include <normal/expression/Expression.h>
 #include <normal/expression/gandiva/Expression.h>
-#include <normal/plan/Util.h>
+
+#include <string>
+#include <memory>
 
 namespace normal::plan::prephysical {
 

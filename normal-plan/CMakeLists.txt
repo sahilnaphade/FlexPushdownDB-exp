@@ -48,7 +48,6 @@ target_link_libraries(normal-plan PUBLIC normal-connector)
 
 
 add_library(normal-cplan STATIC
-        include/normal/plan/Util.h
         include/normal/plan/prephysical/PrePOpType.h
         src/calcite/CalcitePlanJsonDeserializer.cpp include/normal/plan/calcite/CalcitePlanJsonDeserializer.h
         src/prephysical/PrePhysicalPlan.cpp include/normal/plan/prephysical/PrePhysicalPlan.h
