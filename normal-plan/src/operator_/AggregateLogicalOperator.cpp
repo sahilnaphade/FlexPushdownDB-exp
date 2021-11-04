@@ -7,18 +7,15 @@
 #include <normal/pushdown/aggregate/Aggregate.h>
 #include <normal/plan/operator_/type/OperatorTypes.h>
 #include <normal/expression/gandiva/Column.h>
-#include <normal/core/type/Float64Type.h>
 #include <normal/expression/gandiva/Cast.h>
 #include <normal/expression/gandiva/Multiply.h>
 #include <normal/expression/gandiva/Divide.h>
 #include <normal/expression/gandiva/Add.h>
 #include <normal/expression/gandiva/Subtract.h>
 
-using namespace normal::plan::operator_;
-
-using namespace normal::core::type;
-using namespace normal::expression;
 using namespace normal::pushdown::aggregate;
+using namespace normal::plan::operator_;
+using namespace normal::expression;
 
 AggregateLogicalOperator::AggregateLogicalOperator(
 	std::shared_ptr<std::vector<std::shared_ptr<function::AggregateLogicalFunction>>> functions,
@@ -69,34 +66,4 @@ const std::shared_ptr<LogicalOperator> &AggregateLogicalOperator::getProducer() 
 
 void AggregateLogicalOperator::setNumConcurrentUnits(int numConcurrentUnits) {
   numConcurrentUnits_ = numConcurrentUnits;
-}
-
-std::shared_ptr<normal::expression::gandiva::Expression> normal::plan::operator_::castToFloat64Type(
-        const std::shared_ptr<normal::expression::gandiva::Expression>& expr) {
-  if (typeid(*expr) == typeid(normal::expression::gandiva::Column)) {
-    return cast(expr, normal::core::type::float64Type());
-  } else if (typeid(*expr) == typeid(normal::expression::gandiva::Multiply)) {
-    auto biExpr = std::static_pointer_cast<normal::expression::gandiva::Multiply>(expr);
-    auto leftExpr = biExpr->getLeft();
-    auto rightExpr = biExpr->getRight();
-    return times(castToFloat64Type(leftExpr), castToFloat64Type(rightExpr));
-  } else if (typeid(*expr) == typeid(normal::expression::gandiva::Divide)) {
-    auto biExpr = std::static_pointer_cast<normal::expression::gandiva::Divide>(expr);
-    auto leftExpr = biExpr->getLeft();
-    auto rightExpr = biExpr->getRight();
-    return divide(castToFloat64Type(leftExpr), castToFloat64Type(rightExpr));
-  } else if (typeid(*expr) == typeid(normal::expression::gandiva::Add)) {
-    auto biExpr = std::static_pointer_cast<normal::expression::gandiva::Add>(expr);
-    auto leftExpr = biExpr->getLeft();
-    auto rightExpr = biExpr->getRight();
-    return plus(castToFloat64Type(leftExpr), castToFloat64Type(rightExpr));
-  } else if (typeid(*expr) == typeid(normal::expression::gandiva::Subtract)) {
-    auto biExpr = std::static_pointer_cast<normal::expression::gandiva::Subtract>(expr);
-    auto leftExpr = biExpr->getLeft();
-    auto rightExpr = biExpr->getRight();
-    return minus(castToFloat64Type(leftExpr), castToFloat64Type(rightExpr));
-  } else {
-    throw std::runtime_error("Unsupported expressions in aggregation functions");
-    return nullptr;
-  }
 }

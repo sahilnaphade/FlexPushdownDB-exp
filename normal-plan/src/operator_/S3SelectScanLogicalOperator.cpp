@@ -18,7 +18,6 @@ using namespace normal::plan::operator_;
 using namespace normal::pushdown;
 using namespace normal::pushdown::s3;
 using namespace normal::pushdown::project;
-using namespace normal::core::type;
 
 S3SelectScanLogicalOperator::S3SelectScanLogicalOperator(
 	const std::shared_ptr<S3SelectPartitioningScheme>& partitioningScheme) :

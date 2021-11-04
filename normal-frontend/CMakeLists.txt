@@ -7,7 +7,7 @@ project(normal-frontend VERSION "${PROJECT_VERSION}" LANGUAGES C CXX)
 add_executable(normal-frontend src/Main.cpp
         include/normal/frontend/Client.h src/Client.cpp
         include/normal/frontend/Global.h
-        src/ExecConfig.cpp include/normal/frontend/ExecConfig.h src/TestCalcite.cpp)
+        src/ExecConfig.cpp include/normal/frontend/ExecConfig.h)
 
 target_include_directories(normal-frontend PUBLIC include)
 

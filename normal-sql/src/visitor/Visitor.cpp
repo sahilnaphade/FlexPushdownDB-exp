@@ -15,8 +15,6 @@
 #include <normal/expression/gandiva/NumericLiteral.h>
 #include <normal/expression/gandiva/StringLiteral.h>
 #include <normal/expression/gandiva/Or.h>
-
-#include <normal/core/type/Types.h>
 #include <normal/plan/LogicalPlan.h>
 #include <normal/connector/MiniCatalogue.h>
 #include <normal/plan/operator_/JoinLogicalOperator.h>
@@ -30,7 +28,6 @@
 #include "normal/plan/function/SumLogicalFunction.h"
 #include <normal/plan/operator_/type/OperatorTypes.h>
 
-using namespace normal::core::type;
 using namespace normal::expression;
 using namespace normal::expression::gandiva;
 
@@ -780,9 +777,10 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitType_name(normal::sql::NormalS
   return typed_visitType_name(Context);
 }
 
-std::shared_ptr<normal::core::type::Type> normal::sql::visitor::Visitor::typed_visitType_name(normal::sql::NormalSQLParser::Type_nameContext *Context) {
+std::shared_ptr<arrow::DataType> normal::sql::visitor::Visitor::typed_visitType_name(normal::sql::NormalSQLParser::Type_nameContext *Context) {
   std::string typeName = Context->name(0)->any_name()->IDENTIFIER()->toString();
-  return Types::fromStringType(const_cast<std::string &&>(typeName));
+  throw std::runtime_error("Arrow type cast support TBD");
+//  return Types::fromStringType(const_cast<std::string &&>(typeName));
 }
 
 /**

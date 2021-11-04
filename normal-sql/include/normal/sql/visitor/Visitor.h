@@ -12,14 +12,12 @@
 #include <antlr4-runtime.h>
 
 #include <normal/core/OperatorManager.h>
-#include <normal/core/type/Type.h>
 #include <normal/expression/Expression.h>
 
 #include <normal/sql/NormalSQLBaseListener.h>
 #include <normal/sql/NormalSQLBaseVisitor.h>
 #include <normal/connector/Catalogue.h>
 
-using namespace normal::core::type;
 using namespace normal::expression;
 
 namespace normal::sql::visitor {
@@ -64,7 +62,7 @@ public:
   antlrcpp::Any visitGroupBy_clause(NormalSQLParser::GroupBy_clauseContext *ctx) override;
   antlrcpp::Any visitFunction_name(NormalSQLParser::Function_nameContext *ctx) override;
 
-  static std::shared_ptr<Type> typed_visitType_name(NormalSQLParser::Type_nameContext *Context);
+  static std::shared_ptr<arrow::DataType> typed_visitType_name(NormalSQLParser::Type_nameContext *Context);
 };
 
 }

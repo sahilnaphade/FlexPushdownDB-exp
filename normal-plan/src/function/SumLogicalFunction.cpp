@@ -5,7 +5,6 @@
 #include <normal/plan/function/SumLogicalFunction.h>
 
 #include <normal/pushdown/aggregate/Sum.h>
-#include <normal/core/type/Float64Type.h>
 #include <normal/expression/gandiva/Column.h>
 
 using namespace normal::plan;
