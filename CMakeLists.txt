@@ -38,7 +38,7 @@ include(External_primesieve)
 include(Dependency_SQLite3)
 include(External_Backward)
 include(External_CallableTraits)
-
+include(External_zlib_ng)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Modules
