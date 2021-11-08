@@ -13,7 +13,8 @@ enum PrePOpType {
   HashJoin,
   Aggregate,
   Group,
-  Sort
+  Sort,
+  Project
 };
 
 }

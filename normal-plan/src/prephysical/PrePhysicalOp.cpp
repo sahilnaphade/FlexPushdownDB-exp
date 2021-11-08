@@ -16,4 +16,8 @@ void PrePhysicalOp::setProducers(const vector<shared_ptr<PrePhysicalOp>> &produc
   producers_ = producers;
 }
 
+void PrePhysicalOp::setProjectColumnNames(const unordered_set<string> &projectColumnNames) {
+  projectColumnNames_ = projectColumnNames;
+}
+
 }

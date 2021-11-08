@@ -47,7 +47,7 @@ void e2eWithoutServer() {
   // Plan query
   string queryPath = std::filesystem::current_path()
           .parent_path()
-          .append("resources/query/ssb/3.1.sql")
+          .append("resources/query/ssb/4.1.sql")
           .string();
   string query = readFile(queryPath);
   string schemaName = "ssb-sf1-sortlineorder/csv";

@@ -55,7 +55,9 @@ add_library(normal-cplan STATIC
         src/prephysical/SortPrePOp.cpp include/normal/plan/prephysical/SortPrePOp.h
         src/prephysical/AggregatePrePOp.cpp include/normal/plan/prephysical/AggregatePrePOp.h
         src/prephysical/GroupPrePOp.cpp include/normal/plan/prephysical/GroupPrePOp.h
-        src/prephysical/AggregatePrePFunction.cpp include/normal/plan/prephysical/AggregatePrePFunction.h)
+        src/prephysical/AggregatePrePFunction.cpp include/normal/plan/prephysical/AggregatePrePFunction.h
+        src/prephysical/HashJoinPrePOp.cpp include/normal/plan/prephysical/HashJoinPrePOp.h
+        src/prephysical/ProjectPrePOp.cpp include/normal/plan/prephysical/ProjectPrePOp.h)
 
 target_include_directories(normal-cplan PUBLIC include)
 

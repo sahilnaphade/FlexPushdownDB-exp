@@ -9,6 +9,8 @@
 #include <normal/plan/prephysical/SortPrePOp.h>
 #include <normal/plan/prephysical/AggregatePrePOp.h>
 #include <normal/plan/prephysical/GroupPrePOp.h>
+#include <normal/plan/prephysical/ProjectPrePOp.h>
+#include <normal/plan/prephysical/HashJoinPrePOp.h>
 #include <nlohmann/json.hpp>
 #include <string>
 
@@ -23,11 +25,13 @@ public:
   static void deserialize(const string &planJsonString);
 
 private:
-  static shared_ptr<prephysical::PrePhysicalOp> deserializeDfs(const json &jObj);
+  static shared_ptr<prephysical::PrePhysicalOp> deserializeDfs(json &jObj);
   static vector<shared_ptr<prephysical::PrePhysicalOp>> deserializeProducers(const json &jObj);
   static shared_ptr<Expression> deserializeExpression(const json &jObj);
   static shared_ptr<prephysical::SortPrePOp> deserializeSort(const json &jObj);
-  static shared_ptr<prephysical::PrePhysicalOp> deserializeAggregateOrGroup(const json &jObj);
+  static shared_ptr<prephysical::PrePhysicalOp> deserializeAggregateOrGroup(json &jObj);
+  static shared_ptr<prephysical::PrePhysicalOp> deserializeProject(const json &jObj);
+  static shared_ptr<prephysical::HashJoinPrePOp> deserializeHashJoin(const json &jObj);
 };
 
 

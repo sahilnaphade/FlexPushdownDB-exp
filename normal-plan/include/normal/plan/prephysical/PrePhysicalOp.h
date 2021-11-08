@@ -7,6 +7,7 @@
 
 #include <normal/plan/prephysical/PrePOpType.h>
 #include <vector>
+#include <unordered_set>
 #include <string>
 
 using namespace std;
@@ -19,15 +20,15 @@ public:
   virtual ~PrePhysicalOp() = default;
 
   virtual string getName() = 0;
-
   PrePOpType getType() const;
 
   void setProducers(const vector<shared_ptr<PrePhysicalOp>> &producers);
+  void setProjectColumnNames(const unordered_set<string> &projectColumnNames);
 
 private:
   PrePOpType type_;
   vector<shared_ptr<PrePhysicalOp>> producers_;
-  long queryId_{};
+  unordered_set<string> projectColumnNames_;
 };
 
 }
