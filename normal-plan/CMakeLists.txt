@@ -57,7 +57,7 @@ add_library(normal-cplan STATIC
         src/prephysical/GroupPrePOp.cpp include/normal/plan/prephysical/GroupPrePOp.h
         src/prephysical/AggregatePrePFunction.cpp include/normal/plan/prephysical/AggregatePrePFunction.h
         src/prephysical/HashJoinPrePOp.cpp include/normal/plan/prephysical/HashJoinPrePOp.h
-        src/prephysical/ProjectPrePOp.cpp include/normal/plan/prephysical/ProjectPrePOp.h)
+        src/prephysical/ProjectPrePOp.cpp include/normal/plan/prephysical/ProjectPrePOp.h include/normal/plan/prephysical/JoinType.h)
 
 target_include_directories(normal-cplan PUBLIC include)
 

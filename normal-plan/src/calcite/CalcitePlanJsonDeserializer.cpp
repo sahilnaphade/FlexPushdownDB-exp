@@ -3,6 +3,7 @@
 //
 
 #include <normal/plan/calcite/CalcitePlanJsonDeserializer.h>
+#include <normal/plan/prephysical/JoinType.h>
 #include <normal/expression/gandiva/Expression.h>
 #include <normal/expression/gandiva/Column.h>
 #include <normal/expression/gandiva/And.h>
@@ -39,6 +40,8 @@ shared_ptr<PrePhysicalOp> CalcitePlanJsonDeserializer::deserializeDfs(json &jObj
     return deserializeAggregateOrGroup(jObj);
   } else if (opName == "EnumerableProject") {
     return deserializeProject(jObj);
+  } else if (opName == "EnumerableHashJoin") {
+    return deserializeHashJoin(jObj);
   } else {
 //    return nullptr;
     throw runtime_error("Unsupported PrePhysicalOp: " + opName);
@@ -101,6 +104,10 @@ shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeExpression(const 
   else {
     throw runtime_error("Unsupported expression: neither a column or an operation");
   }
+}
+
+pair<vector<string>, vector<string>> CalcitePlanJsonDeserializer::deserializeHashJoinCondition(const json &jObj) {
+  return pair<vector<string>, vector<string>>();
 }
 
 shared_ptr<SortPrePOp> CalcitePlanJsonDeserializer::deserializeSort(const json &jObj) {
@@ -253,7 +260,26 @@ shared_ptr<prephysical::PrePhysicalOp> CalcitePlanJsonDeserializer::deserializeP
 }
 
 shared_ptr<prephysical::HashJoinPrePOp> CalcitePlanJsonDeserializer::deserializeHashJoin(const json &jObj) {
-  return shared_ptr<prephysical::HashJoinPrePOp>();
+  // deserialize join type
+  const auto &joinTypeStr = jObj["joinType"].get<string>();
+  JoinType joinType;
+  if (joinTypeStr == "INNER") {
+    joinType = Inner;
+  } else {
+    throw runtime_error("Unsupported join type: " + joinTypeStr);
+  }
+
+  // deserialize hash join condition
+  const auto &joinCondJObj = jObj["condition"];
+  const pair<vector<string>, vector<string>> &joinColumnNames = deserializeHashJoinCondition(joinCondJObj);
+
+  shared_ptr<HashJoinPrePOp> hashJoinPrePOp = make_shared<HashJoinPrePOp>(joinType,
+                                                                         joinColumnNames.first,
+                                                                         joinColumnNames.second);
+
+  // deserialize producers
+  hashJoinPrePOp->setProducers(deserializeProducers(jObj));
+  return hashJoinPrePOp;
 }
 
 }

@@ -5,13 +5,17 @@
 #include <normal/plan/prephysical/HashJoinPrePOp.h>
 
 namespace normal::plan::prephysical {
-HashJoinPrePOp::HashJoinPrePOp(const vector<string> &leftColumnNames,
+
+HashJoinPrePOp::HashJoinPrePOp(JoinType joinType,
+                               const vector<string> &leftColumnNames,
                                const vector<string> &rightColumnNames) :
   PrePhysicalOp(HashJoin),
+  joinType_(joinType),
   leftColumnNames_(leftColumnNames),
   rightColumnNames_(rightColumnNames) {}
 
 string HashJoinPrePOp::getName() {
   return "HashJoinPrePOp";
 }
+
 }
