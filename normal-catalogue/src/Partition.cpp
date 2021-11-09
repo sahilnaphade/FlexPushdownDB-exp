@@ -2,7 +2,9 @@
 // Created by matt on 15/4/20.
 //
 
-#include "normal/connector/partition/Partition.h"
+#include <normal/catalogue/Partition.h>
+
+namespace normal::catalogue {
 
 const long &Partition::getNumBytes() const {
   return numBytes;
@@ -10,4 +12,6 @@ const long &Partition::getNumBytes() const {
 
 void Partition::setNumBytes(const long &NumBytes) {
   numBytes = NumBytes;
+}
+
 }

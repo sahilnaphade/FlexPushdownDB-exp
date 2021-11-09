@@ -11,10 +11,11 @@
 
 /**
  * Base class for partition meta data
- *
- * TODO: Just a placeholder at the moment
  */
+namespace normal::catalogue {
+
 class Partition {
+
 public:
   virtual ~Partition() = default;
 
@@ -25,6 +26,7 @@ public:
   virtual size_t hash() = 0;
 
   [[nodiscard]] const long &getNumBytes() const;
+
   void setNumBytes(const long &NumBytes);
 
 private:
@@ -39,9 +41,11 @@ struct PartitionPointerHash {
 };
 
 struct PartitionPointerPredicate {
-  inline bool operator()(const std::shared_ptr<Partition>& lhs, const std::shared_ptr<Partition>& rhs) const {
+  inline bool operator()(const std::shared_ptr<Partition> &lhs, const std::shared_ptr<Partition> &rhs) const {
     return lhs->equalTo(rhs);
   }
 };
+
+}
 
 #endif //NORMAL_NORMAL_SQL_INCLUDE_NORMAL_SQL_CONNECTOR_PARTITION_PARTITION_H

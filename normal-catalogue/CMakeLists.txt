@@ -9,7 +9,15 @@ add_library(normal-catalogue STATIC
         include/normal/catalogue/Globals.h
         include/normal/catalogue/CatalogueEntryType.h
         src/Catalogue.cpp include/normal/catalogue/Catalogue.h
-        src/CatalogueEntry.cpp include/normal/catalogue/CatalogueEntry.h)
+        src/CatalogueEntry.cpp include/normal/catalogue/CatalogueEntry.h
+        src/Relation.cpp include/normal/catalogue/Relation.h
+        src/Partition.cpp include/normal/catalogue/Partition.h
+        src/s3/S3CatalogueEntry.cpp include/normal/catalogue/s3/S3CatalogueEntry.h
+        src/s3/S3Relation.cpp include/normal/catalogue/s3/S3Relation.h
+        src/s3/S3Partition.cpp include/normal/catalogue/s3/S3Partition.h
+        src/local-fs/LocalFSCatalogueEntry.cpp include/normal/catalogue/local-fs/LocalFSCatalogueEntry.h
+        src/local-fs/LocalFSRelation.cpp include/normal/catalogue/local-fs/LocalFSRelation.h
+        src/local-fs/LocalFSPartition.cpp include/normal/catalogue/local-fs/LocalFSPartition.h)
 
 #add_library(normal-catalogue STATIC
 #        include/normal/connector/Globals.h
