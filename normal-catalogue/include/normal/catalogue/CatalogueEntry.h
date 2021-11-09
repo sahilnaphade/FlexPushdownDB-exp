@@ -5,31 +5,31 @@
 #ifndef NORMAL_NORMAL_SQL_INCLUDE_NORMAL_SQL_CONNECTOR_CATALOGUEENTRY_H
 #define NORMAL_NORMAL_SQL_INCLUDE_NORMAL_SQL_CONNECTOR_CATALOGUEENTRY_H
 
+#include <normal/catalogue/Catalogue.h>
+#include <normal/catalogue/CatalogueEntryType.h>
 #include <memory>
 #include <string>
 
-#include <normal/plan/operator_/ScanLogicalOperator.h>
-#include <normal/connector/Catalogue.h>
-
-namespace normal::connector {
+namespace normal::catalogue {
 
 class Catalogue;
 
 class CatalogueEntry {
 
-private:
-  std::string alias_;
-  std::shared_ptr<Catalogue> catalogue_;
-
 public:
-  explicit CatalogueEntry(std::string Alias,
+  explicit CatalogueEntry(CatalogueEntryType type,
+                          std::string name,
                           std::shared_ptr<Catalogue> Catalogue);
   virtual ~CatalogueEntry() = default;
 
-  [[nodiscard]] const std::string &getAlias() const;
+  [[nodiscard]] const std::string &getName() const;
   [[nodiscard]] const std::shared_ptr<Catalogue> &getCatalogue() const;
+  [[nodiscard]] CatalogueEntryType getType() const;
 
-  virtual std::shared_ptr<normal::plan::operator_::ScanLogicalOperator> toLogicalOperator() = 0;
+private:
+  CatalogueEntryType type_;
+  std::string name_;
+  std::shared_ptr<Catalogue> catalogue_;
 
 };
 

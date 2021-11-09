@@ -5,7 +5,7 @@
 #ifndef NORMAL_NORMAL_SQL_INCLUDE_NORMAL_SQL_CONNECTOR_LOCAL_FS_LOCALFILESYSTEMCONNECTOR_H
 #define NORMAL_NORMAL_SQL_INCLUDE_NORMAL_SQL_CONNECTOR_LOCAL_FS_LOCALFILESYSTEMCONNECTOR_H
 
-#include <normal/connector/Connector.h>
+#include "../../../../ATTIC/Connector.h"
 
 namespace normal::connector::local_fs {
 

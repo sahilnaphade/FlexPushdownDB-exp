@@ -21,9 +21,8 @@ add_library(normal-cache STATIC
 
 target_include_directories(normal-cache PUBLIC include)
 
-target_link_libraries(normal-cache PRIVATE spdlog::spdlog)
-target_link_libraries(normal-cache PRIVATE fmt::fmt)
-target_link_libraries(normal-cache PUBLIC arrow_static)
+target_link_libraries(normal-cache PUBLIC spdlog::spdlog)
+target_link_libraries(normal-cache PUBLIC fmt::fmt)
 target_link_libraries(normal-cache PUBLIC normal-connector)
 target_link_libraries(normal-cache PUBLIC normal-tuple)
 

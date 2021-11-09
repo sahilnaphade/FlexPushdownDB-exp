@@ -5,10 +5,7 @@
 #ifndef NORMAL_NORMAL_SQL_SRC_S3SELECTCONNECTOR_H
 #define NORMAL_NORMAL_SQL_SRC_S3SELECTCONNECTOR_H
 
-#include <normal/connector/Connector.h>
-
-#include <normal/pushdown/AWSClient.h>
-#include <normal/connector/Connector.h>
+#include "../../../../ATTIC/Connector.h"
 
 namespace normal::connector::s3 {
 
