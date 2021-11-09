@@ -2,35 +2,39 @@
 // Created by matt on 15/4/20.
 //
 
-#ifndef NORMAL_NORMAL_CONNECTOR_INCLUDE_NORMAL_CONNECTOR_S3_S3SELECTPARTITION_H
-#define NORMAL_NORMAL_CONNECTOR_INCLUDE_NORMAL_CONNECTOR_S3_S3SELECTPARTITION_H
+#ifndef NORMAL_NORMAL_CATALOGUE_INCLUDE_NORMAL_CATALOGUE_S3_S3PARTITION_H
+#define NORMAL_NORMAL_CATALOGUE_INCLUDE_NORMAL_CATALOGUE_S3_S3PARTITION_H
 
 #include <normal/catalogue/Partition.h>
 #include <string>
 #include <memory>
 
+using namespace std;
+
 namespace normal::catalogue::s3 {
 
 class S3Partition: public Partition {
 public:
-  explicit S3Partition(std::string bucket, std::string object);
-  explicit S3Partition(std::string bucket, std::string object, long numBytes);
+  explicit S3Partition(string bucket, 
+                       string object, 
+                       long numBytes,
+                       const shared_ptr<unordered_map<string, pair<Expression, Expression>>> &zoneMap);
 
-  [[nodiscard]] const std::string &getBucket() const;
-  [[nodiscard]] const std::string &getObject() const;
+  [[nodiscard]] const string &getBucket() const;
+  [[nodiscard]] const string &getObject() const;
 
-  std::string toString() override;
+  string toString() override;
   size_t hash() override;
 
-  bool equalTo(std::shared_ptr<Partition> other) override;
+  bool equalTo(shared_ptr<Partition> other) override;
 
   bool operator==(const S3Partition& other);
 
 private:
-  std::string s3Bucket_;
-  std::string s3Object_;
+  string s3Bucket_;
+  string s3Object_;
 };
 
 }
 
-#endif //NORMAL_NORMAL_CONNECTOR_INCLUDE_NORMAL_CONNECTOR_S3_S3SELECTPARTITION_H
+#endif //NORMAL_NORMAL_CATALOGUE_INCLUDE_NORMAL_CATALOGUE_S3_S3PARTITION_H

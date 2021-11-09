@@ -11,7 +11,7 @@
 
 using namespace Aws::S3;
 
-namespace normal::connector::s3 {
+namespace normal::catalogue::s3 {
 
 class S3Util {
 

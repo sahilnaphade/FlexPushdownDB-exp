@@ -2,8 +2,8 @@
 // Created by matt on 15/4/20.
 //
 
-#ifndef NORMAL_NORMAL_CONNECTOR_INCLUDE_NORMAL_CONNECTOR_S3_S3SELECTPARTITION_H
-#define NORMAL_NORMAL_CONNECTOR_INCLUDE_NORMAL_CONNECTOR_S3_S3SELECTPARTITION_H
+#ifndef NORMAL_NORMAL_CATALOGUE_INCLUDE_NORMAL_CATALOGUE_LOCAL_FS_LOCALFSPARTITION_H
+#define NORMAL_NORMAL_CATALOGUE_INCLUDE_NORMAL_CATALOGUE_LOCAL_FS_LOCALFSPARTITION_H
 
 #include <normal/catalogue/Partition.h>
 #include <string>
@@ -13,21 +13,23 @@ namespace normal::catalogue::local_fs {
 
 class LocalFSPartition: public Partition {
 public:
-  explicit LocalFSPartition(std::string path);
+  LocalFSPartition(long numBytes, 
+                   const shared_ptr<unordered_map<string, pair<Expression, Expression>>> &zoneMap,
+                   const string &path);
 
-  [[nodiscard]] const std::string &getPath() const;
+  [[nodiscard]] const string &getPath() const;
 
-  std::string toString() override;
+  string toString() override;
   size_t hash() override;
 
-  bool equalTo(std::shared_ptr<Partition> other) override;
+  bool equalTo(shared_ptr<Partition> other) override;
 
   bool operator==(const LocalFSPartition& other);
 
 private:
-  std::string path_;
+  string path_;
 };
 
 }
 
-#endif //NORMAL_NORMAL_CONNECTOR_INCLUDE_NORMAL_CONNECTOR_S3_S3SELECTPARTITION_H
+#endif //NORMAL_NORMAL_CATALOGUE_INCLUDE_NORMAL_CATALOGUE_LOCAL_FS_LOCALFSPARTITION_H

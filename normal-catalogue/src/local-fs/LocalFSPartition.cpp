@@ -6,24 +6,27 @@
 #include <utility>
 
 namespace normal::catalogue::local_fs {
+  
+LocalFSPartition::LocalFSPartition(long numBytes,
+                                   const shared_ptr<unordered_map<string, pair<Expression, Expression>>> &zoneMap,
+                                   const string &path) : 
+  Partition(numBytes, zoneMap), 
+  path_(path) {}
 
-LocalFSPartition::LocalFSPartition(std::string path) :
-        path_(std::move(path)) {}
-
-const std::string &LocalFSPartition::getPath() const {
+const string &LocalFSPartition::getPath() const {
   return path_;
 }
 
-std::string LocalFSPartition::toString() {
+string LocalFSPartition::toString() {
   return "file://" + path_;
 }
 
 size_t LocalFSPartition::hash() {
-  return std::hash<std::string>()("file://" + path_);
+  return std::hash<string>()("file://" + path_);
 }
 
-bool LocalFSPartition::equalTo(std::shared_ptr<Partition> other) {
-  auto typedOther = std::static_pointer_cast<const LocalFSPartition>(other);
+bool LocalFSPartition::equalTo(shared_ptr<Partition> other) {
+  auto typedOther = static_pointer_cast<const LocalFSPartition>(other);
   if(!typedOther){
 	return false;
   }

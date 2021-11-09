@@ -10,13 +10,14 @@ add_library(normal-catalogue STATIC
         include/normal/catalogue/CatalogueEntryType.h
         src/Catalogue.cpp include/normal/catalogue/Catalogue.h
         src/CatalogueEntry.cpp include/normal/catalogue/CatalogueEntry.h
-        src/Relation.cpp include/normal/catalogue/Relation.h
+        src/Table.cpp include/normal/catalogue/Table.h
         src/Partition.cpp include/normal/catalogue/Partition.h
         src/s3/S3CatalogueEntry.cpp include/normal/catalogue/s3/S3CatalogueEntry.h
-        src/s3/S3Relation.cpp include/normal/catalogue/s3/S3Relation.h
+        src/s3/S3Table.cpp include/normal/catalogue/s3/S3Table.h
         src/s3/S3Partition.cpp include/normal/catalogue/s3/S3Partition.h
+        src/s3/S3Util.cpp include/normal/catalogue/s3/S3Util.h
         src/local-fs/LocalFSCatalogueEntry.cpp include/normal/catalogue/local-fs/LocalFSCatalogueEntry.h
-        src/local-fs/LocalFSRelation.cpp include/normal/catalogue/local-fs/LocalFSRelation.h
+        src/local-fs/LocalFSTable.cpp include/normal/catalogue/local-fs/LocalFSTable.h
         src/local-fs/LocalFSPartition.cpp include/normal/catalogue/local-fs/LocalFSPartition.h)
 
 #add_library(normal-catalogue STATIC
@@ -45,6 +46,7 @@ target_link_libraries(normal-catalogue PUBLIC aws-cpp-sdk-s3)
 target_link_libraries(normal-catalogue PUBLIC spdlog::spdlog)
 target_link_libraries(normal-catalogue PUBLIC fmt::fmt)
 target_link_libraries(normal-catalogue PUBLIC expected)
+target_link_libraries(normal-catalogue PUBLIC normal-expression-gandiva)
 
 
 #-----------------------------------------------------------------------------------------------------------------------

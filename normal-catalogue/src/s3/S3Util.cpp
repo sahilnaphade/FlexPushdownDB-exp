@@ -2,10 +2,10 @@
 // Created by matt on 16/6/20.
 //
 
-#include <normal/connector/s3/S3Util.h>
+#include <normal/catalogue/s3/S3Util.h>
 #include <aws/s3/model/ListObjectsRequest.h>
 
-using namespace normal::connector::s3;
+namespace normal::catalogue::s3 {
 
 std::unordered_map<std::string, long>
 S3Util::listObjects(const std::string& s3Bucket,
@@ -45,4 +45,6 @@ S3Util::listObjects(const std::string& s3Bucket,
   }
 
   return partitionMap;
+}
+
 }
