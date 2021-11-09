@@ -11,6 +11,8 @@
 #include <normal/plan/prephysical/GroupPrePOp.h>
 #include <normal/plan/prephysical/ProjectPrePOp.h>
 #include <normal/plan/prephysical/HashJoinPrePOp.h>
+#include <normal/plan/prephysical/FilterPrePOp.h>
+#include <normal/plan/prephysical/FilterableScanPrePOp.h>
 #include <nlohmann/json.hpp>
 #include <string>
 
@@ -35,6 +37,7 @@ private:
   static shared_ptr<prephysical::PrePhysicalOp> deserializeAggregateOrGroup(json &jObj);
   static shared_ptr<prephysical::PrePhysicalOp> deserializeProject(const json &jObj);
   static shared_ptr<prephysical::HashJoinPrePOp> deserializeHashJoin(const json &jObj);
+  static shared_ptr<prephysical::PrePhysicalOp> deserializeFilterOrFilterableScan(json &jObj);
 };
 
 

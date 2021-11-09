@@ -53,15 +53,20 @@ add_library(normal-cplan STATIC
         src/prephysical/PrePhysicalPlan.cpp include/normal/plan/prephysical/PrePhysicalPlan.h
         src/prephysical/PrePhysicalOp.cpp include/normal/plan/prephysical/PrePhysicalOp.h
         src/prephysical/SortPrePOp.cpp include/normal/plan/prephysical/SortPrePOp.h
+        include/normal/plan/prephysical/AggregatePrePFunctionType.h
+        src/prephysical/AggregatePrePFunction.cpp include/normal/plan/prephysical/AggregatePrePFunction.h
         src/prephysical/AggregatePrePOp.cpp include/normal/plan/prephysical/AggregatePrePOp.h
         src/prephysical/GroupPrePOp.cpp include/normal/plan/prephysical/GroupPrePOp.h
-        src/prephysical/AggregatePrePFunction.cpp include/normal/plan/prephysical/AggregatePrePFunction.h
+        include/normal/plan/prephysical/JoinType.h
         src/prephysical/HashJoinPrePOp.cpp include/normal/plan/prephysical/HashJoinPrePOp.h
-        src/prephysical/ProjectPrePOp.cpp include/normal/plan/prephysical/ProjectPrePOp.h include/normal/plan/prephysical/JoinType.h)
+        src/prephysical/ProjectPrePOp.cpp include/normal/plan/prephysical/ProjectPrePOp.h
+        src/prephysical/FilterPrePOp.cpp include/normal/plan/prephysical/FilterPrePOp.h
+        src/prephysical/FilterableScanPrePOp.cpp include/normal/plan/prephysical/FilterableScanPrePOp.h)
 
 target_include_directories(normal-cplan PUBLIC include)
 
 target_link_libraries(normal-cplan PUBLIC nlohmann_json)
+target_link_libraries(normal-cplan PUBLIC normal-connector)
 target_link_libraries(normal-cplan PUBLIC normal-expression-gandiva)
 target_link_libraries(normal-cplan PUBLIC normal-util)
 

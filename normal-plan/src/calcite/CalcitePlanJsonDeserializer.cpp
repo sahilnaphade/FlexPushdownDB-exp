@@ -17,8 +17,11 @@
 #include <normal/expression/gandiva/GreaterThan.h>
 #include <normal/expression/gandiva/LessThanOrEqualTo.h>
 #include <normal/expression/gandiva/GreaterThanOrEqualTo.h>
+#include <normal/expression/gandiva/StringLiteral.h>
+#include <normal/expression/gandiva/NumericLiteral.h>
 #include <normal/tuple/ColumnName.h>
 
+#include <fmt/format.h>
 #include <unordered_set>
 
 using namespace normal::plan::prephysical;
@@ -42,9 +45,11 @@ shared_ptr<PrePhysicalOp> CalcitePlanJsonDeserializer::deserializeDfs(json &jObj
     return deserializeProject(jObj);
   } else if (opName == "EnumerableHashJoin") {
     return deserializeHashJoin(jObj);
+  } else if (opName == "EnumerableFilter") {
+    return deserializeFilterOrFilterableScan(jObj);
   } else {
 //    return nullptr;
-    throw runtime_error("Unsupported PrePhysicalOp: " + opName);
+    throw runtime_error(fmt::format("Unsupported PrePhysicalOp type, {}", opName));
   }
 }
 
@@ -63,6 +68,27 @@ shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeExpression(const 
   if (jObj.contains("inputRef")) {
     const auto &columnName = ColumnName::canonicalize(jObj["inputRef"].get<string>());
     return col(columnName);
+  }
+
+  // literal
+  else if (jObj.contains("literal")) {
+    const auto &literalJObj = jObj["literal"];
+    const auto &type = literalJObj["type"].get<string>();
+    if (type == "VARCHAR") {
+      const string &value = literalJObj["value"].get<string>();
+      return str_lit(value);
+    } else if (type == "INTEGER") {
+      const int value = literalJObj["value"].get<int>();
+      return num_lit<arrow::Int32Type>(value);
+    } else if (type == "BIGINT") {
+      const long value = literalJObj["value"].get<long>();
+      return num_lit<arrow::Int64Type>(value);
+    } else if (type == "DECIMAL") {
+      const double value = literalJObj["value"].get<double>();
+      return num_lit<arrow::DoubleType>(value);
+    } else {
+      throw runtime_error(fmt::format("Unsupported literal type, {}, from: {}", type, to_string(literalJObj)));
+    }
   }
 
   // binary operation
@@ -97,17 +123,43 @@ shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeExpression(const 
         return gte(leftExpr, rightExpr);
       }
     } else {
-      throw runtime_error("Unsupported expression type: " + opName);
+      throw runtime_error(fmt::format("Unsupported expression type, {}, from: {}", opName, to_string(jObj)));
     }
   }
 
   else {
-    throw runtime_error("Unsupported expression: neither a column or an operation");
+    throw runtime_error(fmt::format("Unsupported expression type, only column, literal and operation are "
+                                    "supported, from: {}", to_string(jObj)));
   }
 }
 
 pair<vector<string>, vector<string>> CalcitePlanJsonDeserializer::deserializeHashJoinCondition(const json &jObj) {
-  return pair<vector<string>, vector<string>>();
+  const string &opName = jObj["op"].get<string>();
+  if (opName == "AND") {
+    vector<string> leftColumnNames, rightColumnNames;
+    auto childJObj1 = jObj["operands"].get<vector<json>>()[0];
+    auto childJObj2 = jObj["operands"].get<vector<json>>()[1];
+    const auto &childJoinColumns1 = deserializeHashJoinCondition(childJObj1);
+    const auto &childJoinColumns2 = deserializeHashJoinCondition(childJObj2);
+    leftColumnNames.insert(leftColumnNames.end(), childJoinColumns1.first.begin(), childJoinColumns1.first.end());
+    leftColumnNames.insert(leftColumnNames.end(), childJoinColumns2.first.begin(), childJoinColumns2.first.end());
+    rightColumnNames.insert(rightColumnNames.end(), childJoinColumns1.second.begin(), childJoinColumns1.second.end());
+    rightColumnNames.insert(rightColumnNames.end(), childJoinColumns2.second.begin(), childJoinColumns2.second.end());
+    return make_pair(leftColumnNames, rightColumnNames);
+  }
+
+  else if (opName == "EQUALS") {
+    auto leftJObj = jObj["operands"].get<vector<json>>()[0];
+    auto rightJObj = jObj["operands"].get<vector<json>>()[1];
+    auto leftColumnName = leftJObj["inputRef"].get<string>();
+    auto rightColumnName = rightJObj["inputRef"].get<string>();
+    return make_pair(vector<string>{leftColumnName}, vector<string>{rightColumnName});
+  }
+
+  else {
+    throw runtime_error(fmt::format("Invalid hash join condition operation type, {}, from: {}",
+                                    opName, to_string(jObj)));
+  }
 }
 
 shared_ptr<SortPrePOp> CalcitePlanJsonDeserializer::deserializeSort(const json &jObj) {
@@ -155,7 +207,8 @@ shared_ptr<PrePhysicalOp> CalcitePlanJsonDeserializer::deserializeAggregateOrGro
     if (aggFunctionStr == "SUM0" || aggFunctionStr == "SUM") {
       aggFunctionType = SUM;
     } else {
-      throw runtime_error("Unsupported aggregation function type: " + aggFunctionStr);
+      throw runtime_error(fmt::format("Unsupported aggregation function type, {}, from: {}",
+                                      aggFunctionStr, to_string(aggregationJObj)));
     }
 
     // aggregate expr
@@ -266,7 +319,7 @@ shared_ptr<prephysical::HashJoinPrePOp> CalcitePlanJsonDeserializer::deserialize
   if (joinTypeStr == "INNER") {
     joinType = Inner;
   } else {
-    throw runtime_error("Unsupported join type: " + joinTypeStr);
+    throw runtime_error(fmt::format("Unsupported join type, {}, from: {}", joinTypeStr, to_string(jObj)));
   }
 
   // deserialize hash join condition
@@ -280,6 +333,27 @@ shared_ptr<prephysical::HashJoinPrePOp> CalcitePlanJsonDeserializer::deserialize
   // deserialize producers
   hashJoinPrePOp->setProducers(deserializeProducers(jObj));
   return hashJoinPrePOp;
+}
+
+shared_ptr<prephysical::PrePhysicalOp> CalcitePlanJsonDeserializer::deserializeFilterOrFilterableScan(json &jObj) {
+  // deserialize filter predicate
+  const auto &predicate = deserializeExpression(jObj["condition"]);
+
+  auto producerJObj = jObj["inputs"].get<vector<json>>()[0];
+  if (producerJObj["operator"].get<string>() == "EnumerableScan") {
+    // if the producer is scan, combine them as filterable scan
+
+    return shared_ptr<prephysical::PrePhysicalOp>();
+  }
+
+  else {
+    // else, do regular deserialization
+    shared_ptr<FilterPrePOp> filterPrePOp = make_shared<FilterPrePOp>(predicate);
+
+    // deserialize producers
+    filterPrePOp->setProducers(deserializeProducers(jObj));
+    return filterPrePOp;
+  }
 }
 
 }
