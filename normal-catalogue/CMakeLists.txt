@@ -15,6 +15,7 @@ add_library(normal-catalogue STATIC
         src/s3/S3CatalogueEntry.cpp include/normal/catalogue/s3/S3CatalogueEntry.h
         src/s3/S3Table.cpp include/normal/catalogue/s3/S3Table.h
         src/s3/S3Partition.cpp include/normal/catalogue/s3/S3Partition.h
+        src/s3/S3CatalogueEntryReader.cpp include/normal/catalogue/s3/S3CatalogueEntryReader.h
         src/s3/S3Util.cpp include/normal/catalogue/s3/S3Util.h
         src/local-fs/LocalFSCatalogueEntry.cpp include/normal/catalogue/local-fs/LocalFSCatalogueEntry.h
         src/local-fs/LocalFSTable.cpp include/normal/catalogue/local-fs/LocalFSTable.h

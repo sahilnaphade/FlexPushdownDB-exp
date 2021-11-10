@@ -39,8 +39,8 @@ endif()
 add_executable(TestCalcite src/TestCalcite.cpp)
 
 target_link_libraries(TestCalcite PRIVATE normal-calcite)
-target_link_libraries(TestCalcite PRIVATE normal-util)
 target_link_libraries(TestCalcite PRIVATE normal-cplan)
+target_link_libraries(TestCalcite PRIVATE normal-util)
 # need to add and link libraries on mac
 if (${APPLE})
   target_link_directories(TestCalcite PRIVATE /usr/local/opt/openssl/lib)

@@ -20,7 +20,7 @@ public class SchemaReader {
     Path schemaDirPath = metadataRootPath.resolve(schemaName);
 
     // Read schema
-    Path schemaPath = schemaDirPath.resolve("schemas");
+    Path schemaPath = schemaDirPath.resolve("schema.json");
     Map<String, Map<String, SqlTypeName>> fieldTypesMap = readFieldTypes(schemaPath);
 
     // Read stats
@@ -40,14 +40,15 @@ public class SchemaReader {
 
   private static Map<String, Map<String, SqlTypeName>> readFieldTypes(Path schemaPath) throws Exception {
     Map<String, Map<String, SqlTypeName>> fieldTypesMap = new HashMap<>();
-    for (String line: FileUtils.readFileByLine(schemaPath)) {
+    JSONObject jObj = new JSONObject(FileUtils.readFile(schemaPath));
+    for (Object o: jObj.getJSONArray("tables")) {
+      JSONObject schemaJObj = (JSONObject) o;
+      String tableName = schemaJObj.getString("name");
       Map<String, SqlTypeName> fieldTypes = new HashMap<>();
-      String[] lineSplits = line.split(":");
-      String tableName = lineSplits[0];
-      for (String fieldTypeStr: lineSplits[1].split(",")) {
-        String[] fieldTypeStrSplits = fieldTypeStr.split("/");
-        String fieldName = fieldTypeStrSplits[0];
-        SqlTypeName fieldType = stringToSqlTypeName(fieldTypeStrSplits[1]);
+      for (Object o1: schemaJObj.getJSONArray("fields")) {
+        JSONObject fieldJObj = (JSONObject) o1;
+        String fieldName = fieldJObj.getString("name");
+        SqlTypeName fieldType = stringToSqlTypeName(fieldJObj.getString("type"));
         fieldTypes.put(fieldName, fieldType);
       }
       fieldTypesMap.put(tableName, fieldTypes);
@@ -59,10 +60,10 @@ public class SchemaReader {
     Map<String, Double> rowCounts = new HashMap<>();
     JSONObject jObj = new JSONObject(FileUtils.readFile(statsPath));
     for (Object o: jObj.getJSONArray("tables")) {
-      JSONObject tableStats = (JSONObject) o;
-      String tableName = tableStats.getString("name");
-      JSONObject statsMap = tableStats.getJSONObject("stats");
-      double rowCount = statsMap.getDouble("rowCount");
+      JSONObject tableStatsJObj = (JSONObject) o;
+      String tableName = tableStatsJObj.getString("name");
+      JSONObject statsMapJObj = tableStatsJObj.getJSONObject("stats");
+      double rowCount = statsMapJObj.getDouble("rowCount");
       rowCounts.put(tableName, rowCount);
     }
     return rowCounts;
@@ -74,7 +75,7 @@ public class SchemaReader {
         return SqlTypeName.INTEGER;
       case "int64":
         return SqlTypeName.BIGINT;
-      case "utf8":
+      case "string":
         return SqlTypeName.VARCHAR;
       case "boolean":
         return SqlTypeName.BOOLEAN;

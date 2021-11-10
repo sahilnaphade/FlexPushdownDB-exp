@@ -66,9 +66,7 @@ add_library(normal-cplan STATIC
 target_include_directories(normal-cplan PUBLIC include)
 
 target_link_libraries(normal-cplan PUBLIC nlohmann_json)
-target_link_libraries(normal-cplan PUBLIC normal-connector)
-target_link_libraries(normal-cplan PUBLIC normal-expression-gandiva)
-target_link_libraries(normal-cplan PUBLIC normal-util)
+target_link_libraries(normal-cplan PUBLIC normal-catalogue)
 
 
 #-----------------------------------------------------------------------------------------------------------------------

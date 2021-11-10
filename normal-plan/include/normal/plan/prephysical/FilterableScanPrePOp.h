@@ -7,16 +7,17 @@
 
 #include <normal/plan/prephysical/PrePhysicalOp.h>
 #include <normal/expression/gandiva/Expression.h>
-#include <normal/connector/partition/PartitioningScheme.h>
+#include <normal/catalogue/Table.h>
 
 using namespace normal::expression::gandiva;
+using namespace normal::catalogue;
 
 namespace normal::plan::prephysical {
 
 class FilterableScanPrePOp: public PrePhysicalOp {
 private:
   shared_ptr<Expression> predicate_;
-  shared_ptr<PartitioningScheme> partitioningScheme_;
+  shared_ptr<Table> table_;
 };
 
 }
