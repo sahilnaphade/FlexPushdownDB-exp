@@ -19,8 +19,8 @@ class Table {
 public:
   Table(string name,
         const shared_ptr<arrow::Schema>& schema,
-        const unordered_map<string, int> &columnLengthMap,
-        int rowLength,
+        const unordered_map<string, int> &apxColumnLengthMap,
+        int apxRowLength,
         const unordered_set<string> &zoneMapColumnNames,
         const shared_ptr<CatalogueEntry> &catalogueEntry);
 
@@ -29,8 +29,8 @@ public:
 private:
   string name_;
   shared_ptr<arrow::Schema> schema_;
-  unordered_map<string, int> columnLengthMap_;
-  int rowLength_;
+  unordered_map<string, int> apxColumnLengthMap_;   // apx: approximate
+  int apxRowLength_;
   unordered_set<string> zoneMapColumnNames_;
   shared_ptr<CatalogueEntry> catalogueEntry_;
 };

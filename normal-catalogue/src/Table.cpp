@@ -9,14 +9,14 @@ namespace normal::catalogue {
 
 Table::Table(string name,
              const shared_ptr<arrow::Schema>& schema,
-             const unordered_map<string, int> &columnLengthMap,
-             int rowLength,
+             const unordered_map<string, int> &apxColumnLengthMap,
+             int apxRowLength,
              const unordered_set<string> &zoneMapColumnNames,
              const shared_ptr<CatalogueEntry> &catalogueEntry) :
   name_(std::move(name)),
   schema_(schema),
-  columnLengthMap_(columnLengthMap),
-  rowLength_(rowLength),
+  apxColumnLengthMap_(apxColumnLengthMap),
+  apxRowLength_(apxRowLength),
   zoneMapColumnNames_(zoneMapColumnNames),
   catalogueEntry_(catalogueEntry) {}
 

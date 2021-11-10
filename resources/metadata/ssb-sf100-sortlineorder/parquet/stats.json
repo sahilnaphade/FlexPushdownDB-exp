@@ -1,5 +1,5 @@
 {
-  "schemaName": "ssb-sf10-sortlineorder/csv/",
+  "schemaName": "ssb-sf100-sortlineorder/parquet/",
   "tables": [
     {
       "name": "date",
@@ -29,7 +29,7 @@
     {
       "name": "supplier",
       "stats": {
-        "rowCount": 20000,
+        "rowCount": 200000,
         "apxColumnLength": {
           "s_suppkey": 4,
           "s_name": 25,
@@ -44,7 +44,7 @@
     {
       "name": "customer",
       "stats": {
-        "rowCount": 300000,
+        "rowCount": 3000000,
         "apxColumnLength": {
           "c_custkey": 4,
           "c_name": 25,
@@ -60,7 +60,7 @@
     {
       "name": "part",
       "stats": {
-        "rowCount": 800000,
+        "rowCount": 1400000,
         "apxColumnLength": {
           "p_partkey": 4,
           "p_name": 22,
@@ -77,7 +77,7 @@
     {
       "name": "lineorder",
       "stats": {
-        "rowCount": 59986217,
+        "rowCount": 600048146,
         "apxColumnLength": {
           "lo_orderkey": 4,
           "lo_linenumber": 4,
