@@ -18,7 +18,11 @@ add_library(normal-catalogue STATIC
         src/s3/S3CatalogueEntryReader.cpp include/normal/catalogue/s3/S3CatalogueEntryReader.h
         src/local-fs/LocalFSCatalogueEntry.cpp include/normal/catalogue/local-fs/LocalFSCatalogueEntry.h
         src/local-fs/LocalFSTable.cpp include/normal/catalogue/local-fs/LocalFSTable.h
-        src/local-fs/LocalFSPartition.cpp include/normal/catalogue/local-fs/LocalFSPartition.h)
+        src/local-fs/LocalFSPartition.cpp include/normal/catalogue/local-fs/LocalFSPartition.h
+        include/normal/catalogue/format/FormatType.h
+        src/format/Format.cpp include/normal/catalogue/format/Format.h
+        src/format/CSVFormat.cpp include/normal/catalogue/format/CSVFormat.h
+        src/format/ParquetFormat.cpp include/normal/catalogue/format/ParquetFormat.h)
 
 
 target_include_directories(normal-catalogue PUBLIC include)

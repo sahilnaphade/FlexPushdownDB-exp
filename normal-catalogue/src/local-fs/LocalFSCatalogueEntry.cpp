@@ -6,12 +6,11 @@
 #include <normal/catalogue/CatalogueEntryType.h>
 #include <utility>
 
-using namespace normal::catalogue;
-
 namespace normal::catalogue::local_fs {
 
-LocalFSCatalogueEntry::LocalFSCatalogueEntry(const std::string &name,
-                                   std::shared_ptr<Catalogue> catalogue) :
-  CatalogueEntry(LocalFS, name, std::move(catalogue)) {}
+LocalFSCatalogueEntry::LocalFSCatalogueEntry(const string &name,
+                                             shared_ptr<Catalogue> catalogue,
+                                             shared_ptr<format::Format> format) :
+  CatalogueEntry(LocalFS, name, move(catalogue), move(format)) {}
 
 }

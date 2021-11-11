@@ -7,8 +7,11 @@
 
 #include <normal/catalogue/Catalogue.h>
 #include <normal/catalogue/CatalogueEntryType.h>
+#include <normal/catalogue/format/Format.h>
 #include <memory>
 #include <string>
+
+using namespace::std;
 
 namespace normal::catalogue {
 
@@ -18,18 +21,20 @@ class CatalogueEntry {
 
 public:
   explicit CatalogueEntry(CatalogueEntryType type,
-                          std::string name,
-                          std::shared_ptr<Catalogue> Catalogue);
+                          string name,
+                          shared_ptr<Catalogue> Catalogue,
+                          shared_ptr<format::Format> format);
   virtual ~CatalogueEntry() = default;
 
-  [[nodiscard]] const std::string &getName() const;
-  [[nodiscard]] const std::shared_ptr<Catalogue> &getCatalogue() const;
+  [[nodiscard]] const string &getName() const;
+  [[nodiscard]] const shared_ptr<Catalogue> &getCatalogue() const;
   [[nodiscard]] CatalogueEntryType getType() const;
 
 private:
   CatalogueEntryType type_;
-  std::string name_;
-  std::shared_ptr<Catalogue> catalogue_;
+  string name_;
+  shared_ptr<Catalogue> catalogue_;
+  shared_ptr<format::Format> format_;
 
 };
 

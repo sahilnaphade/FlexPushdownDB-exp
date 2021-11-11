@@ -7,17 +7,19 @@
 using namespace normal::catalogue;
 
 CatalogueEntry::CatalogueEntry(CatalogueEntryType type,
-                               std::string name,
-                               std::shared_ptr<Catalogue> Catalogue) :
+                               string name,
+                               shared_ptr<Catalogue> Catalogue,
+                               shared_ptr<format::Format> format) :
   type_(type),
-  name_(std::move(name)),
-  catalogue_(std::move(Catalogue)) {}
+  name_(move(name)),
+  catalogue_(move(Catalogue)),
+  format_(move(format)) {}
 
-const std::string &CatalogueEntry::getName() const {
+const string &CatalogueEntry::getName() const {
   return name_;
 }
 
-const std::shared_ptr<Catalogue> &CatalogueEntry::getCatalogue() const {
+const shared_ptr<Catalogue> &CatalogueEntry::getCatalogue() const {
   return catalogue_;
 }
 

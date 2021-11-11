@@ -3,6 +3,8 @@
 //
 
 #include <normal/catalogue/s3/S3CatalogueEntryReader.h>
+#include <normal/catalogue/format/CSVFormat.h>
+#include <normal/catalogue/format/ParquetFormat.h>
 #include <normal/tuple/ColumnName.h>
 #include <normal/aws/S3Util.h>
 #include <normal/util/Util.h>
@@ -20,9 +22,6 @@ S3CatalogueEntryReader::readS3CatalogueEntry(const shared_ptr<Catalogue> &catalo
                                              const string &s3Bucket,
                                              const string &schemaName,
                                              const shared_ptr<S3Client> &s3Client) {
-  // create an S3CatalogueEntry
-  shared_ptr<S3CatalogueEntry> s3CatalogueEntry = make_shared<S3CatalogueEntry>(schemaName, s3Bucket, catalogue);
-
   // read metadata files
   filesystem::path metadataPath = catalogue->getMetadataPath().append(schemaName);
   if (!filesystem::exists(metadataPath)) {
@@ -40,7 +39,8 @@ S3CatalogueEntryReader::readS3CatalogueEntry(const shared_ptr<Catalogue> &catalo
     tableNames.emplace(tableSchemaJObj["name"].get<string>());
   }
 
-  // member variables to make an S3Table
+  // member variables to make S3CatalogueEntry and S3Table
+  shared_ptr<format::Format> format;
   unordered_map<string, shared_ptr<arrow::Schema>> schemaMap;
   unordered_map<string, unordered_map<string, int>> apxColumnLengthMapMap;
   unordered_map<string, int> apxRowLengthMap;
@@ -48,7 +48,7 @@ S3CatalogueEntryReader::readS3CatalogueEntry(const shared_ptr<Catalogue> &catalo
   unordered_map<string, vector<shared_ptr<S3Partition>>> s3PartitionsMap;
 
   // read schema
-  readSchema(schemaJObj, s3Bucket, schemaName, schemaMap, s3PartitionsMap);
+  readSchema(schemaJObj, s3Bucket, schemaName, format, schemaMap, s3PartitionsMap);
 
   // read stats
   readStats(statsJObj, apxColumnLengthMapMap, apxRowLengthMap);
@@ -58,6 +58,12 @@ S3CatalogueEntryReader::readS3CatalogueEntry(const shared_ptr<Catalogue> &catalo
 
   // read partition size from s3 listObject
   readPartitionSize(s3Client, s3Bucket, schemaName, s3PartitionsMap);
+
+  // create an S3CatalogueEntry
+  shared_ptr<S3CatalogueEntry> s3CatalogueEntry = make_shared<S3CatalogueEntry>(schemaName,
+                                                                                s3Bucket,
+                                                                                catalogue,
+                                                                                format);
 
   // make S3Tables
   for (const auto &tableName: tableNames) {
@@ -77,8 +83,25 @@ S3CatalogueEntryReader::readS3CatalogueEntry(const shared_ptr<Catalogue> &catalo
 void S3CatalogueEntryReader::readSchema(const json &schemaJObj,
                                         const string &s3Bucket,
                                         const string &schemaName,
+                                        shared_ptr<format::Format> &format,
                                         unordered_map<string, shared_ptr<arrow::Schema>> &schemaMap,
                                         unordered_map<string, vector<shared_ptr<S3Partition>>> &s3PartitionsMap) {
+  // read format
+  const auto &formatJObj = schemaJObj["format"];
+  const string &formatStr = formatJObj["name"].get<string>();
+  string s3ObjectSuffix;
+  if (formatStr == "csv") {
+    char fieldDelimiter = formatJObj["fieldDelimiter"].get<string>().c_str()[0];
+    format = make_shared<format::CSVFormat>(fieldDelimiter);
+    s3ObjectSuffix = ".tbl";
+  } else if (formatStr == "parquet") {
+    format = make_shared<format::ParquetFormat>();
+    s3ObjectSuffix = ".parquet";
+  } else {
+    throw runtime_error(fmt::format("Unsupported data format: {}", formatStr));
+  }
+
+  // read schemas and s3Partitions
   for (const auto &tableSchemasJObj: schemaJObj["tables"].get<vector<json>>()) {
     const string &tableName = tableSchemasJObj["name"].get<string>();
     // fields
@@ -97,12 +120,12 @@ void S3CatalogueEntryReader::readSchema(const json &schemaJObj,
     vector<shared_ptr<S3Partition>> s3Partitions;
     int numPartitions = tableSchemasJObj["numPartitions"].get<int>();
     if (numPartitions == 1) {
-      string s3Object = schemaName + tableName + ".tbl";
+      string s3Object = schemaName + tableName + s3ObjectSuffix;
       s3Partitions.emplace_back(make_shared<S3Partition>(s3Bucket, s3Object));
     } else {
       string s3ObjectDir = schemaName + tableName + "_sharded/";
       for (int i = 0; i < numPartitions; ++i) {
-        string s3Object = s3ObjectDir + tableName + ".tbl." + to_string(i);
+        string s3Object = s3ObjectDir + tableName + s3ObjectSuffix + "." + to_string(i);
         s3Partitions.emplace_back(make_shared<S3Partition>(s3Bucket, s3Object));
       }
     }

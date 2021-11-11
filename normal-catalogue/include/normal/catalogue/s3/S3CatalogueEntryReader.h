@@ -7,6 +7,7 @@
 
 #include <normal/catalogue/s3/S3CatalogueEntry.h>
 #include <normal/catalogue/Catalogue.h>
+#include <normal/catalogue/format/Format.h>
 #include <normal/expression/gandiva/NumericLiteral.h>
 #include <normal/expression/gandiva/StringLiteral.h>
 #include <nlohmann/json.hpp>
@@ -30,6 +31,7 @@ private:
   static void readSchema(const json &schemaJObj,
                          const string &s3Bucket,
                          const string &schemaName,
+                         shared_ptr<format::Format> &format,
                          unordered_map<string, shared_ptr<arrow::Schema>> &schemaMap,
                          unordered_map<string, vector<shared_ptr<S3Partition>>> &s3PartitionsMap);
   static void readStats(const json &statsJObj,

@@ -11,14 +11,16 @@
 #include <string>
 
 using namespace normal::catalogue;
+using namespace std;
 
 namespace normal::catalogue::local_fs {
 
 class LocalFSCatalogueEntry : public CatalogueEntry {
 
 public:
-  LocalFSCatalogueEntry(const std::string &name,
-                   std::shared_ptr<Catalogue>);
+  LocalFSCatalogueEntry(const string &name,
+                        shared_ptr<Catalogue> catalogue,
+                        shared_ptr<format::Format> format);
   ~LocalFSCatalogueEntry() override = default;
 
 };
