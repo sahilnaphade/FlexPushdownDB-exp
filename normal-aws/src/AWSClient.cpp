@@ -27,7 +27,6 @@ std::shared_ptr<Aws::S3::S3Client> AWSClient::makeS3Client() {
   std::shared_ptr<Aws::S3::S3Client> s3Client;
 
   Aws::Client::ClientConfiguration config;
-  config.region = awsConfig_->getRegion();
   config.scheme = Aws::Http::Scheme::HTTP;
   // This value has been tuned for c5a.4xlarge, c5a.8xlarge, and c5n.9xlarge, any more connections than this and aggregate
   // network performance degrades rather than remaining constant

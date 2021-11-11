@@ -70,9 +70,8 @@ void e2eWithoutServer() {
   shared_ptr<Catalogue> catalogue = make_shared<Catalogue>("main", metadataPath);
 
   // AWS client
-  shared_ptr<AWSClient> awsClient = make_shared<AWSClient>(make_shared<AWSConfig>(normal::aws::S3,
-                                                                                  Aws::Region::US_EAST_2,
-                                                                                  0));
+  shared_ptr<AWSClient> awsClient = make_shared<AWSClient>(
+          make_shared<AWSConfig>(normal::aws::S3, 0));
 
   // read catalogue entry
   const auto &s3CatalogueEntry = S3CatalogueEntryReader::readS3CatalogueEntry(catalogue,
