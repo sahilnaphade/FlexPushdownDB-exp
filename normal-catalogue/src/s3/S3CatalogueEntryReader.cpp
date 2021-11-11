@@ -40,7 +40,7 @@ S3CatalogueEntryReader::readS3CatalogueEntry(const shared_ptr<Catalogue> &catalo
   }
 
   // member variables to make S3CatalogueEntry and S3Table
-  shared_ptr<format::Format> format;
+  unordered_map<string, shared_ptr<format::Format>> formatMap;
   unordered_map<string, shared_ptr<arrow::Schema>> schemaMap;
   unordered_map<string, unordered_map<string, int>> apxColumnLengthMapMap;
   unordered_map<string, int> apxRowLengthMap;
@@ -48,7 +48,7 @@ S3CatalogueEntryReader::readS3CatalogueEntry(const shared_ptr<Catalogue> &catalo
   unordered_map<string, vector<shared_ptr<S3Partition>>> s3PartitionsMap;
 
   // read schema
-  readSchema(schemaJObj, s3Bucket, schemaName, format, schemaMap, s3PartitionsMap);
+  readSchema(schemaJObj, s3Bucket, schemaName, schemaMap, formatMap, s3PartitionsMap);
 
   // read stats
   readStats(statsJObj, apxColumnLengthMapMap, apxRowLengthMap);
@@ -62,13 +62,13 @@ S3CatalogueEntryReader::readS3CatalogueEntry(const shared_ptr<Catalogue> &catalo
   // create an S3CatalogueEntry
   shared_ptr<S3CatalogueEntry> s3CatalogueEntry = make_shared<S3CatalogueEntry>(schemaName,
                                                                                 s3Bucket,
-                                                                                catalogue,
-                                                                                format);
+                                                                                catalogue);
 
   // make S3Tables
   for (const auto &tableName: tableNames) {
     shared_ptr<S3Table> s3Table = make_shared<S3Table>(tableName,
                                                        schemaMap.find(tableName)->second,
+                                                       formatMap.find(tableName)->second,
                                                        apxColumnLengthMapMap.find(tableName)->second,
                                                        apxRowLengthMap.find(tableName)->second,
                                                        zonemapColumnNamesMap.find(tableName)->second,
@@ -83,27 +83,28 @@ S3CatalogueEntryReader::readS3CatalogueEntry(const shared_ptr<Catalogue> &catalo
 void S3CatalogueEntryReader::readSchema(const json &schemaJObj,
                                         const string &s3Bucket,
                                         const string &schemaName,
-                                        shared_ptr<format::Format> &format,
                                         unordered_map<string, shared_ptr<arrow::Schema>> &schemaMap,
+                                        unordered_map<string, shared_ptr<format::Format>> &formatMap,
                                         unordered_map<string, vector<shared_ptr<S3Partition>>> &s3PartitionsMap) {
-  // read format
-  const auto &formatJObj = schemaJObj["format"];
-  const string &formatStr = formatJObj["name"].get<string>();
-  string s3ObjectSuffix;
-  if (formatStr == "csv") {
-    char fieldDelimiter = formatJObj["fieldDelimiter"].get<string>().c_str()[0];
-    format = make_shared<format::CSVFormat>(fieldDelimiter);
-    s3ObjectSuffix = ".tbl";
-  } else if (formatStr == "parquet") {
-    format = make_shared<format::ParquetFormat>();
-    s3ObjectSuffix = ".parquet";
-  } else {
-    throw runtime_error(fmt::format("Unsupported data format: {}", formatStr));
-  }
-
-  // read schemas and s3Partitions
+  // read schemas, formats and s3Partitions
   for (const auto &tableSchemasJObj: schemaJObj["tables"].get<vector<json>>()) {
     const string &tableName = tableSchemasJObj["name"].get<string>();
+
+    // formats
+    const auto &formatJObj = tableSchemasJObj["format"];
+    const string &formatStr = formatJObj["name"].get<string>();
+    string s3ObjectSuffix;
+    if (formatStr == "csv") {
+      char fieldDelimiter = formatJObj["fieldDelimiter"].get<string>().c_str()[0];
+      formatMap.emplace(tableName, make_shared<format::CSVFormat>(fieldDelimiter));
+      s3ObjectSuffix = ".tbl";
+    } else if (formatStr == "parquet") {
+      formatMap.emplace(tableName, make_shared<format::ParquetFormat>());
+      s3ObjectSuffix = ".parquet";
+    } else {
+      throw runtime_error(fmt::format("Unsupported data format: {}", formatStr));
+    }
+
     // fields
     vector<shared_ptr<arrow::Field>> fields;
     for (const auto &fieldJObj: tableSchemasJObj["fields"].get<vector<json>>()) {
@@ -120,12 +121,12 @@ void S3CatalogueEntryReader::readSchema(const json &schemaJObj,
     vector<shared_ptr<S3Partition>> s3Partitions;
     int numPartitions = tableSchemasJObj["numPartitions"].get<int>();
     if (numPartitions == 1) {
-      string s3Object = schemaName + tableName + s3ObjectSuffix;
+      string s3Object = fmt::format("{}{}{}", schemaName, tableName, s3ObjectSuffix);
       s3Partitions.emplace_back(make_shared<S3Partition>(s3Bucket, s3Object));
     } else {
       string s3ObjectDir = schemaName + tableName + "_sharded/";
       for (int i = 0; i < numPartitions; ++i) {
-        string s3Object = s3ObjectDir + tableName + s3ObjectSuffix + "." + to_string(i);
+        string s3Object = fmt::format("{}{}{}.{}", s3ObjectDir, tableName, s3ObjectSuffix, to_string(i));
         s3Partitions.emplace_back(make_shared<S3Partition>(s3Bucket, s3Object));
       }
     }

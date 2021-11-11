@@ -79,6 +79,7 @@ void e2eWithoutServer() {
                                                                               s3Bucket,
                                                                               schemaName,
                                                                               awsClient->getS3Client());
+  catalogue->putEntry(s3CatalogueEntry);
 
   CalcitePlanJsonDeserializer::deserialize(planResult);
 }

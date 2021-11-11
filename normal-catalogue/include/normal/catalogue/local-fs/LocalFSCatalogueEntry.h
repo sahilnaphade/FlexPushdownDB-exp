@@ -19,8 +19,7 @@ class LocalFSCatalogueEntry : public CatalogueEntry {
 
 public:
   LocalFSCatalogueEntry(const string &name,
-                        shared_ptr<Catalogue> catalogue,
-                        shared_ptr<format::Format> format);
+                        shared_ptr<Catalogue> catalogue);
   ~LocalFSCatalogueEntry() override = default;
 
 };

@@ -13,9 +13,8 @@ namespace normal::catalogue::s3 {
 
 S3CatalogueEntry::S3CatalogueEntry(const string &name,
                                    string s3Bucket,
-                                   shared_ptr<Catalogue> catalogue,
-                                   shared_ptr<format::Format> format) :
-  CatalogueEntry(S3, name, move(catalogue), move(format)),
+                                   shared_ptr<Catalogue> catalogue) :
+  CatalogueEntry(S3, name, move(catalogue)),
   s3Bucket_(move(s3Bucket)) {}
 
 const string &S3CatalogueEntry::getS3Bucket() const {

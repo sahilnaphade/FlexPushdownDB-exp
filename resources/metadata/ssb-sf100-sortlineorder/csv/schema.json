@@ -1,12 +1,12 @@
 {
   "schemaName": "ssb-sf100-sortlineorder/csv/",
-  "format": {
-    "name": "csv",
-    "fieldDelimiter": ","
-  },
   "tables": [
     {
       "name": "date",
+      "format": {
+        "name": "csv",
+        "fieldDelimiter": ","
+      },
       "numPartitions": 1,
       "fields": [
         {
@@ -81,6 +81,10 @@
     },
     {
       "name": "supplier",
+      "format": {
+        "name": "csv",
+        "fieldDelimiter": ","
+      },
       "numPartitions": 1,
       "fields": [
         {
@@ -115,6 +119,10 @@
     },
     {
       "name": "customer",
+      "format": {
+        "name": "csv",
+        "fieldDelimiter": ","
+      },
       "numPartitions": 20,
       "fields": [
         {
@@ -153,6 +161,10 @@
     },
     {
       "name": "part",
+      "format": {
+        "name": "csv",
+        "fieldDelimiter": ","
+      },
       "numPartitions": 10,
       "fields": [
         {
@@ -195,6 +207,10 @@
     },
     {
       "name": "lineorder",
+      "format": {
+        "name": "csv",
+        "fieldDelimiter": ","
+      },
       "numPartitions": 4001,
       "fields": [
         {

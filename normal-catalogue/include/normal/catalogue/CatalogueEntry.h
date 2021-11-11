@@ -7,7 +7,6 @@
 
 #include <normal/catalogue/Catalogue.h>
 #include <normal/catalogue/CatalogueEntryType.h>
-#include <normal/catalogue/format/Format.h>
 #include <memory>
 #include <string>
 
@@ -22,8 +21,7 @@ class CatalogueEntry {
 public:
   explicit CatalogueEntry(CatalogueEntryType type,
                           string name,
-                          shared_ptr<Catalogue> Catalogue,
-                          shared_ptr<format::Format> format);
+                          shared_ptr<Catalogue> Catalogue);
   virtual ~CatalogueEntry() = default;
 
   [[nodiscard]] const string &getName() const;
@@ -34,7 +32,6 @@ private:
   CatalogueEntryType type_;
   string name_;
   shared_ptr<Catalogue> catalogue_;
-  shared_ptr<format::Format> format_;
 
 };
 

@@ -31,8 +31,8 @@ private:
   static void readSchema(const json &schemaJObj,
                          const string &s3Bucket,
                          const string &schemaName,
-                         shared_ptr<format::Format> &format,
                          unordered_map<string, shared_ptr<arrow::Schema>> &schemaMap,
+                         unordered_map<string, shared_ptr<format::Format>> &formatMap,
                          unordered_map<string, vector<shared_ptr<S3Partition>>> &s3PartitionsMap);
   static void readStats(const json &statsJObj,
                         unordered_map<string, unordered_map<string, int>> &apxColumnLengthMapMap,

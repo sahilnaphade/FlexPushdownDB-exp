@@ -21,8 +21,7 @@ class S3CatalogueEntry : public CatalogueEntry {
 public:
   S3CatalogueEntry(const string &name,
                    string s3Bucket,
-                   shared_ptr<Catalogue> catalogue,
-                   shared_ptr<format::Format> format);
+                   shared_ptr<Catalogue> catalogue);
   ~S3CatalogueEntry() override = default;
 
   const string &getS3Bucket() const;

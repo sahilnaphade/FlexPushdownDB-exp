@@ -8,12 +8,10 @@ using namespace normal::catalogue;
 
 CatalogueEntry::CatalogueEntry(CatalogueEntryType type,
                                string name,
-                               shared_ptr<Catalogue> Catalogue,
-                               shared_ptr<format::Format> format) :
+                               shared_ptr<Catalogue> Catalogue) :
   type_(type),
   name_(move(name)),
-  catalogue_(move(Catalogue)),
-  format_(move(format)) {}
+  catalogue_(move(Catalogue)) {}
 
 const string &CatalogueEntry::getName() const {
   return name_;
