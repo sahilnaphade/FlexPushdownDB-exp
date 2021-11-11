@@ -17,9 +17,9 @@ class LocalFSTable: public Table {
 public:
   LocalFSTable(const string &name,
                const shared_ptr<arrow::Schema> &schema,
-               const unordered_map<string, int> &columnLengthMap,
-               int rowLength,
-               const unordered_set<string> &zoneMapColumnNames,
+               const unordered_map<string, int> &apxColumnLengthMap,
+               int apxRowLength,
+               const unordered_set<string> &zonemapColumnNames,
                const vector<shared_ptr<LocalFSPartition>> &localFsPartitions,
                const shared_ptr<CatalogueEntry> &catalogueEntry);
 

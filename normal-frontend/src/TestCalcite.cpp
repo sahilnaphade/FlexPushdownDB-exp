@@ -54,12 +54,18 @@ void e2eWithoutServer() {
           .append("resources/query/ssb/4.1.sql")
           .string();
   string query = readFile(queryPath);
-  string schemaName = "ssb-sf1-sortlineorder/csv";
+  string schemaName = "ssb-sf1-sortlineorder/csv/";
   string planResult = calciteClient.planQuery(query, schemaName);
   cout << planResult << endl;
+
+  // make catalogue
   string s3Bucket = "flexpushdowndb";
-  shared_ptr<Catalogue> catalogue = make_shared<Catalogue>("main");
-  const auto &s3CatalogueEntry = S3CatalogueEntryReader::readS3CatalogueEntry(s3Bucket, schemaName, catalogue);
+  filesystem::path metadataPath = std::filesystem::current_path()
+          .parent_path()
+          .append("resources/metadata");
+  shared_ptr<Catalogue> catalogue = make_shared<Catalogue>("main", metadataPath);
+  const auto &s3CatalogueEntry = S3CatalogueEntryReader::readS3CatalogueEntry(catalogue, s3Bucket, schemaName);
+
   CalcitePlanJsonDeserializer::deserialize(planResult);
 }
 

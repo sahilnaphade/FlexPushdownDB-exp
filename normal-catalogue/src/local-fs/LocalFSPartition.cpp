@@ -7,10 +7,7 @@
 
 namespace normal::catalogue::local_fs {
   
-LocalFSPartition::LocalFSPartition(long numBytes,
-                                   const shared_ptr<unordered_map<string, pair<Expression, Expression>>> &zoneMap,
-                                   const string &path) : 
-  Partition(numBytes, zoneMap), 
+LocalFSPartition::LocalFSPartition(const string &path) :
   path_(path) {}
 
 const string &LocalFSPartition::getPath() const {

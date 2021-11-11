@@ -21,7 +21,7 @@ public:
         const shared_ptr<arrow::Schema>& schema,
         const unordered_map<string, int> &apxColumnLengthMap,
         int apxRowLength,
-        const unordered_set<string> &zoneMapColumnNames,
+        const unordered_set<string> &zonemapColumnNames,
         const shared_ptr<CatalogueEntry> &catalogueEntry);
 
   const string &getName() const;
@@ -31,7 +31,7 @@ private:
   shared_ptr<arrow::Schema> schema_;
   unordered_map<string, int> apxColumnLengthMap_;   // apx: approximate
   int apxRowLength_;
-  unordered_set<string> zoneMapColumnNames_;
+  unordered_set<string> zonemapColumnNames_;
   shared_ptr<CatalogueEntry> catalogueEntry_;
 };
 

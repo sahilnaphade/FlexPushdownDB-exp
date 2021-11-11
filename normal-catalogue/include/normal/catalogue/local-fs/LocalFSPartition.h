@@ -13,9 +13,7 @@ namespace normal::catalogue::local_fs {
 
 class LocalFSPartition: public Partition {
 public:
-  LocalFSPartition(long numBytes, 
-                   const shared_ptr<unordered_map<string, pair<Expression, Expression>>> &zoneMap,
-                   const string &path);
+  LocalFSPartition(const string &path);
 
   [[nodiscard]] const string &getPath() const;
 

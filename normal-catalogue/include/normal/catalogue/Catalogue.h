@@ -11,6 +11,9 @@
 #include <unordered_map>
 #include <memory>
 #include <tl/expected.hpp>
+#include <filesystem>
+
+using namespace std;
 
 namespace normal::catalogue {
 
@@ -19,17 +22,19 @@ class CatalogueEntry;
 class Catalogue {
 
 public:
-  explicit Catalogue(std::string Name);
+  explicit Catalogue(string Name, filesystem::path metadataPath);
   virtual ~Catalogue() = default;
 
-  [[nodiscard]] const std::string &getName() const;
-  tl::expected<std::shared_ptr<CatalogueEntry>, std::string> getEntry(const std::string &name);
+  [[nodiscard]] const string &getName() const;
+  tl::expected<shared_ptr<CatalogueEntry>, string> getEntry(const string &name);
+  [[nodiscard]] filesystem::path getMetadataPath() const;
 
-  void putEntry(const std::shared_ptr<CatalogueEntry> &entry);
+  void putEntry(const shared_ptr<CatalogueEntry> &entry);
 
 private:
-  std::string name_;
-  std::unordered_map<std::string, std::shared_ptr<CatalogueEntry>> entries_;
+  string name_;
+  unordered_map<string, shared_ptr<CatalogueEntry>> entries_;
+  filesystem::path metadataPath_;
 
 };
 

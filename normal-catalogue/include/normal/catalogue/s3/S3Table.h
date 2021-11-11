@@ -17,9 +17,9 @@ class S3Table: public Table {
 public:
   S3Table(const string &name,
           const shared_ptr<arrow::Schema> &schema,
-          const unordered_map<string, int> &columnLengthMap,
-          int rowLength,
-          const unordered_set<string> &zoneMapColumnNames,
+          const unordered_map<string, int> &apxColumnLengthMap,
+          int apxRowLength,
+          const unordered_set<string> &zonemapColumnNames,
           const vector<shared_ptr<S3Partition>> &s3Partitions,
           const shared_ptr<CatalogueEntry> &catalogueEntry);
 

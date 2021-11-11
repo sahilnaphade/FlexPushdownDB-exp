@@ -5,13 +5,19 @@
 #include <normal/catalogue/Partition.h>
 
 namespace normal::catalogue {
-Partition::Partition(long numBytes, 
-                     const shared_ptr<unordered_map<string, pair<Expression, Expression>>> &zoneMap):
-  numBytes_(numBytes),
-  zoneMap_(zoneMap) {}
+Partition::Partition() {}
 
 const long &Partition::getNumBytes() const {
   return numBytes_;
+}
+
+void Partition::setNumBytes(long numBytes) {
+  numBytes_ = numBytes;
+}
+
+void Partition::addMinMax(const string &columnName,
+                          const pair<shared_ptr<Expression>, shared_ptr<Expression>> &minMax) {
+  zoneMap_.emplace(columnName, minMax);
 }
 
 }

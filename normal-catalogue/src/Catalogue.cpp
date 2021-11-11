@@ -4,20 +4,21 @@
 
 #include <normal/catalogue/Catalogue.h>
 
-using namespace normal::catalogue;
+namespace normal::catalogue {
 
-Catalogue::Catalogue(std::string Name)
-    : name_(std::move(Name)) {}
+Catalogue::Catalogue(string Name, filesystem::path metadataPath) :
+  name_(move(Name)),
+  metadataPath_(move(metadataPath)) {}
 
-const std::string &Catalogue::getName() const {
+const string &Catalogue::getName() const {
   return name_;
 }
 
-void Catalogue::putEntry(const std::shared_ptr<CatalogueEntry>& entry) {
+void Catalogue::putEntry(const shared_ptr<CatalogueEntry>& entry) {
   this->entries_.emplace(entry->getName(), entry);
 }
 
-tl::expected<std::shared_ptr<CatalogueEntry>, std::string> Catalogue::getEntry(const std::string& name) {
+tl::expected<shared_ptr<CatalogueEntry>, string> Catalogue::getEntry(const string& name) {
   auto entryIterator = this->entries_.find(name);
   if(entryIterator == this->entries_.end()){
     return tl::unexpected("Catalogue entry '" + name + "' not found");
@@ -25,4 +26,10 @@ tl::expected<std::shared_ptr<CatalogueEntry>, std::string> Catalogue::getEntry(c
   else{
     return entryIterator->second;
   }
+}
+
+filesystem::path Catalogue::getMetadataPath() const {
+  return metadataPath_;
+}
+
 }

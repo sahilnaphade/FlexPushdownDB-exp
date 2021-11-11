@@ -16,9 +16,7 @@ namespace normal::catalogue::s3 {
 class S3Partition: public Partition {
 public:
   explicit S3Partition(string bucket, 
-                       string object, 
-                       long numBytes,
-                       const shared_ptr<unordered_map<string, pair<Expression, Expression>>> &zoneMap);
+                       string object);
 
   [[nodiscard]] const string &getBucket() const;
   [[nodiscard]] const string &getObject() const;

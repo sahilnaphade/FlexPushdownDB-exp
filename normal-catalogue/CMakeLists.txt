@@ -47,7 +47,9 @@ target_link_libraries(normal-catalogue PUBLIC aws-cpp-sdk-s3)
 target_link_libraries(normal-catalogue PUBLIC spdlog::spdlog)
 target_link_libraries(normal-catalogue PUBLIC fmt::fmt)
 target_link_libraries(normal-catalogue PUBLIC expected)
+target_link_libraries(normal-catalogue PUBLIC nlohmann_json)
 target_link_libraries(normal-catalogue PUBLIC normal-expression-gandiva)
+target_link_libraries(normal-catalogue PUBLIC normal-util)
 
 
 #-----------------------------------------------------------------------------------------------------------------------

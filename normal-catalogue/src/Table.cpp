@@ -11,13 +11,13 @@ Table::Table(string name,
              const shared_ptr<arrow::Schema>& schema,
              const unordered_map<string, int> &apxColumnLengthMap,
              int apxRowLength,
-             const unordered_set<string> &zoneMapColumnNames,
+             const unordered_set<string> &zonemapColumnNames,
              const shared_ptr<CatalogueEntry> &catalogueEntry) :
   name_(std::move(name)),
   schema_(schema),
   apxColumnLengthMap_(apxColumnLengthMap),
   apxRowLength_(apxRowLength),
-  zoneMapColumnNames_(zoneMapColumnNames),
+  zonemapColumnNames_(zonemapColumnNames),
   catalogueEntry_(catalogueEntry) {}
 
 const string &Table::getName() const {

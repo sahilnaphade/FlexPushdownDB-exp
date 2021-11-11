@@ -217,14 +217,14 @@ shared_ptr<PrePhysicalOp> CalcitePlanJsonDeserializer::deserializeAggregateOrGro
     if (aggInputColumnName.substr(0, 2) == "$f") {
       // it's not just a column, need to get it from the input Project op
       auto inputProjectJObj = jObj["inputs"].get<vector<json>>()[0];
-      int aggInputProjectFieldId = stoi(aggInputColumnName.substr(2, aggInputColumnName.length() - 2));
+      size_t aggInputProjectFieldId = stoul(aggInputColumnName.substr(2, aggInputColumnName.length() - 2));
       auto aggFieldExprJObj = inputProjectJObj["fields"].get<vector<json>>()[aggInputProjectFieldId];
       aggFieldExpr = deserializeExpression(aggFieldExprJObj);
 
       // need to let the input Project op know the expr has been consumed
       json consumedProjectFieldIdJArr;
       if (inputProjectJObj.contains("consumedFieldsId")) {
-        consumedProjectFieldIdJArr = inputProjectJObj["consumedFieldsId"].get<vector<int>>();
+        consumedProjectFieldIdJArr = inputProjectJObj["consumedFieldsId"].get<vector<size_t>>();
       }
       consumedProjectFieldIdJArr.emplace_back(aggInputProjectFieldId);
       inputProjectJObj["consumedFieldsId"] = consumedProjectFieldIdJArr;
@@ -258,11 +258,11 @@ shared_ptr<prephysical::PrePhysicalOp> CalcitePlanJsonDeserializer::deserializeP
 
   // only when there is an expr, we need to keep the Project
   if (jObj.contains("consumedFieldsId")) {
-    const vector<int> &consumedFieldsIdVec = jObj["consumedFieldsId"].get<vector<int>>();
-    unordered_set<int> consumedFieldsIdSet(consumedFieldsIdVec.begin(), consumedFieldsIdVec.end());
+    const vector<size_t> &consumedFieldsIdVec = jObj["consumedFieldsId"].get<vector<size_t>>();
+    unordered_set<size_t> consumedFieldsIdSet(consumedFieldsIdVec.begin(), consumedFieldsIdVec.end());
     // check each project field
     const vector<json> &fieldsJArr = jObj["fields"].get<vector<json>>();
-    for (int i = 0; i < fieldsJArr.size(); ++i) {
+    for (size_t i = 0; i < fieldsJArr.size(); ++i) {
       if (consumedFieldsIdSet.find(i) != consumedFieldsIdSet.end()) {
         // this field is consumed by the consumer
         continue;

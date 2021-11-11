@@ -23,8 +23,8 @@ namespace normal::catalogue {
 class Partition {
 
 public:
-  Partition(long numBytes,
-            const shared_ptr<unordered_map<string, pair<Expression, Expression>>> &zoneMap);
+  Partition();
+
   virtual ~Partition() = default;
 
   virtual string toString() = 0;
@@ -35,9 +35,13 @@ public:
 
   [[nodiscard]] const long &getNumBytes() const;
 
+  void setNumBytes(long numBytes);
+  void addMinMax(const string &columnName,
+                 const pair<shared_ptr<Expression>, shared_ptr<Expression>> &minMax);
+
 private:
   long numBytes_ = 0;
-  shared_ptr<unordered_map<string, pair<Expression, Expression>>> zoneMap_;   // <columnName, <min, max>>
+  unordered_map<string, pair<shared_ptr<Expression>, shared_ptr<Expression>>> zoneMap_;   // <columnName, <min, max>>
 
 };
 

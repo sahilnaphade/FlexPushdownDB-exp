@@ -8,10 +8,7 @@
 namespace normal::catalogue::s3 {
 
 S3Partition::S3Partition(string s3Bucket, 
-                         string s3Object, 
-                         long numBytes,
-                         const shared_ptr<unordered_map<string, pair<Expression, Expression>>> &zoneMap) :
-  Partition(numBytes, zoneMap),
+                         string s3Object) :
 	s3Bucket_(move(s3Bucket)),
 	s3Object_(move(s3Object)) {}
 
