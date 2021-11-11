@@ -4,10 +4,12 @@
 
 #include <normal/catalogue/s3/S3CatalogueEntryReader.h>
 #include <normal/tuple/ColumnName.h>
+#include <normal/aws/S3Util.h>
 #include <normal/util/Util.h>
 #include <nlohmann/json.hpp>
 #include <fmt/format.h>
 
+using namespace normal::aws;
 using namespace normal::tuple;
 using namespace normal::util;
 
@@ -16,12 +18,16 @@ namespace normal::catalogue::s3 {
 shared_ptr<S3CatalogueEntry>
 S3CatalogueEntryReader::readS3CatalogueEntry(const shared_ptr<Catalogue> &catalogue,
                                              const string &s3Bucket,
-                                             const string &schemaName) {
+                                             const string &schemaName,
+                                             const shared_ptr<S3Client> &s3Client) {
   // create an S3CatalogueEntry
   shared_ptr<S3CatalogueEntry> s3CatalogueEntry = make_shared<S3CatalogueEntry>(schemaName, s3Bucket, catalogue);
 
   // read metadata files
   filesystem::path metadataPath = catalogue->getMetadataPath().append(schemaName);
+  if (!filesystem::exists(metadataPath)) {
+    throw runtime_error(fmt::format("Metadata not found for schema: {}", schemaName));
+  }
   auto schemaJObj = json::parse(readFile(metadataPath.append("schema.json")));
   metadataPath = metadataPath.parent_path();
   auto statsJObj = json::parse(readFile(metadataPath.append("stats.json")));
@@ -51,7 +57,7 @@ S3CatalogueEntryReader::readS3CatalogueEntry(const shared_ptr<Catalogue> &catalo
   readZonemap(zonemapJObj, schemaMap, s3PartitionsMap, zonemapColumnNamesMap);
 
   // read partition size from s3 listObject
-  readPartitionSize(s3PartitionsMap);
+  readPartitionSize(s3Client, s3Bucket, schemaName, s3PartitionsMap);
 
   // make S3Tables
   for (const auto &tableName: tableNames) {
@@ -126,6 +132,7 @@ void S3CatalogueEntryReader::readZonemap(const json &zonemapJObj,
                                          const unordered_map<string, shared_ptr<arrow::Schema>> &schemaMap,
                                          unordered_map<string, vector<shared_ptr<S3Partition>>> &s3PartitionsMap,
                                          unordered_map<string, unordered_set<string>> &zonemapColumnNamesMap) {
+  // read zonemaps
   for (const auto &tableZonemapsJObj: zonemapJObj["tables"].get<vector<json>>()) {
     const string &tableName = tableZonemapsJObj["name"].get<string>();
     const shared_ptr<arrow::Schema> &schema = schemaMap.find(tableName)->second;
@@ -146,11 +153,43 @@ void S3CatalogueEntryReader::readZonemap(const json &zonemapJObj,
     }
     zonemapColumnNamesMap.emplace(tableName, zonemapColumnNames);
   }
+
+  // fill zonemapColumnNamesMap for no-zonemap tables
+  for (const auto &it: schemaMap) {
+    const string &tableName = it.first;
+    if (zonemapColumnNamesMap.find(tableName) == zonemapColumnNamesMap.end()) {
+      zonemapColumnNamesMap.emplace(tableName, unordered_set<string>{});
+    }
+  }
 }
 
-void
-S3CatalogueEntryReader::readPartitionSize(unordered_map<string, vector<shared_ptr<S3Partition>>> &s3PartitionsMap) {
+void S3CatalogueEntryReader::readPartitionSize(const shared_ptr<S3Client> &s3Client,
+                                               const string &s3Bucket,
+                                               const string &schemaName,
+                                               unordered_map<string, vector<shared_ptr<S3Partition>>> &s3PartitionsMap) {
+  // collect a map of s3Object -> s3Partition
+  vector<shared_ptr<S3Partition>> allS3Partitions;
+  for (const auto &it: s3PartitionsMap) {
+    allS3Partitions.insert(allS3Partitions.end(), it.second.begin(), it.second.end());
+  }
+  vector<string> allS3Objects;
+  unordered_map<string, shared_ptr<S3Partition>> s3ObjectPartitionMap;
+  for (const auto &s3Partition: allS3Partitions) {
+    const auto &s3Object = s3Partition->getObject();
+    allS3Objects.emplace_back(s3Object);
+    s3ObjectPartitionMap.emplace(s3Object, s3Partition);
+  }
 
+  // list objects
+  auto s3ObjectSizeMap = S3Util::listObjects(s3Bucket, schemaName, allS3Objects, s3Client);
+
+  // set partition size
+  for (const auto &it: s3ObjectSizeMap) {
+    const auto &s3Object = it.first;
+    long objectSize = it.second;
+    const auto &s3Partition = s3ObjectPartitionMap.find(s3Object)->second;
+    s3Partition->setNumBytes(objectSize);
+  }
 }
 
 shared_ptr<arrow::DataType> S3CatalogueEntryReader::strToDataType(const string &str) {

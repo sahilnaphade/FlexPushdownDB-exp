@@ -7,17 +7,21 @@
 #include <normal/plan/calcite/CalcitePlanJsonDeserializer.h>
 #include <normal/catalogue/s3/S3CatalogueEntryReader.h>
 #include <normal/catalogue/Catalogue.h>
+#include <normal/aws/AWSClient.h>
+#include <normal/aws/AWSConfig.h>
 #include <normal/util/Util.h>
 
 #include <memory>
 #include <iostream>
 #include <filesystem>
 
-using namespace std;
 using namespace normal::calcite;
 using namespace normal::plan::calcite;
 using namespace normal::catalogue::s3;
 using namespace normal::util;
+using namespace normal::aws;
+using namespace Aws::S3;
+using namespace std;
 
 void e2eWithServer() {
   // Create Calcite client
@@ -64,7 +68,17 @@ void e2eWithoutServer() {
           .parent_path()
           .append("resources/metadata");
   shared_ptr<Catalogue> catalogue = make_shared<Catalogue>("main", metadataPath);
-  const auto &s3CatalogueEntry = S3CatalogueEntryReader::readS3CatalogueEntry(catalogue, s3Bucket, schemaName);
+
+  // AWS client
+  shared_ptr<AWSClient> awsClient = make_shared<AWSClient>(make_shared<AWSConfig>(normal::aws::S3,
+                                                                                  Aws::Region::US_EAST_2,
+                                                                                  0));
+
+  // read catalogue entry
+  const auto &s3CatalogueEntry = S3CatalogueEntryReader::readS3CatalogueEntry(catalogue,
+                                                                              s3Bucket,
+                                                                              schemaName,
+                                                                              awsClient->getS3Client());
 
   CalcitePlanJsonDeserializer::deserialize(planResult);
 }

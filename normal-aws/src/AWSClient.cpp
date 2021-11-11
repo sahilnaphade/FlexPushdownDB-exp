@@ -2,39 +2,32 @@
 // Created by matt on 5/3/20.
 //
 
-#include <normal/pushdown/AWSClient.h>
-#include <normal/pushdown/Globals.h>
-#include <aws/core/Aws.h>
-#include <aws/core/utils/ratelimiter/DefaultRateLimiter.h>
-#include <aws/core/utils/threading/Executor.h>
-#include <aws/core/auth/AWSCredentialsProviderChain.h>
-#include <aws/s3/S3Client.h>
-#include <aws/core/client/DefaultRetryStrategy.h>
+#include <normal/aws/AWSClient.h>
+#include <spdlog/spdlog.h>
 
-namespace normal::pushdown {
+namespace normal::aws {
+
+AWSClient::AWSClient(const shared_ptr<AWSConfig> &awsConfig) : awsConfig_(awsConfig) {
+  init();
+  s3Client_ = makeS3Client();
+}
 
 void AWSClient::init() {
   options_.loggingOptions.logLevel = Aws::Utils::Logging::LogLevel::Info;
   Aws::InitAPI(options_);
 }
 
-  [[maybe_unused]] void AWSClient::shutdown() {
+[[maybe_unused]] void AWSClient::shutdown() {
   Aws::ShutdownAPI(options_);
 }
 
-std::shared_ptr<Aws::S3::S3Client> AWSClient::defaultS3Client() {
-  if (!initialized_) {
-    auto client = std::make_shared<AWSClient>();
-    client->init();
-    initialized_ = true;
-  }
-
+std::shared_ptr<Aws::S3::S3Client> AWSClient::makeS3Client() {
   static const char *ALLOCATION_TAG = "Normal";
 
   std::shared_ptr<Aws::S3::S3Client> s3Client;
 
   Aws::Client::ClientConfiguration config;
-  config.region = Aws::Region::US_EAST_2;
+  config.region = awsConfig_->getRegion();
   config.scheme = Aws::Http::Scheme::HTTP;
   // This value has been tuned for c5a.4xlarge, c5a.8xlarge, and c5n.9xlarge, any more connections than this and aggregate
   // network performance degrades rather than remaining constant
@@ -50,14 +43,14 @@ std::shared_ptr<Aws::S3::S3Client> AWSClient::defaultS3Client() {
 
   // Commented this out as turning it off increase transfer rate. It appears that having this set
   // reduces transfer rate even if the chosen value is very high.
-  if (normal::pushdown::NetworkLimit > 0) {
+  if (awsConfig_->getNetworkLimit() > 0) {
     std::shared_ptr<Aws::Utils::RateLimits::RateLimiterInterface> limiter;
-    limiter = Aws::MakeShared<Aws::Utils::RateLimits::DefaultRateLimiter<>>(ALLOCATION_TAG, normal::pushdown::NetworkLimit);
+    limiter = Aws::MakeShared<Aws::Utils::RateLimits::DefaultRateLimiter<>>(ALLOCATION_TAG, awsConfig_->getNetworkLimit());
     config.readRateLimiter = limiter;
     config.writeRateLimiter = limiter;
   }
 
-  switch (S3ClientType) {
+  switch (awsConfig_->getS3ClientType()) {
     case S3: {
       SPDLOG_DEBUG("Using S3 Client");
       s3Client = Aws::MakeShared<Aws::S3::S3Client>(
@@ -104,6 +97,10 @@ std::shared_ptr<Aws::S3::S3Client> AWSClient::defaultS3Client() {
   }
 
   return s3Client;
+}
+
+const shared_ptr<S3Client> &AWSClient::getS3Client() const {
+  return s3Client_;
 }
 
 }

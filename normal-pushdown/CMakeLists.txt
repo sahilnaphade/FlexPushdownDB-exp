@@ -14,7 +14,6 @@ add_library(normal-pushdown STATIC
         src/aggregate/AggregationResult.cpp include/normal/pushdown/aggregate/AggregationResult.h
         src/aggregate/Sum.cpp include/normal/pushdown/aggregate/Sum.h
         src/aggregate/AggregationFunction.cpp include/normal/pushdown/aggregate/AggregationFunction.h
-        src/AWSClient.cpp include/normal/pushdown/AWSClient.h
         src/project/Project.cpp include/normal/pushdown/project/Project.h
         src/join/JoinPredicate.cpp include/normal/pushdown/join/JoinPredicate.h
         src/join/HashJoinProbe.cpp include/normal/pushdown/join/HashJoinProbe.h
@@ -75,8 +74,6 @@ target_link_libraries(normal-pushdown PUBLIC pthread)
 target_link_libraries(normal-pushdown PRIVATE spdlog::spdlog)
 target_link_libraries(normal-pushdown PRIVATE primesieve::libprimesieve-static)
 target_link_libraries(normal-pushdown PRIVATE fmt::fmt)
-target_link_libraries(normal-pushdown PUBLIC aws-cpp-sdk-core)
-target_link_libraries(normal-pushdown PUBLIC aws-cpp-sdk-s3)
 target_link_libraries(normal-pushdown PUBLIC arrow_static)
 target_link_libraries(normal-pushdown PUBLIC gandiva_static)
 target_link_libraries(normal-pushdown PUBLIC normal-core)

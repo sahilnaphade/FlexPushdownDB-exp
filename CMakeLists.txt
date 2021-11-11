@@ -60,6 +60,7 @@ add_subdirectory(normal-ssb)
 add_subdirectory(normal-cache)
 add_subdirectory(normal-frontend)
 add_subdirectory(normal-calcite/cpp)
+add_subdirectory(normal-aws)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Resource files
