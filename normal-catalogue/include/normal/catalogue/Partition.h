@@ -5,14 +5,14 @@
 #ifndef NORMAL_NORMAL_CATALOGUE_INCLUDE_NORMAL_CATALOGUE_PARTITION_H
 #define NORMAL_NORMAL_CATALOGUE_INCLUDE_NORMAL_CATALOGUE_PARTITION_H
 
-#include <normal/expression/gandiva/Expression.h>
+#include <normal/tuple/Scalar.h>
 
 #include <memory>
 #include <string>
 #include <optional>
 #include <unordered_map>
 
-using namespace normal::expression::gandiva;
+using namespace normal::tuple;
 using namespace std;
 
 /**
@@ -37,11 +37,11 @@ public:
 
   void setNumBytes(long numBytes);
   void addMinMax(const string &columnName,
-                 const pair<shared_ptr<Expression>, shared_ptr<Expression>> &minMax);
+                 const pair<shared_ptr<Scalar>, shared_ptr<Scalar>> &minMax);
 
 private:
   long numBytes_ = 0;
-  unordered_map<string, pair<shared_ptr<Expression>, shared_ptr<Expression>>> zoneMap_;   // <columnName, <min, max>>
+  unordered_map<string, pair<shared_ptr<Scalar>, shared_ptr<Scalar>>> zoneMap_;   // <columnName, <min, max>>
 
 };
 

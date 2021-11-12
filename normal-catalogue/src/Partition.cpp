@@ -5,7 +5,7 @@
 #include <normal/catalogue/Partition.h>
 
 namespace normal::catalogue {
-Partition::Partition() {}
+Partition::Partition() = default;
 
 const long &Partition::getNumBytes() const {
   return numBytes_;
@@ -16,7 +16,7 @@ void Partition::setNumBytes(long numBytes) {
 }
 
 void Partition::addMinMax(const string &columnName,
-                          const pair<shared_ptr<Expression>, shared_ptr<Expression>> &minMax) {
+                          const pair<shared_ptr<Scalar>, shared_ptr<Scalar>> &minMax) {
   zoneMap_.emplace(columnName, minMax);
 }
 

@@ -28,7 +28,7 @@ add_library(normal-catalogue STATIC
 target_include_directories(normal-catalogue PUBLIC include)
 
 target_link_libraries(normal-catalogue PUBLIC nlohmann_json)
-target_link_libraries(normal-catalogue PUBLIC normal-expression-gandiva)
+target_link_libraries(normal-catalogue PUBLIC normal-tuple)
 target_link_libraries(normal-catalogue PUBLIC normal-aws)
 target_link_libraries(normal-catalogue PUBLIC normal-util)
 

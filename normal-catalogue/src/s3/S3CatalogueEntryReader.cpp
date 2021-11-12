@@ -232,20 +232,20 @@ shared_ptr<arrow::DataType> S3CatalogueEntryReader::strToDataType(const string &
   }
 }
 
-pair<shared_ptr<Expression>, shared_ptr<Expression>>
+pair<shared_ptr<Scalar>, shared_ptr<Scalar>>
 S3CatalogueEntryReader::jsonToMinMaxLiterals(const json &jObj, const shared_ptr<arrow::DataType> &datatype) {
   if (datatype->id() == arrow::int32()->id()) {
-    return make_pair(num_lit<arrow::Int32Type>(jObj["min"].get<int>()),
-                     num_lit<arrow::Int32Type>(jObj["max"].get<int>()));
+    return make_pair(Scalar::make(arrow::MakeScalar(arrow::int32(), jObj["min"].get<int>()).ValueOrDie()),
+                     Scalar::make(arrow::MakeScalar(arrow::int32(), jObj["max"].get<int>()).ValueOrDie()));
   } else if (datatype->id() == arrow::int64()->id()) {
-    return make_pair(num_lit<arrow::Int64Type>(jObj["min"].get<long>()),
-                     num_lit<arrow::Int64Type>(jObj["max"].get<long>()));
+    return make_pair(Scalar::make(arrow::MakeScalar(arrow::int64(), jObj["min"].get<long>()).ValueOrDie()),
+                     Scalar::make(arrow::MakeScalar(arrow::int64(), jObj["max"].get<long>()).ValueOrDie()));
   } else if (datatype->id() == arrow::float64()->id()) {
-    return make_pair(num_lit<arrow::DoubleType>(jObj["min"].get<double>()),
-                     num_lit<arrow::DoubleType>(jObj["max"].get<double>()));
-  } else if (datatype->id() == arrow::uint8()->id()) {
-    return make_pair(str_lit(jObj["min"].get<string>()),
-                     str_lit(jObj["max"].get<string>()));
+    return make_pair(Scalar::make(arrow::MakeScalar(arrow::float64(), jObj["min"].get<double>()).ValueOrDie()),
+                     Scalar::make(arrow::MakeScalar(arrow::float64(), jObj["max"].get<double>()).ValueOrDie()));
+  } else if (datatype->id() == arrow::utf8()->id()) {
+    return make_pair(Scalar::make(arrow::MakeScalar(arrow::utf8(), jObj["min"].get<string>()).ValueOrDie()),
+                     Scalar::make(arrow::MakeScalar(arrow::utf8(), jObj["max"].get<string>()).ValueOrDie()));
   } else {
     throw runtime_error(fmt::format("Unsupported data type: {}", datatype->name()));
   }

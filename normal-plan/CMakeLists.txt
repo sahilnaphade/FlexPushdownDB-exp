@@ -66,6 +66,7 @@ add_library(normal-cplan STATIC
 target_include_directories(normal-cplan PUBLIC include)
 
 target_link_libraries(normal-cplan PUBLIC normal-catalogue)
+target_link_libraries(normal-cplan PUBLIC normal-expression-gandiva)
 
 
 #-----------------------------------------------------------------------------------------------------------------------

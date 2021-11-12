@@ -8,12 +8,11 @@
 #include <normal/catalogue/s3/S3CatalogueEntry.h>
 #include <normal/catalogue/Catalogue.h>
 #include <normal/catalogue/format/Format.h>
-#include <normal/expression/gandiva/NumericLiteral.h>
-#include <normal/expression/gandiva/StringLiteral.h>
+#include <normal/tuple/Scalar.h>
 #include <nlohmann/json.hpp>
 #include <aws/s3/S3Client.h>
 
-using namespace normal::expression::gandiva;
+using namespace normal::tuple;
 using namespace Aws::S3;
 using namespace std;
 using json = nlohmann::json;
@@ -47,7 +46,7 @@ private:
                                 unordered_map<string, vector<shared_ptr<S3Partition>>> &s3PartitionsMap);
 
   static shared_ptr<arrow::DataType> strToDataType(const string &str);
-  static pair<shared_ptr<Expression>, shared_ptr<Expression>>
+  static pair<shared_ptr<Scalar>, shared_ptr<Scalar>>
     jsonToMinMaxLiterals(const json &jObj, const shared_ptr<arrow::DataType> &datatype);
 };
 
