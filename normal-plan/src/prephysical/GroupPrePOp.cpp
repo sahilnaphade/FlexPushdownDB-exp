@@ -17,4 +17,13 @@ GroupPrePOp::GroupPrePOp(const vector<string> &groupColumnNames,
 string GroupPrePOp::getName() {
   return "GroupPrePOp";
 }
+
+unordered_set<string> GroupPrePOp::getUsedColumnNames() {
+  unordered_set<string> usedColumnNames(groupColumnNames_.begin(), groupColumnNames_.end());
+  for (const auto &function: functions_) {
+    const auto involvedColumnNames = function->getExpression()->involvedColumnNames();
+    usedColumnNames.insert(involvedColumnNames->begin(), involvedColumnNames->end());
+  }
+  return usedColumnNames;
+}
 }

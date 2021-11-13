@@ -24,9 +24,10 @@ public:
                           shared_ptr<Catalogue> Catalogue);
   virtual ~CatalogueEntry() = default;
 
-  [[nodiscard]] const string &getName() const;
-  [[nodiscard]] const shared_ptr<Catalogue> &getCatalogue() const;
-  [[nodiscard]] CatalogueEntryType getType() const;
+  const string &getName() const;
+  const shared_ptr<Catalogue> &getCatalogue() const;
+  CatalogueEntryType getType() const;
+  virtual string getTypeName() const = 0;
 
 private:
   CatalogueEntryType type_;

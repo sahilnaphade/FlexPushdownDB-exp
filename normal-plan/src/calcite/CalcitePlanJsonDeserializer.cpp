@@ -4,6 +4,7 @@
 
 #include <normal/plan/calcite/CalcitePlanJsonDeserializer.h>
 #include <normal/plan/prephysical/JoinType.h>
+#include <normal/catalogue/s3/S3CatalogueEntry.h>
 #include <normal/expression/gandiva/Expression.h>
 #include <normal/expression/gandiva/Column.h>
 #include <normal/expression/gandiva/And.h>
@@ -23,16 +24,21 @@
 
 #include <fmt/format.h>
 #include <unordered_set>
+#include <utility>
 
-using namespace normal::plan::prephysical;
+using namespace normal::catalogue;
 using namespace normal::tuple;
 
 namespace normal::plan::calcite {
 
-void CalcitePlanJsonDeserializer::deserialize(const string &planJsonString) {
-  auto jObj = json::parse(planJsonString);
+CalcitePlanJsonDeserializer::CalcitePlanJsonDeserializer(string planJsonString,
+                                                         const shared_ptr<CatalogueEntry> &catalogueEntry)
+        : planJsonString_(std::move(planJsonString)), catalogueEntry_(catalogueEntry) {}
+
+shared_ptr<PrePhysicalPlan> CalcitePlanJsonDeserializer::deserialize() {
+  auto jObj = json::parse(planJsonString_);
   auto rootPrePOp = deserializeDfs(jObj);
-  int a = 1;
+  return make_shared<PrePhysicalPlan>(rootPrePOp);
 }
 
 shared_ptr<PrePhysicalOp> CalcitePlanJsonDeserializer::deserializeDfs(json &jObj) {
@@ -47,8 +53,9 @@ shared_ptr<PrePhysicalOp> CalcitePlanJsonDeserializer::deserializeDfs(json &jObj
     return deserializeHashJoin(jObj);
   } else if (opName == "EnumerableFilter") {
     return deserializeFilterOrFilterableScan(jObj);
+  } else if (opName == "EnumerableTableScan") {
+    return deserializeTableScan(jObj);
   } else {
-//    return nullptr;
     throw runtime_error(fmt::format("Unsupported PrePhysicalOp type, {}", opName));
   }
 }
@@ -239,13 +246,19 @@ shared_ptr<PrePhysicalOp> CalcitePlanJsonDeserializer::deserializeAggregateOrGro
     aggFunctions.emplace_back(aggFunction);
   }
 
+  // project column names
+  unordered_set<string> projectColumnNames;
+  projectColumnNames.insert(aggOutputColumnNames.begin(), aggOutputColumnNames.end());
+
   // decide if it's an Aggregate op or a Group op
   shared_ptr<PrePhysicalOp> prePOp;
   if (groupColumnNames.empty()) {
     prePOp = make_shared<AggregatePrePOp>(aggOutputColumnNames, aggFunctions);
   } else {
+    projectColumnNames.insert(groupColumnNames.begin(), groupColumnNames.end());
     prePOp = make_shared<GroupPrePOp>(groupColumnNames, aggOutputColumnNames, aggFunctions);
   }
+  prePOp->setProjectColumnNames(projectColumnNames);
 
   // deserialize producers
   prePOp->setProducers(deserializeProducers(jObj));
@@ -278,13 +291,19 @@ shared_ptr<prephysical::PrePhysicalOp> CalcitePlanJsonDeserializer::deserializeP
     }
   }
 
-  // project columns
+  // project columns and exprs
   unordered_set<string> projectColumnNames;
+  vector<shared_ptr<Expression>> exprs;
   const auto &fieldsJArr = jObj["fields"].get<vector<json>>();
   for (const auto &fieldJObj: fieldsJArr) {
     if (fieldJObj.contains("inputRef")) {
       const string &projectColumnName = ColumnName::canonicalize(fieldJObj["inputRef"].get<string>());
       projectColumnNames.emplace(projectColumnName);
+    } else if (fieldJObj.contains("op")) {
+      const auto &expr = deserializeExpression(fieldJObj);
+      exprs.emplace_back(expr);
+      const auto &exprUsedColumnNames = expr->involvedColumnNames();
+      projectColumnNames.insert(exprUsedColumnNames->begin(), exprUsedColumnNames->end());
     }
   }
 
@@ -298,12 +317,6 @@ shared_ptr<prephysical::PrePhysicalOp> CalcitePlanJsonDeserializer::deserializeP
 
   else {
     // not skip the Project
-    vector<shared_ptr<Expression>> exprs;
-    for (const auto &fieldJObj: fieldsJArr) {
-      if (fieldJObj.contains("op")) {
-        exprs.emplace_back(deserializeExpression(fieldJObj));
-      }
-    }
     shared_ptr<ProjectPrePOp> projectPrePOp = make_shared<ProjectPrePOp>(exprs);
 
     // deserialize producers
@@ -335,25 +348,46 @@ shared_ptr<prephysical::HashJoinPrePOp> CalcitePlanJsonDeserializer::deserialize
   return hashJoinPrePOp;
 }
 
-shared_ptr<prephysical::PrePhysicalOp> CalcitePlanJsonDeserializer::deserializeFilterOrFilterableScan(json &jObj) {
+shared_ptr<prephysical::PrePhysicalOp> CalcitePlanJsonDeserializer::deserializeFilterOrFilterableScan(const json &jObj) {
   // deserialize filter predicate
   const auto &predicate = deserializeExpression(jObj["condition"]);
 
-  auto producerJObj = jObj["inputs"].get<vector<json>>()[0];
-  if (producerJObj["operator"].get<string>() == "EnumerableScan") {
-    // if the producer is scan, combine them as filterable scan
-
-    return shared_ptr<prephysical::PrePhysicalOp>();
+  // deserialize producers
+  const auto &producers = deserializeProducers(jObj);
+  if (producers[0]->getType() == FilterableScan) {
+    // if the producer is filterable scan, then set its filter predicate
+    const auto &filterableScan = static_pointer_cast<FilterableScanPrePOp>(producers[0]);
+    filterableScan->setPredicate(predicate);
+    return filterableScan;
   }
 
   else {
-    // else, do regular deserialization
+    // else do regularly, make a filter op
     shared_ptr<FilterPrePOp> filterPrePOp = make_shared<FilterPrePOp>(predicate);
-
-    // deserialize producers
     filterPrePOp->setProducers(deserializeProducers(jObj));
     return filterPrePOp;
   }
+}
+
+shared_ptr<prephysical::FilterableScanPrePOp> CalcitePlanJsonDeserializer::deserializeTableScan(const json &jObj) {
+  const string &tableName = jObj["table"].get<string>();
+  shared_ptr<Table> table;
+
+  unordered_set<string> columnNameSet;
+  // fetch table from catalogue entry
+  if (catalogueEntry_->getType() == S3) {
+    const auto s3CatalogueEntry = static_pointer_cast<s3::S3CatalogueEntry>(catalogueEntry_);
+    table = s3CatalogueEntry->getS3Table(tableName);
+    const vector<string> &columnNames = table->getColumnNames();
+    columnNameSet.insert(columnNames.begin(), columnNames.end());
+  } else {
+    throw runtime_error(fmt::format("Unsupported catalogue entry type: {}, from: {}",
+                                    catalogueEntry_->getType(), catalogueEntry_->getName()));
+  }
+
+  auto filterableScanPrePOp = make_shared<prephysical::FilterableScanPrePOp>(table);
+  filterableScanPrePOp->setProjectColumnNames(columnNameSet);
+  return filterableScanPrePOp;
 }
 
 }

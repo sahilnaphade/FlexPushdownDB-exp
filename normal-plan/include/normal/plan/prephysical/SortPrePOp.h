@@ -18,6 +18,8 @@ public:
 
   string getName() override;
 
+  unordered_set<string> getUsedColumnNames() override;
+
 private:
   vector<pair<string, FieldDirection>> sortColumns_;
 };

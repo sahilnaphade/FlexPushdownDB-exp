@@ -15,6 +15,15 @@ using namespace normal::catalogue;
 namespace normal::plan::prephysical {
 
 class FilterableScanPrePOp: public PrePhysicalOp {
+public:
+  FilterableScanPrePOp(const shared_ptr<Table> &table);
+
+  string getName() override;
+
+  void setPredicate(const shared_ptr<Expression> &predicate);
+
+  unordered_set<string> getUsedColumnNames() override;
+
 private:
   shared_ptr<Expression> predicate_;
   shared_ptr<Table> table_;

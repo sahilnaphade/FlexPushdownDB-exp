@@ -12,6 +12,14 @@ PrePOpType PrePhysicalOp::getType() const {
   return type_;
 }
 
+const vector<shared_ptr<PrePhysicalOp>> &PrePhysicalOp::getProducers() const {
+  return producers_;
+}
+
+const unordered_set<string> &PrePhysicalOp::getProjectColumnNames() const {
+  return projectColumnNames_;
+}
+
 void PrePhysicalOp::setProducers(const vector<shared_ptr<PrePhysicalOp>> &producers) {
   producers_ = producers;
 }

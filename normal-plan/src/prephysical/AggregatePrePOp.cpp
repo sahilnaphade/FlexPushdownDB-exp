@@ -15,4 +15,13 @@ AggregatePrePOp::AggregatePrePOp(const vector<string> &aggOutputColumnNames,
 string AggregatePrePOp::getName() {
   return "AggregatePrePOp";
 }
+
+unordered_set<string> AggregatePrePOp::getUsedColumnNames() {
+  unordered_set<string> usedColumnNames;
+  for (const auto &function: functions_) {
+    const auto involvedColumnNames = function->getExpression()->involvedColumnNames();
+    usedColumnNames.insert(involvedColumnNames->begin(), involvedColumnNames->end());
+  }
+  return usedColumnNames;
+}
 }

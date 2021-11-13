@@ -25,4 +25,9 @@ Table::Table(string name,
 const string &Table::getName() const {
   return name_;
 }
+
+const vector<string> Table::getColumnNames() const {
+  return schema_->field_names();
+}
+
 }

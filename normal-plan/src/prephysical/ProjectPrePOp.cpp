@@ -12,4 +12,13 @@ ProjectPrePOp::ProjectPrePOp(const vector<shared_ptr<Expression>> &exprs) :
 string ProjectPrePOp::getName() {
   return "ProjectPrePOp";
 }
+
+unordered_set<string> ProjectPrePOp::getUsedColumnNames() {
+  unordered_set<string> usedColumnNames = getProjectColumnNames();
+  for (const auto &expr: exprs_) {
+    const auto involvedColumnNames = expr->involvedColumnNames();
+    usedColumnNames.insert(involvedColumnNames->begin(), involvedColumnNames->end());
+  }
+  return usedColumnNames;
+}
 }

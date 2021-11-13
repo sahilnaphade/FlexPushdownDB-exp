@@ -17,6 +17,8 @@ public:
 
   string getName() override;
 
+  unordered_set<string> getUsedColumnNames() override;
+
 private:
   vector<string> aggOutputColumnNames_;
   vector<shared_ptr<AggregatePrePFunction>> functions_;

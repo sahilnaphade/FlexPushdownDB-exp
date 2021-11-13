@@ -18,6 +18,8 @@ public:
 
   string getName() override;
 
+  unordered_set<string> getUsedColumnNames() override;
+
 private:
   JoinType joinType_;
   vector<string> leftColumnNames_;

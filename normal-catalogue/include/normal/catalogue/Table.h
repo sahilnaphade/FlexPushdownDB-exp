@@ -27,6 +27,7 @@ public:
         const shared_ptr<CatalogueEntry> &catalogueEntry);
 
   const string &getName() const;
+  const vector<string> getColumnNames() const;
 
 private:
   string name_;

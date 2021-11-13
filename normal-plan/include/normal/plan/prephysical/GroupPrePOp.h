@@ -19,6 +19,8 @@ public:
 
   string getName() override;
 
+  unordered_set<string> getUsedColumnNames() override;
+
 private:
   vector<string> groupColumnNames_;
   vector<string> aggOutputColumnNames_;

@@ -19,12 +19,14 @@ namespace normal::catalogue::s3 {
 class S3CatalogueEntry : public CatalogueEntry {
 
 public:
-  S3CatalogueEntry(const string &name,
+  S3CatalogueEntry(const string &schemaName,
                    string s3Bucket,
                    shared_ptr<Catalogue> catalogue);
   ~S3CatalogueEntry() override = default;
 
   const string &getS3Bucket() const;
+  const shared_ptr<S3Table> &getS3Table(const string& tableName) const;
+  string getTypeName() const override;
 
   void addS3Table(const shared_ptr<S3Table> &s3Table);
 

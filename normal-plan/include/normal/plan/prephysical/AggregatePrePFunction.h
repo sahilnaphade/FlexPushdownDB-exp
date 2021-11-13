@@ -12,17 +12,21 @@
 #include <string>
 #include <memory>
 
+using namespace std;
+
 namespace normal::plan::prephysical {
 
 class AggregatePrePFunction {
 public:
   AggregatePrePFunction(AggregatePrePFunctionType type,
-                        const std::shared_ptr<expression::gandiva::Expression> &expression);
+                        const shared_ptr<expression::gandiva::Expression> &expression);
   virtual ~AggregatePrePFunction() = default;
+
+  const shared_ptr<expression::gandiva::Expression> &getExpression() const;
 
 private:
   AggregatePrePFunctionType type_;
-  std::shared_ptr<expression::gandiva::Expression> expression_;
+  shared_ptr<expression::gandiva::Expression> expression_;
 
 };
 

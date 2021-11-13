@@ -7,8 +7,12 @@
 namespace normal::plan::prephysical {
 
 AggregatePrePFunction::AggregatePrePFunction(AggregatePrePFunctionType type,
-                                             const std::shared_ptr<expression::gandiva::Expression> &expression) :
+                                             const shared_ptr<expression::gandiva::Expression> &expression) :
   type_(type),
   expression_(expression) {}
+
+const shared_ptr<expression::gandiva::Expression> &AggregatePrePFunction::getExpression() const {
+  return expression_;
+}
 
 }

@@ -80,7 +80,13 @@ void e2eWithoutServer() {
                                                                               awsClient->getS3Client());
   catalogue->putEntry(s3CatalogueEntry);
 
-  CalcitePlanJsonDeserializer::deserialize(planResult);
+  // deserialize plan json string into prephysical plan
+  shared_ptr<CalcitePlanJsonDeserializer> planDeserializer = make_shared<CalcitePlanJsonDeserializer>(planResult,
+                                                                                                      s3CatalogueEntry);
+  const auto &prePhysicalPlan = planDeserializer->deserialize();
+
+  // trim unused fields (Calcite trimmer does not trim completely)
+  prePhysicalPlan->populateAndTrimProjectColumns();
 }
 
 int main() {

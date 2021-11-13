@@ -17,4 +17,8 @@ string SortPrePOp::getName() {
   return "SortPrePOp";
 }
 
+unordered_set<string> SortPrePOp::getUsedColumnNames() {
+  return getProjectColumnNames();
+}
+
 }
