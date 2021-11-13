@@ -1,7 +1,6 @@
 //
 // Created by matt on 27/7/20.
 //
-#include <memory>
 #include <vector>
 
 #include <doctest/doctest.h>
@@ -9,19 +8,13 @@
 #include <gandiva/tree_expr_builder.h>
 #include <normal/expression/gandiva/Projector.h>
 #include <normal/expression/gandiva/Column.h>
-#include <normal/core/type/Float64Type.h>
-#include <normal/core/type/Integer32Type.h>
 #include <normal/expression/gandiva/Cast.h>
 #include <normal/expression/gandiva/Multiply.h>
-#include <normal/expression/gandiva/Add.h>
 #include <normal/tuple/TupleSet2.h>
-#include <random>
 #include <normal/tuple/Sample.h>
 
 #include "Globals.h"
-#include "TestUtil.h"
 
-using namespace normal::core::type;
 using namespace normal::tuple;
 using namespace normal::expression::gandiva;
 using namespace normal::expression::gandiva::test;
@@ -39,8 +32,8 @@ TEST_CASE ("make" * doctest::skip(false || SKIP_SUITE)) {
 
 	  SPDLOG_DEBUG("Start");
 
-	  auto e = times(cast(col("c_0"), float64Type()),
-					 cast(col("c_1"), float64Type()));
+	  auto e = times(cast(col("c_0"), arrow::float64()),
+					 cast(col("c_1"), arrow::float64()));
 
 	  auto tupleSet = Sample::sampleCxRString(2, 1000000);
 

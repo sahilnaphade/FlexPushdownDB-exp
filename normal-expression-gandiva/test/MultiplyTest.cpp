@@ -7,22 +7,16 @@
 
 #include <doctest/doctest.h>
 
-#include <normal/core/type/DecimalType.h>
 #include <normal/expression/gandiva/Column.h>
-#include <normal/core/type/Float64Type.h>
 #include <normal/expression/gandiva/Cast.h>
 #include <normal/expression/gandiva/Multiply.h>
-#include <normal/expression/Projector.h>
 #include <normal/expression/gandiva/Projector.h>
 #include <normal/tuple/TupleSet2.h>
-#include <normal/core/type/Integer32Type.h>
-#include <normal/core/type/Integer64Type.h>
 
 #include "Globals.h"
 #include "TestUtil.h"
 
 using namespace normal::tuple;
-using namespace normal::core::type;
 using namespace normal::expression::gandiva;
 using namespace normal::expression::gandiva::test;
 
@@ -38,8 +32,8 @@ TEST_CASE ("simple" * doctest::skip(false || SKIP_SUITE)) {
   SPDLOG_DEBUG("Input:\n{}", inputTupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 
   auto expressions = std::vector<std::shared_ptr<normal::expression::gandiva::Expression>>{
-	  times(cast(col("a"), float64Type()),
-			cast(col("b"), float64Type()))
+	  times(cast(col("a"), arrow::float64()),
+			cast(col("b"), arrow::float64()))
   };
 
   auto projector = std::make_shared<Projector>(expressions);
@@ -68,8 +62,8 @@ TEST_CASE ("empty" * doctest::skip(false || SKIP_SUITE)) {
   SPDLOG_DEBUG("Input:\n{}", inputTupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 
   auto expressions = std::vector<std::shared_ptr<normal::expression::gandiva::Expression>>{
-	  times(cast(col("a"), float64Type()),
-			cast(col("b"), float64Type()))
+	  times(cast(col("a"), arrow::float64()),
+			cast(col("b"), arrow::float64()))
   };
 
   auto projector = std::make_shared<Projector>(expressions);
@@ -84,8 +78,8 @@ TEST_CASE ("0-rows" * doctest::skip(false || SKIP_SUITE)) {
   SPDLOG_DEBUG("Input:\n{}", inputTupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 
   auto expressions = std::vector<std::shared_ptr<normal::expression::gandiva::Expression>>{
-	  times(cast(col("a"), float64Type()),
-			cast(col("b"), float64Type()))
+	  times(cast(col("a"), arrow::float64()),
+			cast(col("b"), arrow::float64()))
   };
 
   auto projector = std::make_shared<Projector>(expressions);

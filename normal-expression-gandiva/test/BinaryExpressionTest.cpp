@@ -13,13 +13,11 @@
 #include <normal/expression/gandiva/Cast.h>
 #include <normal/expression/gandiva/Projector.h>
 #include <normal/tuple/TupleSet2.h>
-#include <normal/core/type/Integer32Type.h>
 
 #include "Globals.h"
 #include "TestUtil.h"
 
 using namespace normal::tuple;
-using namespace normal::core::type;
 using namespace normal::expression::gandiva;
 using namespace normal::expression::gandiva::test;
 
@@ -35,9 +33,9 @@ TEST_CASE ("less-than" * doctest::skip(false || SKIP_SUITE)) {
   SPDLOG_DEBUG("Input:\n{}", inputTupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 
   auto expressions = std::vector<std::shared_ptr<normal::expression::gandiva::Expression>>{
-	  lt(cast(col("a"), integer32Type()), num_lit<::arrow::Int32Type>(2)),
-	  lt(cast(col("b"), integer32Type()), num_lit<::arrow::Int32Type>(5)),
-	  lt(cast(col("c"), integer32Type()), num_lit<::arrow::Int32Type>(8)),
+	  lt(cast(col("a"), arrow::int32()), num_lit<::arrow::Int32Type>(2)),
+	  lt(cast(col("b"), arrow::int32()), num_lit<::arrow::Int32Type>(5)),
+	  lt(cast(col("c"), arrow::int32()), num_lit<::arrow::Int32Type>(8)),
   };
 
   auto projector = std::make_shared<Projector>(expressions);

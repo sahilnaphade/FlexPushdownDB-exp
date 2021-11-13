@@ -7,21 +7,15 @@
 
 #include <doctest/doctest.h>
 
-#include <normal/core/type/DecimalType.h>
 #include <normal/expression/gandiva/Column.h>
-#include <normal/core/type/Float64Type.h>
 #include <normal/expression/gandiva/Cast.h>
-#include <normal/expression/Projector.h>
 #include <normal/expression/gandiva/Projector.h>
 #include <normal/tuple/TupleSet2.h>
-#include <normal/core/type/Integer32Type.h>
-#include <normal/core/type/Integer64Type.h>
 
 #include "Globals.h"
 #include "TestUtil.h"
 
 using namespace normal::tuple;
-using namespace normal::core::type;
 using namespace normal::expression::gandiva;
 using namespace normal::expression::gandiva::test;
 
@@ -37,9 +31,9 @@ TEST_CASE ("cast-string-to-decimal" * doctest::skip(false || SKIP_SUITE)) {
   SPDLOG_DEBUG("Input:\n{}", inputTupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 
   auto expressions = std::vector<std::shared_ptr<normal::expression::gandiva::Expression>>{
-	  cast(col("a"), decimalType(38, 0)),
-	  cast(col("b"), decimalType(38, 0)),
-	  cast(col("c"), decimalType(38, 0))
+	  cast(col("a"), arrow::decimal(38, 0)),
+	  cast(col("b"), arrow::decimal(38, 0)),
+	  cast(col("c"), arrow::decimal(38, 0))
   };
 
   auto projector = std::make_shared<Projector>(expressions);
@@ -75,9 +69,9 @@ TEST_CASE ("cast-string-to-double" * doctest::skip(false || SKIP_SUITE)) {
   SPDLOG_DEBUG("Input:\n{}", inputTupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 
   auto expressions = std::vector<std::shared_ptr<normal::expression::gandiva::Expression>>{
-	  cast(col("a"), float64Type()),
-	  cast(col("b"), float64Type()),
-	  cast(col("c"), float64Type())
+	  cast(col("a"), arrow::float64()),
+	  cast(col("b"), arrow::float64()),
+	  cast(col("c"), arrow::float64())
   };
 
   auto projector = std::make_shared<Projector>(expressions);
@@ -103,9 +97,9 @@ TEST_CASE ("cast-string-to-long" * doctest::skip(false || SKIP_SUITE)) {
   SPDLOG_DEBUG("Input:\n{}", inputTupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 
   auto expressions = std::vector<std::shared_ptr<normal::expression::gandiva::Expression>>{
-	  cast(col("a"), integer64Type()),
-	  cast(col("b"), integer64Type()),
-	  cast(col("c"), integer64Type())
+	  cast(col("a"), arrow::int64()),
+	  cast(col("b"), arrow::int64()),
+	  cast(col("c"), arrow::int64())
   };
 
   auto projector = std::make_shared<Projector>(expressions);
@@ -131,9 +125,9 @@ TEST_CASE ("cast-string-to-int" * doctest::skip(false || SKIP_SUITE)) {
   SPDLOG_DEBUG("Input:\n{}", inputTupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 
   auto expressions = std::vector<std::shared_ptr<normal::expression::gandiva::Expression>>{
-	  cast(col("a"), integer32Type()),
-	  cast(col("b"), integer32Type()),
-	  cast(col("c"), integer32Type())
+	  cast(col("a"), arrow::int32()),
+	  cast(col("b"), arrow::int32()),
+	  cast(col("c"), arrow::int32())
   };
 
   auto projector = std::make_shared<Projector>(expressions);
