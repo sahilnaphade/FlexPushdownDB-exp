@@ -10,7 +10,7 @@ PrePhysicalPlan::PrePhysicalPlan(const shared_ptr<PrePhysicalOp> &rootOp) : root
 
 void PrePhysicalPlan::populateAndTrimProjectColumns() {
   populateProjectColumnsDfs(rootOp_);
-  trimProjectColumns(rootOp_, nullopt);
+  trimProjectColumnsDfs(rootOp_, nullopt);
 }
 
 unordered_set<string> PrePhysicalPlan::populateProjectColumnsDfs(const shared_ptr<PrePhysicalOp>& op) {
@@ -31,8 +31,8 @@ unordered_set<string> PrePhysicalPlan::populateProjectColumnsDfs(const shared_pt
   }
 }
 
-void PrePhysicalPlan::trimProjectColumns(const shared_ptr<PrePhysicalOp>& op,
-                                         const optional<unordered_set<string>> &optDownUsedColumns) {
+void PrePhysicalPlan::trimProjectColumnsDfs(const shared_ptr<PrePhysicalOp>& op,
+                                            const optional<unordered_set<string>> &optDownUsedColumns) {
   // process used columns of downstream ops
   auto projectColumns = op->getProjectColumnNames();
   if (optDownUsedColumns.has_value()) {
@@ -50,7 +50,7 @@ void PrePhysicalPlan::trimProjectColumns(const shared_ptr<PrePhysicalOp>& op,
   // populate self's used columns to upstream ops
   const auto &usedColumns = op->getUsedColumnNames();
   for (const auto &producer: op->getProducers()) {
-    trimProjectColumns(producer, usedColumns);
+    trimProjectColumnsDfs(producer, usedColumns);
   }
 }
 

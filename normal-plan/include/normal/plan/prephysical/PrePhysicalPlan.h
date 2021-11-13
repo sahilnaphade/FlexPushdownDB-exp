@@ -25,8 +25,8 @@ private:
   /**
    * Trim project columns.
    */
-  void trimProjectColumns(const shared_ptr<PrePhysicalOp>& op,
-                          const optional<unordered_set<string>> &optDownUsedColumns);
+  void trimProjectColumnsDfs(const shared_ptr<PrePhysicalOp>& op,
+                             const optional<unordered_set<string>> &optDownUsedColumns);
 
   shared_ptr<PrePhysicalOp> rootOp_;
 };
