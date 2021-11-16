@@ -2,7 +2,7 @@
 // Created by Yifei Yang on 7/30/20.
 //
 
-#include "normal/cache/SegmentMetadata.h"
+#include <normal/cache/SegmentMetadata.h>
 
 using namespace normal::cache;
 

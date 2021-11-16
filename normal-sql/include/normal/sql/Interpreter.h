@@ -13,7 +13,7 @@
 #include <normal/core/OperatorManager.h>
 #include <normal/core/graph/OperatorGraph.h>
 #include <normal/plan/LogicalPlan.h>
-#include <normal/plan/mode/Mode.h>
+#include <normal/plan/Mode.h>
 
 using namespace normal::pushdown::s3;
 

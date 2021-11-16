@@ -2,7 +2,7 @@
 // Created by matt on 21/5/20.
 //
 
-#include <normal/cache/WFBRCachingPolicy.h>
+#include <normal/cache/policy/WLFUCachingPolicy.h>
 #include "normal/core/cache/SegmentCacheActor.h"
 
 namespace normal::core::cache {

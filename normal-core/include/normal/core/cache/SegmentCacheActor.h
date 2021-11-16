@@ -13,7 +13,7 @@
 #include <normal/core/cache/StoreRequestMessage.h>
 #include <normal/core/cache/WeightRequestMessage.h>
 #include <normal/core/cache/CacheMetricsMessage.h>
-#include <normal/cache/CachingPolicy.h>
+#include <normal/cache/policy/CachingPolicy.h>
 #include <normal/core/Forward.h>
 
 using namespace caf;

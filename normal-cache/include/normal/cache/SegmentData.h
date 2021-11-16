@@ -5,9 +5,8 @@
 #ifndef NORMAL_NORMAL_CACHE_INCLUDE_NORMAL_CACHE_SEGMENTDATA_H
 #define NORMAL_NORMAL_CACHE_INCLUDE_NORMAL_CACHE_SEGMENTDATA_H
 
-#include <memory>
-
 #include <normal/tuple/TupleSet2.h>
+#include <memory>
 
 using namespace normal::tuple;
 

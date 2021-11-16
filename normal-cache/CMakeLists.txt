@@ -11,19 +11,17 @@ add_library(normal-cache STATIC
         src/SegmentKey.cpp include/normal/cache/SegmentKey.h
         src/SegmentData.cpp include/normal/cache/SegmentData.h
         src/SegmentRange.cpp include/normal/cache/SegmentRange.h
-        src/LRUCachingPolicy.cpp include/normal/cache/LRUCachingPolicy.h
-        src/CachingPolicy.cpp include/normal/cache/CachingPolicy.h
         src/SegmentMetadata.cpp include/normal/cache/SegmentMetadata.h
-        src/FBRCachingPolicy.cpp include/normal/cache/FBRCachingPolicy.h
-        src/WFBRCachingPolicy.cpp include/normal/cache/WFBRCachingPolicy.h
-        src/BeladyCachingPolicy.cpp include/normal/cache/BeladyCachingPolicy.h
-        src/FBRSCachingPolicy.cpp include/normal/cache/FBRSCachingPolicy.h)
+        src/policy/CachingPolicy.cpp include/normal/cache/policy/CachingPolicy.h
+        src/policy/LRUCachingPolicy.cpp include/normal/cache/policy/LRUCachingPolicy.h
+        src/policy/LFUCachingPolicy.cpp include/normal/cache/policy/LFUCachingPolicy.h
+        src/policy/LFUSCachingPolicy.cpp include/normal/cache/policy/LFUSCachingPolicy.h
+        src/policy/WLFUCachingPolicy.cpp include/normal/cache/policy/WLFUCachingPolicy.h
+        src/policy/BeladyCachingPolicy.cpp include/normal/cache/policy/BeladyCachingPolicy.h)
 
 target_include_directories(normal-cache PUBLIC include)
 
-target_link_libraries(normal-cache PUBLIC spdlog::spdlog)
-target_link_libraries(normal-cache PUBLIC fmt::fmt)
-target_link_libraries(normal-cache PUBLIC normal-connector)
+target_link_libraries(normal-cache PUBLIC normal-plan)
 target_link_libraries(normal-cache PUBLIC normal-tuple)
 
 

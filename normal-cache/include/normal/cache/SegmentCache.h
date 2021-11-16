@@ -5,12 +5,13 @@
 #ifndef NORMAL_NORMAL_CACHE_INCLUDE_NORMAL_CACHE_SEGMENTCACHE_H
 #define NORMAL_NORMAL_CACHE_INCLUDE_NORMAL_CACHE_SEGMENTCACHE_H
 
+#include <normal/cache/SegmentKey.h>
+#include <normal/cache/SegmentData.h>
+#include <normal/cache/policy/CachingPolicy.h>
 #include <unordered_map>
 #include <memory>
 
-#include "SegmentKey.h"
-#include "SegmentData.h"
-#include "CachingPolicy.h"
+using namespace normal::cache::policy;
 
 namespace normal::cache {
 
@@ -30,18 +31,18 @@ public:
 
   size_t getSize() const;
   const std::shared_ptr<CachingPolicy> &getCachingPolicy() const;
-  int hitNum() const;
-  int missNum() const;
-  int shardHitNum() const;
-  int shardMissNum() const;
+  size_t hitNum() const;
+  size_t missNum() const;
+  size_t shardHitNum() const;
+  size_t shardMissNum() const;
   void addHitNum(size_t hitNum);
   void addMissNum(size_t missNum);
   void addShardHitNum(size_t shardHitNum);
   void addShardMissNum(size_t shardMissNum);
-  int crtQueryHitNum() const;
-  int crtQueryMissNum() const;
-  int crtQueryShardHitNum() const;
-  int crtQueryShardMissNum() const;
+  size_t crtQueryHitNum() const;
+  size_t crtQueryMissNum() const;
+  size_t crtQueryShardHitNum() const;
+  size_t crtQueryShardMissNum() const;
   void addCrtQueryHitNum(size_t hitNum);
   void addCrtQueryMissNum(size_t missNum);
   void addCrtQueryShardHitNum(size_t shardHitNum);
@@ -55,14 +56,14 @@ private:
 
   std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>, SegmentKeyPointerHash, SegmentKeyPointerPredicate> map_;
 	std::shared_ptr<CachingPolicy> cachingPolicy_;
-	int hitNum_ = 0;
-	int missNum_ = 0;
-	int shardHitNum_ = 0;
-	int shardMissNum_ = 0;
-	int crtQueryHitNum_ = 0;
-	int crtQueryMissNum_ = 0;
-	int crtQueryShardHitNum_ = 0;
-	int crtQueryShardMissNum_ = 0;
+  size_t hitNum_ = 0;
+  size_t missNum_ = 0;
+  size_t shardHitNum_ = 0;
+  size_t shardMissNum_ = 0;
+  size_t crtQueryHitNum_ = 0;
+  size_t crtQueryMissNum_ = 0;
+  size_t crtQueryShardHitNum_ = 0;
+  size_t crtQueryShardMissNum_ = 0;
 };
 
 }

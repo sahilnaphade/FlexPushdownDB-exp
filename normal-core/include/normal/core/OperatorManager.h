@@ -11,7 +11,7 @@
 
 #include <caf/all.hpp>
 
-#include <normal/cache/CachingPolicy.h>
+#include <normal/cache/policy/CachingPolicy.h>
 
 #include <normal/core/Globals.h>
 #include <normal/core/message/Message.h>

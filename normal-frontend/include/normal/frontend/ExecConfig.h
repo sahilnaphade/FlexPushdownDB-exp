@@ -5,7 +5,7 @@
 #ifndef NORMAL_NORMAL_FRONTEND_INCLUDE_NORMAL_FRONTEND_EXECCONFIG_H
 #define NORMAL_NORMAL_FRONTEND_INCLUDE_NORMAL_FRONTEND_EXECCONFIG_H
 
-#include <normal/plan/mode/Mode.h>
+#include <normal/plan/Mode.h>
 #include <normal/cache/CachingPolicy.h>
 #include <unordered_map>
 #include <string>

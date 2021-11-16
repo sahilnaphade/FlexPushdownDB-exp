@@ -87,6 +87,9 @@ void e2eWithoutServer() {
 
   // trim unused fields (Calcite trimmer does not trim completely)
   prePhysicalPlan->populateAndTrimProjectColumns();
+
+  // execute
+
 }
 
 int main() {

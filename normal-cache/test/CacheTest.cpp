@@ -12,8 +12,8 @@
 #include <normal/cache/SegmentKey.h>
 #include <normal/cache/SegmentData.h>
 #include <normal/cache/SegmentRange.h>
-#include <normal/cache/LRUCachingPolicy.h>
-#include <normal/plan/mode/Mode.h>
+#include <normal/cache/policy/LRUCachingPolicy.h>
+#include <normal/plan/Mode.h>
 #include <normal/plan/mode/ModeId.h>
 
 using namespace normal::cache;

@@ -5,12 +5,12 @@
 #ifndef NORMAL_NORMAL_CACHE_INCLUDE_NORMAL_CACHE_SEGMENTKEY_H
 #define NORMAL_NORMAL_CACHE_INCLUDE_NORMAL_CACHE_SEGMENTKEY_H
 
+#include <normal/catalogue/Partition.h>
+#include <normal/cache/SegmentRange.h>
+#include <normal/cache/SegmentMetadata.h>
 #include <memory>
 
-#include <normal/connector/partition/Partition.h>
-
-#include "SegmentRange.h"
-#include "SegmentMetadata.h"
+using namespace normal::catalogue;
 
 namespace normal::cache {
 

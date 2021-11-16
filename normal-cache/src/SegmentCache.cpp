@@ -2,10 +2,9 @@
 // Created by matt on 19/5/20.
 //
 
-#include "normal/cache/SegmentCache.h"
-
+#include <normal/cache/SegmentCache.h>
+#include <normal/cache/policy/LRUCachingPolicy.h>
 #include <utility>
-#include <normal/cache/LRUCachingPolicy.h>
 
 using namespace normal::cache;
 
@@ -68,22 +67,22 @@ size_t SegmentCache::getSize() const {
 
 std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>>
 SegmentCache::toCache(std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> segmentKeys) {
-  return cachingPolicy_->onToCache(segmentKeys);
+  return cachingPolicy_->onToCache(std::move(segmentKeys));
 }
 
-int SegmentCache::hitNum() const {
+size_t SegmentCache::hitNum() const {
   return hitNum_;
 }
 
-int SegmentCache::missNum() const {
+size_t SegmentCache::missNum() const {
   return missNum_;
 }
 
-int SegmentCache::shardHitNum() const {
+size_t SegmentCache::shardHitNum() const {
   return shardHitNum_;
 }
 
-int SegmentCache::shardMissNum() const {
+size_t SegmentCache::shardMissNum() const {
   return shardMissNum_;
 }
 
@@ -98,19 +97,19 @@ const std::shared_ptr<CachingPolicy> &SegmentCache::getCachingPolicy() const {
   return cachingPolicy_;
 }
 
-int SegmentCache::crtQueryHitNum() const {
+size_t SegmentCache::crtQueryHitNum() const {
   return crtQueryHitNum_;
 }
 
-int SegmentCache::crtQueryMissNum() const {
+size_t SegmentCache::crtQueryMissNum() const {
   return crtQueryMissNum_;
 }
 
-int SegmentCache::crtQueryShardHitNum() const {
+size_t SegmentCache::crtQueryShardHitNum() const {
   return crtQueryShardHitNum_;
 }
 
-int SegmentCache::crtQueryShardMissNum() const {
+size_t SegmentCache::crtQueryShardMissNum() const {
   return crtQueryShardMissNum_;
 }
 
@@ -165,7 +164,7 @@ void SegmentCache::checkCacheConsistensyWithCachePolicy() {
   // make sure all keys in caching policy cache are in segment cache
   // don't need to worry about checking the other way around since we are comparing sets and they are the same size
   // so checking one way will show any errors
-  for (auto segmentKey : *keysInCachePolicy) {
+  for (const auto& segmentKey : *keysInCachePolicy) {
     if (map_.find(segmentKey) == map_.end()) {
       throw std::runtime_error("Error, cache policy key set has a key not present in the segment cache");
     }
