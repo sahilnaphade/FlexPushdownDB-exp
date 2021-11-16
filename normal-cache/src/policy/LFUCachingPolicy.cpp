@@ -15,12 +15,15 @@ bool LFUCachingPolicy::lessValue (const std::shared_ptr<SegmentKey> &key1, const
          < (key2->getMetadata()->hitNum());
 }
 
-LFUCachingPolicy::LFUCachingPolicy(size_t maxSize, std::shared_ptr<normal::plan::operator_::mode::Mode> mode) :
-        CachingPolicy(maxSize, std::move(mode)), minFreq_(0) {}
-
-std::shared_ptr<LFUCachingPolicy> LFUCachingPolicy::make(size_t maxSize, std::shared_ptr<normal::plan::operator_::mode::Mode> mode) {
-  return std::make_shared<LFUCachingPolicy>(maxSize, mode);
-}
+LFUCachingPolicy::LFUCachingPolicy(size_t maxSize,
+                                   std::shared_ptr<Mode> mode,
+                                   std::shared_ptr<CatalogueEntry> catalogueEntry) :
+        CachingPolicy(LFU,
+                      maxSize,
+                      std::move(mode),
+                      std::move(catalogueEntry),
+                      false),
+        minFreq_(0) {}
 
 void LFUCachingPolicy::eraseFreqMap(int freq, std::list<std::shared_ptr<SegmentKey>>::iterator it) {
   freqMap_[freq].erase(it);
@@ -136,7 +139,7 @@ LFUCachingPolicy::onStore(const std::shared_ptr<SegmentKey> &key) {
         break;
       }
       tmpFreqSet.erase(tmpMinFreq);
-      if (tmpFreqSet.size() > 0) {
+      if (!tmpFreqSet.empty()) {
         tmpMinFreq = *tmpFreqSet.begin();
         for (auto tmpFreq: tmpFreqSet) {
           if (tmpFreq < tmpMinFreq) {
@@ -165,7 +168,7 @@ LFUCachingPolicy::onStore(const std::shared_ptr<SegmentKey> &key) {
 
 std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>>
 LFUCachingPolicy::onToCache(std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> segmentKeys) {
-  if (mode_->id() == normal::plan::operator_::mode::ModeId::PullupCaching) {
+  if (mode_->id() == CachingOnly) {
     return segmentKeys;
   }
 
@@ -231,10 +234,6 @@ std::string LFUCachingPolicy::showCurrentLayout() {
   ss << "Max size: " << maxSize_ << std::endl;
   ss << "Free size: " << freeSize_ << std::endl;
   return ss.str();
-}
-
-CachingPolicyId LFUCachingPolicy::id() {
-  return LFU;
 }
 
 std::string LFUCachingPolicy::toString() {

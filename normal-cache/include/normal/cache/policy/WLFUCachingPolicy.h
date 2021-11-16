@@ -18,8 +18,9 @@ namespace normal::cache::policy {
 class WLFUCachingPolicy : public CachingPolicy {
 
 public:
-  explicit WLFUCachingPolicy(size_t maxSize, std::shared_ptr<normal::plan::operator_::mode::Mode> mode);
-  static std::shared_ptr<WLFUCachingPolicy> make(size_t maxSize, std::shared_ptr<normal::plan::operator_::mode::Mode> mode);
+  explicit WLFUCachingPolicy(size_t maxSize,
+                             std::shared_ptr<Mode> mode,
+                             std::shared_ptr<CatalogueEntry> catalogueEntry);
 
   void onLoad(const std::shared_ptr<SegmentKey> &key) override;
   void onWeight(const std::shared_ptr<std::unordered_map<std::shared_ptr<SegmentKey>, double>> &weightMap, long queryId);
@@ -28,7 +29,6 @@ public:
   std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> onToCache(std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> segmentKeys) override;
   std::shared_ptr<std::unordered_set<std::shared_ptr<SegmentKey>, SegmentKeyPointerHash, SegmentKeyPointerPredicate>> getKeysetInCachePolicy() override;
   std::string showCurrentLayout() override;
-  CachingPolicyId id() override;
   std::string toString() override;
   void onNewQuery() override;
 

@@ -6,6 +6,7 @@
 #define NORMAL_NORMAL_CACHE_INCLUDE_NORMAL_CACHE_BELADYCACHINGPOLICY_H
 
 #include <normal/cache/policy/CachingPolicy.h>
+#include <normal/cache/policy/BeladyCachingPolicyHelper.h>
 #include <normal/cache/SegmentKey.h>
 #include <memory>
 #include <list>
@@ -13,20 +14,18 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <vector>
+#include <set>
 
 using namespace normal::cache;
 
 namespace normal::cache::policy {
 
-// This must be populated with SegmentKey->[Query #s Segment is used in] and
-// QueryNumber->[Involved Segment Keys] prior to executing any queries
-extern std::shared_ptr<connector::MiniCatalogue> beladyMiniCatalogue;
-
 class BeladyCachingPolicy: public CachingPolicy {
 
 public:
-  explicit BeladyCachingPolicy(size_t maxSize, std::shared_ptr<normal::plan::operator_::mode::Mode> mode);
-  static std::shared_ptr<BeladyCachingPolicy> make(size_t maxSize, std::shared_ptr<normal::plan::operator_::mode::Mode> mode);
+  explicit BeladyCachingPolicy(size_t maxSize,
+                               std::shared_ptr<Mode> mode,
+                               std::shared_ptr<CatalogueEntry> catalogueEntry);
 
   void onLoad(const std::shared_ptr<SegmentKey> &key) override;
   void onRemove(const std::shared_ptr<SegmentKey> &key) override;
@@ -43,7 +42,6 @@ public:
   [[maybe_unused]] std::string printHitsAndMissesPerQuery();
   std::string printLayoutAfterEveryQuery();
 
-  CachingPolicyId id() override;
   std::string toString() override;
   void onNewQuery() override;
 
@@ -51,11 +49,18 @@ private:
   std::unordered_set<std::shared_ptr<SegmentKey>, SegmentKeyPointerHash, SegmentKeyPointerPredicate> keysInCache_;
   std::unordered_map<int, std::shared_ptr<std::unordered_set<std::shared_ptr<SegmentKey>, SegmentKeyPointerHash, SegmentKeyPointerPredicate>>> queryNumToKeysInCache_;
 
-  // Number of queries, this is passed in via generateCacheDecisions
+  static bool lessKeyValue(const std::shared_ptr<SegmentKey> &key1,
+                           const std::shared_ptr<SegmentKey> &key2);
+  void erase(const std::shared_ptr<SegmentKey> &key);
+
+  // Belady decisions (number of queries), this is passed in via generateCacheDecisions
   int numQueries_{};
 
-  void erase(const std::shared_ptr<SegmentKey> &key);
+  void assertDecreasingOrderingOfSegmentKeys(const shared_ptr<vector<shared_ptr<SegmentKey>>>& segmentKeys);
 };
+
+// helper_ to generate Belady decisions
+std::shared_ptr<BeladyCachingPolicyHelper> helper_;
 
 }
 

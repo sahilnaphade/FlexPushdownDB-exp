@@ -12,10 +12,6 @@ SegmentCache::SegmentCache(std::shared_ptr<CachingPolicy> cachingPolicy) :
 	cachingPolicy_(std::move(cachingPolicy)) {
 }
 
-std::shared_ptr<SegmentCache> SegmentCache::make() {
-  return std::make_shared<SegmentCache>(LRUCachingPolicy::make());
-}
-
 std::shared_ptr<SegmentCache> SegmentCache::make(const std::shared_ptr<CachingPolicy>& cachingPolicy) {
   return std::make_shared<SegmentCache>(cachingPolicy);
 }

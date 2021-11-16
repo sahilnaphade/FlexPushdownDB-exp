@@ -20,22 +20,22 @@ bool WLFUCachingPolicy::lessValue(const std::shared_ptr<SegmentKey> &key1, const
   return key1->getMetadata()->value() < key2->getMetadata()->value();
 }
 
-WLFUCachingPolicy::WLFUCachingPolicy(size_t maxSize, std::shared_ptr<normal::plan::operator_::mode::Mode> mode):
-      CachingPolicy(maxSize, std::move(mode)),
+WLFUCachingPolicy::WLFUCachingPolicy(size_t maxSize,
+                                     std::shared_ptr<Mode> mode,
+                                     std::shared_ptr<CatalogueEntry> catalogueEntry):
+      CachingPolicy(WLFU,
+                    maxSize,
+                    std::move(mode),
+                    std::move(catalogueEntry),
+                    true),
       currentQueryId_(0) {}
-
-std::shared_ptr<WLFUCachingPolicy>
-WLFUCachingPolicy::make(size_t maxSize, std::shared_ptr<normal::plan::operator_::mode::Mode> mode) {
-  return std::make_shared<WLFUCachingPolicy>(maxSize, mode);
-}
 
 void WLFUCachingPolicy::onLoad(const std::shared_ptr<SegmentKey> &key) {
     auto startTime = std::chrono::steady_clock::now();
     auto keyEntry = keySet_.find(key);
     if (keyEntry != keySet_.end()) {
-        auto miniCatalogue = normal::connector::defaultMiniCatalogue;
         auto realKey = *keyEntry;
-        realKey->getMetadata()->incHitNum(miniCatalogue->getSegmentSize(key));
+        realKey->getMetadata()->incHitNum(getSegmentSize(key));
         if (keySetInCache_.find(key) != keySetInCache_.end()) {
             // allow stale segmentKeys, to avoid to implement increaseKey() in the heap
 //            std::make_heap(keysInCache_.begin(), keysInCache_.end(), Comp());
@@ -155,12 +155,11 @@ WLFUCachingPolicy::onStore(const std::shared_ptr<SegmentKey> &key) {
 std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>>
 WLFUCachingPolicy::onToCache(std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> segmentKeys) {
     auto startTime = std::chrono::steady_clock::now();
-    if (mode_->id() == normal::plan::operator_::mode::ModeId::PullupCaching) {
+    if (mode_->id() == CachingOnly) {
         return segmentKeys;
     }
 
     auto keysToCache = std::make_shared<std::vector<std::shared_ptr<SegmentKey>>>();
-    auto miniCatalogue = normal::connector::defaultMiniCatalogue;
 
     // FIXME: an estimation here, if freeSizeOTC_ >= c * maxSize_, we try to cache all segments
     //  Because we cannot know the size of segmentData before bringing it back
@@ -168,7 +167,7 @@ WLFUCachingPolicy::onToCache(std::shared_ptr<std::vector<std::shared_ptr<Segment
         for (auto const &key: *segmentKeys) {
             keysInCacheOTC_.push_back(key);
             std::push_heap(keysInCacheOTC_.begin(), keysInCacheOTC_.end(), CompValue());
-            freeSizeOTC_ -= miniCatalogue->getSegmentSize(key);
+            freeSizeOTC_ -= getSegmentSize(key);
         }
         return segmentKeys;
     }
@@ -185,7 +184,7 @@ WLFUCachingPolicy::onToCache(std::shared_ptr<std::vector<std::shared_ptr<Segment
         }
 
         size_t tmpFreeSizeOTC = freeSizeOTC_;
-        auto segmentSize = miniCatalogue->getSegmentSize(realKey);
+        auto segmentSize = getSegmentSize(realKey);
         std::vector<std::shared_ptr<SegmentKey>> removableKeys;
         bool toCache = true;
         while (tmpFreeSizeOTC < segmentSize) {
@@ -199,7 +198,7 @@ WLFUCachingPolicy::onToCache(std::shared_ptr<std::vector<std::shared_ptr<Segment
                 removableKeys.emplace_back(removableKey);
                 std::pop_heap(keysInCacheOTC_.begin(), keysInCacheOTC_.end(), CompValue());
                 keysInCacheOTC_.pop_back();
-                tmpFreeSizeOTC += miniCatalogue->getSegmentSize(removableKey);
+                tmpFreeSizeOTC += getSegmentSize(removableKey);
             } else {
                 // not to cache, restore popped keys
                 for (auto const &key: removableKeys) {
@@ -245,10 +244,6 @@ std::string WLFUCachingPolicy::showCurrentLayout() {
   ss << "Max size: " << maxSize_ << std::endl;
   ss << "Free size: " << freeSize_ << std::endl;
   return ss.str();
-}
-
-CachingPolicyId WLFUCachingPolicy::id() {
-  return WLFU;
 }
 
 std::string WLFUCachingPolicy::toString() {

@@ -7,6 +7,7 @@ project(normal-cache VERSION "${PROJECT_VERSION}" LANGUAGES C CXX)
 
 add_library(normal-cache STATIC
         src/Globals.cpp include/normal/cache/Globals.h
+        src/Util.cpp include/normal/cache/Util.h
         src/SegmentCache.cpp include/normal/cache/SegmentCache.h
         src/SegmentKey.cpp include/normal/cache/SegmentKey.h
         src/SegmentData.cpp include/normal/cache/SegmentData.h
@@ -17,6 +18,7 @@ add_library(normal-cache STATIC
         src/policy/LFUCachingPolicy.cpp include/normal/cache/policy/LFUCachingPolicy.h
         src/policy/LFUSCachingPolicy.cpp include/normal/cache/policy/LFUSCachingPolicy.h
         src/policy/WLFUCachingPolicy.cpp include/normal/cache/policy/WLFUCachingPolicy.h
+        src/policy/BeladyCachingPolicyHelper.cpp include/normal/cache/policy/BeladyCachingPolicyHelper.h
         src/policy/BeladyCachingPolicy.cpp include/normal/cache/policy/BeladyCachingPolicy.h)
 
 target_include_directories(normal-cache PUBLIC include)
@@ -37,7 +39,6 @@ add_executable(normal-cache-test
 
 target_include_directories(normal-cache-test PRIVATE include)
 
-target_link_libraries(normal-cache-test spdlog::spdlog)
 target_link_libraries(normal-cache-test doctest::doctest)
 target_link_libraries(normal-cache-test Backward::Backward)
 target_link_libraries(normal-cache-test normal-cache)

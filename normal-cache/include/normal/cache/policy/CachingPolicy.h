@@ -15,10 +15,11 @@
 
 using namespace normal::plan;
 using namespace normal::catalogue;
+using namespace normal::cache;
 
 namespace normal::cache::policy {
 
-enum CachingPolicyId {
+enum CachingPolicyType {
   LRU,
   LFU,
   LFUS,
@@ -30,7 +31,11 @@ class CachingPolicy {
 
 public:
 
-  CachingPolicy(size_t maxSize, std::shared_ptr<Mode> mode);
+  CachingPolicy(CachingPolicyType type,
+                size_t maxSize,
+                std::shared_ptr<Mode> mode,
+                std::shared_ptr<CatalogueEntry> catalogueEntry,
+                bool readSegmentSize);
 
   virtual ~CachingPolicy() = default;
 
@@ -77,13 +82,6 @@ public:
   virtual std::string showCurrentLayout() = 0;
 
   /**
-   * Get caching policy id
-   *
-   * @return caching policy id
-   */
-  virtual CachingPolicyId id() = 0;
-
-  /**
    * Get caching policy name
    *
    * @return caching policy name
@@ -95,16 +93,22 @@ public:
    */
   virtual void onNewQuery() = 0;
 
-  [[maybe_unused]] size_t getFreeSize() const;
+  size_t getFreeSize() const;
+  CachingPolicyType getType() const;
+
+  size_t getSegmentSize(const std::shared_ptr<SegmentKey>& segmentKey) const;
+  const unordered_map<std::shared_ptr<SegmentKey>, size_t, SegmentKeyPointerHash, 
+    SegmentKeyPointerPredicate> &getSegmentSizeMap() const;
 
 protected:
+  CachingPolicyType type_;
   size_t maxSize_;
   size_t freeSize_;
 
   std::shared_ptr<Mode> mode_;
   std::shared_ptr<CatalogueEntry> catalogueEntry_;
-  std::unordered_map<std::shared_ptr<cache::SegmentKey>, size_t,
-          cache::SegmentKeyPointerHash, cache::SegmentKeyPointerPredicate> segmentKeyToSize_;
+  std::unordered_map<std::shared_ptr<SegmentKey>, size_t,
+          SegmentKeyPointerHash, SegmentKeyPointerPredicate> segmentSizeMap_;
 
 public:
   size_t onLoadTime = 0;

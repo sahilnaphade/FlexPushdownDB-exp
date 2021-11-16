@@ -20,7 +20,6 @@ class SegmentCache {
 public:
   explicit SegmentCache(std::shared_ptr<CachingPolicy> cachingPolicy_);
 
-  static std::shared_ptr<SegmentCache> make();
   static std::shared_ptr<SegmentCache> make(const std::shared_ptr<CachingPolicy>& cachingPolicy);
 
   void store(const std::shared_ptr<SegmentKey>& key, const std::shared_ptr<SegmentData>& data);

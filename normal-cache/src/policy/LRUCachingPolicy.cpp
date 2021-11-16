@@ -3,23 +3,19 @@
 //
 
 #include <normal/cache/policy/LRUCachingPolicy.h>
-#include <normal/plan/mode/Modes.h>
 #include <sstream>
 #include <utility>
 
 using namespace normal::cache::policy;
 
-LRUCachingPolicy::LRUCachingPolicy(size_t maxSize, std::shared_ptr<normal::plan::operator_::mode::Mode> mode) :
-  CachingPolicy(maxSize, std::move(mode)) {}
-
-std::shared_ptr<LRUCachingPolicy> LRUCachingPolicy::make() {
-  return std::make_shared<LRUCachingPolicy>(std::numeric_limits<size_t>::max(),
-                                            normal::plan::operator_::mode::Modes::pullupCachingMode());
-}
-
-std::shared_ptr<LRUCachingPolicy> LRUCachingPolicy::make(size_t maxSize, std::shared_ptr<normal::plan::operator_::mode::Mode> mode) {
-  return std::make_shared<LRUCachingPolicy>(maxSize, mode);
-}
+LRUCachingPolicy::LRUCachingPolicy(size_t maxSize,
+                                   std::shared_ptr<Mode> mode,
+                                   std::shared_ptr<CatalogueEntry> catalogueEntry) :
+    CachingPolicy(LRU,
+                  maxSize,
+                  std::move(mode),
+                  std::move(catalogueEntry),
+                  false) {}
 
 void LRUCachingPolicy::erase(const std::shared_ptr<SegmentKey> &key) {
   auto keyIndexEntry = keyIndexMap_.find(key);
@@ -88,10 +84,6 @@ std::string LRUCachingPolicy::showCurrentLayout() {
     ss << segmentKey->toString() << std::endl;
   }
   return ss.str();
-}
-
-CachingPolicyId LRUCachingPolicy::id() {
-  return LRU;
 }
 
 std::string LRUCachingPolicy::toString() {
