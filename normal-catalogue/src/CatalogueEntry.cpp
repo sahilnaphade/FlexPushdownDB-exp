@@ -7,14 +7,14 @@
 using namespace normal::catalogue;
 
 CatalogueEntry::CatalogueEntry(CatalogueEntryType type,
-                               string name,
+                               string schemaName,
                                shared_ptr<Catalogue> Catalogue) :
   type_(type),
-  name_(move(name)),
+  schemaName_(move(schemaName)),
   catalogue_(move(Catalogue)) {}
 
-const string &CatalogueEntry::getName() const {
-  return name_;
+const string &CatalogueEntry::getSchemaName() const {
+  return schemaName_;
 }
 
 const shared_ptr<Catalogue> &CatalogueEntry::getCatalogue() const {

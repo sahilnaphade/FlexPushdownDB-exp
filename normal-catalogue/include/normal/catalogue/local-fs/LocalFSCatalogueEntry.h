@@ -18,11 +18,12 @@ namespace normal::catalogue::local_fs {
 class LocalFSCatalogueEntry : public CatalogueEntry {
 
 public:
-  LocalFSCatalogueEntry(const string &schemaName,
+  LocalFSCatalogueEntry(string schemaName,
                         shared_ptr<Catalogue> catalogue);
   ~LocalFSCatalogueEntry() override = default;
 
   string getTypeName() const override;
+  string getName() const override;
 
 };
 

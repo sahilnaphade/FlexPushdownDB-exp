@@ -14,6 +14,7 @@ using namespace std;
 namespace normal::cache {
 
 class Util {
+public:
   static unordered_map<shared_ptr<SegmentKey>, size_t, cache::SegmentKeyPointerHash, cache::SegmentKeyPointerPredicate>
     readSegmentKeySize(const std::string& s3Bucket,
                        const std::string& schemaName,

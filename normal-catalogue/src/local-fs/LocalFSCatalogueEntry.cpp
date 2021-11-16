@@ -9,14 +9,18 @@
 
 namespace normal::catalogue::local_fs {
 
-LocalFSCatalogueEntry::LocalFSCatalogueEntry(const string &schemaName,
+LocalFSCatalogueEntry::LocalFSCatalogueEntry(string schemaName,
                                              shared_ptr<Catalogue> catalogue) :
   CatalogueEntry(LocalFS,
-                 fmt::format("local-fs://{}", schemaName),
+                 move(schemaName),
                  move(catalogue)) {}
 
 string LocalFSCatalogueEntry::getTypeName() const {
   return "LocalFSCatalogueEntry";
+}
+
+string LocalFSCatalogueEntry::getName() const {
+  return fmt::format("local-fs://{}", getSchemaName());
 }
 
 }

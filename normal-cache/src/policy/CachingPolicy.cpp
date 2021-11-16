@@ -3,6 +3,9 @@
 //
 
 #include <normal/cache/policy/CachingPolicy.h>
+#include <normal/cache/Util.h>
+#include <normal/catalogue/s3/S3CatalogueEntry.h>
+#include <fmt/format.h>
 #include <utility>
 
 namespace normal::cache::policy {
@@ -17,7 +20,23 @@ CachingPolicy::CachingPolicy(CachingPolicyType type,
   freeSize_(maxSize),
   mode_(std::move(mode)),
   catalogueEntry_(std::move(catalogueEntry)) {
-  // TODO: read segment size
+
+  // read segment size if the caching policy needs
+  if (readSegmentSize && catalogueEntry_) {
+    if (catalogueEntry->getType() == S3) {
+      const auto schemaName = catalogueEntry->getSchemaName();
+      filesystem::path metadataPath = catalogueEntry_
+              ->getCatalogue()
+              ->getMetadataPath()
+              .append(schemaName)
+              .append("segment_info");
+      const auto &s3Bucket = std::static_pointer_cast<s3::S3CatalogueEntry>(catalogueEntry)->getS3Bucket();
+      segmentSizeMap_ = Util::readSegmentKeySize(s3Bucket, schemaName, metadataPath);
+    } else {
+      throw runtime_error(fmt::format("Read segment size unsupported, catalogue entry: {}",
+                                      catalogueEntry->getName()));
+    }
+  }
 }
 
 size_t CachingPolicy::getFreeSize() const {

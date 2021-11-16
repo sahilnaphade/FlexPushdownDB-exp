@@ -12,11 +12,11 @@ using namespace normal::catalogue;
 
 namespace normal::catalogue::s3 {
 
-S3CatalogueEntry::S3CatalogueEntry(const string &schemaName,
+S3CatalogueEntry::S3CatalogueEntry(string schemaName,
                                    string s3Bucket,
                                    shared_ptr<Catalogue> catalogue) :
   CatalogueEntry(S3,
-                 fmt::format("s3://{}/{}", s3Bucket, schemaName),
+                 move(schemaName),
                  move(catalogue)),
   s3Bucket_(move(s3Bucket)) {}
 
@@ -38,6 +38,10 @@ string S3CatalogueEntry::getTypeName() const {
 
 void S3CatalogueEntry::addS3Table(const shared_ptr<S3Table> &s3Table) {
   s3Tables_.emplace(s3Table->getName(), s3Table);
+}
+
+string S3CatalogueEntry::getName() const {
+  return fmt::format("s3://{}/{}", s3Bucket_, getSchemaName());
 }
 
 }
