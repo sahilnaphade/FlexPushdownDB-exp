@@ -2,21 +2,20 @@
 // Created by matt on 24/3/20.
 //
 
-#include "normal/core/OperatorDirectory.h"
-
-#include "normal/core/Globals.h"
+#include <normal/executor/physical/POpDirectory.h>
+#include <fmt/format.h>
 #include <sstream>
 
-namespace normal::core {
+namespace normal::executor::physical {
 
-void OperatorDirectory::insert(const OperatorDirectoryEntry& entry) {
+void POpDirectory::insert(const POpDirectoryEntry& entry) {
   auto inserted = entries_.emplace(entry.getDef()->name(), entry);
   if(!inserted.second)
     throw std::runtime_error(fmt::format("Operator '{}' already added to directory", entry.getDef()->name()));
   ++numOperators_;
 }
 
-void OperatorDirectory::setComplete(const std::string& name) {
+void POpDirectory::setComplete(const std::string& name) {
   auto entry = entries_.find(name);
   if(entry == entries_.end())
     throw std::runtime_error("No entry for operator '" + name + "'");
@@ -29,11 +28,11 @@ void OperatorDirectory::setComplete(const std::string& name) {
   ++numOperatorsComplete_;
 }
 
-bool OperatorDirectory::allComplete() const {
+bool POpDirectory::allComplete() const {
   return numOperatorsComplete_ >= numOperators_;
 }
 
-std::string OperatorDirectory::showString() const {
+std::string POpDirectory::showString() const {
   std::stringstream ss;
   for(const auto& entry : entries_){
     ss << entry.second.getDef().get() << ": " << entry.second.isComplete() << std::endl;
@@ -41,13 +40,13 @@ std::string OperatorDirectory::showString() const {
   return ss.str();
 }
 
-void OperatorDirectory::setIncomplete() {
+void POpDirectory::setIncomplete() {
   for(auto& entry : entries_){
     entry.second.setComplete(false);
   }
 }
 
-tl::expected<OperatorDirectoryEntry, std::string> OperatorDirectory::get(const std::string& name) {
+tl::expected<POpDirectoryEntry, std::string> POpDirectory::get(const std::string& name) {
   auto entryIt = entries_.find(name);
   if(entryIt == entries_.end()){
 	return tl::unexpected(fmt::format("Operator with name '{}' not found", name));
@@ -57,31 +56,31 @@ tl::expected<OperatorDirectoryEntry, std::string> OperatorDirectory::get(const s
   }
 }
 
-void OperatorDirectory::clear() {
+void POpDirectory::clear() {
   entries_.clear();
 }
 
-OperatorDirectory::MapType::iterator OperatorDirectory::begin() {
+POpDirectory::MapType::iterator POpDirectory::begin() {
   return entries_.begin();
 }
 
-OperatorDirectory::MapType::const_iterator OperatorDirectory::begin() const {
+POpDirectory::MapType::const_iterator POpDirectory::begin() const {
   return entries_.begin();
 }
 
-OperatorDirectory::MapType::iterator OperatorDirectory::end() {
+POpDirectory::MapType::iterator POpDirectory::end() {
   return entries_.end();
 }
 
-OperatorDirectory::MapType::const_iterator OperatorDirectory::end() const {
+POpDirectory::MapType::const_iterator POpDirectory::end() const {
   return entries_.end();
 }
 
-[[maybe_unused]] OperatorDirectory::MapType::const_iterator OperatorDirectory::cbegin() const {
+[[maybe_unused]] POpDirectory::MapType::const_iterator POpDirectory::cbegin() const {
   return entries_.cbegin();
 }
 
-  [[maybe_unused]] [[maybe_unused]] OperatorDirectory::MapType::const_iterator OperatorDirectory::cend() const {
+  [[maybe_unused]] [[maybe_unused]] POpDirectory::MapType::const_iterator POpDirectory::cend() const {
   return entries_.cend();
 }
 

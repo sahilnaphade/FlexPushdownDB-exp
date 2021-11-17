@@ -18,7 +18,7 @@
 namespace normal::executor::physical {
 
 /**
- * Base class for operators
+ * Base class for physical operators
  */
 class PhysicalOp {
 

@@ -2,24 +2,23 @@
 // Created by matt on 21/5/20.
 //
 
-#ifndef NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_CACHE_SEGMENTCACHEACTOR_H
-#define NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_CACHE_SEGMENTCACHEACTOR_H
-
-#include <caf/all.hpp>
+#ifndef NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_CACHE_SEGMENTCACHEACTOR_H
+#define NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_CACHE_SEGMENTCACHEACTOR_H
 
 #include <normal/cache/SegmentCache.h>
-#include <normal/core/cache/LoadRequestMessage.h>
-#include <normal/core/cache/LoadResponseMessage.h>
-#include <normal/core/cache/StoreRequestMessage.h>
-#include <normal/core/cache/WeightRequestMessage.h>
-#include <normal/core/cache/CacheMetricsMessage.h>
+#include <normal/executor/message/cache/LoadRequestMessage.h>
+#include <normal/executor/message/cache/LoadResponseMessage.h>
+#include <normal/executor/message/cache/StoreRequestMessage.h>
+#include <normal/executor/message/cache/WeightRequestMessage.h>
+#include <normal/executor/message/cache/CacheMetricsMessage.h>
 #include <normal/cache/policy/CachingPolicy.h>
-#include <normal/core/Forward.h>
+#include <caf/all.hpp>
 
-using namespace caf;
+using namespace normal::executor::message;
 using namespace normal::cache;
+using namespace caf;
 
-namespace normal::core::cache {
+namespace normal::executor::cache {
 
 struct SegmentCacheActorState {
   std::string name = "segment-cache";
@@ -58,10 +57,10 @@ public:
 
 }
 
-CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::shared_ptr<normal::core::cache::LoadResponseMessage>)
-CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::shared_ptr<normal::core::cache::LoadRequestMessage>)
-CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::shared_ptr<normal::core::cache::StoreRequestMessage>)
-CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::shared_ptr<normal::core::cache::WeightRequestMessage>)
-CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::shared_ptr<normal::core::cache::CacheMetricsMessage>)
+CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::shared_ptr<normal::executor::message::LoadResponseMessage>)
+CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::shared_ptr<normal::executor::message::LoadRequestMessage>)
+CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::shared_ptr<normal::executor::message::StoreRequestMessage>)
+CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::shared_ptr<normal::executor::message::WeightRequestMessage>)
+CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::shared_ptr<normal::executor::message::CacheMetricsMessage>)
 
-#endif //NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_CACHE_SEGMENTCACHEACTOR_H
+#endif //NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_CACHE_SEGMENTCACHEACTOR_H

@@ -6,30 +6,34 @@
 #ifndef NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_FORWARD_H
 #define NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_FORWARD_H
 
-namespace normal::executor::physical {
+namespace normal::executor {
+
+namespace physical {
 
 //class OperatorManager;
 class PhysicalOp;
 class POpActor;
 class POpContext;
 
-//namespace cache {
-//
-//class SegmentCacheActor;
-//
-//}
-//
+}
+
+namespace cache {
+
+class SegmentCacheActor;
+
+}
+
 //namespace graph {
 //
 //class OperatorGraph;
 //
 //}
-//
-//namespace message {
-//
-//class Envelope;
-//
-//}
+
+namespace message {
+
+class Envelope;
+
+}
 
 }
 

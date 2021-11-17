@@ -2,10 +2,10 @@
 // Created by matt on 21/5/20.
 //
 
+#include <normal/executor/cache/SegmentCacheActor.h>
 #include <normal/cache/policy/WLFUCachingPolicy.h>
-#include "normal/core/cache/SegmentCacheActor.h"
 
-namespace normal::core::cache {
+namespace normal::executor::cache {
 
 std::shared_ptr<LoadResponseMessage> SegmentCacheActor::load(const LoadRequestMessage &msg,
 															 stateful_actor<SegmentCacheActorState> *self) {
@@ -51,8 +51,8 @@ void SegmentCacheActor::store(const StoreRequestMessage &msg,
 void SegmentCacheActor::weight(const WeightRequestMessage &msg,
 							   stateful_actor<SegmentCacheActorState> *self) {
   auto cachingPolicy = self->state.cache->getCachingPolicy();
-  if (cachingPolicy->id() == WFBR) {
-	auto fbrCachingPolicy = std::static_pointer_cast<WFBRCachingPolicy>(cachingPolicy);
+  if (cachingPolicy->getType() == WLFU) {
+	auto fbrCachingPolicy = std::static_pointer_cast<WLFUCachingPolicy>(cachingPolicy);
 	fbrCachingPolicy->onWeight(msg.getWeightMap(), msg.getQueryId());
   }
 }
@@ -76,7 +76,7 @@ void SegmentCacheActor::metrics(const CacheMetricsMessage &msg,
   if (cachingPolicy.has_value())
 	self->state.cache = SegmentCache::make(cachingPolicy.value());
   else
-	self->state.cache = SegmentCache::make();
+	throw runtime_error("Error when creating SegmentCacheActor: no caching policy specified");
 
   /**
    * Handler for actor exit event

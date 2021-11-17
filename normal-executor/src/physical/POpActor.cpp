@@ -23,8 +23,6 @@ caf::behavior behaviour(POpActor *self) {
   auto ctx = self->operator_()->ctx();
   ctx->operatorActor(self);
 
-  auto functionName = __FUNCTION__;
-
   return {
 	  [=](GetProcessingTimeAtom) {
 		auto start = std::chrono::steady_clock::now();
@@ -36,8 +34,6 @@ caf::behavior behaviour(POpActor *self) {
 	  [=](const normal::executor::message::Envelope &msg) {
 
 		auto start = std::chrono::steady_clock::now();
-
-		//#define __FUNCTION__ functionName
 
     SPDLOG_DEBUG("Message received  |  recipient: '{}', sender: '{}', type: '{}'",
                  self->operator_()->name(),

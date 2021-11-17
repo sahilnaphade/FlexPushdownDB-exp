@@ -2,17 +2,16 @@
 // Created by Yifei Yang on 9/9/20.
 //
 
-#ifndef NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_CACHE_SEGMENTWEIGHTMESSAGE_H
-#define NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_CACHE_SEGMENTWEIGHTMESSAGE_H
+#ifndef NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_MESSAGE_CACHE_WEIGHTREQUESTMESSAGE_H
+#define NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_MESSAGE_CACHE_WEIGHTREQUESTMESSAGE_H
 
-#include <normal/core/message/Message.h>
+#include <normal/executor/message/Message.h>
 #include <normal/cache/SegmentKey.h>
 #include <unordered_map>
 
 using namespace normal::cache;
-using namespace normal::core::message;
 
-namespace normal::core::cache {
+namespace normal::executor::message {
 
 /**
  * A message to update segment weights
@@ -39,4 +38,4 @@ private:
 }
 
 
-#endif //NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_CACHE_SEGMENTWEIGHTMESSAGE_H
+#endif //NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_MESSAGE_CACHE_WEIGHTREQUESTMESSAGE_H

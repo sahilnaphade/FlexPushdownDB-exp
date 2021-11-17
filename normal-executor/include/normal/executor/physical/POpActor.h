@@ -18,7 +18,7 @@ namespace normal::executor::physical {
 using GetProcessingTimeAtom = caf::atom_constant<caf::atom("get-pt")>;
 
 /**
- * Operator actor implements caf::actor and combines the operators behaviour and state
+ * Physical operator actor implements caf::actor and combines the physical operators' behaviour and state
  */
 class POpActor : public caf::event_based_actor {
 

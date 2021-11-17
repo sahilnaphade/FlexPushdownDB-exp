@@ -8,7 +8,7 @@
 namespace normal::executor::physical {
 
 /**
- * Represents the relationships operators can have with each other, that is either producing or consuming
+ * Represents the relationships physical operators can have with each other, that is either producing or consuming
  */
 enum class POpRelationshipType {
   Producer,

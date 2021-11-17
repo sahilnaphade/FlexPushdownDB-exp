@@ -2,11 +2,10 @@
 // Created by matt on 20/5/20.
 //
 
-#include "normal/core/cache/StoreRequestMessage.h"
-
+#include <normal/executor/message/cache/StoreRequestMessage.h>
 #include <utility>
 
-using namespace normal::core::cache;
+using namespace normal::executor::message;
 
 StoreRequestMessage::StoreRequestMessage(
 	std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>> segments,

@@ -2,9 +2,9 @@
 // Created by Yifei Yang on 9/9/20.
 //
 
-#include <normal/core/cache/WeightRequestMessage.h>
+#include <normal/executor/message/cache/WeightRequestMessage.h>
 
-using namespace normal::core::cache;
+using namespace normal::executor::message;
 
 WeightRequestMessage::WeightRequestMessage(const std::shared_ptr<std::unordered_map<std::shared_ptr<SegmentKey>, double>> weightMap,
                                            long queryId,

@@ -2,18 +2,16 @@
 // Created by matt on 20/5/20.
 //
 
-#ifndef NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_CACHE_STOREREQUESTMESSAGE_H
-#define NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_CACHE_STOREREQUESTMESSAGE_H
+#ifndef NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_MESSAGE_CACHE_STOREREQUESTMESSAGE_H
+#define NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_MESSAGE_CACHE_STOREREQUESTMESSAGE_H
 
-#include <normal/core/message/Message.h>
-
+#include <normal/executor/message/Message.h>
 #include <normal/cache/SegmentKey.h>
 #include <normal/cache/SegmentData.h>
 
 using namespace normal::cache;
-using namespace normal::core::message;
 
-namespace normal::core::cache {
+namespace normal::executor::message {
 
 /**
  * Reuest for the segment cache actor to store the given segment data given a segment key.
@@ -39,4 +37,4 @@ private:
 
 }
 
-#endif //NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_CACHE_STOREREQUESTMESSAGE_H
+#endif //NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_MESSAGE_CACHE_STOREREQUESTMESSAGE_H

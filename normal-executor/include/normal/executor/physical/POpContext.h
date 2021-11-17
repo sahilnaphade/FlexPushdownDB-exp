@@ -16,7 +16,7 @@
 namespace normal::executor::physical {
 
 /**
- * The API operators use to interact with their environment, e.g. sending messages
+ * The API physical operators use to interact with their environment, e.g. sending messages
  */
 class POpContext {
 private:

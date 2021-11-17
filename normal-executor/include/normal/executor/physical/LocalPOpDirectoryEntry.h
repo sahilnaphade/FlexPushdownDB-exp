@@ -12,7 +12,7 @@
 namespace normal::executor::physical {
 
 /**
- * An entry in the local operator directory
+ * An entry in the local physical operator directory
  */
 class LocalPOpDirectoryEntry {
 

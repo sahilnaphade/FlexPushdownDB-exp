@@ -13,7 +13,7 @@
 namespace normal::executor::physical {
 
 /**
- * A directory that operators use to store information about other operators
+ * A directory that physical operators use to store information about other physical operators
  */
 class LocalPOpDirectory {
 
