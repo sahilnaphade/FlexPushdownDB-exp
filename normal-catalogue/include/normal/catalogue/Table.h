@@ -27,7 +27,9 @@ public:
         const shared_ptr<CatalogueEntry> &catalogueEntry);
 
   const string &getName() const;
-  const vector<string> getColumnNames() const;
+  vector<string> getColumnNames() const;
+  int getApxColumnLength(const string &columnName) const;
+  int getApxRowLength() const;
 
 private:
   string name_;

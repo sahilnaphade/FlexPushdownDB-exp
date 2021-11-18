@@ -9,30 +9,34 @@
 namespace normal::executor {
 
 namespace physical {
+//  class OperatorManager;
+  class PhysicalOp;
+  class POpActor;
+  class POpContext;
 
-//class OperatorManager;
-class PhysicalOp;
-class POpActor;
-class POpContext;
+  namespace collate {
+    class CollateState;
+  }
 
+  namespace file {
+    class FileScanState;
+  }
+
+  namespace s3 {
+    class [[maybe_unused]] S3SelectScanState;
+  }
 }
 
 namespace cache {
-
-class SegmentCacheActor;
-
+  class SegmentCacheActor;
 }
 
 //namespace graph {
-//
-//class OperatorGraph;
-//
+//  class OperatorGraph;
 //}
 
 namespace message {
-
-class Envelope;
-
+  class Envelope;
 }
 
 }

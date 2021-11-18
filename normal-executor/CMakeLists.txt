@@ -14,6 +14,7 @@ add_library(normal-executor STATIC
         src/message/CompleteMessage.cpp include/normal/executor/message/CompleteMessage.h
         src/message/TupleMessage.cpp include/normal/executor/message/TupleMessage.h
         src/message/ScanMessage.cpp include/normal/executor/message/ScanMessage.h
+        src/message/TupleSetIndexMessage.cpp include/normal/executor/message/TupleSetIndexMessage.h
         src/message/cache/CacheMetricsMessage.cpp include/normal/executor/message/cache/CacheMetricsMessage.h
         src/message/cache/LoadRequestMessage.cpp include/normal/executor/message/cache/LoadRequestMessage.h
         src/message/cache/LoadResponseMessage.cpp include/normal/executor/message/cache/LoadResponseMessage.h
@@ -33,6 +34,7 @@ add_library(normal-executor STATIC
         src/physical/POpContext.cpp include/normal/executor/physical/POpContext.h
         src/physical/PhysicalOp.cpp include/normal/executor/physical/PhysicalOp.h
 #        physical operators
+        include/normal/executor/physical/Globals.h
         src/physical/aggregate/Aggregate.cpp include/normal/executor/physical/aggregate/Aggregate.h
         src/physical/aggregate/AggregationFunction.cpp include/normal/executor/physical/aggregate/AggregationFunction.h
         src/physical/aggregate/AggregationResult.cpp include/normal/executor/physical/aggregate/AggregationResult.h
@@ -40,7 +42,22 @@ add_library(normal-executor STATIC
         include/normal/executor/physical/aggregate/AggregateBuilder.h
         include/normal/executor/physical/aggregate/AggregateBuilderWrapper.h
         src/physical/cache/CacheLoad.cpp include/normal/executor/physical/cache/CacheLoad.h
-        src/physical/cache/CacheHelper.cpp include/normal/executor/physical/cache/CacheHelper.h)
+        src/physical/cache/CacheHelper.cpp include/normal/executor/physical/cache/CacheHelper.h
+        src/physical/collate/Collate.cpp include/normal/executor/physical/collate/Collate.h
+        src/physical/collate/Collate2.cpp include/normal/executor/physical/collate/Collate2.h
+        src/physical/file/FileScan.cpp include/normal/executor/physical/file/FileScan.h
+        src/physical/file/FileScan2.cpp include/normal/executor/physical/file/FileScan2.h
+        src/physical/file/FileScanKernel.cpp include/normal/executor/physical/file/FileScanKernel.h
+        src/physical/filter/Filter.cpp include/normal/executor/physical/filter/Filter.h
+        src/physical/group/Group.cpp include/normal/executor/physical/group/Group.h
+        include/normal/executor/physical/group/GroupKey2.h
+        src/physical/group/GroupKernel2.cpp include/normal/executor/physical/group/GroupKernel2.h
+        src/physical/hashjoin/HashJoinBuild.cpp include/normal/executor/physical/hashjoin/HashJoinBuild.h
+        src/physical/hashjoin/HashJoinProbe.cpp include/normal/executor/physical/hashjoin/HashJoinProbe.h
+        src/physical/hashjoin/HashJoinBuildKernel2.cpp include/normal/executor/physical/hashjoin/HashJoinBuildKernel2.h
+        src/physical/hashjoin/HashJoinProbeKernel2.cpp include/normal/executor/physical/hashjoin/HashJoinProbeKernel2.h
+        src/physical/hashjoin/HashJoinPredicate.cpp include/normal/executor/physical/hashjoin/HashJoinPredicate.h
+        src/physical/hashjoin/RecordBatchHashJoiner.cpp include/normal/executor/physical/hashjoin/RecordBatchHashJoiner.h)
 
 target_include_directories(normal-executor PUBLIC include)
 

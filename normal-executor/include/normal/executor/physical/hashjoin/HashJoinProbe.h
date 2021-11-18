@@ -1,0 +1,46 @@
+//
+// Created by matt on 29/4/20.
+//
+
+#ifndef NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_HASHJOIN_HASHJOINPROBE_H
+#define NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_HASHJOIN_HASHJOINPROBE_H
+
+#include <normal/executor/physical/PhysicalOp.h>
+#include <normal/executor/physical/hashjoin/HashJoinProbeKernel2.h>
+#include <normal/executor/physical/hashjoin/HashJoinPredicate.h>
+#include <normal/executor/message/TupleMessage.h>
+#include <normal/executor/message/CompleteMessage.h>
+#include <normal/executor/message/TupleSetIndexMessage.h>
+
+using namespace normal::executor::message;
+
+namespace normal::executor::physical::hashjoin {
+
+/**
+ * Operator implementing probe phase of a hash join
+ *
+ * Takes hashtable produced from build phase on one of the relations in the join (ideall the smaller) and uses it
+ * to select rows from the both relations to include in the join.
+ *
+ */
+class HashJoinProbe : public PhysicalOp {
+
+public:
+  HashJoinProbe(const std::string &name, HashJoinPredicate pred, std::set<std::string> neededColumnNames, long queryId = 0);
+
+  void onReceive(const Envelope &msg) override;
+
+private:
+  void onStart();
+  void onTuple(const TupleMessage &msg);
+  void onHashTable(const TupleSetIndexMessage &msg);
+  void onComplete(const CompleteMessage &msg);
+  void send(bool force);
+
+  HashJoinProbeKernel2 kernel_;
+
+};
+
+}
+
+#endif //NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_HASHJOIN_HASHJOINPROBE_H

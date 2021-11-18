@@ -14,15 +14,17 @@
 #include <normal/executor/message/ConnectMessage.h>
 #include <caf/all.hpp>
 #include <boost/callable_traits.hpp>
+#include <fmt/format.h>
+#include <spdlog/spdlog.h>
 #include <utility>
 #include <queue>
 #include <cstdint>
 
-using namespace normal::core::message;
+using namespace normal::executor::message;
 using namespace boost::callable_traits;
 
 using ExpectedVoidString = tl::expected<void, std::string>;
-CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::vector<normal::core::OperatorConnection>);
+CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::vector<normal::executor::physical::POpConnection>);
 CAF_ALLOW_UNSAFE_MESSAGE_TYPE(ExpectedVoidString);
 
 /**
@@ -39,12 +41,12 @@ using CompleteAtom = ::caf::atom_constant<caf::atom("complete")>;
 /**
  * Base operator actor definition
  */
-using OperatorActor2 = ::caf::typed_actor<::caf::reacts_to<ConnectAtom, std::vector<OperatorConnection>>,
-										  ::caf::reacts_to<StartAtom>,
-										  ::caf::reacts_to<StopAtom>,
-										  ::caf::reacts_to<CompleteAtom>,
-										  ::caf::replies_to<GetProcessingTimeAtom>::with<int64_t>,
-										  ::caf::reacts_to<Envelope>>;
+using POpActor2 = ::caf::typed_actor<::caf::reacts_to<ConnectAtom, std::vector<POpConnection>>,
+                  ::caf::reacts_to<StartAtom>,
+                  ::caf::reacts_to<StopAtom>,
+                  ::caf::reacts_to<CompleteAtom>,
+                  ::caf::replies_to<GetProcessingTimeAtom>::with<int64_t>,
+                  ::caf::reacts_to<Envelope>>;
 
 /**
  * Base operator actor state
@@ -52,10 +54,10 @@ using OperatorActor2 = ::caf::typed_actor<::caf::reacts_to<ConnectAtom, std::vec
  * @tparam Actor
  */
 template<class Actor>
-class OperatorActorState {
+class POpActorState {
 
 public:
-  virtual ~OperatorActorState() = default;
+  virtual ~POpActorState() = default;
 
   std::string name = "<operator>";
 
@@ -288,7 +290,7 @@ protected:
 		[=](StopAtom) {
 		  process(actor, [=](const caf::strong_actor_ptr &messageSender) { return handleStop(actor, messageSender); });
 		},
-		[=](ConnectAtom, const std::vector<OperatorConnection> &connections) {
+		[=](ConnectAtom, const std::vector<POpConnection> &connections) {
 		  process(actor,
 				  [=](const caf::strong_actor_ptr &messageSender) {
 					return handleConnect(actor,
@@ -380,7 +382,7 @@ protected:
 											 actor->name()));
 
 	for (const auto &operatorEntry: actor->state.operatorDirectory_) {
-	  if (std::get<2>(operatorEntry.second) == OperatorRelationshipType::Consumer)
+	  if (std::get<2>(operatorEntry.second) == POpRelationshipType::Consumer)
 		anonymousSend(actor, std::get<0>(operatorEntry.second), parameters...);
 	}
 
@@ -475,7 +477,7 @@ private:
   std::optional<caf::strong_actor_ptr> overriddenMessageSender_;
   std::queue<std::pair<caf::message, caf::strong_actor_ptr>> buffer_;
 
-  std::map<caf::actor_id, std::tuple<caf::actor, std::string, OperatorRelationshipType, bool>> operatorDirectory_;
+  std::map<caf::actor_id, std::tuple<caf::actor, std::string, POpRelationshipType, bool>> operatorDirectory_;
   int numProducers_ = 0;
   int numConsumers_ = 0;
   int numCompleteProducers_ = 0;
@@ -518,7 +520,7 @@ private:
 
   [[nodiscard]] tl::expected<void, std::string> handleConnect(Actor actor,
 															  const caf::strong_actor_ptr &messageSender,
-															  const std::vector<OperatorConnection> &connections) {
+															  const std::vector<POpConnection> &connections) {
 
 	SPDLOG_DEBUG("[Actor {} ('{}')]  Connecting operator  |  queryId: {}, source: {}", actor->id(),
 				 actor->name(), queryId_.value(), to_string(messageSender));
@@ -530,9 +532,9 @@ private:
 														 connection.getConnectionType(),
 														 false));
 
-	  if (connection.getConnectionType() == OperatorRelationshipType::Producer)
+	  if (connection.getConnectionType() == POpRelationshipType::Producer)
 		++numProducers_;
-	  if (connection.getConnectionType() == OperatorRelationshipType::Consumer)
+	  if (connection.getConnectionType() == POpRelationshipType::Consumer)
 		++numConsumers_;
 	}
 
@@ -558,9 +560,9 @@ private:
 
 	  std::get<3>(maybeEntry->second) = true;
 
-	  if (std::get<2>(maybeEntry->second) == OperatorRelationshipType::Producer)
+	  if (std::get<2>(maybeEntry->second) == POpRelationshipType::Producer)
 		++numCompleteProducers_;
-	  if (std::get<2>(maybeEntry->second) == OperatorRelationshipType::Consumer)
+	  if (std::get<2>(maybeEntry->second) == POpRelationshipType::Consumer)
 		++numCompleteConsumers_;
 
 	  return onComplete(actor, messageSender);
@@ -587,24 +589,24 @@ private:
 				 actor->name(),
 				 queryId_.value(),
 				 to_string(messageSender),
-				 envelope.getMessage()->type());
+				 envelope.message().type());
 
-	auto message = envelope.getMessage();
-	if (message->type() == "StartMessage") {
+	const auto& message = envelope.message();
+	if (message.type() == "StartMessage") {
 	  return handleStart(actor, messageSender);
-	} else if (message->type() == "StopMessage") {
+	} else if (message.type() == "StopMessage") {
 	  return handleStop(actor, messageSender);
-	} else if (message->type() == "ConnectMessage") {
+	} else if (message.type() == "ConnectMessage") {
 	  return handleConnect(actor,
 						   messageSender,
-						   std::static_pointer_cast<ConnectMessage>(envelope.getMessage())->connections());
+						   dynamic_cast<const ConnectMessage&>(message).connections());
 	} else {
 	  if (!actor->state.running_) {
 		actor->state.buffer_.emplace(actor->current_mailbox_element()->move_content_to_message(),
 									 messageSender);
 		return {};
 	  } else {
-		if (message->type() == "CompleteMessage") {
+		if (message.type() == "CompleteMessage") {
 		  return handleComplete(actor, messageSender);
 		} else {
 		  return onEnvelope(actor, messageSender, envelope);
