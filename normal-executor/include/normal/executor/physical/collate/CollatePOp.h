@@ -2,8 +2,8 @@
 // Created by matt on 5/12/19.
 //
 
-#ifndef NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_COLLATE_COLLATE_H
-#define NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_COLLATE_COLLATE_H
+#ifndef NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_COLLATE_COLLATEPOP_H
+#define NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_COLLATE_COLLATEPOP_H
 
 #include <normal/executor/physical/PhysicalOp.h>
 #include <normal/executor/physical/POpContext.h>
@@ -20,7 +20,7 @@ namespace normal::tuple {
 
 namespace normal::executor::physical::collate {
 
-class Collate : public PhysicalOp {
+class CollatePOp : public PhysicalOp {
 
 private:
   std::shared_ptr<TupleSet> tuples_;
@@ -34,8 +34,8 @@ private:
   void onReceive(const normal::executor::message::Envelope &message) override;
 
 public:
-  explicit Collate(std::string name, long queryId = 0);
-  ~Collate() override = default;
+  explicit CollatePOp(std::string name, long queryId = 0);
+  ~CollatePOp() override = default;
   void show();
   std::shared_ptr<TupleSet> tuples();
   [[maybe_unused]] void setTuples(const std::shared_ptr<TupleSet> &Tuples);
@@ -43,4 +43,4 @@ public:
 
 }
 
-#endif //NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_COLLATE_COLLATE_H
+#endif //NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_COLLATE_COLLATEPOP_H

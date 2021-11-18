@@ -2,13 +2,13 @@
 // Created by matt on 13/5/20.
 //
 
-#include <normal/executor/physical/group/Group.h>
+#include <normal/executor/physical/group/GroupPOp.h>
 
 using namespace normal::tuple;
 
 namespace normal::executor::physical::group {
 
-Group::Group(const std::string &Name,
+GroupPOp::GroupPOp(const std::string &Name,
 			 const std::vector<std::string> &GroupColumnNames,
 			 const std::vector<std::string> &AggregateColumnNames,
 			 const std::shared_ptr<std::vector<std::shared_ptr<aggregate::AggregationFunction>>> &AggregateFunctions,
@@ -17,16 +17,16 @@ Group::Group(const std::string &Name,
   kernel2_(std::make_unique<GroupKernel2>(GroupColumnNames, AggregateColumnNames, *AggregateFunctions)) {
 }
 
-std::shared_ptr<Group> Group::make(const std::string &Name,
+std::shared_ptr<GroupPOp> GroupPOp::make(const std::string &Name,
 								   const std::vector<std::string> &groupColumnNames,
                    const std::vector<std::string> &aggregateColumnNames,
 								   const std::shared_ptr<std::vector<std::shared_ptr<aggregate::AggregationFunction>>> &AggregateFunctions,
 								   long queryId) {
 
-  return std::make_shared<Group>(Name, groupColumnNames, aggregateColumnNames, AggregateFunctions, queryId);
+  return std::make_shared<GroupPOp>(Name, groupColumnNames, aggregateColumnNames, AggregateFunctions, queryId);
 }
 
-void Group::onReceive(const Envelope &msg) {
+void GroupPOp::onReceive(const Envelope &msg) {
   if (msg.message().type() == "StartMessage") {
 	this->onStart();
   } else if (msg.message().type() == "TupleMessage") {
@@ -41,18 +41,18 @@ void Group::onReceive(const Envelope &msg) {
   }
 }
 
-void Group::onStart() {
+void GroupPOp::onStart() {
   SPDLOG_DEBUG("Starting");
 }
 
-void Group::onTuple(const TupleMessage &message) {
+void GroupPOp::onTuple(const TupleMessage &message) {
   auto tupleSet = normal::tuple::TupleSet2::create(message.tuples());
   auto expectedGroupResult = kernel2_->group(*tupleSet);
   if(!expectedGroupResult)
     throw std::runtime_error(expectedGroupResult.error());
 }
 
-void Group::onComplete(const CompleteMessage &) {
+void GroupPOp::onComplete(const CompleteMessage &) {
   if (!ctx()->isComplete() && this->ctx()->operatorMap().allComplete(POpRelationshipType::Producer)) {
 
     if (kernel2_->hasInput()) {

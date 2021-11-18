@@ -2,7 +2,7 @@
 // Created by matt on 29/4/20.
 //
 
-#include <normal/executor/physical/hashjoin/HashJoinProbe.h>
+#include <normal/executor/physical/hashjoin/HashJoinProbePOp.h>
 #include <normal/executor/physical/Globals.h>
 #include <normal/executor/message/TupleSetIndexMessage.h>
 #include <normal/tuple/TupleSetIndexWrapper.h>
@@ -11,12 +11,12 @@
 
 using namespace normal::executor::physical::hashjoin;
 
-HashJoinProbe::HashJoinProbe(const std::string &name, HashJoinPredicate pred, std::set<std::string> neededColumnNames, long queryId) :
+HashJoinProbePOp::HashJoinProbePOp(const std::string &name, HashJoinPredicate pred, std::set<std::string> neededColumnNames, long queryId) :
 	PhysicalOp(name, "HashJoinProbe", queryId),
 	kernel_(HashJoinProbeKernel2::make(std::move(pred), std::move(neededColumnNames))){
 }
 
-void HashJoinProbe::onReceive(const Envelope &msg) {
+void HashJoinProbePOp::onReceive(const Envelope &msg) {
   if (msg.message().type() == "StartMessage") {
 	this->onStart();
   } else if (msg.message().type() == "TupleMessage") {
@@ -34,11 +34,11 @@ void HashJoinProbe::onReceive(const Envelope &msg) {
   }
 }
 
-void HashJoinProbe::onStart() {
+void HashJoinProbePOp::onStart() {
   SPDLOG_DEBUG("Starting operator  |  name: '{}'", this->name());
 }
 
-void HashJoinProbe::onTuple(const TupleMessage &msg) {
+void HashJoinProbePOp::onTuple(const TupleMessage &msg) {
   // Incremental join immediately
   auto tupleSet = TupleSet2::create(msg.tuples());
   auto result = kernel_.joinProbeTupleSet(tupleSet);
@@ -49,14 +49,14 @@ void HashJoinProbe::onTuple(const TupleMessage &msg) {
   send(false);
 }
 
-void HashJoinProbe::onComplete(const CompleteMessage &) {
+void HashJoinProbePOp::onComplete(const CompleteMessage &) {
   if (!ctx()->isComplete() && ctx()->operatorMap().allComplete(POpRelationshipType::Producer)) {
     send(true);
   	ctx()->notifyComplete();
   }
 }
 
-void HashJoinProbe::onHashTable(const TupleSetIndexMessage &msg) {
+void HashJoinProbePOp::onHashTable(const TupleSetIndexMessage &msg) {
   // Incremental join immediately
   auto result = kernel_.joinBuildTupleSetIndex(msg.getTupleSetIndex());
   if(!result)
@@ -66,7 +66,7 @@ void HashJoinProbe::onHashTable(const TupleSetIndexMessage &msg) {
   send(false);
 }
 
-void HashJoinProbe::send(bool force) {
+void HashJoinProbePOp::send(bool force) {
   auto buffer = kernel_.getBuffer();
   if (buffer.has_value() && (force || buffer.value()->numRows() >= DefaultBufferSize)) {
     std::shared_ptr<Message>

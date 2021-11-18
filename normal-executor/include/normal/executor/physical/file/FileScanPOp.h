@@ -2,8 +2,8 @@
 // Created by matt on 12/12/19.
 //
 
-#ifndef NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_FILE_FILESCAN_H
-#define NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_FILE_FILESCAN_H
+#ifndef NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_FILE_FILESCANPOP_H
+#define NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_FILE_FILESCANPOP_H
 
 #include <normal/executor/physical/file/FileScanKernel.h>
 #include <normal/executor/physical/PhysicalOp.h>
@@ -17,13 +17,13 @@ using namespace normal::tuple;
 
 namespace normal::executor::physical::file {
 
-class FileScan : public PhysicalOp {
+class FileScanPOp : public PhysicalOp {
 
 public:
   [[deprecated ("Use constructor accepting a byte range")]]
-  FileScan(std::string name, const std::string &filePath, long queryId);
+  FileScanPOp(std::string name, const std::string &filePath, long queryId);
 
-  FileScan(std::string name,
+  FileScanPOp(std::string name,
 		   const std::string &filePath,
 		   FileType fileType,
 		   std::vector<std::string> columnNames,
@@ -32,7 +32,7 @@ public:
 		   long queryId,
 		   bool scanOnStart = false);
 
-  static std::shared_ptr<FileScan> make(const std::string &name,
+  static std::shared_ptr<FileScanPOp> make(const std::string &name,
 										const std::string &filePath,
 										const std::vector<std::string> &columnNames,
 										unsigned long startOffset,
@@ -40,7 +40,7 @@ public:
 										long queryId = 0,
 										bool scanOnStart = false);
 
-  static std::shared_ptr<FileScan> make(const std::string &name,
+  static std::shared_ptr<FileScanPOp> make(const std::string &name,
 										const std::string &filePath,
 										FileType fileType,
 										const std::vector<std::string> &columnNames,
@@ -71,4 +71,4 @@ private:
 
 }
 
-#endif //NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_FILE_FILESCAN_H
+#endif //NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_FILE_FILESCANPOP_H

@@ -2,7 +2,7 @@
 // Created by matt on 5/12/19.
 //
 
-#include <normal/executor/physical/collate/Collate.h>
+#include <normal/executor/physical/collate/CollatePOp.h>
 #include <normal/executor/message/TupleMessage.h>
 #include <normal/executor/message/CompleteMessage.h>
 #include <arrow/table.h>               // for ConcatenateTables, Table (ptr ...
@@ -11,18 +11,18 @@
 
 namespace normal::executor::physical::collate {
 
-void Collate::onStart() {
+void CollatePOp::onStart() {
   SPDLOG_DEBUG("Starting operator  |  name: '{}'", this->name());
 
   // FIXME: Not the best way to reset the tuples structure
   this->tuples_.reset();
 }
 
-Collate::Collate(std::string name, long queryId) :
+CollatePOp::CollatePOp(std::string name, long queryId) :
   PhysicalOp(std::move(name), "Collate", queryId) {
 }
 
-void Collate::onReceive(const normal::executor::message::Envelope &message) {
+void CollatePOp::onReceive(const normal::executor::message::Envelope &message) {
   if (message.message().type() == "StartMessage") {
     this->onStart();
   } else if (message.message().type() == "TupleMessage") {
@@ -37,7 +37,7 @@ void Collate::onReceive(const normal::executor::message::Envelope &message) {
   }
 }
 
-void Collate::onComplete(const normal::executor::message::CompleteMessage &) {
+void CollatePOp::onComplete(const normal::executor::message::CompleteMessage &) {
   if(!ctx()->isComplete() && ctx()->operatorMap().allComplete(POpRelationshipType::Producer)){
     if (!tables_.empty()) {
       tables_.push_back(tuples_->table());
@@ -51,16 +51,16 @@ void Collate::onComplete(const normal::executor::message::CompleteMessage &) {
   }
 }
 
-void Collate::show() {
+void CollatePOp::show() {
   assert(tuples_);
   SPDLOG_DEBUG("Collated  |  tupleSet:\n{}", this->name(), tuples_->toString());
 }
 
-std::shared_ptr<TupleSet> Collate::tuples() {
+std::shared_ptr<TupleSet> CollatePOp::tuples() {
   assert(tuples_);
   return tuples_;
 }
-void Collate::onTuple(const normal::executor::message::TupleMessage &message) {
+void CollatePOp::onTuple(const normal::executor::message::TupleMessage &message) {
   if (!tuples_) {
     assert(message.tuples());
     tuples_ = message.tuples();
@@ -77,7 +77,7 @@ void Collate::onTuple(const normal::executor::message::TupleMessage &message) {
   }
 }
 
-[[maybe_unused]] void Collate::setTuples(const std::shared_ptr<TupleSet> &Tuples) {
+[[maybe_unused]] void CollatePOp::setTuples(const std::shared_ptr<TupleSet> &Tuples) {
   tuples_ = Tuples;
 }
 

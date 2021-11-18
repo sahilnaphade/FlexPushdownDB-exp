@@ -2,8 +2,8 @@
 // Created by matt on 11/12/19.
 //
 
-#ifndef NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_AGGREGATE_AGGREGATE_H
-#define NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_AGGREGATE_AGGREGATE_H
+#ifndef NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_AGGREGATE_AGGREGATEPOP_H
+#define NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_AGGREGATE_AGGREGATEPOP_H
 
 #include <normal/executor/physical/aggregate/AggregationResult.h>
 #include <normal/executor/physical/aggregate/AggregationFunction.h>
@@ -16,13 +16,13 @@
 
 namespace normal::executor::physical::aggregate {
 
-class Aggregate : public normal::executor::physical::PhysicalOp {
+class AggregatePOp : public normal::executor::physical::PhysicalOp {
 
 public:
-  Aggregate(std::string name,
+  AggregatePOp(std::string name,
             std::shared_ptr<std::vector<std::shared_ptr<aggregate::AggregationFunction>>> functions,
             long queryId = 0);
-  ~Aggregate() override = default;
+  ~AggregatePOp() override = default;
 
   void compute(const std::shared_ptr<TupleSet> &tuples);
   void cacheInputSchema(const normal::executor::message::TupleMessage &message);
@@ -47,4 +47,4 @@ private:
 
 }
 
-#endif //NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_AGGREGATE_AGGREGATE_H
+#endif //NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_AGGREGATE_AGGREGATEPOP_H

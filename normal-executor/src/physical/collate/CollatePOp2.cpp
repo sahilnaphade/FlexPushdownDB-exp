@@ -2,7 +2,7 @@
 // Created by matt on 9/10/20.
 //
 
-#include <normal/executor/physical/collate/Collate2.h>
+#include <normal/executor/physical/collate/CollatePOp2.h>
 
 namespace normal::executor::physical::collate {
 

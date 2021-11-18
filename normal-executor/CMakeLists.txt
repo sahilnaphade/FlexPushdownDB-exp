@@ -35,25 +35,25 @@ add_library(normal-executor STATIC
         src/physical/PhysicalOp.cpp include/normal/executor/physical/PhysicalOp.h
 #        physical operators
         include/normal/executor/physical/Globals.h
-        src/physical/aggregate/Aggregate.cpp include/normal/executor/physical/aggregate/Aggregate.h
+        src/physical/aggregate/AggregatePOp.cpp include/normal/executor/physical/aggregate/AggregatePOp.h
         src/physical/aggregate/AggregationFunction.cpp include/normal/executor/physical/aggregate/AggregationFunction.h
         src/physical/aggregate/AggregationResult.cpp include/normal/executor/physical/aggregate/AggregationResult.h
         src/physical/aggregate/Sum.cpp include/normal/executor/physical/aggregate/Sum.h
         include/normal/executor/physical/aggregate/AggregateBuilder.h
         include/normal/executor/physical/aggregate/AggregateBuilderWrapper.h
-        src/physical/cache/CacheLoad.cpp include/normal/executor/physical/cache/CacheLoad.h
+        src/physical/cache/CacheLoadPOp.cpp include/normal/executor/physical/cache/CacheLoadPOp.h
         src/physical/cache/CacheHelper.cpp include/normal/executor/physical/cache/CacheHelper.h
-        src/physical/collate/Collate.cpp include/normal/executor/physical/collate/Collate.h
-        src/physical/collate/Collate2.cpp include/normal/executor/physical/collate/Collate2.h
-        src/physical/file/FileScan.cpp include/normal/executor/physical/file/FileScan.h
-        src/physical/file/FileScan2.cpp include/normal/executor/physical/file/FileScan2.h
+        src/physical/collate/CollatePOp.cpp include/normal/executor/physical/collate/CollatePOp.h
+        src/physical/collate/CollatePOp2.cpp include/normal/executor/physical/collate/CollatePOp2.h
+        src/physical/file/FileScanPOp.cpp include/normal/executor/physical/file/FileScanPOp.h
+        src/physical/file/FileScanPOp2.cpp include/normal/executor/physical/file/FileScanPOp2.h
         src/physical/file/FileScanKernel.cpp include/normal/executor/physical/file/FileScanKernel.h
-        src/physical/filter/Filter.cpp include/normal/executor/physical/filter/Filter.h
-        src/physical/group/Group.cpp include/normal/executor/physical/group/Group.h
+        src/physical/filter/FilterPOp.cpp include/normal/executor/physical/filter/FilterPOp.h
+        src/physical/group/GroupPOp.cpp include/normal/executor/physical/group/GroupPOp.h
         include/normal/executor/physical/group/GroupKey2.h
         src/physical/group/GroupKernel2.cpp include/normal/executor/physical/group/GroupKernel2.h
-        src/physical/hashjoin/HashJoinBuild.cpp include/normal/executor/physical/hashjoin/HashJoinBuild.h
-        src/physical/hashjoin/HashJoinProbe.cpp include/normal/executor/physical/hashjoin/HashJoinProbe.h
+        src/physical/hashjoin/HashJoinBuildPOp.cpp include/normal/executor/physical/hashjoin/HashJoinBuildPOp.h
+        src/physical/hashjoin/HashJoinProbePOp.cpp include/normal/executor/physical/hashjoin/HashJoinProbePOp.h
         src/physical/hashjoin/HashJoinBuildKernel2.cpp include/normal/executor/physical/hashjoin/HashJoinBuildKernel2.h
         src/physical/hashjoin/HashJoinProbeKernel2.cpp include/normal/executor/physical/hashjoin/HashJoinProbeKernel2.h
         src/physical/hashjoin/HashJoinPredicate.cpp include/normal/executor/physical/hashjoin/HashJoinPredicate.h

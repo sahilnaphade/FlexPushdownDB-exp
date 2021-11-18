@@ -2,8 +2,8 @@
 // Created by matt on 8/7/20.
 //
 
-#ifndef NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_CACHE_CACHELOAD_H
-#define NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_CACHE_CACHELOAD_H
+#ifndef NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_CACHE_CACHELOADPOP_H
+#define NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_CACHE_CACHELOADPOP_H
 
 #include <normal/executor/physical/PhysicalOp.h>
 #include <normal/executor/message/Envelope.h>
@@ -17,10 +17,10 @@ using namespace normal::aws;
 
 namespace normal::executor::physical::cache {
 
-class CacheLoad : public PhysicalOp {
+class CacheLoadPOp : public PhysicalOp {
 
 public:
-  explicit CacheLoad(std::string name,
+  explicit CacheLoadPOp(std::string name,
 					 std::vector<std::string> projectedColumnNames,
 					 std::vector<std::string> predicateColumnNames,
 					 std::shared_ptr<Partition> partition,
@@ -28,9 +28,9 @@ public:
 					 int64_t finishOffset,
 					 S3ClientType s3ClientType,
 					 long queryId);
-  ~CacheLoad() override = default;
+  ~CacheLoadPOp() override = default;
 
-  static std::shared_ptr<CacheLoad> make(const std::string &name,
+  static std::shared_ptr<CacheLoadPOp> make(const std::string &name,
                      std::vector<std::string> projectedColumnNames,
                      std::vector<std::string> predicateColumnNames,
 										 const std::shared_ptr<Partition>& partition,
@@ -71,4 +71,4 @@ private:
 
 }
 
-#endif //NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_CACHE_CACHELOAD_H
+#endif //NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_CACHE_CACHELOADPOP_H

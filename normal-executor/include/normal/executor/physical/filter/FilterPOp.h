@@ -2,8 +2,8 @@
 // Created by matt on 6/5/20.
 //
 
-#ifndef NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_FILTER_FILTER_H
-#define NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_FILTER_FILTER_H
+#ifndef NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_FILTER_FILTERPOP_H
+#define NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_FILTER_FILTERPOP_H
 
 #include <normal/executor/physical/PhysicalOp.h>
 #include <normal/executor/message/TupleMessage.h>
@@ -20,15 +20,15 @@ using namespace normal::catalogue;
 
 namespace normal::executor::physical::filter {
 
-class Filter : public PhysicalOp {
+class FilterPOp : public PhysicalOp {
 public:
-  explicit Filter(std::string name,
+  explicit FilterPOp(std::string name,
                   std::shared_ptr<normal::expression::gandiva::Expression> predicate,
                   std::shared_ptr<Table> table,
                   long queryId,
                   std::shared_ptr<std::vector<std::shared_ptr<normal::cache::SegmentKey>>> weightedSegmentKeys);
 
-  static std::shared_ptr<Filter> make(const std::string &name,
+  static std::shared_ptr<FilterPOp> make(const std::string &name,
                                       const std::shared_ptr<normal::expression::gandiva::Expression> &predicate,
                                       const std::shared_ptr<Table> &table,
                                       long queryId = 0,
@@ -84,4 +84,4 @@ inline bool recordSpeeds = false;
 inline size_t totalBytesFiltered_ = 0;
 }
 
-#endif //NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_FILTER_FILTER_H
+#endif //NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_FILTER_FILTERPOP_H

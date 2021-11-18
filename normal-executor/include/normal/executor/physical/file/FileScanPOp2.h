@@ -2,11 +2,11 @@
 // Created by matt on 23/9/20.
 //
 
-#ifndef NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_FILE_FILESCAN2_H
-#define NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_FILE_FILESCAN2_H
+#ifndef NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_FILE_FILESCANPOP2_H
+#define NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_FILE_FILESCANPOP2_H
 
 #include <normal/executor/physical/Forward.h>
-#include <normal/executor/physical/file/FileScan.h>
+#include <normal/executor/physical/file/FileScanPOp.h>
 #include <normal/executor/physical/POpActor2.h>
 #include <normal/executor/cache/SegmentCacheActor.h>
 #include <normal/executor/message/TupleMessage.h>
@@ -190,4 +190,4 @@ FileScanActor::behavior_type FileScanFunctor(FileScanStatefulActor actor,
 
 }
 
-#endif //NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_FILE_FILESCAN2_H
+#endif //NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_FILE_FILESCANPOP2_H

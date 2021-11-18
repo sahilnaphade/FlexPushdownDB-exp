@@ -2,8 +2,8 @@
 // Created by matt on 29/4/20.
 //
 
-#ifndef NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_HASHJOIN_HASHJOINPROBE_H
-#define NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_HASHJOIN_HASHJOINPROBE_H
+#ifndef NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_HASHJOIN_HASHJOINPROBEPOP_H
+#define NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_HASHJOIN_HASHJOINPROBEPOP_H
 
 #include <normal/executor/physical/PhysicalOp.h>
 #include <normal/executor/physical/hashjoin/HashJoinProbeKernel2.h>
@@ -23,10 +23,10 @@ namespace normal::executor::physical::hashjoin {
  * to select rows from the both relations to include in the join.
  *
  */
-class HashJoinProbe : public PhysicalOp {
+class HashJoinProbePOp : public PhysicalOp {
 
 public:
-  HashJoinProbe(const std::string &name, HashJoinPredicate pred, std::set<std::string> neededColumnNames, long queryId = 0);
+  HashJoinProbePOp(const std::string &name, HashJoinPredicate pred, std::set<std::string> neededColumnNames, long queryId = 0);
 
   void onReceive(const Envelope &msg) override;
 
@@ -43,4 +43,4 @@ private:
 
 }
 
-#endif //NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_HASHJOIN_HASHJOINPROBE_H
+#endif //NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_HASHJOIN_HASHJOINPROBEPOP_H

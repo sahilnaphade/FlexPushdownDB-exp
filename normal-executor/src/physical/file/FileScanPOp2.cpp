@@ -2,7 +2,7 @@
 // Created by matt on 23/9/20.
 //
 
-#include <normal/executor/physical/file/FileScan2.h>
+#include <normal/executor/physical/file/FileScanPOp2.h>
 #include <utility>
 
 namespace normal::executor::physical::file {

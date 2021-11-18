@@ -2,7 +2,7 @@
 // Created by matt on 8/7/20.
 //
 
-#include <normal/executor/physical/cache/CacheLoad.h>
+#include <normal/executor/physical/cache/CacheLoadPOp.h>
 #include <normal/executor/physical/cache/CacheHelper.h>
 #include <normal/executor/message/ScanMessage.h>
 #include <normal/executor/message/TupleMessage.h>
@@ -11,7 +11,7 @@
 
 using namespace normal::executor::physical::cache;
 
-CacheLoad::CacheLoad(std::string name,
+CacheLoadPOp::CacheLoadPOp(std::string name,
            std::vector<std::string> projectedColumnNames,
            std::vector<std::string> predicateColumnNames,
 					 std::shared_ptr<Partition> Partition,
@@ -34,7 +34,7 @@ CacheLoad::CacheLoad(std::string name,
   columnNames_.assign(columnNameSet->begin(), columnNameSet->end());
 }
 
-std::shared_ptr<CacheLoad> CacheLoad::make(const std::string &name,
+std::shared_ptr<CacheLoadPOp> CacheLoadPOp::make(const std::string &name,
                        std::vector<std::string> projectedColumnNames,
                        std::vector<std::string> predicateColumnNames,
 										   const std::shared_ptr<Partition> &partition,
@@ -52,7 +52,7 @@ std::shared_ptr<CacheLoad> CacheLoad::make(const std::string &name,
                  std::back_inserter(canonicalPredicateColumnNames),
                  [](auto name) -> auto { return ColumnName::canonicalize(name); });
 
-  return std::make_shared<CacheLoad>(name,
+  return std::make_shared<CacheLoadPOp>(name,
 									 canonicalProjectedColumnNames,
 									 canonicalPredicateColumnNames,
 									 partition,
@@ -62,7 +62,7 @@ std::shared_ptr<CacheLoad> CacheLoad::make(const std::string &name,
 									 queryId);
 }
 
-void CacheLoad::onReceive(const Envelope &message) {
+void CacheLoadPOp::onReceive(const Envelope &message) {
   if (message.message().type() == "StartMessage") {
 	this->onStart();
   } else if (message.message().type() == "LoadResponseMessage") {
@@ -74,7 +74,7 @@ void CacheLoad::onReceive(const Envelope &message) {
   }
 }
 
-void CacheLoad::onStart() {
+void CacheLoadPOp::onStart() {
   /**
    * We always have hitOperator_ and missOperatorToCache_
    * In hybrid caching, we also have missOperatorToPushdown_; in pullup caching, we don't
@@ -102,11 +102,11 @@ void CacheLoad::onStart() {
   requestLoadSegmentsFromCache();
 }
 
-void CacheLoad::requestLoadSegmentsFromCache() {
+void CacheLoadPOp::requestLoadSegmentsFromCache() {
   CacheHelper::requestLoadSegmentsFromCache(columnNames_, partition_, startOffset_, finishOffset_, name(), ctx());
 }
 
-void CacheLoad::onCacheLoadResponse(const LoadResponseMessage &Message) {
+void CacheLoadPOp::onCacheLoadResponse(const LoadResponseMessage &Message) {
   std::vector<std::shared_ptr<Column>> hitColumns;
   std::vector<std::string> hitColumnNames;
   std::vector<std::string> missedCachingColumnNames;
@@ -263,17 +263,17 @@ void CacheLoad::onCacheLoadResponse(const LoadResponseMessage &Message) {
   ctx()->notifyComplete();
 }
 
-void CacheLoad::setHitOperator(const std::shared_ptr<PhysicalOp> &op) {
+void CacheLoadPOp::setHitOperator(const std::shared_ptr<PhysicalOp> &op) {
   this->hitOperator_ = op;
   this->produce(op);
 }
 
-void CacheLoad::setMissOperatorToCache(const std::shared_ptr<PhysicalOp> &op) {
+void CacheLoadPOp::setMissOperatorToCache(const std::shared_ptr<PhysicalOp> &op) {
   this->missOperatorToCache_ = op;
   this->produce(op);
 }
 
-void CacheLoad::setMissOperatorToPushdown(const std::shared_ptr<PhysicalOp> &op) {
+void CacheLoadPOp::setMissOperatorToPushdown(const std::shared_ptr<PhysicalOp> &op) {
   this->missOperatorToPushdown_ = op;
   this->produce(op);
 }

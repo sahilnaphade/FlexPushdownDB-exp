@@ -2,8 +2,8 @@
 // Created by matt on 13/5/20.
 //
 
-#ifndef NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_GROUP_GROUP_H
-#define NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_GROUP_GROUP_H
+#ifndef NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_GROUP_GROUPPOP_H
+#define NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_GROUP_GROUPPOP_H
 
 #include <normal/executor/physical/group/GroupKernel2.h>
 #include <normal/executor/physical/PhysicalOp.h>
@@ -29,16 +29,16 @@ namespace normal::executor::physical::group {
  *
  * Upon completion of all upstream operators the final aggregates for each group are sent to downstream operators.
  */
-class Group : public PhysicalOp {
+class GroupPOp : public PhysicalOp {
 
 public:
-  Group(const std::string &Name,
+  GroupPOp(const std::string &Name,
 		const std::vector<std::string> &ColumnNames,
     const std::vector<std::string> &AggregateColumnNames,
 		const std::shared_ptr<std::vector<std::shared_ptr<aggregate::AggregationFunction>>> &AggregateFunctions,
 		long queryId = 0);
 
-  static std::shared_ptr<Group> make(const std::string &Name,
+  static std::shared_ptr<GroupPOp> make(const std::string &Name,
 									 const std::vector<std::string> &groupColumnNames,
                    const std::vector<std::string> &aggregateColumnNames,
 									 const std::shared_ptr<std::vector<std::shared_ptr<aggregate::AggregationFunction>>> &AggregateFunctions,
@@ -56,4 +56,4 @@ private:
 
 }
 
-#endif //NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_GROUP_GROUP_H
+#endif //NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_GROUP_GROUPPOP_H

@@ -2,7 +2,7 @@
 // Created by matt on 6/5/20.
 //
 
-#include <normal/executor/physical/filter/Filter.h>
+#include <normal/executor/physical/filter/FilterPOp.h>
 #include <normal/executor/physical/Globals.h>
 #include <normal/executor/message/TupleMessage.h>
 #include <normal/executor/message/CompleteMessage.h>
@@ -16,27 +16,27 @@
 using namespace normal::executor::physical::filter;
 using namespace normal::cache;
 
-Filter::Filter(std::string name,
+FilterPOp::FilterPOp(std::string name,
                std::shared_ptr<normal::expression::gandiva::Expression> predicate,
                std::shared_ptr<Table> table,
                long queryId,
                std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> weightedSegmentKeys) :
-	PhysicalOp(std::move(name), "Filter", queryId),
+	PhysicalOp(std::move(name), "FilterPOp", queryId),
   predicate_(std::move(predicate)),
 	received_(normal::tuple::TupleSet2::make()),
 	filtered_(normal::tuple::TupleSet2::make()),
   table_(std::move(table)),
 	weightedSegmentKeys_(std::move(weightedSegmentKeys)) {}
 
-std::shared_ptr<Filter> Filter::make(const std::string &name,
+std::shared_ptr<FilterPOp> FilterPOp::make(const std::string &name,
                                      const std::shared_ptr<normal::expression::gandiva::Expression> &predicate,
                                      const std::shared_ptr<Table> &table,
                                      long queryId,
                                      std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> weightedSegmentKeys) {
-  return std::make_shared<Filter>(name, predicate, table, queryId, weightedSegmentKeys);
+  return std::make_shared<FilterPOp>(name, predicate, table, queryId, weightedSegmentKeys);
 }
 
-void Filter::onReceive(const Envelope &Envelope) {
+void FilterPOp::onReceive(const Envelope &Envelope) {
 
   const auto& message = Envelope.message();
 
@@ -56,12 +56,12 @@ void Filter::onReceive(const Envelope &Envelope) {
   }
 }
 
-void Filter::onStart() {
+void FilterPOp::onStart() {
   assert(received_->validate());
   assert(filtered_->validate());
 }
 
-void Filter::onTuple(const TupleMessage &Message) {
+void FilterPOp::onTuple(const TupleMessage &Message) {
   SPDLOG_DEBUG("onTuple  |  Message tupleSet - numRows: {}", Message.tuples()->numRows());
   /**
    * Check if this filter is applicable, if not, just send an empty table and complete
@@ -73,7 +73,7 @@ void Filter::onTuple(const TupleMessage &Message) {
 
   if (*applicable_) {
     bufferTuples(tupleSet);
-    SPDLOG_DEBUG("Filter onTuple: {}, {}, {}", tupleSet->numRows(), received_->numRows(), name());
+    SPDLOG_DEBUG("FilterPOp onTuple: {}, {}, {}", tupleSet->numRows(), received_->numRows(), name());
     buildFilter();
     if (received_->numRows() > DefaultBufferSize) {
       filterTuples();
@@ -89,7 +89,7 @@ void Filter::onTuple(const TupleMessage &Message) {
   }
 }
 
-void Filter::onComplete(const CompleteMessage&) {
+void FilterPOp::onComplete(const CompleteMessage&) {
   SPDLOG_DEBUG("onComplete  |  Received buffer tupleSet - numRows: {}", received_->numRows());
 
   if(received_->getArrowTable().has_value()) {
@@ -110,7 +110,7 @@ void Filter::onComplete(const CompleteMessage&) {
   }
 }
 
-void Filter::bufferTuples(const std::shared_ptr<normal::tuple::TupleSet2>& tupleSet) {
+void FilterPOp::bufferTuples(const std::shared_ptr<normal::tuple::TupleSet2>& tupleSet) {
   if(!received_->schema().has_value()) {
 	received_->setSchema(*tupleSet->schema());
   }
@@ -121,7 +121,7 @@ void Filter::bufferTuples(const std::shared_ptr<normal::tuple::TupleSet2>& tuple
   assert(received_->validate());
 }
 
-bool Filter::isApplicable(const std::shared_ptr<normal::tuple::TupleSet2>& tupleSet) {
+bool FilterPOp::isApplicable(const std::shared_ptr<normal::tuple::TupleSet2>& tupleSet) {
   auto predicateColumnNames = predicate_->involvedColumnNames();
   auto tupleColumnNames = std::make_shared<std::vector<std::string>>();
   for (auto const &field: tupleSet->schema()->get()->fields()) {
@@ -136,14 +136,14 @@ bool Filter::isApplicable(const std::shared_ptr<normal::tuple::TupleSet2>& tuple
   return true;
 }
 
-void Filter::buildFilter() {
+void FilterPOp::buildFilter() {
   if(!filter_.has_value()){
 	filter_ = normal::expression::gandiva::Filter::make(predicate_);
 	filter_.value()->compile(received_->schema().value());
   }
 }
 
-void Filter::filterTuples() {
+void FilterPOp::filterTuples() {
   if (recordSpeeds) {
     totalBytesFiltered_ += received_->size();
   }
@@ -158,7 +158,7 @@ void Filter::filterTuples() {
   assert(received_->validate());
 }
 
-void Filter::sendTuples() {
+void FilterPOp::sendTuples() {
   std::shared_ptr<Message> tupleMessage =
 	  std::make_shared<TupleMessage>(filtered_->toTupleSetV1(), name());
 
@@ -176,14 +176,14 @@ int getPredicateNum(const std::shared_ptr<normal::expression::gandiva::Expressio
   }
 }
 
-void Filter::sendSegmentWeight() {
+void FilterPOp::sendSegmentWeight() {
   auto selectivity = ((double) filteredNumRows_) / ((double ) totalNumRows_);
   auto predicateNum = (double) getPredicateNum(predicate_);
   auto weightMap = std::make_shared<std::unordered_map<std::shared_ptr<SegmentKey>, double>>();
 
   /**
    * Weight function:
-   *   w = sel / vNetwork + (lenRow / (lenCol * vScan) + #pred / (lenCol * vFilter)) / #key
+   *   w = sel / vNetwork + (lenRow / (lenCol * vScan) + #pred / (lenCol * vFilterPOp)) / #key
    */
   auto numKey = (double) weightedSegmentKeys_->size();
   for (auto const &segmentKey: *weightedSegmentKeys_) {

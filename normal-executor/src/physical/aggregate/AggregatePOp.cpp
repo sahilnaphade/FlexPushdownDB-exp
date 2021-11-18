@@ -2,7 +2,7 @@
 // Created by matt on 11/12/19.
 //
 
-#include <normal/executor/physical/aggregate/Aggregate.h>
+#include <normal/executor/physical/aggregate/AggregatePOp.h>
 #include <normal/executor/physical/aggregate/AggregationResult.h>
 #include <normal/executor/physical/PhysicalOp.h>
 #include <normal/executor/message/CompleteMessage.h>
@@ -15,14 +15,14 @@
 
 namespace normal::executor::physical::aggregate {
 
-Aggregate::Aggregate(std::string name,
+AggregatePOp::AggregatePOp(std::string name,
                      std::shared_ptr<std::vector<std::shared_ptr<aggregate::AggregationFunction>>> functions,
                      long queryId)
     : PhysicalOp(std::move(name), "Aggregate", queryId),
       functions_(std::move(functions)),
       results_(std::make_shared<std::vector<std::shared_ptr<aggregate::AggregationResult>>>()) {}
 
-void Aggregate::onStart() {
+void AggregatePOp::onStart() {
   SPDLOG_DEBUG("Starting operator  |  name: '{}'", this->name());
 
   for(size_t i=0;i<functions_->size();++i) {
@@ -31,7 +31,7 @@ void Aggregate::onStart() {
   }
 }
 
-void Aggregate::onReceive(const normal::executor::message::Envelope &message) {
+void AggregatePOp::onReceive(const normal::executor::message::Envelope &message) {
   if (message.message().type() == "StartMessage") {
     this->onStart();
   } else if (message.message().type() == "TupleMessage") {
@@ -46,7 +46,7 @@ void Aggregate::onReceive(const normal::executor::message::Envelope &message) {
   }
 }
 
-void Aggregate::onComplete(const normal::executor::message::CompleteMessage &) {
+void AggregatePOp::onComplete(const normal::executor::message::CompleteMessage &) {
   if (!ctx()->isComplete() &&
     this->ctx()->operatorMap().allComplete(normal::executor::physical::POpRelationshipType::Producer)) {
 
@@ -101,19 +101,19 @@ void Aggregate::onComplete(const normal::executor::message::CompleteMessage &) {
   }
 }
 
-void Aggregate::onTuple(const normal::executor::message::TupleMessage &message) {
+void AggregatePOp::onTuple(const normal::executor::message::TupleMessage &message) {
   // Set the input schema if not yet set
   cacheInputSchema(message);
   compute(message.tuples());
 }
 
-void Aggregate::cacheInputSchema(const normal::executor::message::TupleMessage &message) {
+void AggregatePOp::cacheInputSchema(const normal::executor::message::TupleMessage &message) {
   if(!inputSchema_.has_value()){
 	inputSchema_ = message.tuples()->table()->schema();
   }
 }
 
-void Aggregate::compute(const std::shared_ptr<TupleSet> &tuples) {
+void AggregatePOp::compute(const std::shared_ptr<TupleSet> &tuples) {
   for(size_t i=0;i<functions_->size();++i){
     auto function = functions_->at(i);
     auto result = results_->at(i);
