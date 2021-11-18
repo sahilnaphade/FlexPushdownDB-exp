@@ -2,18 +2,17 @@
 // Created by matt on 27/10/20.
 //
 
-#ifndef NORMAL_NORMAL_PUSHDOWN_INCLUDE_NORMAL_PUSHDOWN_GROUP_AGGREGATEBUILDERWRAPPER_H
-#define NORMAL_NORMAL_PUSHDOWN_INCLUDE_NORMAL_PUSHDOWN_GROUP_AGGREGATEBUILDERWRAPPER_H
+#ifndef NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_AGGREGATE_AGGREGATEBUILDERWRAPPER_H
+#define NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_AGGREGATE_AGGREGATEBUILDERWRAPPER_H
 
+#include <normal/executor/physical/aggregate/AggregateBuilder.h>
+#include <normal/tuple/Scalar.h>
 #include <memory>
 #include <utility>
 
-#include <normal/tuple/Scalar.h>
-#include "AggregateBuilder.h"
-
 using namespace normal::tuple;
 
-namespace normal::pushdown::aggregate {
+namespace normal::executor::physical::aggregate {
 
 template<typename CType, typename ArrowType>
 class AggregateBuilderWrapper : public AggregateBuilder {
@@ -69,4 +68,4 @@ makeAggregateBuilder(const std::shared_ptr<arrow::DataType> &type) {
 
 }
 
-#endif //NORMAL_NORMAL_PUSHDOWN_INCLUDE_NORMAL_PUSHDOWN_GROUP_AGGREGATEBUILDERWRAPPER_H
+#endif //NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_AGGREGATE_AGGREGATEBUILDERWRAPPER_H

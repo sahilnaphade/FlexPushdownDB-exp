@@ -2,17 +2,14 @@
 // Created by matt on 21/7/20.
 //
 
-#ifndef NORMAL_NORMAL_PUSHDOWN_INCLUDE_NORMAL_PUSHDOWN_SCAN_SCANMESSAGE_H
-#define NORMAL_NORMAL_PUSHDOWN_INCLUDE_NORMAL_PUSHDOWN_SCAN_SCANMESSAGE_H
+#ifndef NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_MESSAGE_SCANMESSAGE_H
+#define NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_MESSAGE_SCANMESSAGE_H
 
+#include <normal/executor/message/Message.h>
 #include <string>
 #include <vector>
 
-#include <normal/core/message/Message.h>
-
-using namespace normal::core::message;
-
-namespace normal::pushdown::scan {
+namespace normal::executor::message {
 
 /**
  * A message to a scan operator telling it to scan a subset of columns from its data source
@@ -32,4 +29,4 @@ private:
 
 }
 
-#endif //NORMAL_NORMAL_PUSHDOWN_INCLUDE_NORMAL_PUSHDOWN_SCAN_SCANMESSAGE_H
+#endif //NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_MESSAGE_SCANMESSAGE_H

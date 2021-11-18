@@ -2,25 +2,21 @@
 // Created by matt on 18/9/20.
 //
 
-#ifndef NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_OPERATORACTOR2_H
-#define NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_OPERATORACTOR2_H
+#ifndef NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_POPACTOR2_H
+#define NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_POPACTOR2_H
 
-#include <utility>
-#include <queue>
-
+#include <normal/executor/physical/POpActor.h>
+#include <normal/executor/physical/LocalPOpDirectory.h>
+#include <normal/executor/physical/POpConnection.h>
+#include <normal/executor/message/Envelope.h>
+#include <normal/executor/message/StartMessage.h>
+#include <normal/executor/message/CompleteMessage.h>
+#include <normal/executor/message/ConnectMessage.h>
 #include <caf/all.hpp>
 #include <boost/callable_traits.hpp>
-
-#include <normal/core/Globals.h>
-#include <normal/core/LocalOperatorDirectory.h>
-#include <normal/core/message/Envelope.h>
-#include <normal/core/message/StartMessage.h>
-#include <normal/core/OperatorConnection.h>
-#include <normal/core/message/CompleteMessage.h>
-#include <normal/core/OperatorActor.h>
-#include <normal/core/message/ConnectMessage.h>
-
-#include <stdint.h>
+#include <utility>
+#include <queue>
+#include <cstdint>
 
 using namespace normal::core::message;
 using namespace boost::callable_traits;
@@ -29,7 +25,11 @@ using ExpectedVoidString = tl::expected<void, std::string>;
 CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::vector<normal::core::OperatorConnection>);
 CAF_ALLOW_UNSAFE_MESSAGE_TYPE(ExpectedVoidString);
 
-namespace normal::core {
+/**
+ * [WIP] Stateful physical operator Actor
+ */
+
+namespace normal::executor::physical {
 
 using ConnectAtom = ::caf::atom_constant<caf::atom("connect")>;
 using StartAtom = ::caf::atom_constant<caf::atom("start")>;
@@ -617,4 +617,4 @@ private:
 
 }
 
-#endif //NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_OPERATORACTOR2_H
+#endif //NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_POPACTOR2_H

@@ -2,19 +2,17 @@
 // Created by matt on 7/3/20.
 //
 
-#ifndef NORMAL_NORMAL_PUSHDOWN_SRC_AGGREGATE_AGGREGATEEXPRESSION2_H
-#define NORMAL_NORMAL_PUSHDOWN_SRC_AGGREGATE_AGGREGATEEXPRESSION2_H
+#ifndef NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_AGGREGATE_AGGREGATEFUNCTION_H
+#define NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_AGGREGATE_AGGREGATEFUNCTION_H
 
-#include <memory>
-
-#include <normal/tuple/TupleSet.h>
+#include <normal/executor/physical/aggregate/AggregationResult.h>
 #include <normal/expression/Projector.h>
-
-#include <normal/pushdown/aggregate/AggregationResult.h>
+#include <normal/tuple/TupleSet.h>
+#include <memory>
 
 using namespace normal::tuple;
 
-namespace normal::pushdown::aggregate {
+namespace normal::executor::physical::aggregate {
 
 /**
  * Base class for aggregation functions
@@ -64,4 +62,4 @@ private:
 
 }
 
-#endif //NORMAL_NORMAL_PUSHDOWN_SRC_AGGREGATE_AGGREGATEEXPRESSION2_H
+#endif //NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_AGGREGATE_AGGREGATEFUNCTION_H

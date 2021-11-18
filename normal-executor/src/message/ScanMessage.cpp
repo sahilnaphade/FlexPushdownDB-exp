@@ -2,11 +2,10 @@
 // Created by matt on 21/7/20.
 //
 
-#include "normal/pushdown/scan/ScanMessage.h"
-
+#include <normal/executor/message/ScanMessage.h>
 #include <utility>
 
-using namespace normal::pushdown::scan;
+using namespace normal::executor::message;
 
 ScanMessage::ScanMessage(std::vector<std::string> ColumnNames, const std::string &Sender, bool resultNeeded) :
 	Message("ScanMessage", Sender),

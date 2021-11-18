@@ -2,25 +2,23 @@
 // Created by matt on 11/12/19.
 //
 
-#include "normal/pushdown/aggregate/Aggregate.h"
-
+#include <normal/executor/physical/aggregate/Aggregate.h>
+#include <normal/executor/physical/aggregate/AggregationResult.h>
+#include <normal/executor/physical/PhysicalOp.h>
+#include <normal/executor/message/CompleteMessage.h>
+#include <normal/executor/message/TupleMessage.h>
+#include <normal/executor/message/Message.h>
+#include <arrow/scalar.h>
 #include <string>
 #include <utility>
 #include <memory>
 
-#include <normal/core/message/CompleteMessage.h>
-#include "normal/core/Operator.h"
-#include "normal/core/message/TupleMessage.h"
-#include "normal/core/message/Message.h"
-#include <normal/pushdown/aggregate/AggregationResult.h>
-#include "arrow/scalar.h"
-
-namespace normal::pushdown::aggregate {
+namespace normal::executor::physical::aggregate {
 
 Aggregate::Aggregate(std::string name,
                      std::shared_ptr<std::vector<std::shared_ptr<aggregate::AggregationFunction>>> functions,
                      long queryId)
-    : Operator(std::move(name), "Aggregate", queryId),
+    : PhysicalOp(std::move(name), "Aggregate", queryId),
       functions_(std::move(functions)),
       results_(std::make_shared<std::vector<std::shared_ptr<aggregate::AggregationResult>>>()) {}
 
@@ -33,14 +31,14 @@ void Aggregate::onStart() {
   }
 }
 
-void Aggregate::onReceive(const normal::core::message::Envelope &message) {
+void Aggregate::onReceive(const normal::executor::message::Envelope &message) {
   if (message.message().type() == "StartMessage") {
     this->onStart();
   } else if (message.message().type() == "TupleMessage") {
-    auto tupleMessage = dynamic_cast<const normal::core::message::TupleMessage &>(message.message());
+    auto tupleMessage = dynamic_cast<const normal::executor::message::TupleMessage &>(message.message());
     this->onTuple(tupleMessage);
   } else if (message.message().type() == "CompleteMessage") {
-    auto completeMessage = dynamic_cast<const normal::core::message::CompleteMessage &>(message.message());
+    auto completeMessage = dynamic_cast<const normal::executor::message::CompleteMessage &>(message.message());
     this->onComplete(completeMessage);
   } else {
 	// FIXME: Propagate error properly
@@ -48,8 +46,9 @@ void Aggregate::onReceive(const normal::core::message::Envelope &message) {
   }
 }
 
-void Aggregate::onComplete(const normal::core::message::CompleteMessage &) {
-  if (!ctx()->isComplete() && this->ctx()->operatorMap().allComplete(core::OperatorRelationshipType::Producer)) {
+void Aggregate::onComplete(const normal::executor::message::CompleteMessage &) {
+  if (!ctx()->isComplete() &&
+    this->ctx()->operatorMap().allComplete(normal::executor::physical::POpRelationshipType::Producer)) {
 
     // Create output schema
     std::shared_ptr<arrow::Schema> schema;
@@ -94,21 +93,21 @@ void Aggregate::onComplete(const normal::core::message::CompleteMessage &) {
 
     SPDLOG_DEBUG("Completing  |  Aggregation result: \n{}", aggregatedTuples->toString());
 
-    std::shared_ptr<normal::core::message::Message>
-        tupleMessage = std::make_shared<normal::core::message::TupleMessage>(aggregatedTuples, this->name());
+    std::shared_ptr<normal::executor::message::Message>
+        tupleMessage = std::make_shared<normal::executor::message::TupleMessage>(aggregatedTuples, this->name());
     ctx()->tell(tupleMessage);
 
     ctx()->notifyComplete();
   }
 }
 
-void Aggregate::onTuple(const core::message::TupleMessage &message) {
+void Aggregate::onTuple(const normal::executor::message::TupleMessage &message) {
   // Set the input schema if not yet set
   cacheInputSchema(message);
   compute(message.tuples());
 }
 
-void Aggregate::cacheInputSchema(const core::message::TupleMessage &message) {
+void Aggregate::cacheInputSchema(const normal::executor::message::TupleMessage &message) {
   if(!inputSchema_.has_value()){
 	inputSchema_ = message.tuples()->table()->schema();
   }

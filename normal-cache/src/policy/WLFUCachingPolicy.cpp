@@ -239,7 +239,11 @@ std::string WLFUCachingPolicy::showCurrentLayout() {
   std::stringstream ss;
   ss << "Total numbers: " << keysInCache_.size() << std::endl;
   for (auto const &segmentKey: keysInCache_) {
-    ss << fmt::format("Key: {};\tAvgValue: {}\tValue: {}Value2: {}\tHitNum: {}", segmentKey->toString(), segmentKey->getMetadata()->avgValue(), segmentKey->getMetadata()->value(), segmentKey->getMetadata()->value2(), segmentKey->getMetadata()->hitNum()) << std::endl;
+    ss << fmt::format("Key: {};\tHitNum: {}\tValue: {}",
+                      segmentKey->toString(),
+                      segmentKey->getMetadata()->hitNum(),
+                      segmentKey->getMetadata()->value())
+      << std::endl;
   }
   ss << "Max size: " << maxSize_ << std::endl;
   ss << "Free size: " << freeSize_ << std::endl;

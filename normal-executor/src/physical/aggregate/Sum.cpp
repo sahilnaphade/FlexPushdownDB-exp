@@ -2,24 +2,22 @@
 // Created by matt on 7/3/20.
 //
 
+#include <normal/executor/physical/aggregate/Sum.h>
+#include <normal/expression/gandiva/Projector.h>
+#include <normal/tuple/arrow/ScalarHelperBuilder.h>
+#include <arrow/visitor_inline.h>
+#include <arrow/scalar.h>
 #include <sstream>
 #include <utility>
 
-#include "arrow/visitor_inline.h"
-#include "arrow/scalar.h"
-
-#include <normal/tuple/arrow/ScalarHelperBuilder.h>
-#include <normal/expression/gandiva/Projector.h>
-#include "normal/pushdown/aggregate/Sum.h"
-
-namespace normal::pushdown::aggregate {
+namespace normal::executor::physical::aggregate {
 
 Sum::Sum(std::string columnName, std::shared_ptr<normal::expression::gandiva::Expression> expression) :
     AggregationFunction(std::move(columnName)),
     expression_(std::move(expression)) {}
 
 
-void normal::pushdown::aggregate::Sum::apply(std::shared_ptr<aggregate::AggregationResult> result, std::shared_ptr<TupleSet> tuples) {
+void Sum::apply(std::shared_ptr<aggregate::AggregationResult> result, std::shared_ptr<TupleSet> tuples) {
   // Set the input schema if not yet set
   cacheInputSchema(*tuples);
 

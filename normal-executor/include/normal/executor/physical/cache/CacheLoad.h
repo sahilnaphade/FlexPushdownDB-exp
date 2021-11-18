@@ -2,21 +2,22 @@
 // Created by matt on 8/7/20.
 //
 
-#ifndef NORMAL_NORMAL_PUSHDOWN_INCLUDE_NORMAL_PUSHDOWN_CACHE_CACHELOAD_H
-#define NORMAL_NORMAL_PUSHDOWN_INCLUDE_NORMAL_PUSHDOWN_CACHE_CACHELOAD_H
+#ifndef NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_CACHE_CACHELOAD_H
+#define NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_CACHE_CACHELOAD_H
 
-#include <normal/core/Operator.h>
-#include <normal/core/message/Envelope.h>
-#include <normal/connector/partition/Partition.h>
-#include <normal/core/cache/LoadResponseMessage.h>
+#include <normal/executor/physical/PhysicalOp.h>
+#include <normal/executor/message/Envelope.h>
+#include <normal/executor/message/cache/LoadResponseMessage.h>
+#include <normal/catalogue/Partition.h>
+#include <normal/aws/S3ClientType.h>
 
-using namespace normal::core;
-using namespace normal::core::message;
-using namespace normal::core::cache;
+using namespace normal::executor::physical;
+using namespace normal::executor::message;
+using namespace normal::aws;
 
-namespace normal::pushdown::cache {
+namespace normal::executor::physical::cache {
 
-class CacheLoad : public Operator {
+class CacheLoad : public PhysicalOp {
 
 public:
   explicit CacheLoad(std::string name,
@@ -25,7 +26,7 @@ public:
 					 std::shared_ptr<Partition> partition,
 					 int64_t startOffset,
 					 int64_t finishOffset,
-					 bool useNewCacheLayout,
+					 S3ClientType s3ClientType,
 					 long queryId);
   ~CacheLoad() override = default;
 
@@ -35,15 +36,15 @@ public:
 										 const std::shared_ptr<Partition>& partition,
 										 int64_t startOffset,
 										 int64_t finishOffset,
-										 bool useNewCacheLayout,
+										 S3ClientType s3ClientType,
 										 long queryId = 0);
 
   void onStart();
   void onReceive(const Envelope &msg) override;
 
-  void setHitOperator(const std::shared_ptr<Operator> &op);
-  void setMissOperatorToCache(const std::shared_ptr<Operator> &op);
-  void setMissOperatorToPushdown(const std::shared_ptr<Operator> &op);
+  void setHitOperator(const std::shared_ptr<PhysicalOp> &op);
+  void setMissOperatorToCache(const std::shared_ptr<PhysicalOp> &op);
+  void setMissOperatorToPushdown(const std::shared_ptr<PhysicalOp> &op);
 
 private:
   /**
@@ -57,14 +58,11 @@ private:
   int64_t startOffset_;
   int64_t finishOffset_;
 
-  std::weak_ptr<Operator> hitOperator_;
-  std::weak_ptr<Operator> missOperatorToCache_;
-  std::weak_ptr<Operator> missOperatorToPushdown_;
+  std::weak_ptr<PhysicalOp> hitOperator_;
+  std::weak_ptr<PhysicalOp> missOperatorToCache_;
+  std::weak_ptr<PhysicalOp> missOperatorToPushdown_;
 
-  /**
-   * whether to use the new cache layout after segments back or the last one without waiting
-   */
-  bool useNewCacheLayout_;
+  S3ClientType s3ClientType_;
 
   void requestLoadSegmentsFromCache();
   void onCacheLoadResponse(const LoadResponseMessage &Message);
@@ -73,4 +71,4 @@ private:
 
 }
 
-#endif //NORMAL_NORMAL_PUSHDOWN_INCLUDE_NORMAL_PUSHDOWN_CACHE_CACHELOAD_H
+#endif //NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_CACHE_CACHELOAD_H

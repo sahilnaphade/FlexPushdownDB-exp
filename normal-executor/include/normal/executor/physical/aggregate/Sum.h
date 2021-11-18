@@ -2,16 +2,14 @@
 // Created by matt on 7/3/20.
 //
 
-#ifndef NORMAL_NORMAL_PUSHDOWN_SRC_AGGREGATE_SUM_H
-#define NORMAL_NORMAL_PUSHDOWN_SRC_AGGREGATE_SUM_H
+#ifndef NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_AGGREGATE_SUM_H
+#define NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_AGGREGATE_SUM_H
 
-#include <normal/core/message/TupleMessage.h>
+#include <normal/executor/physical/aggregate/AggregationFunction.h>
+#include <normal/executor/message/TupleMessage.h>
 #include <normal/expression/gandiva/Expression.h>
 
-#include <normal/pushdown/aggregate/AggregationFunction.h>
-
-
-namespace normal::pushdown::aggregate {
+namespace normal::executor::physical::aggregate {
 
 class Sum : public AggregationFunction {
 
@@ -34,4 +32,4 @@ public:
 
 }
 
-#endif //NORMAL_NORMAL_PUSHDOWN_SRC_AGGREGATE_SUM_H
+#endif //NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_AGGREGATE_SUM_H

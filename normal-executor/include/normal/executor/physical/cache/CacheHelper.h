@@ -2,24 +2,22 @@
 // Created by matt on 2/6/20.
 //
 
-#ifndef NORMAL_NORMAL_PUSHDOWN_INCLUDE_NORMAL_PUSHDOWN_CACHE_CACHEHELPER_H
-#define NORMAL_NORMAL_PUSHDOWN_INCLUDE_NORMAL_PUSHDOWN_CACHE_CACHEHELPER_H
+#ifndef NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_CACHE_CACHEHELPER_H
+#define NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_CACHE_CACHEHELPER_H
 
-#include <memory>
-
-#include <normal/tuple/TupleSet2.h>
+#include <normal/executor/physical/POpContext.h>
+#include <normal/executor/message/cache/StoreRequestMessage.h>
+#include <normal/executor/message/cache/LoadRequestMessage.h>
 #include <normal/cache/SegmentKey.h>
 #include <normal/cache/SegmentData.h>
-#include <normal/core/cache/StoreRequestMessage.h>
-#include <normal/core/OperatorContext.h>
-#include <normal/core/cache/LoadRequestMessage.h>
+#include <normal/tuple/TupleSet2.h>
+#include <memory>
 
+using namespace normal::executor::physical;
 using namespace normal::tuple;
 using namespace normal::cache;
-using namespace normal::core;
-using namespace normal::core::cache;
 
-namespace normal::pushdown::cache {
+namespace normal::executor::physical::cache {
 
 class CacheHelper {
 
@@ -40,7 +38,7 @@ public:
 										   int64_t startOffset,
 										   int64_t finishOffset,
 										   const std::string &sender,
-										   const std::shared_ptr<OperatorContext> &ctx);
+										   const std::shared_ptr<POpContext> &ctx);
 
   /**
    * Issues a request to store multiple columns in the cache for a single given partition and range
@@ -58,9 +56,9 @@ public:
 										  int64_t startOffset,
 										  int64_t finishOffset,
 										  const std::string &sender,
-										  const std::shared_ptr<OperatorContext> &ctx);
+										  const std::shared_ptr<POpContext> &ctx);
 };
 
 }
 
-#endif //NORMAL_NORMAL_PUSHDOWN_INCLUDE_NORMAL_PUSHDOWN_CACHE_CACHEHELPER_H
+#endif //NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_CACHE_CACHEHELPER_H

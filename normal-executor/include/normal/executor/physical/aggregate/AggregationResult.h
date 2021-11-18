@@ -2,15 +2,14 @@
 // Created by matt on 7/3/20.
 //
 
-#ifndef NORMAL_NORMAL_PUSHDOWN_SRC_FUNCTION_SUM_H
-#define NORMAL_NORMAL_PUSHDOWN_SRC_FUNCTION_SUM_H
+#ifndef NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_AGGREGATE_AGGREGATIONRESULT_H
+#define NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_AGGREGATE_AGGREGATIONRESULT_H
 
+#include <normal/tuple/TupleSet.h>
 #include <string>
 #include <unordered_map>
 
-#include <normal/tuple/TupleSet.h>
-
-namespace normal::pushdown::aggregate {
+namespace normal::executor::physical::aggregate {
 
 /**
  * Structure for aggregation functions to store intermediate results.
@@ -41,4 +40,4 @@ private:
 
 }
 
-#endif //NORMAL_NORMAL_PUSHDOWN_SRC_FUNCTION_SUM_H
+#endif //NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_AGGREGATE_AGGREGATIONRESULT_H

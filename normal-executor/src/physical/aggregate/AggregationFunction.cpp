@@ -2,11 +2,10 @@
 // Created by matt on 7/3/20.
 //
 
+#include <normal/executor/physical/aggregate/AggregationFunction.h>
 #include <utility>
 
-#include "normal/pushdown/aggregate/AggregationFunction.h"
-
-namespace normal::pushdown::aggregate {
+namespace normal::executor::physical::aggregate {
 
 AggregationFunction::AggregationFunction(std::string columnName) : alias_(std::move(columnName)) {}
 
