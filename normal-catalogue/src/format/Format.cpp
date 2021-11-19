@@ -6,6 +6,10 @@
 
 namespace normal::catalogue::format {
 
-Format::Format(FormatType type) : type(type) {}
+Format::Format(FormatType type) : type_(type) {}
+
+FormatType Format::getType() const {
+  return type_;
+}
 
 }

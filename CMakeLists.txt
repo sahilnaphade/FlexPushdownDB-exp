@@ -7,13 +7,6 @@ include(CMakeUtils)
 
 setDefaults()
 
-# Gandiva requires LLVM 7 and anything linking to it must use the same version
-#if ((NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang") OR (NOT CMAKE_CXX_COMPILER_VERSION MATCHES "7.*"))
-#    message(FATAL_ERROR "Illegal compiler - '${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}'.
-#     Gandiva requires Clang version 7")
-#endif()
-
-
 include(Configure_LLVM)
 
 
@@ -48,23 +41,22 @@ include(External_nlohmannjson)
 #-----------------------------------------------------------------------------------------------------------------------
 
 add_subdirectory(normal-util)
-#add_subdirectory(normal-core)
 add_subdirectory(normal-tuple)
+add_subdirectory(normal-aws)
 add_subdirectory(normal-catalogue)
 add_subdirectory(normal-expression)
 add_subdirectory(normal-expression-gandiva)
+add_subdirectory(normal-calcite/cpp)
 add_subdirectory(normal-plan)
-#add_subdirectory(normal-pushdown)
+add_subdirectory(normal-cache)
+add_subdirectory(normal-executor)
+add_subdirectory(normal-frontend)
 add_subdirectory(normal-sql)
 add_subdirectory(normal-ssb)
-add_subdirectory(normal-cache)
-add_subdirectory(normal-frontend)
-add_subdirectory(normal-calcite/cpp)
-add_subdirectory(normal-aws)
-add_subdirectory(normal-executor)
+
 
 #-----------------------------------------------------------------------------------------------------------------------
-# Resource files
+# Resources
 #-----------------------------------------------------------------------------------------------------------------------
 
 file(COPY resources DESTINATION ${CMAKE_CURRENT_BINARY_DIR})

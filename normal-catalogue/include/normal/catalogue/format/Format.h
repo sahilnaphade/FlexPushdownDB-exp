@@ -13,8 +13,10 @@ class Format {
 public:
   Format(FormatType type);
 
+  FormatType getType() const;
+
 private:
-  FormatType type;
+  FormatType type_;
 };
 
 }

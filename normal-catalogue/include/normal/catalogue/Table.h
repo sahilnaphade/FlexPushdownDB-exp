@@ -27,6 +27,8 @@ public:
         const shared_ptr<CatalogueEntry> &catalogueEntry);
 
   const string &getName() const;
+  const shared_ptr<arrow::Schema> &getSchema() const;
+  const shared_ptr<format::Format> &getFormat() const;
   vector<string> getColumnNames() const;
   int getApxColumnLength(const string &columnName) const;
   int getApxRowLength() const;

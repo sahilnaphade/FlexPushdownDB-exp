@@ -12,6 +12,14 @@ S3Partition::S3Partition(string s3Bucket,
 	s3Bucket_(move(s3Bucket)),
 	s3Object_(move(s3Object)) {}
 
+S3Partition::S3Partition(string s3Bucket,
+                         string s3Object,
+                         long numBytes) :
+  s3Bucket_(move(s3Bucket)),
+  s3Object_(move(s3Object)) {
+  setNumBytes(numBytes);
+}
+
 const string &S3Partition::getBucket() const {
   return s3Bucket_;
 }

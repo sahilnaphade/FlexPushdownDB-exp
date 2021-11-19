@@ -15,8 +15,12 @@ namespace normal::catalogue::s3 {
 
 class S3Partition: public Partition {
 public:
-  explicit S3Partition(string bucket, 
-                       string object);
+  explicit S3Partition(string s3Bucket,
+                       string s3Object);
+
+  explicit S3Partition(string s3Bucket,
+                       string s3Object,
+                       long numBytes);
 
   [[nodiscard]] const string &getBucket() const;
   [[nodiscard]] const string &getObject() const;

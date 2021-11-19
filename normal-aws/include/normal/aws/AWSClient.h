@@ -26,6 +26,7 @@ public:
   void init();
   [[maybe_unused]] void shutdown();
 
+  const shared_ptr<AWSConfig> &getAwsConfig() const;
   const shared_ptr<S3Client> &getS3Client() const;
 
 private:

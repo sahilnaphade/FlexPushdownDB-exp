@@ -13,6 +13,8 @@ class CSVFormat: public Format {
 public:
   CSVFormat(char fieldDelimiter);
 
+  char getFieldDelimiter() const;
+
 private:
   char fieldDelimiter_;
 };

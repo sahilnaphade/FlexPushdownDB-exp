@@ -55,7 +55,7 @@ TEST_CASE ("large" * doctest::skip(false)) {
 								 numBytesAFile,
 								 g->getId(),
 								 true);
-  auto project = std::make_shared<Project>("project",
+  auto project = std::make_shared<ProjectPOp>("project",
 										   std::vector<std::shared_ptr<normal::expression::gandiva::Expression>>{
 											   col("LO_EXTENDEDPRICE")});
   auto aggregateFunctions = std::make_shared<std::vector<std::shared_ptr<AggregationFunction>>>();

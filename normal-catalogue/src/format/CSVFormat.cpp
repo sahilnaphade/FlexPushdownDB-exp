@@ -10,4 +10,8 @@ CSVFormat::CSVFormat(char fieldDelimiter) :
   Format(CSV),
   fieldDelimiter_(fieldDelimiter) {}
 
+char CSVFormat::getFieldDelimiter() const {
+  return fieldDelimiter_;
+}
+
 }

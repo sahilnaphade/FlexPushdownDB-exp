@@ -57,7 +57,20 @@ add_library(normal-executor STATIC
         src/physical/hashjoin/HashJoinBuildKernel2.cpp include/normal/executor/physical/hashjoin/HashJoinBuildKernel2.h
         src/physical/hashjoin/HashJoinProbeKernel2.cpp include/normal/executor/physical/hashjoin/HashJoinProbeKernel2.h
         src/physical/hashjoin/HashJoinPredicate.cpp include/normal/executor/physical/hashjoin/HashJoinPredicate.h
-        src/physical/hashjoin/RecordBatchHashJoiner.cpp include/normal/executor/physical/hashjoin/RecordBatchHashJoiner.h)
+        src/physical/hashjoin/RecordBatchHashJoiner.cpp include/normal/executor/physical/hashjoin/RecordBatchHashJoiner.h
+        src/physical/merge/MergePOp.cpp include/normal/executor/physical/merge/MergePOp.h
+        src/physical/merge/MergeKernel.cpp include/normal/executor/physical/merge/MergeKernel.h
+        src/physical/project/ProjectPOp.cpp include/normal/executor/physical/project/ProjectPOp.h
+        src/physical/shuffle/ShufflePOp.cpp include/normal/executor/physical/shuffle/ShufflePOp.h
+        src/physical/shuffle/ShuffleKernel2.cpp include/normal/executor/physical/shuffle/ShuffleKernel2.h
+        src/physical/shuffle/RecordBatchShuffler2.cpp include/normal/executor/physical/shuffle/RecordBatchShuffler2.h
+        src/physical/s3/S3GetPOp.cpp include/normal/executor/physical/s3/S3GetPOp.h
+        src/physical/s3/S3SelectPOp.cpp include/normal/executor/physical/s3/S3SelectPOp.h
+        src/physical/s3/S3SelectScanAbstractPOp.cpp include/normal/executor/physical/s3/S3SelectScanAbstractPOp.h
+        src/physical/s3/S3CSVParser.cpp include/normal/executor/physical/s3/S3CSVParser.h
+        src/physical/s3/S3SelectCSVParseOptions.cpp include/normal/executor/physical/s3/S3SelectCSVParseOptions.h
+        src/physical/s3/S3SelectScanPOp2.cpp include/normal/executor/physical/s3/S3SelectScanPOp2.h
+        src/physical/s3/S3SelectScanKernel.cpp include/normal/executor/physical/s3/S3SelectScanKernel.h)
 
 target_include_directories(normal-executor PUBLIC include)
 
@@ -67,6 +80,12 @@ target_link_libraries(normal-executor PUBLIC normal-expression-gandiva)
 target_link_libraries(normal-executor PUBLIC caf::libcaf_core_static)
 target_link_libraries(normal-executor PUBLIC caf::libcaf_io_static)
 
+
+#-----------------------------------------------------------------------------------------------------------------------
+# Test Data
+#-----------------------------------------------------------------------------------------------------------------------
+
+file(COPY test/data/ DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/test/data/)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Diagnostics

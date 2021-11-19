@@ -177,15 +177,14 @@ int getPredicateNum(const std::shared_ptr<normal::expression::gandiva::Expressio
 }
 
 void FilterPOp::sendSegmentWeight() {
-  auto selectivity = ((double) filteredNumRows_) / ((double ) totalNumRows_);
-  auto predicateNum = (double) getPredicateNum(predicate_);
-  auto weightMap = std::make_shared<std::unordered_map<std::shared_ptr<SegmentKey>, double>>();
-
   /**
    * Weight function:
    *   w = sel / vNetwork + (lenRow / (lenCol * vScan) + #pred / (lenCol * vFilterPOp)) / #key
    */
+  auto selectivity = ((double) filteredNumRows_) / ((double ) totalNumRows_);
+  auto predicateNum = (double) getPredicateNum(predicate_);
   auto numKey = (double) weightedSegmentKeys_->size();
+  auto weightMap = std::make_shared<std::unordered_map<std::shared_ptr<SegmentKey>, double>>();
   for (auto const &segmentKey: *weightedSegmentKeys_) {
     auto columnName = segmentKey->getColumnName();
     auto lenCol = (double) table_->getApxColumnLength(columnName);

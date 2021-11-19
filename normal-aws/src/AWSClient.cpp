@@ -98,6 +98,10 @@ std::shared_ptr<Aws::S3::S3Client> AWSClient::makeS3Client() {
   return s3Client;
 }
 
+const shared_ptr<AWSConfig> &AWSClient::getAwsConfig() const {
+  return awsConfig_;
+}
+
 const shared_ptr<S3Client> &AWSClient::getS3Client() const {
   return s3Client_;
 }

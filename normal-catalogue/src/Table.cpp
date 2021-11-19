@@ -27,6 +27,14 @@ const string &Table::getName() const {
   return name_;
 }
 
+const shared_ptr<arrow::Schema> &Table::getSchema() const {
+  return schema_;
+}
+
+const shared_ptr<format::Format> &Table::getFormat() const {
+  return format_;
+}
+
 vector<string> Table::getColumnNames() const {
   return schema_->field_names();
 }
