@@ -54,7 +54,7 @@ void MergePOp::merge() {
       // Send merged tupleset
       auto mergedTupleSet = expectedMergedTupleSet.value();
       std::shared_ptr<Message>
-              tupleMessage = std::make_shared<TupleMessage>(mergedTupleSet->toTupleSetV1(), name());
+              tupleMessage = std::make_shared<TupleMessage>(mergedTupleSet, name());
       ctx()->tell(tupleMessage);
     }
 
@@ -72,7 +72,7 @@ void MergePOp::onComplete(const CompleteMessage &) {
 
 void MergePOp::onTuple(const TupleMessage &message) {
   // Get the tuple set
-  const auto &tupleSet = TupleSet2::create(message.tuples());
+  const auto &tupleSet = message.tuples();
 
   // Add the tupleset to a slot in left or right producers tuple queue
   if (message.sender() == leftProducer_.lock()->name()) {

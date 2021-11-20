@@ -12,7 +12,7 @@
 #include <arrow/csv/parser.h>
 #include <tl/expected.hpp>
 
-#include <normal/tuple/TupleSet2.h>
+#include <normal/tuple/TupleSet.h>
 
 namespace normal::tuple::csv {
 
@@ -42,7 +42,7 @@ public:
    * Parse a tuple set from the CSV file
    * @return
    */
-  tl::expected<std::shared_ptr<TupleSet2>, std::string> parse();
+  tl::expected<std::shared_ptr<TupleSet>, std::string> parse();
 
   /**
    * Parse a schema from the CSV file

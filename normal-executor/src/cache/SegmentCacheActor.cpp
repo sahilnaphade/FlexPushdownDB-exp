@@ -4,6 +4,7 @@
 
 #include <normal/executor/cache/SegmentCacheActor.h>
 #include <normal/cache/policy/WLFUCachingPolicy.h>
+#include <spdlog/spdlog.h>
 
 namespace normal::executor::cache {
 

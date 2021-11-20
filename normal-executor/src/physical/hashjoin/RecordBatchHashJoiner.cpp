@@ -111,7 +111,7 @@ RecordBatchHashJoiner::join(const std::shared_ptr<::arrow::RecordBatch> &recordB
   return {};
 }
 
-tl::expected<std::shared_ptr<TupleSet2>, std::string>
+tl::expected<std::shared_ptr<TupleSet>, std::string>
 RecordBatchHashJoiner::toTupleSet() {
   arrow::Status status;
 
@@ -120,7 +120,7 @@ RecordBatchHashJoiner::toTupleSet() {
   for (const auto &joinedArrayVector: joinedArrayVectors_) {
     // check empty
     if (joinedArrayVector.empty()) {
-      return TupleSet2::make(Schema::make(outputSchema_));
+      return TupleSet::make(outputSchema_);
     }
 
     auto chunkedArray = std::make_shared<::arrow::ChunkedArray>(joinedArrayVector);
@@ -128,7 +128,7 @@ RecordBatchHashJoiner::toTupleSet() {
   }
 
   auto joinedTable = ::arrow::Table::Make(outputSchema_, chunkedArrays);
-  auto joinedTupleSet = TupleSet2::make(joinedTable);
+  auto joinedTupleSet = TupleSet::make(joinedTable);
 
   joinedArrayVectors_.clear();
   return joinedTupleSet;

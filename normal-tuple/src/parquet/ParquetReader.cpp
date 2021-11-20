@@ -31,7 +31,7 @@ tl::expected<void, std::string> ParquetReader::close() {
   return {};
 }
 
-tl::expected<std::shared_ptr<TupleSet2>, std::string>
+tl::expected<std::shared_ptr<TupleSet>, std::string>
 ParquetReader::read(const std::vector<std::string> &columnNames, unsigned long startPos, unsigned long finishPos) {
 
   ::arrow::Status status;
@@ -94,7 +94,7 @@ ParquetReader::read(const std::vector<std::string> &columnNames, unsigned long s
   else
 	return tl::make_unexpected(expectedTable.status().message());
 
-  auto tupleSet = TupleSet2::make(table);
+  auto tupleSet = TupleSet::make(table);
   return tupleSet;
 }
 

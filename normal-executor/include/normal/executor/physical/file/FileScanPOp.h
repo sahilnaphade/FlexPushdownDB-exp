@@ -38,7 +38,7 @@ private:
   void onStart();
   void onCacheLoadResponse(const ScanMessage &Message);
   void onComplete(const CompleteMessage &message);
-  void requestStoreSegmentsInCache(const std::shared_ptr<TupleSet2> &tupleSet);
+  void requestStoreSegmentsInCache(const std::shared_ptr<TupleSet> &tupleSet);
   void readAndSendTuples(const std::vector<std::string> &columnNames);
 
   bool scanOnStart_;

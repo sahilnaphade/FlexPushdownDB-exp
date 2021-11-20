@@ -21,7 +21,7 @@ public:
 
   static std::shared_ptr<Filter> make(const std::shared_ptr<Expression> &Pred);
 
-  std::shared_ptr<normal::tuple::TupleSet2> evaluate(const normal::tuple::TupleSet2 &TupleSet) override;
+  std::shared_ptr<normal::tuple::TupleSet> evaluate(const normal::tuple::TupleSet &TupleSet) override;
   void compile(const std::shared_ptr<normal::tuple::Schema> &schema) override;
 
 private:

@@ -28,9 +28,9 @@ tl::expected<void, std::string> HashJoinProbeKernel2::putBuildTupleSetIndex(cons
   return buildTupleSetIndex_.value()->merge(tupleSetIndex);
 }
 
-tl::expected<void, std::string> HashJoinProbeKernel2::putProbeTupleSet(const std::shared_ptr<TupleSet2> &tupleSet) {
+tl::expected<void, std::string> HashJoinProbeKernel2::putProbeTupleSet(const std::shared_ptr<TupleSet> &tupleSet) {
 
-  if(tupleSet->getArrowTable().value()->schema()->GetFieldIndex(pred_.getRightColumnName()) == -1)
+  if(tupleSet->schema()->GetFieldIndex(pred_.getRightColumnName()) == -1)
 	return tl::make_unexpected(fmt::format("Cannot put probe tuple set into probe kernel. Tuple set does not contain join predicate right column '{}'", pred_.getRightColumnName()));
 
   if (!probeTupleSet_.has_value()) {
@@ -40,13 +40,13 @@ tl::expected<void, std::string> HashJoinProbeKernel2::putProbeTupleSet(const std
   return probeTupleSet_.value()->append(tupleSet);
 }
 
-tl::expected<std::shared_ptr<normal::tuple::TupleSet2>, std::string>
-join1(const std::shared_ptr<RecordBatchHashJoiner> &joiner, const std::shared_ptr<TupleSet2> &tupleSet) {
+tl::expected<std::shared_ptr<normal::tuple::TupleSet>, std::string>
+join1(const std::shared_ptr<RecordBatchHashJoiner> &joiner, const std::shared_ptr<TupleSet> &tupleSet) {
   ::arrow::Result<std::shared_ptr<::arrow::RecordBatch>> recordBatchResult;
   ::arrow::Status status;
 
   // Read the table a batch at a time
-  auto probeTable = tupleSet->getArrowTable().value();
+  auto probeTable = tupleSet->table();
   ::arrow::TableBatchReader reader{*probeTable};
   reader.set_chunksize(DefaultChunkSize);
 
@@ -79,8 +79,8 @@ join1(const std::shared_ptr<RecordBatchHashJoiner> &joiner, const std::shared_pt
 #ifndef NDEBUG
 
   assert(expectedJoinedTupleSet.has_value());
-  assert(expectedJoinedTupleSet.value()->getArrowTable().has_value());
-  auto result = expectedJoinedTupleSet.value()->getArrowTable().value()->ValidateFull();
+  assert(expectedJoinedTupleSet.value()->valid());
+  auto result = expectedJoinedTupleSet.value()->table()->ValidateFull();
   if(!result.ok())
     return tl::make_unexpected(fmt::format("{}, HashJoinProbeKernel2", result.message()));
 
@@ -125,7 +125,7 @@ tl::expected<void, std::string> HashJoinProbeKernel2::joinBuildTupleSetIndex(con
   return {};
 }
 
-tl::expected<void, std::string> HashJoinProbeKernel2::joinProbeTupleSet(const std::shared_ptr<TupleSet2> &tupleSet) {
+tl::expected<void, std::string> HashJoinProbeKernel2::joinProbeTupleSet(const std::shared_ptr<TupleSet> &tupleSet) {
 
   // Buffer tupleSet if having tuples
   if (tupleSet->numRows() > 0) {
@@ -161,14 +161,14 @@ tl::expected<void, std::string> HashJoinProbeKernel2::joinProbeTupleSet(const st
   return {};
 }
 
-tl::expected<void, std::string> HashJoinProbeKernel2::buffer(const std::shared_ptr<TupleSet2> &tupleSet) {
+tl::expected<void, std::string> HashJoinProbeKernel2::buffer(const std::shared_ptr<TupleSet> &tupleSet) {
 
   if (!buffer_.has_value()) {
     buffer_ = tupleSet;
   }
   else {
     const auto &bufferedTupleSet = buffer_.value();
-    const auto &concatenateResult = TupleSet2::concatenate({bufferedTupleSet, tupleSet});
+    const auto &concatenateResult = TupleSet::concatenate({bufferedTupleSet, tupleSet});
     if (!concatenateResult)
       return tl::make_unexpected(concatenateResult.error());
 
@@ -178,7 +178,7 @@ tl::expected<void, std::string> HashJoinProbeKernel2::buffer(const std::shared_p
   return {};
 }
 
-const std::optional<std::shared_ptr<normal::tuple::TupleSet2>> &HashJoinProbeKernel2::getBuffer() const {
+const std::optional<std::shared_ptr<normal::tuple::TupleSet>> &HashJoinProbeKernel2::getBuffer() const {
   return buffer_;
 }
 
@@ -186,7 +186,7 @@ void HashJoinProbeKernel2::clear() {
   buffer_ = std::nullopt;
 }
 
-void HashJoinProbeKernel2::bufferOutputSchema(const std::shared_ptr<TupleSetIndex> &tupleSetIndex, const std::shared_ptr<TupleSet2> &tupleSet) {
+void HashJoinProbeKernel2::bufferOutputSchema(const std::shared_ptr<TupleSetIndex> &tupleSetIndex, const std::shared_ptr<TupleSet> &tupleSet) {
   if (!outputSchema_.has_value()) {
 
     // Create the outputSchema_ and neededColumnIndice_ from neededColumnNames_
@@ -199,8 +199,8 @@ void HashJoinProbeKernel2::bufferOutputSchema(const std::shared_ptr<TupleSetInde
         outputFields.emplace_back(field);
       }
     }
-    for (int c = 0; c < tupleSet->schema().value()->getSchema()->num_fields(); ++c) {
-      auto field = tupleSet->schema().value()->getSchema()->field(c);
+    for (int c = 0; c < tupleSet->schema()->num_fields(); ++c) {
+      auto field = tupleSet->schema()->field(c);
       if (neededColumnNames_.find(field->name()) != neededColumnNames_.end()) {
         neededColumnIndice_.emplace_back(std::make_shared<std::pair<bool, int>>(false, c));
         outputFields.emplace_back(field);

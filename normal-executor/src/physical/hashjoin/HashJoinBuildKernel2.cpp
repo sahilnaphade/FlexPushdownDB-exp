@@ -20,12 +20,12 @@ HashJoinBuildKernel2 HashJoinBuildKernel2::make(const std::string &columnName) {
   return HashJoinBuildKernel2(canonicalColumnName);
 }
 
-tl::expected<void, std::string> HashJoinBuildKernel2::put(const std::shared_ptr<TupleSet2> &tupleSet) {
+tl::expected<void, std::string> HashJoinBuildKernel2::put(const std::shared_ptr<TupleSet> &tupleSet) {
 
   assert(tupleSet);
 
   if(!tupleSetIndex_.has_value()){
-	auto expectedTupleSetIndex = TupleSetIndexBuilder::make(tupleSet->getArrowTable().value(), columnName_);
+	auto expectedTupleSetIndex = TupleSetIndexBuilder::make(tupleSet->table(), columnName_);
 	if(!expectedTupleSetIndex.has_value()){
 	  return tl::make_unexpected(expectedTupleSetIndex.error());
 	}
@@ -33,7 +33,7 @@ tl::expected<void, std::string> HashJoinBuildKernel2::put(const std::shared_ptr<
 	return {};
   }
 
-  auto result = tupleSetIndex_.value()->put(tupleSet->getArrowTable().value());
+  auto result = tupleSetIndex_.value()->put(tupleSet->table());
   return result;
 }
 

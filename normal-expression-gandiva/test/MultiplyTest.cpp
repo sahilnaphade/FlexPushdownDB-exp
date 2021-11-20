@@ -11,7 +11,7 @@
 #include <normal/expression/gandiva/Cast.h>
 #include <normal/expression/gandiva/Multiply.h>
 #include <normal/expression/gandiva/Projector.h>
-#include <normal/tuple/TupleSet2.h>
+#include <normal/tuple/TupleSet.h>
 
 #include "Globals.h"
 #include "TestUtil.h"
@@ -26,8 +26,7 @@ TEST_SUITE ("multiply" * doctest::skip(SKIP_SUITE)) {
 
 TEST_CASE ("simple" * doctest::skip(false || SKIP_SUITE)) {
 
-  auto tuples = TestUtil::prepareTupleSet();
-  auto inputTupleSet = normal::tuple::TupleSet2::create(tuples);
+  auto inputTupleSet = TestUtil::prepareTupleSet();
 
   SPDLOG_DEBUG("Input:\n{}", inputTupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 
@@ -37,12 +36,11 @@ TEST_CASE ("simple" * doctest::skip(false || SKIP_SUITE)) {
   };
 
   auto projector = std::make_shared<Projector>(expressions);
-  projector->compile(tuples->table()->schema());
+  projector->compile(inputTupleSet->schema());
 
   SPDLOG_DEBUG("Projector:\n{}", projector->showString());
 
-  auto evaluated = projector->evaluate(*tuples);
-  auto evaluatedTupleSet = normal::tuple::TupleSet2::create(evaluated);
+  auto evaluatedTupleSet = projector->evaluate(*inputTupleSet);
   SPDLOG_DEBUG("Output:\n{}", evaluatedTupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 
 	  CHECK_EQ(evaluatedTupleSet->numColumns(), 1);
@@ -56,8 +54,7 @@ TEST_CASE ("simple" * doctest::skip(false || SKIP_SUITE)) {
 
 TEST_CASE ("empty" * doctest::skip(false || SKIP_SUITE)) {
 
-  auto tuples = TestUtil::prepareEmptyTupleSet();
-  auto inputTupleSet = normal::tuple::TupleSet2::create(tuples);
+  auto inputTupleSet = TestUtil::prepareEmptyTupleSet();
 
   SPDLOG_DEBUG("Input:\n{}", inputTupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 
@@ -67,13 +64,12 @@ TEST_CASE ("empty" * doctest::skip(false || SKIP_SUITE)) {
   };
 
   auto projector = std::make_shared<Projector>(expressions);
-  CHECK_THROWS(projector->compile(tuples->table()->schema()));
+  CHECK_THROWS(projector->compile(inputTupleSet->schema()));
 }
 
 TEST_CASE ("0-rows" * doctest::skip(false || SKIP_SUITE)) {
 
-  auto tuples = TestUtil::prepare3x0TupleSet();
-  auto inputTupleSet = normal::tuple::TupleSet2::create(tuples);
+  auto inputTupleSet = TestUtil::prepare3x0TupleSet();
 
   SPDLOG_DEBUG("Input:\n{}", inputTupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 
@@ -83,12 +79,11 @@ TEST_CASE ("0-rows" * doctest::skip(false || SKIP_SUITE)) {
   };
 
   auto projector = std::make_shared<Projector>(expressions);
-  projector->compile(tuples->table()->schema());
+  projector->compile(inputTupleSet->schema());
 
   SPDLOG_DEBUG("Projector:\n{}", projector->showString());
 
-  auto evaluated = projector->evaluate(*tuples);
-  auto evaluatedTupleSet = normal::tuple::TupleSet2::create(evaluated);
+  auto evaluatedTupleSet = projector->evaluate(*inputTupleSet);
   SPDLOG_DEBUG("Output:\n{}", evaluatedTupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 
 	  CHECK_EQ(evaluatedTupleSet->numColumns(), 1);

@@ -5,7 +5,7 @@
 #ifndef NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_SHUFFLE_SHUFFLEKERNEL2_H
 #define NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_SHUFFLE_SHUFFLEKERNEL2_H
 
-#include <normal/tuple/TupleSet2.h>
+#include <normal/tuple/TupleSet.h>
 #include <tl/expected.hpp>
 #include <vector>
 #include <memory>
@@ -21,8 +21,8 @@ namespace normal::executor::physical::shuffle {
 class ShuffleKernel2 {
 
 public:
-  static tl::expected<std::vector<std::shared_ptr<TupleSet2>>, std::string>
-  shuffle(const std::string &columnName, size_t numSlots, const TupleSet2 &tupleSet);
+  static tl::expected<std::vector<std::shared_ptr<TupleSet>>, std::string>
+  shuffle(const std::string &columnName, size_t numSlots, const TupleSet &tupleSet);
 
 };
 

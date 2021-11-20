@@ -126,7 +126,7 @@ private:
 	return readAndSendTuples(actor, columnsToScan);
   }
 
-  void requestStoreSegmentsInCache(FileScanStatefulActor actor, const std::shared_ptr<TupleSet2> &tupleSet) {
+  void requestStoreSegmentsInCache(FileScanStatefulActor actor, const std::shared_ptr<TupleSet> &tupleSet) {
 
 	assert(tupleSet);
 	assert(startOffset_ >= 0);
@@ -159,9 +159,9 @@ private:
 	 * FIXME: Should support reading the file in pieces
 	 */
 
-	std::shared_ptr<TupleSet2> readTupleSet;
+	std::shared_ptr<TupleSet> readTupleSet;
 	if (columnNames.empty()) {
-	  readTupleSet = TupleSet2::make2();
+	  readTupleSet = TupleSet::makeWithEmptyTable();
 	} else {
 	  auto expectedReadTupleSet = kernel_->scan(columnNames);
 	  readTupleSet = expectedReadTupleSet.value();
@@ -170,7 +170,7 @@ private:
 	  requestStoreSegmentsInCache(actor, readTupleSet);
 	}
 
-	std::shared_ptr<Message> message = std::make_shared<TupleMessage>(readTupleSet->toTupleSetV1(), this->name);
+	std::shared_ptr<Message> message = std::make_shared<TupleMessage>(readTupleSet, this->name);
 	return tell(actor, Envelope(message));
   }
 

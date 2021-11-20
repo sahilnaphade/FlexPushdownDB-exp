@@ -10,7 +10,7 @@
 #include <normal/executor/message/cache/LoadRequestMessage.h>
 #include <normal/cache/SegmentKey.h>
 #include <normal/cache/SegmentData.h>
-#include <normal/tuple/TupleSet2.h>
+#include <normal/tuple/TupleSet.h>
 #include <memory>
 
 using namespace normal::executor::physical;
@@ -51,7 +51,7 @@ public:
    * @param ctx
    * @param used
    */
-  static void requestStoreSegmentsInCache(const std::shared_ptr<TupleSet2> &tupleSet,
+  static void requestStoreSegmentsInCache(const std::shared_ptr<TupleSet> &tupleSet,
 										  const std::shared_ptr<Partition> &partition,
 										  int64_t startOffset,
 										  int64_t finishOffset,

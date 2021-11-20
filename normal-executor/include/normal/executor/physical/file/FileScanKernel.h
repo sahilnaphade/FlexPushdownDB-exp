@@ -7,7 +7,7 @@
 
 #include <normal/tuple/FileReader.h>
 #include <normal/tuple/FileType.h>
-#include <normal/tuple/TupleSet2.h>
+#include <normal/tuple/TupleSet.h>
 #include <normal/tuple/FileReaderBuilder.h>
 #include <tl/expected.hpp>
 #include <string>
@@ -33,7 +33,7 @@ public:
 											  unsigned long startPos,
 											  unsigned long finishPos);
 
-  tl::expected<std::shared_ptr<TupleSet2>, std::string> scan(const std::vector<std::string> &columnNames);
+  tl::expected<std::shared_ptr<TupleSet>, std::string> scan(const std::vector<std::string> &columnNames);
 
   [[nodiscard]] const std::string &getPath() const;
   [[nodiscard]] const std::optional<FileType> &getFileType() const;

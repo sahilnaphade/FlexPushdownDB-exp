@@ -8,7 +8,7 @@
 #include <normal/executor/physical/PhysicalOp.h>
 #include <normal/executor/message/CompleteMessage.h>
 #include <normal/executor/message/TupleMessage.h>
-#include <normal/tuple/TupleSet2.h>
+#include <normal/tuple/TupleSet.h>
 
 using namespace normal::executor::message;
 using namespace normal::tuple;
@@ -61,7 +61,7 @@ private:
    * @param partitionIndex
    * @return
    */
-  [[nodiscard]] tl::expected<void, std::string> buffer(const std::shared_ptr<TupleSet2>& tupleSet, int partitionIndex);
+  [[nodiscard]] tl::expected<void, std::string> buffer(const std::shared_ptr<TupleSet>& tupleSet, int partitionIndex);
 
   /**
    * Sends the buffered tupleset if its big enough or force is true
@@ -73,7 +73,7 @@ private:
 
   std::string columnName_;
   std::vector<std::string> consumers_;
-  std::vector<std::optional<std::shared_ptr<TupleSet2>>> buffers_;
+  std::vector<std::optional<std::shared_ptr<TupleSet>>> buffers_;
 };
 
 }

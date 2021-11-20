@@ -137,7 +137,7 @@ bool S3SelectPOp::scanRangeSupported() {
   return true;
 }
 
-std::shared_ptr<TupleSet2> S3SelectPOp::s3Select(uint64_t startOffset, uint64_t endOffset) {
+std::shared_ptr<TupleSet> S3SelectPOp::s3Select(uint64_t startOffset, uint64_t endOffset) {
   // Create the necessary parser
 #ifdef __AVX2__
   auto simdParser = generateSIMDCSVParser();
@@ -296,15 +296,15 @@ std::shared_ptr<TupleSet2> S3SelectPOp::s3Select(uint64_t startOffset, uint64_t 
   splitReqLock_.unlock();
 
   std::chrono::steady_clock::time_point startConversionTime = std::chrono::steady_clock::now();
-  std::shared_ptr<TupleSet2> tupleSet;
+  std::shared_ptr<TupleSet> tupleSet;
 #ifdef __AVX2__
   tupleSet = simdParser->outputCompletedTupleSet();
 #else
   // If no results are returned then there is nothing to process
   if (s3Result_.size() > 0) {std::shared_ptr<TupleSet> tupleSetV1 = parser_->parseCompletePayload(s3Result_.begin(), s3Result_.end());
-    auto tupleSet = TupleSet2::create(tupleSetV1);
+    auto tupleSet = TupleSet::create(tupleSetV1);
   } else {
-    tupleSet = TupleSet2::make2();
+    tupleSet = TupleSet::make2();
   }
 #endif
   std::chrono::steady_clock::time_point stopConversionTime = std::chrono::steady_clock::now();
@@ -321,13 +321,13 @@ std::shared_ptr<TupleSet2> S3SelectPOp::s3Select(uint64_t startOffset, uint64_t 
 }
 
 void S3SelectPOp::s3SelectIndividualReq(int reqNum, uint64_t startOffset, uint64_t endOffset) {
-  std::shared_ptr<TupleSet2> readTupleSet = s3Select(startOffset, endOffset);
+  std::shared_ptr<TupleSet> readTupleSet = s3Select(startOffset, endOffset);
   splitReqLock_.lock();
-  splitReqNumToTable_.insert(std::pair<int, std::shared_ptr<arrow::Table>>(reqNum, readTupleSet->getArrowTable().value()));
+  splitReqNumToTable_.insert(std::pair<int, std::shared_ptr<arrow::Table>>(reqNum, readTupleSet->table()));
   splitReqLock_.unlock();
 }
 
-std::shared_ptr<TupleSet2> S3SelectPOp::s3SelectParallelReqs() {
+std::shared_ptr<TupleSet> S3SelectPOp::s3SelectParallelReqs() {
   int totalReqs = 0;
   uint64_t currentStartOffset = 0;
 
@@ -365,26 +365,24 @@ std::shared_ptr<TupleSet2> S3SelectPOp::s3SelectParallelReqs() {
     }
   }
 
-  // Create and return the TupleSet2 result
+  // Create and return the TupleSet result
   if (tables.empty()) {
-    return TupleSet2::make2();
+    return TupleSet::makeWithEmptyTable();
   } else if (tables.size() == 1) {
-    auto tupleSetV1 = normal::tuple::TupleSet::make(tables[0]);
-    return normal::tuple::TupleSet2::create(tupleSetV1);
+    return normal::tuple::TupleSet::make(tables[0]);
   } else {
     const arrow::Result<std::shared_ptr<arrow::Table>> &res = arrow::ConcatenateTables(tables);
     if (!res.ok())
       abort();
-    auto tupleSetV1 = normal::tuple::TupleSet::make(*res);
-    return normal::tuple::TupleSet2::create(tupleSetV1);
+    return normal::tuple::TupleSet::make(*res);
   }
 }
 
-std::shared_ptr<TupleSet2> S3SelectPOp::readTuples() {
-  std::shared_ptr<TupleSet2> readTupleSet;
+std::shared_ptr<TupleSet> S3SelectPOp::readTuples() {
+  std::shared_ptr<TupleSet> readTupleSet;
 
   if (getProjectColumnNames().empty()) {
-    readTupleSet = TupleSet2::make2();
+    readTupleSet = TupleSet::makeWithEmptyTable();
   } else {
 
     SPDLOG_DEBUG("Reading From S3: {}", name());

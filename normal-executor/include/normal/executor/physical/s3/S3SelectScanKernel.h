@@ -9,7 +9,7 @@
 #include <normal/executor/physical/s3/S3SelectCSVParseOptions.h>
 #include <normal/catalogue/Table.h>
 #include <normal/aws/AWSClient.h>
-#include <normal/tuple/TupleSet2.h>
+#include <normal/tuple/TupleSet.h>
 #include <normal/tuple/FileType.h>
 #include <string>
 #include <vector>
@@ -23,7 +23,7 @@ namespace normal::executor::physical::s3 {
 
 class S3SelectScanKernel {
 
-  typedef std::function<void(const std::shared_ptr<TupleSet2> &)> TupleSetEventCallback;
+  typedef std::function<void(const std::shared_ptr<TupleSet> &)> TupleSetEventCallback;
 
 public:
   S3SelectScanKernel(std::string s3Bucket,
@@ -46,7 +46,7 @@ public:
                           const std::shared_ptr<Table>& table,
                           const std::shared_ptr<AWSClient>& awsClient);
 
-  tl::expected<std::shared_ptr<TupleSet2>, std::string>
+  tl::expected<std::shared_ptr<TupleSet>, std::string>
   scan(const std::vector<std::string> &columnNames);
 
   tl::expected<void, std::string> s3Select(const std::string &sql,

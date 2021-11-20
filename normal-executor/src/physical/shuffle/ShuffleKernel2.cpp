@@ -9,18 +9,18 @@
 
 using namespace normal::executor::physical::shuffle;
 
-tl::expected<std::vector<std::shared_ptr<TupleSet2>>, std::string>
+tl::expected<std::vector<std::shared_ptr<TupleSet>>, std::string>
 ShuffleKernel2::shuffle(const std::string &columnName,
 						size_t numSlots,
-						const TupleSet2 &tupleSet) {
+						const TupleSet &tupleSet) {
 
   ::arrow::Result<std::shared_ptr<::arrow::RecordBatch>> recordBatchResult;
   ::arrow::Status status;
 
   // Get the arrow table, checking the tupleset is defined FIXME: This is dumb :(
-  if (!tupleSet.getArrowTable().has_value())
+  if (!tupleSet.valid())
 	return tl::make_unexpected(fmt::format("TupleSet is undefined"));
-  auto table = tupleSet.getArrowTable().value();
+  auto table = tupleSet.table();
 
   // Create the shuffler
   auto expectedShuffler = RecordBatchShuffler2::make(columnName, numSlots, table->schema(), table->num_rows());
@@ -61,8 +61,8 @@ ShuffleKernel2::shuffle(const std::string &columnName,
 
   size_t totalNumRows = 0;
   for(const auto &shuffledTupleSet: expectedShuffledTupleSets.value()){
-	assert(shuffledTupleSet->getArrowTable().has_value());
-	assert(shuffledTupleSet->getArrowTable().value()->ValidateFull().ok());
+	assert(shuffledTupleSet->valid());
+	assert(shuffledTupleSet->validate());
 	totalNumRows += shuffledTupleSet->numRows();
   }
 

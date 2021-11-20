@@ -7,7 +7,7 @@
 
 #include <normal/executor/physical/group/GroupKey2.h>
 #include <normal/executor/physical/aggregate/AggregationFunction.h>
-#include <normal/tuple/TupleSet2.h>
+#include <normal/tuple/TupleSet.h>
 #include <normal/tuple/ArrayAppender.h>
 #include <vector>
 #include <string>
@@ -50,14 +50,14 @@ public:
    * @param tupleSet
    * @return
    */
-  [[nodiscard]] tl::expected<void, std::string> group(TupleSet2 &tupleSet);
+  [[nodiscard]] tl::expected<void, std::string> group(TupleSet &tupleSet);
 
   /**
    * Computes final aggregates and generates output tuple set
    *
    * @return
    */
-  [[nodiscard]] tl::expected<std::shared_ptr<TupleSet2>, std::string> finalise();
+  [[nodiscard]] tl::expected<std::shared_ptr<TupleSet>, std::string> finalise();
 
   bool hasInput();
 
@@ -85,7 +85,7 @@ private:
    * @param tupleSet
    * @return
    */
-  [[nodiscard]] tl::expected<void, std::string> cache(const TupleSet2 &tupleSet);
+  [[nodiscard]] tl::expected<void, std::string> cache(const TupleSet &tupleSet);
 
   /**
    * Builds the output schema

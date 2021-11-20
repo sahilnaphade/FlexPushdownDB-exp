@@ -3,6 +3,7 @@
 //
 
 #include <normal/executor/message/cache/StoreRequestMessage.h>
+#include <fmt/format.h>
 #include <utility>
 
 using namespace normal::executor::message;

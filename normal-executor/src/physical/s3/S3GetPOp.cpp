@@ -88,7 +88,7 @@ bool S3GetPOp::parallelTuplesetCreationSupported() {
   return true;
 }
 
-std::shared_ptr<TupleSet2> S3GetPOp::readCSVFile(std::shared_ptr<arrow::io::InputStream> &arrowInputStream) {
+std::shared_ptr<TupleSet> S3GetPOp::readCSVFile(std::shared_ptr<arrow::io::InputStream> &arrowInputStream) {
   auto ioContext = arrow::io::IOContext();
   auto parse_options = arrow::csv::ParseOptions::Defaults();
   auto read_options = arrow::csv::ReadOptions::Defaults();
@@ -116,12 +116,10 @@ std::shared_ptr<TupleSet2> S3GetPOp::readCSVFile(std::shared_ptr<arrow::io::Inpu
   auto tableReader = *makeReaderResult;
 
   // Parse the payload and create the tupleset
-  auto tupleSetV1 = TupleSet::make(tableReader);
-  auto tupleSet = TupleSet2::create(tupleSetV1);
-  return tupleSet;
+  return TupleSet::make(tableReader);
 }
 
-std::shared_ptr<TupleSet2> S3GetPOp::readParquetFile(std::basic_iostream<char, std::char_traits<char>> &retrievedFile) {
+std::shared_ptr<TupleSet> S3GetPOp::readParquetFile(std::basic_iostream<char, std::char_traits<char>> &retrievedFile) {
   std::string parquetFileString(std::istreambuf_iterator<char>(retrievedFile), {});
   auto bufferedReader = std::make_shared<arrow::io::BufferReader>(parquetFileString);
 
@@ -143,12 +141,10 @@ std::shared_ptr<TupleSet2> S3GetPOp::readParquetFile(std::basic_iostream<char, s
   if (!st.ok()) {
     SPDLOG_ERROR("Error reading parquet data for {}\nError: {}", name(), st.message());
   }
-  auto tupleSetV1 = TupleSet::make(table);
-  auto tupleSet = TupleSet2::create(tupleSetV1);
-  return tupleSet;
+  return TupleSet::make(table);
 }
 
-std::shared_ptr<TupleSet2> S3GetPOp::s3GetFullRequest() {
+std::shared_ptr<TupleSet> S3GetPOp::s3GetFullRequest() {
   GetObjectRequest getObjectRequest;
   getObjectRequest.SetBucket(Aws::String(s3Bucket_));
   getObjectRequest.SetKey(Aws::String(s3Object_));
@@ -177,7 +173,7 @@ std::shared_ptr<TupleSet2> S3GetPOp::s3GetFullRequest() {
   s3SelectScanStats_.numRequests++;
   splitReqLock_.unlock();
 
-  std::shared_ptr<TupleSet2> tupleSet;
+  std::shared_ptr<TupleSet> tupleSet;
   auto getResult = getObjectOutcome.GetResultWithOwnership();
   int64_t resultSize = getResult.GetContentLength();
   splitReqLock_.lock();
@@ -281,7 +277,7 @@ GetObjectResult S3GetPOp::s3GetRequestOnly(const std::string &s3Object, uint64_t
   std::chrono::steady_clock::time_point stopTransferTime = std::chrono::steady_clock::now();
   auto transferTime = std::chrono::duration_cast<std::chrono::nanoseconds>(stopTransferTime - startTransferTime).count();
 
-  std::shared_ptr<TupleSet2> tupleSet;
+  std::shared_ptr<TupleSet> tupleSet;
   auto getResult = getObjectOutcome.GetResultWithOwnership();
   int64_t resultSize = getResult.GetContentLength();
   splitReqLock_.lock();
@@ -355,7 +351,7 @@ void S3GetPOp::s3GetIndividualReq(int reqNum, const std::string &s3Object, uint6
   }
 }
 
-std::shared_ptr<TupleSet2> S3GetPOp::s3GetParallelReqs(bool tempFixForAirmettleCSV150MB) {
+std::shared_ptr<TupleSet> S3GetPOp::s3GetParallelReqs(bool tempFixForAirmettleCSV150MB) {
   int totalReqs = 0;
   uint64_t currentStartOffset = 0;
 
@@ -423,26 +419,24 @@ std::shared_ptr<TupleSet2> S3GetPOp::s3GetParallelReqs(bool tempFixForAirmettleC
           parser->parseChunk(remainingData.data(), remainingData.size());
         }
       }
-      std::shared_ptr<TupleSet2> currentTupleSet = parser->outputCompletedTupleSet();
-      std::shared_ptr<arrow::Table> currentTable = currentTupleSet->getArrowTable().value();
+      std::shared_ptr<TupleSet> currentTupleSet = parser->outputCompletedTupleSet();
+      std::shared_ptr<arrow::Table> currentTable = currentTupleSet->table();
       // Don't need to concatenate empty tables
       if (currentTable->num_rows() > 0) {
         tables.push_back(currentTable);
       }
     }
 
-    std::shared_ptr<TupleSet2> readTupleSet;
+    std::shared_ptr<TupleSet> readTupleSet;
     if (tables.empty()) {
-      readTupleSet = TupleSet2::make2();
+      readTupleSet = TupleSet::makeWithEmptyTable();
     } else if (tables.size() == 1) {
-      auto tupleSetV1 = normal::tuple::TupleSet::make(tables[0]);
-      readTupleSet = normal::tuple::TupleSet2::create(tupleSetV1);
+      readTupleSet = normal::tuple::TupleSet::make(tables[0]);
     } else {
       const arrow::Result<std::shared_ptr<arrow::Table>> &res = arrow::ConcatenateTables(tables);
       if (!res.ok())
         abort();
-      auto tupleSetV1 = normal::tuple::TupleSet::make(*res);
-      readTupleSet = normal::tuple::TupleSet2::create(tupleSetV1);
+      readTupleSet = normal::tuple::TupleSet::make(*res);
     }
     std::chrono::steady_clock::time_point stopConversionTime = std::chrono::steady_clock::now();
     auto conversionTime = std::chrono::duration_cast<std::chrono::nanoseconds>(stopConversionTime - startConversionTime).count();
@@ -456,11 +450,11 @@ std::shared_ptr<TupleSet2> S3GetPOp::s3GetParallelReqs(bool tempFixForAirmettleC
 }
 #endif
 
-std::shared_ptr<TupleSet2> S3GetPOp::readTuples() {
-  std::shared_ptr<TupleSet2> readTupleSet;
+std::shared_ptr<TupleSet> S3GetPOp::readTuples() {
+  std::shared_ptr<TupleSet> readTupleSet;
 
   if (getProjectColumnNames().empty()) {
-    readTupleSet = TupleSet2::make2();
+    readTupleSet = TupleSet::makeWithEmptyTable();
   } else {
 
     SPDLOG_DEBUG("Reading From S3: {}", name());

@@ -163,13 +163,13 @@ void CacheLoadPOp::onCacheLoadResponse(const LoadResponseMessage &Message) {
    * 3. Send different messages to corresponding consumers
    */
   // Send the hit columns to the hit operator if result needed, empty tupleSet otherwise
-  std::shared_ptr<TupleSet2> hitTupleSet;
+  std::shared_ptr<TupleSet> hitTupleSet;
   if (cachingResultNeeded) {
-    hitTupleSet = TupleSet2::make(hitColumns);
+    hitTupleSet = TupleSet::make(hitColumns);
   } else {
-    hitTupleSet = TupleSet2::make2();
+    hitTupleSet = TupleSet::makeWithEmptyTable();
   }
-  auto hitMessage = std::make_shared<TupleMessage>(hitTupleSet->toTupleSetV1(), this->name());
+  auto hitMessage = std::make_shared<TupleMessage>(hitTupleSet, this->name());
   ctx()->send(hitMessage, hitOperator_.lock()->name());
 
   if (missOperatorToPushdown_.lock()) {

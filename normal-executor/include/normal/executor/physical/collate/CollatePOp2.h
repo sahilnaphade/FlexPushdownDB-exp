@@ -64,7 +64,7 @@ public:
   }
 
 private:
-  std::shared_ptr<TupleSet2> tupleSet_;
+  std::shared_ptr<TupleSet> tupleSet_;
 
 protected:
 
@@ -103,10 +103,10 @@ private:
 				 actor->name(), to_string(messageSender));
 
 	if (!tupleSet_) {
-	  tupleSet_ = TupleSet2::create(tupleSet);
+	  tupleSet_ = tupleSet;
 	  return {};
 	} else {
-	  return tupleSet_->append(TupleSet2::create(tupleSet));
+	  return tupleSet_->append(tupleSet);
 	}
   }
 
@@ -116,7 +116,7 @@ private:
 	SPDLOG_DEBUG("[Actor {} ('{}')]  Getting tupleSet  |  sender: {}", actor->id(),
 				 actor->name(), to_string(messageSender));
 
-	return tupleSet_->toTupleSetV1();
+	return tupleSet_;
   }
 
 };

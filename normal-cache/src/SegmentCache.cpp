@@ -4,6 +4,7 @@
 
 #include <normal/cache/SegmentCache.h>
 #include <normal/cache/policy/LRUCachingPolicy.h>
+#include <fmt/format.h>
 #include <utility>
 
 using namespace normal::cache;

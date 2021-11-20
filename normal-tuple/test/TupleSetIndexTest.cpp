@@ -6,7 +6,7 @@
 
 #include <normal/tuple/TupleSetIndexWrapper.h>
 #include <normal/tuple/arrow/Arrays.h>
-#include <normal/tuple/TupleSet2.h>
+#include <normal/tuple/TupleSet.h>
 
 using namespace normal::tuple;
 
@@ -25,7 +25,7 @@ auto makeEmptyTupleSetA() {
   auto arrayAC2 = Arrays::make<arrow::Int64Type>({}).value();
   auto arrayAC = std::make_shared<arrow::ChunkedArray>(arrow::ArrayVector{arrayAC1, arrayAC2});
   auto tableA = arrow::Table::Make(schemaA, {arrayAA, arrayAB, arrayAC});
-  auto tupleSetA = TupleSet2::make(tableA);
+  auto tupleSetA = TupleSet::make(tableA);
   return tupleSetA;
 }
 
@@ -44,7 +44,7 @@ auto makeTupleSetA() {
   auto arrayAC2 = Arrays::make<arrow::Int64Type>({9}).value();
   auto arrayAC = std::make_shared<arrow::ChunkedArray>(arrow::ArrayVector{arrayAC1, arrayAC2});
   auto tableA = arrow::Table::Make(schemaA, {arrayAA, arrayAB, arrayAC});
-  auto tupleSetA = TupleSet2::make(tableA);
+  auto tupleSetA = TupleSet::make(tableA);
   return tupleSetA;
 }
 
@@ -52,7 +52,7 @@ TEST_SUITE ("tupleset-index-test" * doctest::skip(false)) {
 
 TEST_CASE ("tupleset-index-test-make" * doctest::skip(false)) {
   auto tupleSetA = makeTupleSetA();
-  auto expectedTupleSetIndex1 = TupleSetIndexBuilder::make(tupleSetA->getArrowTable().value(), "aa");
+  auto expectedTupleSetIndex1 = TupleSetIndexBuilder::make(tupleSetA->table(), "aa");
 	  REQUIRE(expectedTupleSetIndex1);
   auto tupleSetIndex = expectedTupleSetIndex1.value();
 	  REQUIRE(tupleSetIndex->size() == tupleSetA->numRows());
@@ -60,13 +60,13 @@ TEST_CASE ("tupleset-index-test-make" * doctest::skip(false)) {
 
 TEST_CASE ("tupleset-index-test-make-non-existent-column" * doctest::skip(false)) {
   auto tupleSetA = makeTupleSetA();
-  auto expectedTupleSetIndex1 = TupleSetIndexBuilder::make(tupleSetA->getArrowTable().value(), "NON_EXISTENT_COLUMN_NAME");
+  auto expectedTupleSetIndex1 = TupleSetIndexBuilder::make(tupleSetA->table(), "NON_EXISTENT_COLUMN_NAME");
 	  REQUIRE_FALSE(expectedTupleSetIndex1);
 }
 
 TEST_CASE ("tupleset-index-test-make-empty" * doctest::skip(false)) {
   auto tupleSetA = makeEmptyTupleSetA();
-  auto expectedTupleSetIndex1 = TupleSetIndexBuilder::make(tupleSetA->getArrowTable().value(), "aa");
+  auto expectedTupleSetIndex1 = TupleSetIndexBuilder::make(tupleSetA->table(), "aa");
 	  REQUIRE(expectedTupleSetIndex1);
   auto tupleSetIndex = expectedTupleSetIndex1.value();
 	  REQUIRE(tupleSetIndex->size() == tupleSetA->numRows());
@@ -77,11 +77,11 @@ TEST_CASE ("tupleset-index-test-put" * doctest::skip(false)) {
   auto tupleSetA1 = makeTupleSetA();
   auto tupleSetA2 = makeTupleSetA();
 
-  auto expectedTupleSetIndex1 = TupleSetIndexBuilder::make(tupleSetA1->getArrowTable().value(), "aa");
+  auto expectedTupleSetIndex1 = TupleSetIndexBuilder::make(tupleSetA1->table(), "aa");
 	  REQUIRE(expectedTupleSetIndex1);
   auto tupleSetIndex1 = expectedTupleSetIndex1.value();
 
-  auto putResult1 = tupleSetIndex1->put(tupleSetA2->getArrowTable().value());
+  auto putResult1 = tupleSetIndex1->put(tupleSetA2->table());
 	  REQUIRE(putResult1);
 	  REQUIRE(tupleSetIndex1->size() == tupleSetA1->numRows() + tupleSetA2->numRows());
 }
@@ -91,7 +91,7 @@ TEST_CASE ("tupleset-index-test-put-non-existent-column" * doctest::skip(false))
   auto tupleSetA1 = makeTupleSetA();
   auto tupleSetA2 = makeTupleSetA();
 
-  auto expectedTupleSetIndex1 = TupleSetIndexBuilder::make(tupleSetA1->getArrowTable().value(), "aa");
+  auto expectedTupleSetIndex1 = TupleSetIndexBuilder::make(tupleSetA1->table(), "aa");
 	  REQUIRE(expectedTupleSetIndex1);
   auto tupleSetIndex1 = expectedTupleSetIndex1.value();
 
@@ -99,7 +99,7 @@ TEST_CASE ("tupleset-index-test-put-non-existent-column" * doctest::skip(false))
   auto renameResult = tupleSetA2->renameColumns({"NON_EXISTENT_COLUMN_NAME", "ab", "ac"});
 	  REQUIRE(renameResult);
 
-  auto putResult1 = tupleSetIndex1->put(tupleSetA2->getArrowTable().value());
+  auto putResult1 = tupleSetIndex1->put(tupleSetA2->table());
 	  REQUIRE_FALSE(putResult1);
 }
 
@@ -108,7 +108,7 @@ TEST_CASE ("tupleset-index-test-put-out-of-order-column" * doctest::skip(false))
   auto tupleSetA1 = makeTupleSetA();
   auto tupleSetA2 = makeTupleSetA();
 
-  auto expectedTupleSetIndex1 = TupleSetIndexBuilder::make(tupleSetA1->getArrowTable().value(), "aa");
+  auto expectedTupleSetIndex1 = TupleSetIndexBuilder::make(tupleSetA1->table(), "aa");
 	  REQUIRE(expectedTupleSetIndex1);
   auto tupleSetIndex1 = expectedTupleSetIndex1.value();
 
@@ -116,7 +116,7 @@ TEST_CASE ("tupleset-index-test-put-out-of-order-column" * doctest::skip(false))
   auto renameResult = tupleSetA2->renameColumns({"ab", "aa", "ac"});
 	  REQUIRE(renameResult);
 
-  auto putResult1 = tupleSetIndex1->put(tupleSetA2->getArrowTable().value());
+  auto putResult1 = tupleSetIndex1->put(tupleSetA2->table());
 	  REQUIRE_FALSE(putResult1);
 }
 
@@ -125,11 +125,11 @@ TEST_CASE ("tupleset-index-test-merge" * doctest::skip(false)) {
   auto tupleSetA1 = makeTupleSetA();
   auto tupleSetA2 = makeTupleSetA();
 
-  auto expectedTupleSetIndex1 = TupleSetIndexBuilder::make(tupleSetA1->getArrowTable().value(), "aa");
+  auto expectedTupleSetIndex1 = TupleSetIndexBuilder::make(tupleSetA1->table(), "aa");
 	  REQUIRE(expectedTupleSetIndex1);
   auto tupleSetIndex1 = expectedTupleSetIndex1.value();
 
-  auto expectedTupleSetIndex2 = TupleSetIndexBuilder::make(tupleSetA2->getArrowTable().value(), "aa");
+  auto expectedTupleSetIndex2 = TupleSetIndexBuilder::make(tupleSetA2->table(), "aa");
 	  REQUIRE(expectedTupleSetIndex2);
   auto tupleSetIndex2 = expectedTupleSetIndex2.value();
 
@@ -144,7 +144,7 @@ TEST_CASE ("tupleset-index-test-merge-non-existent-column" * doctest::skip(false
   auto tupleSetA1 = makeTupleSetA();
   auto tupleSetA2 = makeTupleSetA();
 
-  auto expectedTupleSetIndex1 = TupleSetIndexBuilder::make(tupleSetA1->getArrowTable().value(), "aa");
+  auto expectedTupleSetIndex1 = TupleSetIndexBuilder::make(tupleSetA1->table(), "aa");
 	  REQUIRE(expectedTupleSetIndex1);
   auto tupleSetIndex1 = expectedTupleSetIndex1.value();
 
@@ -152,7 +152,7 @@ TEST_CASE ("tupleset-index-test-merge-non-existent-column" * doctest::skip(false
   auto renameResult = tupleSetA2->renameColumns({"NON_EXISTENT_COLUMN_NAME", "ab", "ac"});
 	  REQUIRE(renameResult);
 
-  auto expectedTupleSetIndex2 = TupleSetIndexBuilder::make(tupleSetA2->getArrowTable().value(), "NON_EXISTENT_COLUMN_NAME");
+  auto expectedTupleSetIndex2 = TupleSetIndexBuilder::make(tupleSetA2->table(), "NON_EXISTENT_COLUMN_NAME");
 	  REQUIRE(expectedTupleSetIndex2);
   auto tupleSetIndex2 = expectedTupleSetIndex2.value();
 
@@ -165,7 +165,7 @@ TEST_CASE ("tupleset-index-test-merge-out-of-order-column" * doctest::skip(false
   auto tupleSetA1 = makeTupleSetA();
   auto tupleSetA2 = makeTupleSetA();
 
-  auto expectedTupleSetIndex1 = TupleSetIndexBuilder::make(tupleSetA1->getArrowTable().value(), "aa");
+  auto expectedTupleSetIndex1 = TupleSetIndexBuilder::make(tupleSetA1->table(), "aa");
 	  REQUIRE(expectedTupleSetIndex1);
   auto tupleSetIndex1 = expectedTupleSetIndex1.value();
 
@@ -173,7 +173,7 @@ TEST_CASE ("tupleset-index-test-merge-out-of-order-column" * doctest::skip(false
   auto renameResult = tupleSetA2->renameColumns({"ab", "aa", "ac"});
 	  REQUIRE(renameResult);
 
-  auto expectedTupleSetIndex2 = TupleSetIndexBuilder::make(tupleSetA2->getArrowTable().value(), "aa");
+  auto expectedTupleSetIndex2 = TupleSetIndexBuilder::make(tupleSetA2->table(), "aa");
 	  REQUIRE(expectedTupleSetIndex2);
   auto tupleSetIndex2 = expectedTupleSetIndex2.value();
 

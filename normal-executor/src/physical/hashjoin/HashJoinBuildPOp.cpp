@@ -5,7 +5,7 @@
 #include <normal/executor/physical/hashjoin/HashJoinBuildPOp.h>
 #include <normal/executor/physical/Globals.h>
 #include <normal/executor/message/TupleSetIndexMessage.h>
-#include <normal/tuple/TupleSet2.h>
+#include <normal/tuple/TupleSet.h>
 #include <utility>
 
 using namespace normal::executor::physical::hashjoin;
@@ -40,7 +40,7 @@ void HashJoinBuildPOp::onStart() {
 }
 
 void HashJoinBuildPOp::onTuple(const TupleMessage &msg) {
-  auto tupleSet = TupleSet2::create(msg.tuples());
+  auto tupleSet = msg.tuples();
 
   SPDLOG_DEBUG("Adding tuple set to hash table  |  operator: '{}', tupleSet:\n{}", this->name(), tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented, 1000)));
 
@@ -57,7 +57,7 @@ void HashJoinBuildPOp::onComplete(const CompleteMessage &) {
   }
 }
 
-tl::expected<void, std::string> HashJoinBuildPOp::buffer(const std::shared_ptr<TupleSet2> &tupleSet) {
+tl::expected<void, std::string> HashJoinBuildPOp::buffer(const std::shared_ptr<TupleSet> &tupleSet) {
   return kernel_.put(tupleSet);
 }
 

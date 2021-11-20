@@ -10,7 +10,6 @@
 #include <immintrin.h>
 #include "normal/tuple/arrow/SIMDParserHelpers.h"
 #include "normal/tuple/TupleSet.h"
-#include "normal/tuple/TupleSet2.h"
 #include "normal/tuple/arrow/ArrowAWSInputStream.h"
 
 class CSVToArrowSIMDChunkParser {
@@ -24,7 +23,7 @@ public:
 
   void parseChunk(char* data, uint64_t size);
   void parseChunk(const std::shared_ptr<arrow::io::InputStream>& inputStream);
-  std::shared_ptr<normal::tuple::TupleSet2> outputCompletedTupleSet();
+  std::shared_ptr<normal::tuple::TupleSet> outputCompletedTupleSet();
 
   [[nodiscard]] bool isInitialized() const;
 

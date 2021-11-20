@@ -35,9 +35,9 @@ public:
            std::vector<std::shared_ptr<normal::cache::SegmentKey>> weightedSegmentKeys = {});
 
 private:
-  std::shared_ptr<TupleSet2> readCSVFile(std::shared_ptr<arrow::io::InputStream> &arrowInputStream);
-  std::shared_ptr<TupleSet2> readParquetFile(std::basic_iostream<char, std::char_traits<char>> &retrievedFile);
-  std::shared_ptr<TupleSet2> s3GetFullRequest();
+  std::shared_ptr<TupleSet> readCSVFile(std::shared_ptr<arrow::io::InputStream> &arrowInputStream);
+  std::shared_ptr<TupleSet> readParquetFile(std::basic_iostream<char, std::char_traits<char>> &retrievedFile);
+  std::shared_ptr<TupleSet> s3GetFullRequest();
   Aws::S3::Model::GetObjectResult s3GetRequestOnly(const std::string &s3Object, uint64_t startOffset, uint64_t endOffset);
 
   // Whether we can process different portions of the response in parallel
@@ -48,7 +48,7 @@ private:
 
 #ifdef __AVX2__
   void s3GetIndividualReq(int reqNum, const std::string &s3Object, uint64_t startOffset, uint64_t endOffset);
-  std::shared_ptr<TupleSet2> s3GetParallelReqs(bool tempFixForAirmettleCSV150MB);
+  std::shared_ptr<TupleSet> s3GetParallelReqs(bool tempFixForAirmettleCSV150MB);
 #endif
 
   // Used for collecting all results for split requests that are run in parallel, and for having a
@@ -63,7 +63,7 @@ private:
 
   void processScanMessage(const ScanMessage &message) override;
 
-  std::shared_ptr<TupleSet2> readTuples() override;
+  std::shared_ptr<TupleSet> readTuples() override;
   int getPredicateNum() override;
 };
 

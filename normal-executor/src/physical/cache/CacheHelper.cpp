@@ -33,7 +33,7 @@ void CacheHelper::requestLoadSegmentsFromCache(const std::vector<std::string> &c
 	  .map_error([](auto err) { throw std::runtime_error(err); });
 }
 
-void CacheHelper::requestStoreSegmentsInCache(const std::shared_ptr<TupleSet2> &tupleSet,
+void CacheHelper::requestStoreSegmentsInCache(const std::shared_ptr<TupleSet> &tupleSet,
 											  const std::shared_ptr<Partition> &partition,
 											  int64_t startOffset,
 											  int64_t finishOffset,

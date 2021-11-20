@@ -15,7 +15,6 @@
 #include <normal/executor/message/cache/WeightRequestMessage.h>
 #include <normal/catalogue/Table.h>
 #include <normal/tuple/TupleSet.h>
-#include <normal/tuple/TupleSet2.h>
 #include <normal/aws/AWSClient.h>
 #include <memory>
 #include <string>
@@ -65,12 +64,12 @@ protected:
   void onCacheLoadResponse(const ScanMessage &message);
 
   virtual void processScanMessage(const ScanMessage &message) = 0;
-  virtual std::shared_ptr<TupleSet2> readTuples() = 0;
+  virtual std::shared_ptr<TupleSet> readTuples() = 0;
   virtual int getPredicateNum() = 0;
   virtual void readAndSendTuples();
 
-  void requestStoreSegmentsInCache(const std::shared_ptr<TupleSet2> &tupleSet);
-  void put(const std::shared_ptr<TupleSet2> &tupleSet);
+  void requestStoreSegmentsInCache(const std::shared_ptr<TupleSet> &tupleSet);
+  void put(const std::shared_ptr<TupleSet> &tupleSet);
   void sendSegmentWeight();
 
   std::string s3Bucket_;

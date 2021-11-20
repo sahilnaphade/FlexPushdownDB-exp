@@ -9,7 +9,7 @@
 #include <normal/tuple/TupleSetIndexFinder.h>
 #include <normal/tuple/ArrayAppender.h>
 #include <normal/tuple/ColumnName.h>
-#include <normal/tuple/TupleSet2.h>
+#include <normal/tuple/TupleSet.h>
 #include <normal/tuple/TupleSetIndexFinderWrapper.h>
 #include <set>
 #include <memory>
@@ -34,7 +34,7 @@ public:
 
   tl::expected<void, std::string> join(const std::shared_ptr<::arrow::RecordBatch> &recordBatch);
 
-  tl::expected<std::shared_ptr<TupleSet2>, std::string> toTupleSet();
+  tl::expected<std::shared_ptr<TupleSet>, std::string> toTupleSet();
 
 private:
   std::shared_ptr<TupleSetIndex> buildTupleSetIndex_;

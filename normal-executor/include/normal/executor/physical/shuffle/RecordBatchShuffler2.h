@@ -5,7 +5,7 @@
 #ifndef NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_SHUFFLE_RECORDBATCHSHUFFLER2_H
 #define NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_SHUFFLE_RECORDBATCHSHUFFLER2_H
 
-#include <normal/tuple/TupleSet2.h>
+#include <normal/tuple/TupleSet.h>
 #include <normal/tuple/ArrayAppender.h>
 #include <arrow/api.h>
 #include <tl/expected.hpp>
@@ -27,7 +27,7 @@ public:
 
   [[nodiscard]] tl::expected<void, std::string> shuffle(const std::shared_ptr<::arrow::RecordBatch> &recordBatch);
 
-  tl::expected<std::vector<std::shared_ptr<TupleSet2>>, std::string> toTupleSets();
+  tl::expected<std::vector<std::shared_ptr<TupleSet>>, std::string> toTupleSets();
 
 protected:
   int shuffleColumnIndex_;

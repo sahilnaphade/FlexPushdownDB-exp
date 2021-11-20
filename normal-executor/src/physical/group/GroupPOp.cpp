@@ -38,7 +38,7 @@ void GroupPOp::onStart() {
 }
 
 void GroupPOp::onTuple(const TupleMessage &message) {
-  auto tupleSet = normal::tuple::TupleSet2::create(message.tuples());
+  auto tupleSet = message.tuples();
   auto expectedGroupResult = kernel2_->group(*tupleSet);
   if(!expectedGroupResult)
     throw std::runtime_error(expectedGroupResult.error());
@@ -52,10 +52,8 @@ void GroupPOp::onComplete(const CompleteMessage &) {
       if (!expectedGroupedTupleSet)
         throw std::runtime_error(expectedGroupedTupleSet.error());
 
-      std::shared_ptr<Message>
-              tupleMessage =
-              std::make_shared<TupleMessage>(expectedGroupedTupleSet.value()->toTupleSetV1(),
-                                                                    this->name());
+      std::shared_ptr<Message> tupleMessage = std::make_shared<TupleMessage>(expectedGroupedTupleSet.value(),
+                                                                             this->name());
       ctx()->tell(tupleMessage);
     }
 

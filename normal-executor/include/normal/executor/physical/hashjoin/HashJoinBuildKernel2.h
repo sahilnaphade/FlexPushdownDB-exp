@@ -5,7 +5,7 @@
 #ifndef NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_HASHJOIN_HASHJOINBUILDKERNEL2_H
 #define NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_HASHJOIN_HASHJOINBUILDKERNEL2_H
 
-#include <normal/tuple/TupleSet2.h>
+#include <normal/tuple/TupleSet.h>
 #include <normal/tuple/TupleSetIndex.h>
 #include <string>
 #include <memory>
@@ -23,7 +23,7 @@ public:
   explicit HashJoinBuildKernel2(std::string columnName);
   static HashJoinBuildKernel2 make(const std::string &columnName);
 
-  [[nodiscard]] tl::expected<void,std::string> put(const std::shared_ptr<TupleSet2> &tupleSet);
+  [[nodiscard]] tl::expected<void,std::string> put(const std::shared_ptr<TupleSet> &tupleSet);
   size_t size();
   void clear();
   std::optional<std::shared_ptr<TupleSetIndex>> getTupleSetIndex();

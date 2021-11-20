@@ -5,7 +5,7 @@
 #include <normal/executor/physical/shuffle/ShufflePOp.h>
 #include <normal/executor/physical/shuffle/ShuffleKernel2.h>
 #include <normal/executor/physical/Globals.h>
-#include <normal/tuple/TupleSet2.h>
+#include <normal/tuple/TupleSet.h>
 #include <normal/tuple/ColumnBuilder.h>
 #include <utility>
 
@@ -58,22 +58,22 @@ void ShufflePOp::onComplete(const CompleteMessage &) {
   }
 }
 
-tl::expected<void, std::string> ShufflePOp::buffer(const std::shared_ptr<TupleSet2> &tupleSet, int partitionIndex) {
+tl::expected<void, std::string> ShufflePOp::buffer(const std::shared_ptr<TupleSet> &tupleSet, int partitionIndex) {
   // Add the tuple set to the buffer
   if (!buffers_[partitionIndex].has_value()) {
 	buffers_[partitionIndex] = tupleSet;
   } else {
     const auto &bufferedTupleSet = buffers_[partitionIndex].value();
-	const auto &concatenateResult = TupleSet2::concatenate({bufferedTupleSet, tupleSet});
+	const auto &concatenateResult = TupleSet::concatenate({bufferedTupleSet, tupleSet});
 	if (!concatenateResult)
 	  return tl::make_unexpected(concatenateResult.error());
 	buffers_[partitionIndex] = concatenateResult.value();
 
 	std::shared_ptr<arrow::Table> combinedTable;
-	auto expectedTable = buffers_[partitionIndex].value()->getArrowTable().value()
+	auto expectedTable = buffers_[partitionIndex].value()->table()
 		->CombineChunks(arrow::default_memory_pool());
 	if (expectedTable.ok())
-	  buffers_[partitionIndex] = TupleSet2::make(*expectedTable);
+	  buffers_[partitionIndex] = TupleSet::make(*expectedTable);
 	else
 	  return tl::make_unexpected(expectedTable.status().message());
   }
@@ -85,7 +85,7 @@ tl::expected<void, std::string> ShufflePOp::send(int partitionIndex, bool force)
   // If the tupleset is big enough, send it, then clear the buffer
   if (buffers_[partitionIndex].has_value() && (force || buffers_[partitionIndex].value()->numRows() >= DefaultBufferSize)) {
 	std::shared_ptr<Message> tupleMessage =
-	        std::make_shared<TupleMessage>(buffers_[partitionIndex].value()->toTupleSetV1(), name());
+	        std::make_shared<TupleMessage>(buffers_[partitionIndex].value(), name());
 	ctx()->send(tupleMessage, consumers_[partitionIndex]);
 	buffers_[partitionIndex] = std::nullopt;
   }
@@ -95,13 +95,13 @@ tl::expected<void, std::string> ShufflePOp::send(int partitionIndex, bool force)
 
 void ShufflePOp::onTuple(const TupleMessage &message) {
   // Get the tuple set
-  const auto &tupleSet = TupleSet2::create(message.tuples());
-  std::vector<std::shared_ptr<TupleSet2>> shuffledTupleSets;
+  const auto &tupleSet = message.tuples();
+  std::vector<std::shared_ptr<TupleSet>> shuffledTupleSets;
 
   // Check empty
   if(tupleSet->numRows() == 0){
     for (size_t s = 0; s < consumers_.size(); ++s) {
-      shuffledTupleSets.emplace_back(TupleSet2::make(tupleSet->schema().value()));
+      shuffledTupleSets.emplace_back(tupleSet);
     }
   }
 

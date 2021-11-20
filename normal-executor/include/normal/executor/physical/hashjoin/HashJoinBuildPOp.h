@@ -38,7 +38,7 @@ private:
   void onTuple(const TupleMessage &msg);
   void onComplete(const CompleteMessage &msg);
 
-  [[nodiscard]] tl::expected<void, std::string> buffer(const std::shared_ptr<TupleSet2>& tupleSet);
+  [[nodiscard]] tl::expected<void, std::string> buffer(const std::shared_ptr<TupleSet>& tupleSet);
   void send(bool force);
 
   /**

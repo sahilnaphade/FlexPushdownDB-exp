@@ -72,9 +72,9 @@ void FileScanPOp::readAndSendTuples(const std::vector<std::string> &columnNames)
    * FIXME: Should support reading the file in pieces
    */
 
-  std::shared_ptr<TupleSet2> readTupleSet;
+  std::shared_ptr<TupleSet> readTupleSet;
   if (columnNames.empty()) {
-    readTupleSet = TupleSet2::make2();
+    readTupleSet = TupleSet::makeWithEmptyTable();
   } else {
     auto expectedReadTupleSet = kernel_->scan(columnNames);
     readTupleSet = expectedReadTupleSet.value();
@@ -83,7 +83,7 @@ void FileScanPOp::readAndSendTuples(const std::vector<std::string> &columnNames)
     requestStoreSegmentsInCache(readTupleSet);
   }
 
-  std::shared_ptr<Message> message = std::make_shared<TupleMessage>(readTupleSet->toTupleSetV1(), this->name());
+  std::shared_ptr<Message> message = std::make_shared<TupleMessage>(readTupleSet, this->name());
   ctx()->tell(message);
 }
 
@@ -91,7 +91,7 @@ void FileScanPOp::onCacheLoadResponse(const ScanMessage &Message) {
   readAndSendTuples(Message.getColumnNames());
 }
 
-void FileScanPOp::requestStoreSegmentsInCache(const std::shared_ptr<TupleSet2> &tupleSet) {
+void FileScanPOp::requestStoreSegmentsInCache(const std::shared_ptr<TupleSet> &tupleSet) {
   auto partition = std::make_shared<catalogue::local_fs::LocalFSPartition>(kernel_->getPath());
   CacheHelper::requestStoreSegmentsInCache(tupleSet, partition, kernel_->getStartPos(), kernel_->getFinishPos(), name(), ctx());
 }

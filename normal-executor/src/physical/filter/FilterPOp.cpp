@@ -24,8 +24,8 @@ FilterPOp::FilterPOp(std::string name,
                std::vector<std::shared_ptr<SegmentKey>> weightedSegmentKeys) :
 	PhysicalOp(std::move(name), "FilterPOp", std::move(projectColumnNames), queryId),
   predicate_(std::move(predicate)),
-	received_(normal::tuple::TupleSet2::make()),
-	filtered_(normal::tuple::TupleSet2::make()),
+	received_(normal::tuple::TupleSet::makeWithNullTable()),
+	filtered_(normal::tuple::TupleSet::makeWithNullTable()),
   table_(std::move(table)),
 	weightedSegmentKeys_(std::move(weightedSegmentKeys)) {}
 
@@ -59,7 +59,7 @@ void FilterPOp::onTuple(const TupleMessage &Message) {
   /**
    * Check if this filter is applicable, if not, just send an empty table and complete
    */
-  auto tupleSet = normal::tuple::TupleSet2::create(Message.tuples());
+  auto tupleSet = Message.tuples();
   if (applicable_ == nullptr) {
     applicable_ = std::make_shared<bool>(isApplicable(tupleSet));
   }
@@ -74,9 +74,9 @@ void FilterPOp::onTuple(const TupleMessage &Message) {
     }
   } else {
     // empty table
-    auto emptyTupleSet = normal::tuple::TupleSet2::make2();
-    std::shared_ptr<normal::executor::message::Message> tupleMessage =
-            std::make_shared<TupleMessage>(emptyTupleSet->toTupleSetV1(), name());
+    auto emptyTupleSet = normal::tuple::TupleSet::makeWithEmptyTable();
+    std::shared_ptr<normal::executor::message::Message> tupleMessage = std::make_shared<TupleMessage>(emptyTupleSet,
+                                                                                                      name());
     ctx()->tell(tupleMessage);
     ctx()->notifyComplete();
   }
@@ -85,7 +85,7 @@ void FilterPOp::onTuple(const TupleMessage &Message) {
 void FilterPOp::onComplete(const CompleteMessage&) {
   SPDLOG_DEBUG("onComplete  |  Received buffer tupleSet - numRows: {}", received_->numRows());
 
-  if(received_->getArrowTable().has_value()) {
+  if(received_->valid()) {
     filterTuples();
     sendTuples();
   }
@@ -103,21 +103,22 @@ void FilterPOp::onComplete(const CompleteMessage&) {
   }
 }
 
-void FilterPOp::bufferTuples(const std::shared_ptr<normal::tuple::TupleSet2>& tupleSet) {
-  if(!received_->schema().has_value()) {
-	received_->setSchema(*tupleSet->schema());
+void FilterPOp::bufferTuples(const std::shared_ptr<normal::tuple::TupleSet>& tupleSet) {
+  if(!received_->valid()) {
+    received_ = tupleSet;
+  } else {
+    auto result = received_->append(tupleSet);
+    if (!result.has_value()) {
+      throw std::runtime_error(result.error());
+    }
+    assert(received_->validate());
   }
-  auto result = received_->append(tupleSet);
-  if(!result.has_value()){
-    throw std::runtime_error(result.error());
-  }
-  assert(received_->validate());
 }
 
-bool FilterPOp::isApplicable(const std::shared_ptr<normal::tuple::TupleSet2>& tupleSet) {
+bool FilterPOp::isApplicable(const std::shared_ptr<normal::tuple::TupleSet>& tupleSet) {
   auto predicateColumnNames = predicate_->involvedColumnNames();
   auto tupleColumnNames = std::make_shared<std::vector<std::string>>();
-  for (auto const &field: tupleSet->schema()->get()->fields()) {
+  for (auto const &field: tupleSet->schema()->fields()) {
     tupleColumnNames->emplace_back(field->name());
   }
 
@@ -132,7 +133,7 @@ bool FilterPOp::isApplicable(const std::shared_ptr<normal::tuple::TupleSet2>& tu
 void FilterPOp::buildFilter() {
   if(!filter_.has_value()){
 	filter_ = normal::expression::gandiva::Filter::make(predicate_);
-	filter_.value()->compile(received_->schema().value());
+	filter_.value()->compile(Schema::make(received_->schema()));
   }
 }
 
@@ -147,16 +148,15 @@ void FilterPOp::filterTuples() {
 
   filteredNumRows_ += filtered_->numRows();
 
-  received_->clear();
+  received_.reset();
   assert(received_->validate());
 }
 
 void FilterPOp::sendTuples() {
-  std::shared_ptr<Message> tupleMessage =
-	  std::make_shared<TupleMessage>(filtered_->toTupleSetV1(), name());
+  std::shared_ptr<Message> tupleMessage = std::make_shared<TupleMessage>(filtered_, name());
 
   ctx()->tell(tupleMessage);
-  filtered_->clear();
+  filtered_.reset();
   assert(filtered_->validate());
 }
 

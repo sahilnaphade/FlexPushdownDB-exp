@@ -54,14 +54,14 @@ private:
   // as that is more complicated due to involving parquet metadata and we haven't had a chance to implement this yet
   bool scanRangeSupported();
   Aws::S3::Model::InputSerialization getInputSerialization();
-  std::shared_ptr<TupleSet2> s3Select(uint64_t startOffset, uint64_t endOffset);
-  std::shared_ptr<TupleSet2> s3SelectParallelReqs();
+  std::shared_ptr<TupleSet> s3Select(uint64_t startOffset, uint64_t endOffset);
+  std::shared_ptr<TupleSet> s3SelectParallelReqs();
   // Wrapper function to encapsulate a thread spawned when making parallel requests
   void s3SelectIndividualReq(int reqNum, uint64_t startOffset, uint64_t endOffset);
 
   void processScanMessage(const ScanMessage &message) override;
 
-  std::shared_ptr<TupleSet2> readTuples() override;
+  std::shared_ptr<TupleSet> readTuples() override;
   int getPredicateNum() override;
 };
 

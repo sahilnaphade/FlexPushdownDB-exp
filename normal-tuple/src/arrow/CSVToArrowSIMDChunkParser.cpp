@@ -373,7 +373,7 @@ void CSVToArrowSIMDChunkParser::parseChunk(const std::shared_ptr<arrow::io::Inpu
   }
 }
 
-std::shared_ptr<normal::tuple::TupleSet2> CSVToArrowSIMDChunkParser::outputCompletedTupleSet() {
+std::shared_ptr<normal::tuple::TupleSet> CSVToArrowSIMDChunkParser::outputCompletedTupleSet() {
   // read any partial data remaining
   if (!partial_.empty()) {
     char* emptyChar = nullptr;
@@ -384,7 +384,7 @@ std::shared_ptr<normal::tuple::TupleSet2> CSVToArrowSIMDChunkParser::outputCompl
   }
   // first check if data structures never initialized, if so then nothing output
   if (!initialized_) {
-    return normal::tuple::TupleSet2::make2();
+    return normal::tuple::TupleSet::makeWithEmptyTable();
   }
   std::vector<std::shared_ptr<arrow::Array>> arrays;
   for (const std::shared_ptr<arrow::ArrayBuilder>& arrayBuilder : arrayBuilders_) {
@@ -395,8 +395,7 @@ std::shared_ptr<normal::tuple::TupleSet2> CSVToArrowSIMDChunkParser::outputCompl
     arrays.emplace_back(result.ValueOrDie());
   }
   std::shared_ptr<arrow::Table> table = arrow::Table::Make(outputSchema_, arrays, rowsRead_);
-  auto tupleSetV1 = normal::tuple::TupleSet::make(table);
-  return normal::tuple::TupleSet2::create(tupleSetV1);
+  return normal::tuple::TupleSet::make(table);
 }
 
 #endif

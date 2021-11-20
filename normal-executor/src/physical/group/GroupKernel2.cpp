@@ -18,7 +18,7 @@ GroupKernel2::GroupKernel2(const std::vector<std::string>& columnNames,
 	aggregateColumnNames_(ColumnName::canonicalize(aggregateColumnNames)),
 	aggregateFunctions_(std::move(aggregateFunctions)) {}
 
-tl::expected<void, std::string> GroupKernel2::group(TupleSet2 &tupleSet) {
+tl::expected<void, std::string> GroupKernel2::group(TupleSet &tupleSet) {
 
   // Cache or validate the input schema
   auto expectedCacheResult = cache(tupleSet);
@@ -26,9 +26,9 @@ tl::expected<void, std::string> GroupKernel2::group(TupleSet2 &tupleSet) {
 	return expectedCacheResult;
 
   // Check the tuple set is defined
-  if (!tupleSet.getArrowTable().has_value())
+  if (!tupleSet.valid())
 	return tl::make_unexpected("Tuple set is undefined");
-  auto table = tupleSet.getArrowTable().value();
+  auto table = tupleSet.table();
 
   auto groupedArraysResult = groupTable(*table);
   if (!groupedArraysResult)
@@ -61,7 +61,7 @@ void GroupKernel2::computeGroupAggregates() {
 	auto groupKey = groupTupleSetPair.first;
 	auto groupArrays = groupTupleSetPair.second;
 
-	auto groupTupleSet = TupleSet2::make(aggregateSchema_.value(), groupArrays);
+	auto groupTupleSet = TupleSet::make(aggregateSchema_.value(), groupArrays);
 
 	// Get or initialise the aggregate results for the current group
 	std::vector<std::shared_ptr<AggregationResult>> currentAggregateResults;
@@ -80,16 +80,16 @@ void GroupKernel2::computeGroupAggregates() {
 	for (size_t i = 0; i < aggregateFunctions_.size(); i++) {
 	  auto aggregateResult = currentAggregateResults.at(i);
 	  auto aggregateFunction = aggregateFunctions_.at(i);
-	  aggregateFunction->apply(aggregateResult, groupTupleSet->toTupleSetV1());
+	  aggregateFunction->apply(aggregateResult, groupTupleSet);
 	}
   }
 }
 
-tl::expected<void, std::string> GroupKernel2::cache(const TupleSet2 &tupleSet) {
+tl::expected<void, std::string> GroupKernel2::cache(const TupleSet &tupleSet) {
 
-  if(!tupleSet.getArrowTable().has_value())
+  if(!tupleSet.valid())
 	return tl::make_unexpected(fmt::format("Input tuple set table is undefined"));
-  auto table = tupleSet.getArrowTable().value();
+  auto table = tupleSet.table();
 
   if (!inputSchema_.has_value()) {
 
@@ -139,7 +139,7 @@ tl::expected<void, std::string> GroupKernel2::cache(const TupleSet2 &tupleSet) {
   }
 }
 
-tl::expected<std::shared_ptr<TupleSet2>, std::string> GroupKernel2::finalise() {
+tl::expected<std::shared_ptr<TupleSet>, std::string> GroupKernel2::finalise() {
 
   // Finalize the aggregate results
   for (const auto &groupAggregateResults: groupAggregationResultVectorMap_) {
@@ -210,7 +210,7 @@ tl::expected<std::shared_ptr<TupleSet2>, std::string> GroupKernel2::finalise() {
 	outputArrays.push_back(expectedOutputArray.value());
   }
 
-  return TupleSet2::make(outputSchema_.value(), outputArrays);
+  return TupleSet::make(outputSchema_.value(), outputArrays);
 }
 
 tl::expected<std::shared_ptr<arrow::Schema>, std::string> GroupKernel2::makeOutputSchema() {

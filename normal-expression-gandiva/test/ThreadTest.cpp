@@ -10,7 +10,7 @@
 #include <normal/expression/gandiva/Column.h>
 #include <normal/expression/gandiva/Cast.h>
 #include <normal/expression/gandiva/Multiply.h>
-#include <normal/tuple/TupleSet2.h>
+#include <normal/tuple/TupleSet.h>
 #include <normal/tuple/Sample.h>
 
 #include "Globals.h"
@@ -40,13 +40,13 @@ TEST_CASE ("make" * doctest::skip(false || SKIP_SUITE)) {
 	  SPDLOG_DEBUG("Input:\n{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 
 	  Projector p({e});
-	  p.compile(tupleSet->schema().value()->getSchema());
+	  p.compile(tupleSet->schema());
 
-	  auto results1 = p.evaluate(*tupleSet->toTupleSetV1());
-	  SPDLOG_DEBUG("Output 1:\n{}", TupleSet2::create(results1)->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
+	  auto results1 = p.evaluate(*tupleSet);
+	  SPDLOG_DEBUG("Output 1:\n{}", results1->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 
-	  auto results2 = p.evaluate(*tupleSet->toTupleSetV1());
-	  SPDLOG_DEBUG("Output 2:\n{}", TupleSet2::create(results2)->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
+	  auto results2 = p.evaluate(*tupleSet);
+	  SPDLOG_DEBUG("Output 2:\n{}", results2->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 
 	  SPDLOG_DEBUG("Finish");
 	});

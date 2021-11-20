@@ -31,7 +31,7 @@ std::unique_ptr<FileScanKernel> FileScanKernel::make(const std::string &path,
 										  finishPos);
 }
 
-tl::expected<std::shared_ptr<TupleSet2>, std::string>
+tl::expected<std::shared_ptr<TupleSet>, std::string>
 FileScanKernel::scan(const std::vector<std::string> &columnNames) {
   return reader_->read(columnNames, startPos_, finishPos_);
 }

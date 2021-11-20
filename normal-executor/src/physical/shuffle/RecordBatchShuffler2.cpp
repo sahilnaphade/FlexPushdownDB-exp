@@ -87,7 +87,7 @@ tl::expected<void, std::string> RecordBatchShuffler2::shuffle(const std::shared_
   return {};
 }
 
-tl::expected<std::vector<std::shared_ptr<TupleSet2>>, std::string> RecordBatchShuffler2::toTupleSets() {
+tl::expected<std::vector<std::shared_ptr<TupleSet>>, std::string> RecordBatchShuffler2::toTupleSets() {
 
   // Finalize appenders into arrays
   std::vector<std::vector<std::shared_ptr<::arrow::Array>>> shuffledArrays{numSlots_};
@@ -105,10 +105,10 @@ tl::expected<std::vector<std::shared_ptr<TupleSet2>>, std::string> RecordBatchSh
   }
 
   // Create TupleSets from the destination vectors of arrays
-  std::vector<std::shared_ptr<TupleSet2>> shuffledTupleSetVector{numSlots_};
+  std::vector<std::shared_ptr<TupleSet>> shuffledTupleSetVector{numSlots_};
   for (size_t s = 0; s < numSlots_; ++s) {
     auto shuffledTable = ::arrow::Table::Make(schema_, shuffledArrays[s]);
-    shuffledTupleSetVector[s] = TupleSet2::make(shuffledTable);
+    shuffledTupleSetVector[s] = TupleSet::make(shuffledTable);
   }
 
   return shuffledTupleSetVector;

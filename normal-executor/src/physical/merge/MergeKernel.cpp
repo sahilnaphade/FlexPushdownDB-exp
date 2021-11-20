@@ -7,8 +7,8 @@
 
 using namespace normal::executor::physical::merge;
 
-tl::expected<void, std::string> MergeKernel::validateTupleSets(const std::shared_ptr<TupleSet2> &tupleSet1,
-														  const std::shared_ptr<TupleSet2> &tupleSet2) {
+tl::expected<void, std::string> MergeKernel::validateTupleSets(const std::shared_ptr<TupleSet> &tupleSet1,
+														  const std::shared_ptr<TupleSet> &tupleSet2) {
 
   // If either of the tuple sets contain columns (meaning they need to be merged) then check
   // they are merge-able. If either tuple set contains no columns, then merging them simply
@@ -24,9 +24,9 @@ tl::expected<void, std::string> MergeKernel::validateTupleSets(const std::shared
 	}
 
 	// Check field names do not contain duplicates
-	if (tupleSet1->getArrowTable().has_value() && tupleSet2->getArrowTable().has_value()) {
-	  for (const auto &field1: tupleSet1->getArrowTable().value()->schema()->fields()) {
-		for (const auto &field2: tupleSet2->getArrowTable().value()->schema()->fields()) {
+	if (tupleSet1->valid() && tupleSet2->valid()) {
+	  for (const auto &field1: tupleSet1->schema()->fields()) {
+		for (const auto &field2: tupleSet2->schema()->fields()) {
 		  if (field1->name() == field2->name()) {
 		    return tl::unexpected(fmt::format(
                 "Cannot merge TupleSets, field names must not contain duplicates. "
@@ -41,18 +41,18 @@ tl::expected<void, std::string> MergeKernel::validateTupleSets(const std::shared
   return {};
 }
 
-std::shared_ptr<Schema> MergeKernel::mergeSchema(const std::shared_ptr<TupleSet2> &tupleSet1,
-												 const std::shared_ptr<TupleSet2> &tupleSet2) {
+std::shared_ptr<Schema> MergeKernel::mergeSchema(const std::shared_ptr<TupleSet> &tupleSet1,
+												 const std::shared_ptr<TupleSet> &tupleSet2) {
 
   auto mergedFields = std::vector<std::shared_ptr<arrow::Field>>{};
 
-  if (tupleSet1->getArrowTable().has_value()){
-	const auto &fields1 = tupleSet1->getArrowTable().value()->schema()->fields();
+  if (tupleSet1->valid()){
+	const auto &fields1 = tupleSet1->schema()->fields();
 	mergedFields.insert(std::end(mergedFields), std::begin(fields1), std::end(fields1));
   }
 
-  if (tupleSet2->getArrowTable().has_value()) {
-	const auto &fields2 = tupleSet2->getArrowTable().value()->schema()->fields();
+  if (tupleSet2->valid()) {
+	const auto &fields2 = tupleSet2->schema()->fields();
 	mergedFields.insert(std::end(mergedFields), std::begin(fields2), std::end(fields2));
   }
 
@@ -62,27 +62,27 @@ std::shared_ptr<Schema> MergeKernel::mergeSchema(const std::shared_ptr<TupleSet2
   return mergedSchema;
 }
 
-std::vector<std::shared_ptr<::arrow::ChunkedArray>> MergeKernel::mergeArrays(const std::shared_ptr<TupleSet2> &tupleSet1,
-																			 const std::shared_ptr<TupleSet2> &tupleSet2) {
+std::vector<std::shared_ptr<::arrow::ChunkedArray>> MergeKernel::mergeArrays(const std::shared_ptr<TupleSet> &tupleSet1,
+																			 const std::shared_ptr<TupleSet> &tupleSet2) {
 
   auto mergedArrays = std::vector<std::shared_ptr<::arrow::ChunkedArray>>{};
 
-  if (tupleSet1->getArrowTable().has_value()) {
-	const auto &arrowArrays1 = tupleSet1->getArrowTable().value()->columns();
+  if (tupleSet1->valid()) {
+	const auto &arrowArrays1 = tupleSet1->table()->columns();
 	mergedArrays.insert(std::end(mergedArrays), std::begin(arrowArrays1), std::end(arrowArrays1));
   }
 
-  if (tupleSet2->getArrowTable().has_value()) {
-	const auto &arrowArrays2 = tupleSet2->getArrowTable().value()->columns();
+  if (tupleSet2->valid()) {
+	const auto &arrowArrays2 = tupleSet2->table()->columns();
 	mergedArrays.insert(std::end(mergedArrays), std::begin(arrowArrays2), std::end(arrowArrays2));
   }
 
   return mergedArrays;
 }
 
-tl::expected<std::shared_ptr<TupleSet2>, std::string>
-MergeKernel::merge(const std::shared_ptr<TupleSet2> &tupleSet1,
-				   const std::shared_ptr<TupleSet2> &tupleSet2) {
+tl::expected<std::shared_ptr<TupleSet>, std::string>
+MergeKernel::merge(const std::shared_ptr<TupleSet> &tupleSet1,
+				   const std::shared_ptr<TupleSet> &tupleSet2) {
 
   // Validate the tuple sets
   const auto valid = validateTupleSets(tupleSet1, tupleSet2);
@@ -104,10 +104,10 @@ MergeKernel::merge(const std::shared_ptr<TupleSet2> &tupleSet1,
    */
   if (!mergedSchema->fields().empty() && !mergedArrays.empty()) {
 	const auto &mergedTable = ::arrow::Table::Make(mergedSchema->getSchema(), mergedArrays);
-	const auto &mergedTupleSet = TupleSet2::make(mergedTable);
+	const auto &mergedTupleSet = TupleSet::make(mergedTable);
 	return mergedTupleSet;
   } else {
-	const auto &mergedTupleSet = TupleSet2::make2();
+	const auto &mergedTupleSet = TupleSet::makeWithEmptyTable();
 	return mergedTupleSet;
   }
 

@@ -56,19 +56,19 @@ std::unique_ptr<S3SelectScanKernel> S3SelectScanKernel::make(const std::string &
 
 }
 
-tl::expected<std::shared_ptr<TupleSet2>, std::string>
+tl::expected<std::shared_ptr<TupleSet>, std::string>
 S3SelectScanKernel::scan(const std::vector<std::string> &columnNames) {
 
-  std::optional<std::shared_ptr<TupleSet2>> tupleSet;
+  std::optional<std::shared_ptr<TupleSet>> tupleSet;
   std::optional<std::string> optionalError;
 
   if (columnNames.empty()) {
     // Makes an empty tuple set
-	tupleSet = TupleSet2::make(std::vector<std::shared_ptr<Column>>{});
+	tupleSet = TupleSet::make(std::vector<std::shared_ptr<Column>>{});
   } else {
 	auto sql = fmt::format(sql_, fmt::join(columnNames, ","));
 
-	auto result = s3Select(sql, columnNames, [&](const std::shared_ptr<TupleSet2> &tupleSetChunk) -> auto {
+	auto result = s3Select(sql, columnNames, [&](const std::shared_ptr<TupleSet> &tupleSetChunk) -> auto {
 
 //	  tupleSetChunk->renameColumns(columnNames);
 
@@ -167,7 +167,7 @@ S3SelectScanKernel::s3Select(const std::string &sql,
 
 	// Check if a tupleset was parsed
 	if (maybeTupleSet.has_value()) {
-	  auto tupleSet = TupleSet2::create(maybeTupleSet.value());
+	  auto tupleSet = maybeTupleSet.value();
 	  tupleSetEventCallback(tupleSet);
 	}
   });

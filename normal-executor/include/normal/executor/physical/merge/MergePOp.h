@@ -8,7 +8,7 @@
 #include <normal/executor/physical/PhysicalOp.h>
 #include <normal/executor/message/CompleteMessage.h>
 #include <normal/executor/message/TupleMessage.h>
-#include <normal/tuple/TupleSet2.h>
+#include <normal/tuple/TupleSet.h>
 #include <queue>
 
 using namespace normal::executor::message;
@@ -37,8 +37,8 @@ private:
   std::weak_ptr<PhysicalOp> leftProducer_;
   std::weak_ptr<PhysicalOp> rightProducer_;
 
-  std::list<std::shared_ptr<TupleSet2>> leftTupleSets_;
-  std::list<std::shared_ptr<TupleSet2>> rightTupleSets_;
+  std::list<std::shared_ptr<TupleSet>> leftTupleSets_;
+  std::list<std::shared_ptr<TupleSet>> rightTupleSets_;
 
 };
 

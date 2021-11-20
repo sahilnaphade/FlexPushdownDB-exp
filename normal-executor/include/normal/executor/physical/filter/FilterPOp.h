@@ -12,7 +12,7 @@
 #include <normal/catalogue/Table.h>
 #include <normal/expression/gandiva/Expression.h>
 #include <normal/expression/Filter.h>
-#include <normal/tuple/TupleSet2.h>
+#include <normal/tuple/TupleSet.h>
 #include <memory>
 
 using namespace normal::executor::message;
@@ -39,18 +39,18 @@ private:
   /**
    * A buffer of received tuples not yet filtered
    */
-  std::shared_ptr<normal::tuple::TupleSet2> received_;
+  std::shared_ptr<normal::tuple::TupleSet> received_;
 
   /**
    * A buffer of filtered tuples not yet sent
    */
-  std::shared_ptr<normal::tuple::TupleSet2> filtered_;
+  std::shared_ptr<normal::tuple::TupleSet> filtered_;
 
   void onStart();
   void onTuple(const TupleMessage& Message);
   void onComplete(const CompleteMessage& Message);
 
-  void bufferTuples(const std::shared_ptr<normal::tuple::TupleSet2>& tupleSet);
+  void bufferTuples(const std::shared_ptr<normal::tuple::TupleSet>& tupleSet);
   void buildFilter();
   void filterTuples();
   void sendTuples();
@@ -65,7 +65,7 @@ private:
    * Whether all predicate columns are covered in the schema of received tuples
    */
   std::shared_ptr<bool> applicable_;
-  bool isApplicable(const std::shared_ptr<normal::tuple::TupleSet2>& tupleSet);
+  bool isApplicable(const std::shared_ptr<normal::tuple::TupleSet>& tupleSet);
 
   /**
    * Used to compute filter weight

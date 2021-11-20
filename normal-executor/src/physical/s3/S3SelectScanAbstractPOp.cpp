@@ -73,12 +73,12 @@ void S3SelectScanAbstractPOp::readAndSendTuples() {
   auto readTupleSet = readTuples();
   SPDLOG_DEBUG("{} -> {} rows", name(), readTupleSet->numRows());
   s3SelectScanStats_.outputBytes += readTupleSet->size();
-  std::shared_ptr<Message> message = std::make_shared<TupleMessage>(readTupleSet->toTupleSetV1(), this->name());
+  std::shared_ptr<Message> message = std::make_shared<TupleMessage>(readTupleSet, this->name());
   ctx()->tell(message);
   ctx()->notifyComplete();
 }
 
-void S3SelectScanAbstractPOp::put(const std::shared_ptr<TupleSet2> &tupleSet) {
+void S3SelectScanAbstractPOp::put(const std::shared_ptr<TupleSet> &tupleSet) {
   auto columnNames = getProjectColumnNames();
 
   for (int columnIndex = 0; columnIndex < tupleSet->numColumns(); ++columnIndex) {
@@ -127,9 +127,9 @@ void S3SelectScanAbstractPOp::onCacheLoadResponse(const ScanMessage &message) {
   }
 
   else {
-    auto emptyTupleSet = TupleSet2::make2();
+    auto emptyTupleSet = TupleSet::makeWithEmptyTable();
     std::shared_ptr<Message>
-            responseMessage = std::make_shared<TupleMessage>(emptyTupleSet->toTupleSetV1(), this->name());
+            responseMessage = std::make_shared<TupleMessage>(emptyTupleSet, this->name());
     ctx()->tell(responseMessage);
     SPDLOG_DEBUG(fmt::format("Finished because result not needed: {}/{}", s3Bucket_, s3Object_));
 
@@ -147,7 +147,7 @@ void S3SelectScanAbstractPOp::onCacheLoadResponse(const ScanMessage &message) {
   }
 }
 
-void S3SelectScanAbstractPOp::requestStoreSegmentsInCache(const std::shared_ptr<TupleSet2> &tupleSet) {
+void S3SelectScanAbstractPOp::requestStoreSegmentsInCache(const std::shared_ptr<TupleSet> &tupleSet) {
   auto partition = std::make_shared<S3Partition>(s3Bucket_, s3Object_, finishOffset_ - startOffset_);
   CacheHelper::requestStoreSegmentsInCache(tupleSet, partition, startOffset_, finishOffset_, name(), ctx());
 }
