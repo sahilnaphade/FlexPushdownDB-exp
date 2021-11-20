@@ -19,22 +19,15 @@ using namespace normal::cache;
 FilterPOp::FilterPOp(std::string name,
                std::shared_ptr<normal::expression::gandiva::Expression> predicate,
                std::shared_ptr<Table> table,
+               std::vector<std::string> projectColumnNames,
                long queryId,
-               std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> weightedSegmentKeys) :
-	PhysicalOp(std::move(name), "FilterPOp", queryId),
+               std::vector<std::shared_ptr<SegmentKey>> weightedSegmentKeys) :
+	PhysicalOp(std::move(name), "FilterPOp", std::move(projectColumnNames), queryId),
   predicate_(std::move(predicate)),
 	received_(normal::tuple::TupleSet2::make()),
 	filtered_(normal::tuple::TupleSet2::make()),
   table_(std::move(table)),
 	weightedSegmentKeys_(std::move(weightedSegmentKeys)) {}
-
-std::shared_ptr<FilterPOp> FilterPOp::make(const std::string &name,
-                                     const std::shared_ptr<normal::expression::gandiva::Expression> &predicate,
-                                     const std::shared_ptr<Table> &table,
-                                     long queryId,
-                                     std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> weightedSegmentKeys) {
-  return std::make_shared<FilterPOp>(name, predicate, table, queryId, weightedSegmentKeys);
-}
 
 void FilterPOp::onReceive(const Envelope &Envelope) {
 
@@ -98,7 +91,7 @@ void FilterPOp::onComplete(const CompleteMessage&) {
   }
 
   if(!ctx()->isComplete() && ctx()->operatorMap().allComplete(POpRelationshipType::Producer)){
-    if (weightedSegmentKeys_ && totalNumRows_ > 0 && *applicable_) {
+    if (!weightedSegmentKeys_.empty() && totalNumRows_ > 0 && *applicable_) {
       sendSegmentWeight();
     }
 
@@ -183,9 +176,9 @@ void FilterPOp::sendSegmentWeight() {
    */
   auto selectivity = ((double) filteredNumRows_) / ((double ) totalNumRows_);
   auto predicateNum = (double) getPredicateNum(predicate_);
-  auto numKey = (double) weightedSegmentKeys_->size();
+  auto numKey = (double) weightedSegmentKeys_.size();
   auto weightMap = std::make_shared<std::unordered_map<std::shared_ptr<SegmentKey>, double>>();
-  for (auto const &segmentKey: *weightedSegmentKeys_) {
+  for (auto const &segmentKey: weightedSegmentKeys_) {
     auto columnName = segmentKey->getColumnName();
     auto lenCol = (double) table_->getApxColumnLength(columnName);
     auto lenRow = (double) table_->getApxRowLength();

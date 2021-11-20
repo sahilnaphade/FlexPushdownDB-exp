@@ -23,64 +23,17 @@ namespace arrow { class MemoryPool; }
 
 namespace normal::executor::physical::file {
 
-FileScanPOp::FileScanPOp(std::string name, const std::string& filePath, long queryId) :
-	PhysicalOp(std::move(name), "FileScan", queryId),
-	scanOnStart_(true),
-	kernel_(FileScanKernel::make(filePath, FileType::CSV, 0, ULONG_MAX)){}
-
 FileScanPOp::FileScanPOp(std::string name,
 				   const std::string& filePath,
 				   FileType fileType,
-				   std::vector<std::string>  columnNames,
+				   std::vector<std::string> columnNames,
 				   unsigned long startOffset,
 				   unsigned long finishOffset,
 				   long queryId,
 				   bool scanOnStart) :
-	PhysicalOp(std::move(name), "FileScan", queryId),
+	PhysicalOp(std::move(name), "FileScan", std::move(columnNames), queryId),
 	scanOnStart_(scanOnStart),
-	columnNames_(std::move(columnNames)),
 	kernel_(FileScanKernel::make(filePath, fileType, startOffset, finishOffset)){}
-
-std::shared_ptr<FileScanPOp> FileScanPOp::make(const std::string& name,
-										 const std::string& filePath,
-										 const std::vector<std::string>& columnNames,
-										 unsigned long startOffset,
-										 unsigned long finishOffset,
-                     long queryId,
-										 bool scanOnStart) {
-
-  auto canonicalColumnNames = ColumnName::canonicalize(columnNames);
-
-  return std::make_shared<FileScanPOp>(name,
-									filePath,
-									FileType::CSV,
-									canonicalColumnNames,
-									startOffset,
-									finishOffset,
-									queryId,
-									scanOnStart);
-}
-
-std::shared_ptr<FileScanPOp> FileScanPOp::make(const std::string& name,
-										 const std::string& filePath,
-										 FileType fileType,
-										 const std::vector<std::string>& columnNames,
-										 unsigned long startOffset,
-										 unsigned long finishOffset,
-                     long queryId,
-                     bool scanOnStart) {
-
-  auto canonicalColumnNames = ColumnName::canonicalize(columnNames);
-
-  return std::make_shared<FileScanPOp>(name,
-									filePath,
-									fileType,
-									canonicalColumnNames,
-									startOffset,
-									finishOffset,
-									scanOnStart,
-									queryId);
-}
 
 void FileScanPOp::onReceive(const Envelope &message) {
   if (message.message().type() == "StartMessage") {
@@ -108,7 +61,7 @@ void FileScanPOp::onComplete(const CompleteMessage &) {
 void FileScanPOp::onStart() {
   SPDLOG_DEBUG("Starting operator  |  name: '{}'", this->name());
   if(scanOnStart_){
-	readAndSendTuples(columnNames_);
+	readAndSendTuples(getProjectColumnNames());
 	ctx()->notifyComplete();
   }
 }
@@ -146,9 +99,7 @@ void FileScanPOp::requestStoreSegmentsInCache(const std::shared_ptr<TupleSet2> &
 bool FileScanPOp::isScanOnStart() const {
   return scanOnStart_;
 }
-const std::vector<std::string> &FileScanPOp::getColumnNames() const {
-  return columnNames_;
-}
+
 const std::unique_ptr<FileScanKernel> &FileScanPOp::getKernel() const {
   return kernel_;
 }

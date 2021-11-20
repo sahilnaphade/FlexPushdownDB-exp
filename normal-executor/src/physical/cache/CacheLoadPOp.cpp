@@ -12,15 +12,14 @@
 using namespace normal::executor::physical::cache;
 
 CacheLoadPOp::CacheLoadPOp(std::string name,
-           std::vector<std::string> projectedColumnNames,
+           std::vector<std::string> projectColumnNames,
            std::vector<std::string> predicateColumnNames,
 					 std::shared_ptr<Partition> Partition,
 					 int64_t StartOffset,
 					 int64_t FinishOffset,
            S3ClientType s3ClientType,
 					 long queryId) :
-					 PhysicalOp(std::move(name), "CacheLoad", queryId),
-					 projectedColumnNames_(projectedColumnNames),
+					 PhysicalOp(std::move(name), "CacheLoad", std::move(projectColumnNames), queryId),
 					 predicateColumnNames_(predicateColumnNames),
 					 partition_(std::move(Partition)),
 					 startOffset_(StartOffset),
@@ -28,38 +27,10 @@ CacheLoadPOp::CacheLoadPOp(std::string name,
 					 s3ClientType_(s3ClientType) {
 
   auto allColumnNames_ = std::make_shared<std::vector<std::string>>();
-  allColumnNames_->insert(allColumnNames_->end(), projectedColumnNames.begin(), projectedColumnNames.end());
+  allColumnNames_->insert(allColumnNames_->end(), getProjectColumnNames().begin(), getProjectColumnNames().end());
   allColumnNames_->insert(allColumnNames_->end(), predicateColumnNames.begin(), predicateColumnNames.end());
   auto columnNameSet = std::make_shared<std::set<std::string>>(allColumnNames_->begin(), allColumnNames_->end());
   columnNames_.assign(columnNameSet->begin(), columnNameSet->end());
-}
-
-std::shared_ptr<CacheLoadPOp> CacheLoadPOp::make(const std::string &name,
-                       std::vector<std::string> projectedColumnNames,
-                       std::vector<std::string> predicateColumnNames,
-										   const std::shared_ptr<Partition> &partition,
-										   int64_t startOffset,
-										   int64_t finishOffset,
-										   S3ClientType s3ClientType,
-										   long queryId) {
-
-  std::vector<std::string> canonicalProjectedColumnNames;
-  std::vector<std::string> canonicalPredicateColumnNames;
-  std::transform(projectedColumnNames.begin(), projectedColumnNames.end(),
-                 std::back_inserter(canonicalProjectedColumnNames),
-                 [](auto name) -> auto { return ColumnName::canonicalize(name); });
-  std::transform(predicateColumnNames.begin(), predicateColumnNames.end(),
-                 std::back_inserter(canonicalPredicateColumnNames),
-                 [](auto name) -> auto { return ColumnName::canonicalize(name); });
-
-  return std::make_shared<CacheLoadPOp>(name,
-									 canonicalProjectedColumnNames,
-									 canonicalPredicateColumnNames,
-									 partition,
-									 startOffset,
-									 finishOffset,
-									 s3ClientType,
-									 queryId);
 }
 
 void CacheLoadPOp::onReceive(const Envelope &message) {
@@ -141,8 +112,8 @@ void CacheLoadPOp::onCacheLoadResponse(const LoadResponseMessage &Message) {
        */
       missedPushdownColumnNames.emplace_back(columnName);
 	  } else {
-      if (std::find(projectedColumnNames_.begin(), projectedColumnNames_.end(), columnName)
-              != projectedColumnNames_.end()) {
+      if (std::find(getProjectColumnNames().begin(), getProjectColumnNames().end(), columnName)
+              != getProjectColumnNames().end()) {
         missedPushdownColumnNames.emplace_back(columnName);
       }
     }
@@ -171,7 +142,7 @@ void CacheLoadPOp::onCacheLoadResponse(const LoadResponseMessage &Message) {
     }
     if (cachingResultNeeded) {
       cachingResultNeeded = false;
-      for (auto const &projectedColumnName: projectedColumnNames_) {
+      for (auto const &projectedColumnName: getProjectColumnNames()) {
         if (std::find(hitColumnNames.begin(), hitColumnNames.end(), projectedColumnName) != hitColumnNames.end() ||
             std::find(missedCachingColumnNames.begin(), missedCachingColumnNames.end(), projectedColumnName) !=
             missedCachingColumnNames.end()) {
@@ -211,7 +182,7 @@ void CacheLoadPOp::onCacheLoadResponse(const LoadResponseMessage &Message) {
     if (cachingResultNeeded) {
       missPushdownMessage = std::make_shared<ScanMessage>(missedPushdownColumnNames, this->name(), true);
     } else {
-      missPushdownMessage = std::make_shared<ScanMessage>(projectedColumnNames_, this->name(), true);
+      missPushdownMessage = std::make_shared<ScanMessage>(getProjectColumnNames(), this->name(), true);
     }
     ctx()->send(missPushdownMessage, missOperatorToPushdown_.lock()->name());
   } else {

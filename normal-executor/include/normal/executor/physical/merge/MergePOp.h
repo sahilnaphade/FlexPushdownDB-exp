@@ -18,21 +18,19 @@ namespace normal::executor::physical::merge {
 class MergePOp : public PhysicalOp {
 
 public:
-
-  explicit MergePOp(const std::string &Name, long queryId);
-
-  static std::shared_ptr<MergePOp> make(const std::string &Name, long queryId = 0);
+  explicit MergePOp(const std::string &name,
+                    const std::vector<std::string> &projectColumnNames,
+                    long queryId);
 
   void onReceive(const Envelope &msg) override;
 
+private:
   void onStart();
   void onComplete(const CompleteMessage &);
   void onTuple(const TupleMessage &message);
 
   void setLeftProducer(const std::shared_ptr<PhysicalOp> &leftProducer);
   void setRightProducer(const std::shared_ptr<PhysicalOp> &rightProducer);
-
-private:
 
   void merge();
 

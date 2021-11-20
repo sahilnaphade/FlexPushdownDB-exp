@@ -22,23 +22,24 @@ namespace normal::executor::physical::collate {
 
 class CollatePOp : public PhysicalOp {
 
-private:
-  std::shared_ptr<TupleSet> tuples_;
-private:
-  std::vector<std::shared_ptr<arrow::Table>> tables_;
-  size_t tablesCutoff_ = 20;
-  void onStart();
-
-  void onComplete(const normal::executor::message::CompleteMessage &message);
-  void onTuple(const normal::executor::message::TupleMessage& message);
-  void onReceive(const normal::executor::message::Envelope &message) override;
-
 public:
-  explicit CollatePOp(std::string name, long queryId = 0);
+  explicit CollatePOp(std::string name,
+                      std::vector<std::string> projectColumnNames,
+                      long queryId = 0);
   ~CollatePOp() override = default;
   void show();
   std::shared_ptr<TupleSet> tuples();
   [[maybe_unused]] void setTuples(const std::shared_ptr<TupleSet> &Tuples);
+  void onReceive(const normal::executor::message::Envelope &message) override;
+
+private:
+  void onStart();
+  void onComplete(const normal::executor::message::CompleteMessage &message);
+  void onTuple(const normal::executor::message::TupleMessage& message);
+
+  std::shared_ptr<TupleSet> tuples_;
+  std::vector<std::shared_ptr<arrow::Table>> tables_;
+  size_t tablesCutoff_ = 20;
 };
 
 }

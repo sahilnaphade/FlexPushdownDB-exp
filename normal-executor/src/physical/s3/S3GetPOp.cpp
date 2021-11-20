@@ -52,8 +52,7 @@ int activeGetConversions = 0;
 S3GetPOp::S3GetPOp(std::string name,
 						   std::string s3Bucket,
 						   std::string s3Object,
-						   std::vector<std::string> returnedS3ColumnNames,
-						   std::vector<std::string> neededColumnNames,
+						   std::vector<std::string> projectColumnNames,
 						   int64_t startOffset,
 						   int64_t finishOffset,
                std::shared_ptr<Table> table,
@@ -61,40 +60,20 @@ S3GetPOp::S3GetPOp(std::string name,
 						   bool scanOnStart,
                bool toCache,
                long queryId,
-               std::shared_ptr<std::vector<std::shared_ptr<normal::cache::SegmentKey>>> weightedSegmentKeys) :
-  S3SelectScanAbstractPOp(std::move(name), "S3Get", std::move(s3Bucket), std::move(s3Object),
-               std::move(returnedS3ColumnNames), std::move(neededColumnNames),
-               startOffset, finishOffset, std::move(table),
-               std::move(awsClient), scanOnStart, toCache, queryId, std::move(weightedSegmentKeys)) {
-}
-
-std::shared_ptr<S3GetPOp> S3GetPOp::make(const std::string& name,
-												 const std::string& s3Bucket,
-												 const std::string& s3Object,
-												 const std::vector<std::string>& returnedS3ColumnNames,
-												 const std::vector<std::string>& neededColumnNames,
-												 int64_t startOffset,
-												 int64_t finishOffset,
-                         const std::shared_ptr<Table>& table,
-                         const std::shared_ptr<normal::aws::AWSClient>& awsClient,
-												 bool scanOnStart,
-												 bool toCache,
-												 long queryId,
-                         const std::shared_ptr<std::vector<std::shared_ptr<normal::cache::SegmentKey>>>& weightedSegmentKeys) {
-  return std::make_shared<S3GetPOp>(name,
-										s3Bucket,
-										s3Object,
-										returnedS3ColumnNames,
-										neededColumnNames,
-										startOffset,
-										finishOffset,
-										table,
-										awsClient,
-										scanOnStart,
-										toCache,
-										queryId,
-										weightedSegmentKeys);
-
+               std::vector<std::shared_ptr<normal::cache::SegmentKey>> weightedSegmentKeys) :
+  S3SelectScanAbstractPOp(std::move(name),
+                          "S3Get",
+                          std::move(s3Bucket),
+                          std::move(s3Object),
+                          std::move(projectColumnNames),
+                          startOffset,
+                          finishOffset,
+                          std::move(table),
+                          std::move(awsClient),
+                          scanOnStart,
+                          toCache,
+                          queryId,
+                          std::move(weightedSegmentKeys)) {
 }
 
 bool S3GetPOp::parallelTuplesetCreationSupported() {
@@ -115,14 +94,14 @@ std::shared_ptr<TupleSet2> S3GetPOp::readCSVFile(std::shared_ptr<arrow::io::Inpu
   auto read_options = arrow::csv::ReadOptions::Defaults();
   read_options.use_threads = false;
   read_options.skip_rows = 1; // Skip the header
-  read_options.column_names = returnedS3ColumnNames_;
+  read_options.column_names = getProjectColumnNames();
   auto convert_options = arrow::csv::ConvertOptions::Defaults();
   std::unordered_map<std::string, std::shared_ptr<::arrow::DataType>> columnTypes;
-  for(const auto &columnName: returnedS3ColumnNames_){
+  for(const auto &columnName: getProjectColumnNames()){
 	  columnTypes.emplace(columnName, table_->getSchema()->GetFieldByName(columnName)->type());
   }
   convert_options.column_types = columnTypes;
-  convert_options.include_columns = neededColumnNames_;
+  convert_options.include_columns = getProjectColumnNames();
 
   // Instantiate TableReader from input stream and options
   auto makeReaderResult = arrow::csv::TableReader::Make(ioContext,
@@ -157,7 +136,7 @@ std::shared_ptr<TupleSet2> S3GetPOp::readParquetFile(std::basic_iostream<char, s
   std::shared_ptr<arrow::Table> table;
   // only read the needed columns from the file
   std::vector<int> neededColumnIndices;
-  for (const auto& fieldName : neededColumnNames_) {
+  for (const auto& fieldName : getProjectColumnNames()) {
     neededColumnIndices.emplace_back(table_->getSchema()->GetFieldIndex(fieldName));
   }
   st = arrow_reader->ReadTable(neededColumnIndices, &table);
@@ -206,7 +185,7 @@ std::shared_ptr<TupleSet2> S3GetPOp::s3GetFullRequest() {
   s3SelectScanStats_.returnedBytes += resultSize;
   splitReqLock_.unlock();
   std::vector<std::shared_ptr<arrow::Field>> fields;
-  for (const auto& column : neededColumnNames_) {
+  for (const auto& column : getProjectColumnNames()) {
     fields.emplace_back(::arrow::field(column, table_->getSchema()->GetFieldByName(column)->type()));
   }
   auto outputSchema = std::make_shared<::arrow::Schema>(fields);
@@ -350,7 +329,7 @@ void S3GetPOp::s3GetIndividualReq(int reqNum, const std::string &s3Object, uint6
     }
     std::chrono::steady_clock::time_point startConversionTime = std::chrono::steady_clock::now();
     std::vector<std::shared_ptr<arrow::Field>> fields;
-    for (const auto& column : neededColumnNames_) {
+    for (const auto& column : getProjectColumnNames()) {
       fields.emplace_back(::arrow::field(column, table_->getSchema()->GetFieldByName(column)->type()));
     }
     auto outputSchema = std::make_shared<::arrow::Schema>(fields);
@@ -480,7 +459,7 @@ std::shared_ptr<TupleSet2> S3GetPOp::s3GetParallelReqs(bool tempFixForAirmettleC
 std::shared_ptr<TupleSet2> S3GetPOp::readTuples() {
   std::shared_ptr<TupleSet2> readTupleSet;
 
-  if (neededColumnNames_.empty()) {
+  if (getProjectColumnNames().empty()) {
     readTupleSet = TupleSet2::make2();
   } else {
 
@@ -507,7 +486,7 @@ std::shared_ptr<TupleSet2> S3GetPOp::readTuples() {
       requestStoreSegmentsInCache(readTupleSet);
     } else {
       // send segment filter weight
-      if (weightedSegmentKeys_ && s3SelectScanStats_.processedBytes > 0) {
+      if (!weightedSegmentKeys_.empty() && s3SelectScanStats_.processedBytes > 0) {
         sendSegmentWeight();
       }
     }
@@ -520,7 +499,7 @@ std::shared_ptr<TupleSet2> S3GetPOp::readTuples() {
 void S3GetPOp::processScanMessage(const ScanMessage &message) {
   // This is for hybrid caching as we later determine which columns to pull up
   // Though currently this is only called for SELECT in our system
-  neededColumnNames_ = message.getColumnNames();
+  setProjectColumnNames(message.getColumnNames());
 }
 
 int S3GetPOp::getPredicateNum() {

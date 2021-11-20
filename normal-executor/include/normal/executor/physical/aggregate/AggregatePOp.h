@@ -20,16 +20,18 @@ class AggregatePOp : public normal::executor::physical::PhysicalOp {
 
 public:
   AggregatePOp(std::string name,
-            std::shared_ptr<std::vector<std::shared_ptr<aggregate::AggregationFunction>>> functions,
+            std::vector<std::string> projectColumnNames,
+            std::vector<std::shared_ptr<aggregate::AggregationFunction>> functions,
             long queryId = 0);
   ~AggregatePOp() override = default;
 
+  void onReceive(const normal::executor::message::Envelope &message) override;
   void compute(const std::shared_ptr<TupleSet> &tuples);
   void cacheInputSchema(const normal::executor::message::TupleMessage &message);
 
 private:
-  std::shared_ptr<std::vector<std::shared_ptr<aggregate::AggregationFunction>>> functions_;
-  std::shared_ptr<std::vector<std::shared_ptr<aggregate::AggregationResult>>> results_;
+  std::vector<std::shared_ptr<aggregate::AggregationFunction>> functions_;
+  std::vector<std::shared_ptr<aggregate::AggregationResult>> results_;
 
   /**
    * The schema of received tuples, sometimes cannot be known up front (e.g. when input source is a CSV file, the
@@ -37,12 +39,9 @@ private:
    */
   std::optional<std::shared_ptr<arrow::Schema>> inputSchema_;
 
-  void onReceive(const normal::executor::message::Envelope &message) override;
-
+  void onStart();
   void onTuple(const normal::executor::message::TupleMessage &message);
   void onComplete(const normal::executor::message::CompleteMessage &message);
-  void onStart();
-
 };
 
 }

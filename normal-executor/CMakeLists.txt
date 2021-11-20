@@ -69,7 +69,6 @@ add_library(normal-executor STATIC
         src/physical/s3/S3SelectScanAbstractPOp.cpp include/normal/executor/physical/s3/S3SelectScanAbstractPOp.h
         src/physical/s3/S3CSVParser.cpp include/normal/executor/physical/s3/S3CSVParser.h
         src/physical/s3/S3SelectCSVParseOptions.cpp include/normal/executor/physical/s3/S3SelectCSVParseOptions.h
-        src/physical/s3/S3SelectScanPOp2.cpp include/normal/executor/physical/s3/S3SelectScanPOp2.h
         src/physical/s3/S3SelectScanKernel.cpp include/normal/executor/physical/s3/S3SelectScanKernel.h)
 
 target_include_directories(normal-executor PUBLIC include)

@@ -16,18 +16,18 @@
 namespace normal::executor::physical::aggregate {
 
 AggregatePOp::AggregatePOp(std::string name,
-                     std::shared_ptr<std::vector<std::shared_ptr<aggregate::AggregationFunction>>> functions,
+                     std::vector<std::string> projectColumnNames,
+                     std::vector<std::shared_ptr<aggregate::AggregationFunction>> functions,
                      long queryId)
-    : PhysicalOp(std::move(name), "Aggregate", queryId),
-      functions_(std::move(functions)),
-      results_(std::make_shared<std::vector<std::shared_ptr<aggregate::AggregationResult>>>()) {}
+    : PhysicalOp(std::move(name), "Aggregate", std::move(projectColumnNames), queryId),
+      functions_(std::move(functions)) {}
 
 void AggregatePOp::onStart() {
   SPDLOG_DEBUG("Starting operator  |  name: '{}'", this->name());
 
-  for(size_t i=0;i<functions_->size();++i) {
+  for(size_t i=0;i<functions_.size();++i) {
 	auto result = std::make_shared<aggregate::AggregationResult>();
-	results_->emplace_back(result);
+	results_.emplace_back(result);
   }
 }
 
@@ -53,7 +53,7 @@ void AggregatePOp::onComplete(const normal::executor::message::CompleteMessage &
     // Create output schema
     std::shared_ptr<arrow::Schema> schema;
     std::vector<std::shared_ptr<arrow::Field>> fields;
-    for (const auto &function: *functions_) {
+    for (const auto &function: functions_) {
       std::shared_ptr<arrow::Field> field = arrow::field(function->alias(), function->returnType());
       fields.emplace_back(field);
     }
@@ -61,9 +61,9 @@ void AggregatePOp::onComplete(const normal::executor::message::CompleteMessage &
 
     // Create output tuples
     std::vector<std::shared_ptr<arrow::Array>> columns;
-    for(size_t i=0;i<functions_->size();++i){
-      auto function = functions_->at(i);
-      auto result = results_->at(i);
+    for(size_t i=0;i<functions_.size();++i){
+      auto function = functions_.at(i);
+      auto result = results_.at(i);
 
       function->finalize(result);
 
@@ -114,9 +114,9 @@ void AggregatePOp::cacheInputSchema(const normal::executor::message::TupleMessag
 }
 
 void AggregatePOp::compute(const std::shared_ptr<TupleSet> &tuples) {
-  for(size_t i=0;i<functions_->size();++i){
-    auto function = functions_->at(i);
-    auto result = results_->at(i);
+  for(size_t i=0;i<functions_.size();++i){
+    auto function = functions_.at(i);
+    auto result = results_.at(i);
 	function->apply(result, tuples);
   }
 }

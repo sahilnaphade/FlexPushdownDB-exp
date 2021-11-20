@@ -40,8 +40,7 @@ S3SelectScanAbstractPOp::S3SelectScanAbstractPOp(std::string name,
 			   std::string type,
 			   std::string s3Bucket,
 			   std::string s3Object,
-			   std::vector<std::string> returnedS3ColumnNames,
-			   std::vector<std::string> neededColumnNames,
+			   std::vector<std::string> projectColumnNames,
 			   int64_t startOffset,
 			   int64_t finishOffset,
          std::shared_ptr<Table> table,
@@ -49,17 +48,15 @@ S3SelectScanAbstractPOp::S3SelectScanAbstractPOp(std::string name,
 			   bool scanOnStart,
 			   bool toCache,
 			   long queryId,
-         std::shared_ptr<std::vector<std::shared_ptr<normal::cache::SegmentKey>>> weightedSegmentKeys) :
-	PhysicalOp(std::move(name), std::move(type), queryId),
+         std::vector<std::shared_ptr<normal::cache::SegmentKey>> weightedSegmentKeys) :
+	PhysicalOp(std::move(name), std::move(type), std::move(projectColumnNames), queryId),
 	s3Bucket_(std::move(s3Bucket)),
 	s3Object_(std::move(s3Object)),
-	returnedS3ColumnNames_(std::move(returnedS3ColumnNames)),
-	neededColumnNames_(std::move(neededColumnNames)),
 	startOffset_(startOffset),
 	finishOffset_(finishOffset),
 	table_(std::move(table)),
 	awsClient_(std::move(awsClient)),
-	columnsReadFromS3_(returnedS3ColumnNames_.size()),
+	columnsReadFromS3_(getProjectColumnNames().size()),
 	scanOnStart_(scanOnStart),
 	toCache_(toCache),
   weightedSegmentKeys_(std::move(weightedSegmentKeys)) {
@@ -82,7 +79,7 @@ void S3SelectScanAbstractPOp::readAndSendTuples() {
 }
 
 void S3SelectScanAbstractPOp::put(const std::shared_ptr<TupleSet2> &tupleSet) {
-  auto columnNames = returnedS3ColumnNames_;
+  auto columnNames = getProjectColumnNames();
 
   for (int columnIndex = 0; columnIndex < tupleSet->numColumns(); ++columnIndex) {
 
@@ -169,7 +166,7 @@ void S3SelectScanAbstractPOp::sendSegmentWeight() {
   double selectivity;
   if (table_->getFormat()->getType() == catalogue::format::CSV) {
     double lenColSum = 0.0;
-    for (auto const &returnedColumnName: returnedS3ColumnNames_) {
+    for (auto const &returnedColumnName: getProjectColumnNames()) {
       lenColSum += table_->getApxColumnLength(returnedColumnName);
     }
     double processedReturnedColumnBytes = (lenColSum / lenRow) * processedBytes;
@@ -183,9 +180,9 @@ void S3SelectScanAbstractPOp::sendSegmentWeight() {
    *   w = sel / vNetwork + (lenRow / (lenCol * vScan) + #pred / (lenCol * vFilter)) / #key
    */
   double predicateNum = getPredicateNum();
-  auto numKey = (double) weightedSegmentKeys_->size();
+  auto numKey = (double) weightedSegmentKeys_.size();
   auto weightMap = std::make_shared<std::unordered_map<std::shared_ptr<SegmentKey>, double>>();
-  for (auto const &segmentKey: *weightedSegmentKeys_) {
+  for (auto const &segmentKey: weightedSegmentKeys_) {
     auto columnName = segmentKey->getColumnName();
     auto lenCol = (double) table_->getApxColumnLength(columnName);
 

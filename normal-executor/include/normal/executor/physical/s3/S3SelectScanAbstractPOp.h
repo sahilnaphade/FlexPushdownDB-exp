@@ -46,8 +46,7 @@ public:
 			   std::string type,
 			   std::string s3Bucket,
 			   std::string s3Object,
-			   std::vector<std::string> returnedS3ColumnNames,
-			   std::vector<std::string> neededColumnNames,
+			   std::vector<std::string> projectColumnNames,
 			   int64_t startOffset,
 			   int64_t finishOffset,
          std::shared_ptr<Table> table,
@@ -55,15 +54,27 @@ public:
 			   bool scanOnStart,
 			   bool toCache,
 			   long queryId,
-         std::shared_ptr<std::vector<std::shared_ptr<normal::cache::SegmentKey>>> weightedSegmentKeys);
+         std::vector<std::shared_ptr<normal::cache::SegmentKey>> weightedSegmentKeys);
+
+  void onReceive(const Envelope &message) override;
 
   S3SelectScanStats getS3SelectScanStats();
 
 protected:
+  void onStart();
+  void onCacheLoadResponse(const ScanMessage &message);
+
+  virtual void processScanMessage(const ScanMessage &message) = 0;
+  virtual std::shared_ptr<TupleSet2> readTuples() = 0;
+  virtual int getPredicateNum() = 0;
+  virtual void readAndSendTuples();
+
+  void requestStoreSegmentsInCache(const std::shared_ptr<TupleSet2> &tupleSet);
+  void put(const std::shared_ptr<TupleSet2> &tupleSet);
+  void sendSegmentWeight();
+
   std::string s3Bucket_;
   std::string s3Object_;
-  std::vector<std::string> returnedS3ColumnNames_;
-	std::vector<std::string> neededColumnNames_;
   uint64_t startOffset_;
   uint64_t finishOffset_;
   std::shared_ptr<Table> table_;
@@ -80,23 +91,10 @@ protected:
   bool scanOnStart_;
   bool toCache_;
 
-  void onStart();
-  void onReceive(const Envelope &message) override;
-  void onCacheLoadResponse(const ScanMessage &message);
-  virtual void processScanMessage(const ScanMessage &message) = 0;
-
-  void put(const std::shared_ptr<TupleSet2> &tupleSet);
-
-  void requestStoreSegmentsInCache(const std::shared_ptr<TupleSet2> &tupleSet);
-  virtual std::shared_ptr<TupleSet2> readTuples() = 0;
-  virtual int getPredicateNum() = 0;
-  virtual void readAndSendTuples();
-  void sendSegmentWeight();
-
   /**
    * used to compute filter weight
    */
-  std::shared_ptr<std::vector<std::shared_ptr<normal::cache::SegmentKey>>> weightedSegmentKeys_;
+  std::vector<std::shared_ptr<normal::cache::SegmentKey>> weightedSegmentKeys_;
 };
 
 }

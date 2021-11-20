@@ -7,12 +7,10 @@
 
 using namespace normal::executor::physical::merge;
 
-MergePOp::MergePOp(const std::string &Name, long queryId) :
-	PhysicalOp(Name, "Merge", queryId) {
-}
-
-std::shared_ptr<MergePOp> MergePOp::make(const std::string &Name, long queryId) {
-  return std::make_shared<MergePOp>(Name, queryId);
+MergePOp::MergePOp(const std::string &name,
+                   const std::vector<std::string> &projectColumnNames,
+                   long queryId) :
+	PhysicalOp(name, "Merge", projectColumnNames, queryId) {
 }
 
 void MergePOp::onReceive(const Envelope &msg) {

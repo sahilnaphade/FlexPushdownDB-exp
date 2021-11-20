@@ -25,9 +25,10 @@ public:
    * @param Name Descriptive name
    * @param Expressions Expressions to evaluate to produce the attributes in the projection
    */
-  ProjectPOp(const std::string &name,
+  ProjectPOp(std::string name,
           std::vector<std::shared_ptr<normal::expression::gandiva::Expression>> exprs,
           std::vector<std::string> exprNames,
+          std::vector<std::string> projectColumnNames,
           long queryId = 0);
 
   /**
@@ -41,6 +42,7 @@ public:
    */
   void onReceive(const Envelope &msg) override;
 
+private:
   /**
    * Start message handler
    */
@@ -57,7 +59,6 @@ public:
    */
   void onTuple(const TupleMessage &message);
 
-private:
   /**
    * Build the projector from the input schema
    * @param inputSchema

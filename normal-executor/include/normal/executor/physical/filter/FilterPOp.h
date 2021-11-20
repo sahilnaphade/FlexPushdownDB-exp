@@ -25,14 +25,9 @@ public:
   explicit FilterPOp(std::string name,
                   std::shared_ptr<normal::expression::gandiva::Expression> predicate,
                   std::shared_ptr<Table> table,
-                  long queryId,
-                  std::shared_ptr<std::vector<std::shared_ptr<normal::cache::SegmentKey>>> weightedSegmentKeys);
-
-  static std::shared_ptr<FilterPOp> make(const std::string &name,
-                                      const std::shared_ptr<normal::expression::gandiva::Expression> &predicate,
-                                      const std::shared_ptr<Table> &table,
-                                      long queryId = 0,
-                                      std::shared_ptr<std::vector<std::shared_ptr<normal::cache::SegmentKey>>> weightedSegmentKeys = nullptr);
+                  std::vector<std::string> projectColumnNames,
+                  long queryId = 0,
+                  std::vector<std::shared_ptr<normal::cache::SegmentKey>> weightedSegmentKeys = {});
 
   void onReceive(const Envelope &Envelope) override;
 
@@ -75,7 +70,7 @@ private:
   /**
    * Used to compute filter weight
    */
-  std::shared_ptr<std::vector<std::shared_ptr<normal::cache::SegmentKey>>> weightedSegmentKeys_;
+  std::vector<std::shared_ptr<normal::cache::SegmentKey>> weightedSegmentKeys_;
   long totalNumRows_ = 0;
   long filteredNumRows_ = 0;
 };

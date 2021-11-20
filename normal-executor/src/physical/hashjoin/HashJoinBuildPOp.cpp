@@ -11,15 +11,13 @@
 using namespace normal::executor::physical::hashjoin;
 using namespace normal::tuple;
 
-HashJoinBuildPOp::HashJoinBuildPOp(const std::string &name, std::string columnName, long queryId) :
-	PhysicalOp(name, "HashJoinBuild", queryId),
+HashJoinBuildPOp::HashJoinBuildPOp(const std::string &name,
+                                   std::string columnName,
+                                   const std::vector<std::string> &projectColumnNames,
+                                   long queryId) :
+	PhysicalOp(name, "HashJoinBuild", projectColumnNames, queryId),
 	columnName_(std::move(columnName)),
 	kernel_(HashJoinBuildKernel2::make(columnName_)){
-}
-
-std::shared_ptr<HashJoinBuildPOp> HashJoinBuildPOp::create(const std::string &name, const std::string &columnName) {
-  auto canonicalColumnName = ColumnName::canonicalize(columnName);
-  return std::make_shared<HashJoinBuildPOp>(name, canonicalColumnName);
 }
 
 void HashJoinBuildPOp::onReceive(const Envelope &msg) {

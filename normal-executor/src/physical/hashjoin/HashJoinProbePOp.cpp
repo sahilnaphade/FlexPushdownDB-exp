@@ -11,9 +11,13 @@
 
 using namespace normal::executor::physical::hashjoin;
 
-HashJoinProbePOp::HashJoinProbePOp(const std::string &name, HashJoinPredicate pred, std::set<std::string> neededColumnNames, long queryId) :
-	PhysicalOp(name, "HashJoinProbe", queryId),
-	kernel_(HashJoinProbeKernel2::make(std::move(pred), std::move(neededColumnNames))){
+HashJoinProbePOp::HashJoinProbePOp(std::string name,
+                                   HashJoinPredicate pred,
+                                   std::vector<std::string> projectColumnNames,
+                                   long queryId) :
+	PhysicalOp(std::move(name), "HashJoinProbe", std::move(projectColumnNames), queryId),
+	kernel_(HashJoinProbeKernel2::make(std::move(pred),
+                                     std::set<std::string>(getProjectColumnNames().begin(), getProjectColumnNames().end()))){
 }
 
 void HashJoinProbePOp::onReceive(const Envelope &msg) {

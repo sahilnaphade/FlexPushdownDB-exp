@@ -12,12 +12,12 @@
 using namespace normal::executor::physical::shuffle;
 using namespace normal::tuple;
 
-ShufflePOp::ShufflePOp(const std::string &Name, std::string ColumnName, long queryId) :
-	PhysicalOp(Name, "Shuffle", queryId), columnName_(std::move(ColumnName)) {}
-
-std::shared_ptr<ShufflePOp> ShufflePOp::make(const std::string &Name, const std::string &ColumnName, long queryId) {
-  return std::make_shared<ShufflePOp>(Name, ColumnName, queryId);
-}
+ShufflePOp::ShufflePOp(std::string name,
+                       std::string columnName,
+                       std::vector<std::string> projectColumnNames,
+                       long queryId) :
+	PhysicalOp(std::move(name), "Shuffle", std::move(projectColumnNames), queryId),
+	columnName_(std::move(columnName)) {}
 
 void ShufflePOp::onReceive(const Envelope &msg) {
   if (msg.message().type() == "StartMessage") {

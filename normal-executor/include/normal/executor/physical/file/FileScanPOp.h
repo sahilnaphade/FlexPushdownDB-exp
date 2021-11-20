@@ -20,53 +20,29 @@ namespace normal::executor::physical::file {
 class FileScanPOp : public PhysicalOp {
 
 public:
-  [[deprecated ("Use constructor accepting a byte range")]]
-  FileScanPOp(std::string name, const std::string &filePath, long queryId);
-
   FileScanPOp(std::string name,
 		   const std::string &filePath,
 		   FileType fileType,
 		   std::vector<std::string> columnNames,
 		   unsigned long startOffset,
 		   unsigned long finishOffset,
-		   long queryId,
+		   long queryId = 0,
 		   bool scanOnStart = false);
 
-  static std::shared_ptr<FileScanPOp> make(const std::string &name,
-										const std::string &filePath,
-										const std::vector<std::string> &columnNames,
-										unsigned long startOffset,
-										unsigned long finishOffset,
-										long queryId = 0,
-										bool scanOnStart = false);
-
-  static std::shared_ptr<FileScanPOp> make(const std::string &name,
-										const std::string &filePath,
-										FileType fileType,
-										const std::vector<std::string> &columnNames,
-										unsigned long startOffset,
-										unsigned long finishOffset,
-										long queryId = 0,
-										bool scanOnStart = false);
+  [[nodiscard]] const std::unique_ptr<FileScanKernel> &getKernel() const;
+  [[nodiscard]] bool isScanOnStart() const;
 
   void onReceive(const Envelope &message) override;
 
 private:
-  bool scanOnStart_;
-  std::vector<std::string> columnNames_;
-  std::unique_ptr<FileScanKernel> kernel_;
-public:
-  [[nodiscard]] const std::unique_ptr<FileScanKernel> &getKernel() const;
-  [[nodiscard]] bool isScanOnStart() const;
-  [[nodiscard]] const std::vector<std::string> &getColumnNames() const;
-private:
   void onStart();
-
   void onCacheLoadResponse(const ScanMessage &Message);
   void onComplete(const CompleteMessage &message);
-
   void requestStoreSegmentsInCache(const std::shared_ptr<TupleSet2> &tupleSet);
   void readAndSendTuples(const std::vector<std::string> &columnNames);
+
+  bool scanOnStart_;
+  std::unique_ptr<FileScanKernel> kernel_;
 };
 
 }

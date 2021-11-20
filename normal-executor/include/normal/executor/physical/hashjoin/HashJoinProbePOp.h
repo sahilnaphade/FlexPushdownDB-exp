@@ -26,7 +26,10 @@ namespace normal::executor::physical::hashjoin {
 class HashJoinProbePOp : public PhysicalOp {
 
 public:
-  HashJoinProbePOp(const std::string &name, HashJoinPredicate pred, std::set<std::string> neededColumnNames, long queryId = 0);
+  HashJoinProbePOp(std::string name,
+                   HashJoinPredicate pred,
+                   std::vector<std::string> projectColumnNames,
+                   long queryId = 0);
 
   void onReceive(const Envelope &msg) override;
 

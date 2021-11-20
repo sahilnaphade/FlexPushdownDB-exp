@@ -32,17 +32,12 @@ namespace normal::executor::physical::group {
 class GroupPOp : public PhysicalOp {
 
 public:
-  GroupPOp(const std::string &Name,
-		const std::vector<std::string> &ColumnNames,
-    const std::vector<std::string> &AggregateColumnNames,
-		const std::shared_ptr<std::vector<std::shared_ptr<aggregate::AggregationFunction>>> &AggregateFunctions,
+  GroupPOp(const std::string &name,
+		const std::vector<std::string> &groupColumnNames,
+    const std::vector<std::string> &aggregateColumnNames,
+		const std::vector<std::shared_ptr<aggregate::AggregationFunction>> &aggregateFunctions,
+    const std::vector<std::string> &projectColumnNames,
 		long queryId = 0);
-
-  static std::shared_ptr<GroupPOp> make(const std::string &Name,
-									 const std::vector<std::string> &groupColumnNames,
-                   const std::vector<std::string> &aggregateColumnNames,
-									 const std::shared_ptr<std::vector<std::shared_ptr<aggregate::AggregationFunction>>> &AggregateFunctions,
-									 long queryId);
 
   void onReceive(const Envelope &msg) override;
 

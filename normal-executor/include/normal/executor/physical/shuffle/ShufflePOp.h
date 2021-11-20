@@ -21,9 +21,10 @@ namespace normal::executor::physical::shuffle {
 class ShufflePOp : public PhysicalOp {
 
 public:
-  ShufflePOp(const std::string &Name, std::string ColumnName, long queryId);
-
-  static std::shared_ptr<ShufflePOp> make(const std::string &Name, const std::string &ColumnName, long queryId = 0);
+  ShufflePOp(std::string name,
+             std::string columnName,
+             std::vector<std::string> projectColumnNames,
+             long queryId);
 
   /**
    * Operators message handler
@@ -31,6 +32,7 @@ public:
    */
   void onReceive(const Envelope &msg) override;
 
+private:
   /**
    * Start message handler
    */
@@ -46,12 +48,12 @@ public:
    * @param message
    */
   void onTuple(const TupleMessage &message);
-  void produce(const std::shared_ptr<PhysicalOp> &operator_) override;
 
-private:
-  std::string columnName_;
-  std::vector<std::string> consumers_;
-  std::vector<std::optional<std::shared_ptr<TupleSet2>>> buffers_;
+  /**
+   * Set the producer operator
+   * @param operator_
+   */
+  void produce(const std::shared_ptr<PhysicalOp> &operator_) override;
 
   /**
    * Adds the tuple set to the outbound buffer for the given slot
@@ -68,6 +70,10 @@ private:
    * @return
    */
   [[nodiscard]] tl::expected<void, std::string> send(int partitionIndex, bool force);
+
+  std::string columnName_;
+  std::vector<std::string> consumers_;
+  std::vector<std::optional<std::shared_ptr<TupleSet2>>> buffers_;
 };
 
 }

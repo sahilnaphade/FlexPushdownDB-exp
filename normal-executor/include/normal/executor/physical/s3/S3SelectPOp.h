@@ -20,66 +20,49 @@ extern std::mutex SelectConvertLock;
 extern int activeSelectConversions;
 
 class S3SelectPOp: public S3SelectScanAbstractPOp {
-  public:
-    S3SelectPOp(std::string name,
-           std::string s3Bucket,
-           std::string s3Object,
-           std::string filterSql,
-           std::vector<std::string> returnedS3ColumnNames,
-           std::vector<std::string> neededColumnNames,
-           int64_t startOffset,
-           int64_t finishOffset,
-           std::shared_ptr<Table> table,
-           std::shared_ptr<AWSClient> awsClient,
-           bool scanOnStart,
-           bool toCache,
-           long queryId,
-           std::shared_ptr<std::vector<std::shared_ptr<normal::cache::SegmentKey>>> weightedSegmentKeys);
+public:
+  S3SelectPOp(std::string name,
+         std::string s3Bucket,
+         std::string s3Object,
+         std::string filterSql,
+         std::vector<std::string> projectColumnNames,
+         int64_t startOffset,
+         int64_t finishOffset,
+         std::shared_ptr<Table> table,
+         std::shared_ptr<AWSClient> awsClient,
+         bool scanOnStart = true,
+         bool toCache = false,
+         long queryId = 0,
+         std::vector<std::shared_ptr<normal::cache::SegmentKey>> weightedSegmentKeys = {});
 
-    static std::shared_ptr<S3SelectPOp> make(const std::string& name,
-                        const std::string& s3Bucket,
-                        const std::string& s3Object,
-                        const std::string& filterSql,
-                        const std::vector<std::string>& returnedS3ColumnNames,
-                        const std::vector<std::string>& neededColumnNames,
-                        int64_t startOffset,
-                        int64_t finishOffset,
-                        const std::shared_ptr<Table>& table,
-                        const std::shared_ptr<AWSClient>& awsClient,
-                        bool scanOnStart = true,
-                        bool toCache = false,
-                        long queryId = 0,
-                        const std::shared_ptr<std::vector<std::shared_ptr<normal::cache::SegmentKey>>>& weightedSegmentKeys = nullptr);
+private:
+  std::string filterSql_;   // "where ...."
+  std::shared_ptr<S3CSVParser> parser_;
 
-
-  private:
-    std::string filterSql_;   // "where ...."
-    std::shared_ptr<S3CSVParser> parser_;
-
-    // Used for collecting all results for split requests that are run in parallel, and for having a
-    // locks on shared variables when requests are split.
-    std::mutex splitReqLock_;
-    std::map<int, std::shared_ptr<arrow::Table>> splitReqNumToTable_;
+  // Used for collecting all results for split requests that are run in parallel, and for having a
+  // locks on shared variables when requests are split.
+  std::mutex splitReqLock_;
+  std::map<int, std::shared_ptr<arrow::Table>> splitReqNumToTable_;
 
 #ifdef __AVX2__
-    std::shared_ptr<CSVToArrowSIMDChunkParser> generateSIMDCSVParser();
+  std::shared_ptr<CSVToArrowSIMDChunkParser> generateSIMDCSVParser();
 #endif
-    std::shared_ptr<S3CSVParser> generateCSVParser();
-    Aws::Vector<unsigned char> s3Result_{};
+  std::shared_ptr<S3CSVParser> generateCSVParser();
+  Aws::Vector<unsigned char> s3Result_{};
 
-    // Scan range not supported in AWS for GZIP and BZIP2 CSV. We also don't support this for parquet yet either
-    // as that is more complicated due to involving parquet metadata and we haven't had a chance to implement this yet
-    bool scanRangeSupported();
-    Aws::S3::Model::InputSerialization getInputSerialization();
-    std::shared_ptr<TupleSet2> s3Select(uint64_t startOffset, uint64_t endOffset);
-    std::shared_ptr<TupleSet2> s3SelectParallelReqs();
-    // Wrapper function to encapsulate a thread spawned when making parallel requests
-    void s3SelectIndividualReq(int reqNum, uint64_t startOffset, uint64_t endOffset);
+  // Scan range not supported in AWS for GZIP and BZIP2 CSV. We also don't support this for parquet yet either
+  // as that is more complicated due to involving parquet metadata and we haven't had a chance to implement this yet
+  bool scanRangeSupported();
+  Aws::S3::Model::InputSerialization getInputSerialization();
+  std::shared_ptr<TupleSet2> s3Select(uint64_t startOffset, uint64_t endOffset);
+  std::shared_ptr<TupleSet2> s3SelectParallelReqs();
+  // Wrapper function to encapsulate a thread spawned when making parallel requests
+  void s3SelectIndividualReq(int reqNum, uint64_t startOffset, uint64_t endOffset);
 
-    void processScanMessage(const ScanMessage &message) override;
+  void processScanMessage(const ScanMessage &message) override;
 
-    std::shared_ptr<TupleSet2> readTuples() override;
-    int getPredicateNum() override;
+  std::shared_ptr<TupleSet2> readTuples() override;
+  int getPredicateNum() override;
 };
 
 }

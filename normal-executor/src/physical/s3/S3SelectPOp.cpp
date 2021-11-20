@@ -52,8 +52,7 @@ S3SelectPOp::S3SelectPOp(std::string name,
 						   std::string s3Bucket,
 						   std::string s3Object,
 						   std::string filterSql,
-						   std::vector<std::string> returnedS3ColumnNames,
-						   std::vector<std::string> neededColumnNames,
+						   std::vector<std::string> projectColumnNames,
 						   int64_t startOffset,
 						   int64_t finishOffset,
                std::shared_ptr<Table> table,
@@ -61,49 +60,26 @@ S3SelectPOp::S3SelectPOp(std::string name,
 						   bool scanOnStart,
                bool toCache,
                long queryId,
-               std::shared_ptr<std::vector<std::shared_ptr<normal::cache::SegmentKey>>> weightedSegmentKeys) :
-  S3SelectScanAbstractPOp(std::move(name), "S3Select", std::move(s3Bucket), std::move(s3Object),
-               std::move(returnedS3ColumnNames), std::move(neededColumnNames),
-               startOffset, finishOffset, std::move(table),
-               std::move(awsClient), scanOnStart, toCache, queryId, std::move(weightedSegmentKeys)),
+               std::vector<std::shared_ptr<normal::cache::SegmentKey>> weightedSegmentKeys) :
+  S3SelectScanAbstractPOp(std::move(name),
+                          "S3Select",
+                          std::move(s3Bucket),
+                          std::move(s3Object),
+                          std::move(projectColumnNames),
+                          startOffset,
+                          finishOffset,
+                          std::move(table),
+                          std::move(awsClient),
+                          scanOnStart, toCache,
+                          queryId,
+                          std::move(weightedSegmentKeys)),
 	filterSql_(std::move(filterSql)) {
-}
-
-std::shared_ptr<S3SelectPOp> S3SelectPOp::make(const std::string& name,
-												 const std::string& s3Bucket,
-												 const std::string& s3Object,
-												 const std::string& filterSql,
-												 const std::vector<std::string>& returnedS3ColumnNames,
-												 const std::vector<std::string>& neededColumnNames,
-												 int64_t startOffset,
-												 int64_t finishOffset,
-                         const std::shared_ptr<Table>& table,
-                         const std::shared_ptr<normal::aws::AWSClient>& awsClient,
-												 bool scanOnstart,
-												 bool toCache,
-												 long queryId,
-                         const std::shared_ptr<std::vector<std::shared_ptr<normal::cache::SegmentKey>>>& weightedSegmentKeys) {
-  return std::make_shared<S3SelectPOp>(name,
-										s3Bucket,
-										s3Object,
-										filterSql,
-										returnedS3ColumnNames,
-										neededColumnNames,
-										startOffset,
-										finishOffset,
-										table,
-										awsClient,
-										scanOnstart,
-										toCache,
-										queryId,
-										weightedSegmentKeys);
-
 }
 
 #ifdef __AVX2__
 std::shared_ptr<CSVToArrowSIMDChunkParser> S3SelectPOp::generateSIMDCSVParser() {
   std::vector<std::shared_ptr<::arrow::Field>> fields;
-  for (auto const &columnName: returnedS3ColumnNames_) {
+  for (auto const &columnName: getProjectColumnNames()) {
     fields.emplace_back(table_->getSchema()->GetFieldByName(columnName));
   }
   // The delimiter for S3 output is always ',' so this is hardcoded
@@ -119,11 +95,11 @@ std::shared_ptr<CSVToArrowSIMDChunkParser> S3SelectPOp::generateSIMDCSVParser() 
 #endif
 std::shared_ptr<S3CSVParser> S3SelectPOp::generateCSVParser() {
   std::vector<std::shared_ptr<::arrow::Field>> fields;
-  for (auto const &columnName: returnedS3ColumnNames_) {
+  for (auto const &columnName: getProjectColumnNames()) {
     fields.emplace_back(table_->getSchema()->GetFieldByName(columnName));
   }
   auto csvTableFormat = std::static_pointer_cast<CSVFormat>(table_->getFormat());
-  auto parser = std::make_shared<S3CSVParser>(returnedS3ColumnNames_, 
+  auto parser = std::make_shared<S3CSVParser>(getProjectColumnNames(),
                                               std::make_shared<::arrow::Schema>(fields),
                                               csvTableFormat->getFieldDelimiter());
   return parser;
@@ -193,11 +169,11 @@ std::shared_ptr<TupleSet2> S3SelectPOp::s3Select(uint64_t startOffset, uint64_t 
 
   // combine columns with filterSql
   std::string sql;
-  for (size_t colIndex = 0; colIndex < neededColumnNames_.size(); colIndex++) {
+  for (size_t colIndex = 0; colIndex < getProjectColumnNames().size(); colIndex++) {
     if (colIndex == 0) {
-      sql += neededColumnNames_[colIndex];
+      sql += getProjectColumnNames()[colIndex];
     } else {
-      sql += ", " + neededColumnNames_[colIndex];
+      sql += ", " + getProjectColumnNames()[colIndex];
     }
   }
   sql = "select " + sql + " from s3Object" + filterSql_;
@@ -407,7 +383,7 @@ std::shared_ptr<TupleSet2> S3SelectPOp::s3SelectParallelReqs() {
 std::shared_ptr<TupleSet2> S3SelectPOp::readTuples() {
   std::shared_ptr<TupleSet2> readTupleSet;
 
-  if (neededColumnNames_.empty()) {
+  if (getProjectColumnNames().empty()) {
     readTupleSet = TupleSet2::make2();
   } else {
 
@@ -435,7 +411,7 @@ std::shared_ptr<TupleSet2> S3SelectPOp::readTuples() {
       requestStoreSegmentsInCache(readTupleSet);
     } else {
       // send segment filter weight
-      if (weightedSegmentKeys_ && s3SelectScanStats_.processedBytes > 0) {
+      if (!weightedSegmentKeys_.empty() && s3SelectScanStats_.processedBytes > 0) {
         sendSegmentWeight();
       }
     }
@@ -447,9 +423,8 @@ std::shared_ptr<TupleSet2> S3SelectPOp::readTuples() {
 
 void S3SelectPOp::processScanMessage(const ScanMessage &message) {
   // This is for hybrid caching as we later determine which columns to pull up
-  returnedS3ColumnNames_ = message.getColumnNames();
-  neededColumnNames_ = message.getColumnNames();
-  columnsReadFromS3_ = std::vector<std::shared_ptr<std::pair<std::string, ::arrow::ArrayVector>>>(returnedS3ColumnNames_.size());
+  setProjectColumnNames(message.getColumnNames());
+  columnsReadFromS3_ = std::vector<std::shared_ptr<std::pair<std::string, ::arrow::ArrayVector>>>(message.getColumnNames().size());
 }
 
 int subStrNum(const std::string& str, const std::string& sub) {

@@ -21,25 +21,15 @@ class CacheLoadPOp : public PhysicalOp {
 
 public:
   explicit CacheLoadPOp(std::string name,
-					 std::vector<std::string> projectedColumnNames,
+					 std::vector<std::string> projectColumnNames,
 					 std::vector<std::string> predicateColumnNames,
 					 std::shared_ptr<Partition> partition,
 					 int64_t startOffset,
 					 int64_t finishOffset,
 					 S3ClientType s3ClientType,
-					 long queryId);
+					 long queryId = 0);
   ~CacheLoadPOp() override = default;
 
-  static std::shared_ptr<CacheLoadPOp> make(const std::string &name,
-                     std::vector<std::string> projectedColumnNames,
-                     std::vector<std::string> predicateColumnNames,
-										 const std::shared_ptr<Partition>& partition,
-										 int64_t startOffset,
-										 int64_t finishOffset,
-										 S3ClientType s3ClientType,
-										 long queryId = 0);
-
-  void onStart();
   void onReceive(const Envelope &msg) override;
 
   void setHitOperator(const std::shared_ptr<PhysicalOp> &op);
@@ -47,11 +37,14 @@ public:
   void setMissOperatorToPushdown(const std::shared_ptr<PhysicalOp> &op);
 
 private:
+  void requestLoadSegmentsFromCache();
+  void onStart();
+  void onCacheLoadResponse(const LoadResponseMessage &Message);
+
   /**
-   * columnNames = projectedColumnNames + predicateColumnNames
+   * columnNames = projectColumnNames + predicateColumnNames
    */
   std::vector<std::string> columnNames_;
-  std::vector<std::string> projectedColumnNames_;
   std::vector<std::string> predicateColumnNames_;
 
   std::shared_ptr<Partition> partition_;
@@ -63,9 +56,6 @@ private:
   std::weak_ptr<PhysicalOp> missOperatorToPushdown_;
 
   S3ClientType s3ClientType_;
-
-  void requestLoadSegmentsFromCache();
-  void onCacheLoadResponse(const LoadResponseMessage &Message);
 
 };
 

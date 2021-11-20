@@ -26,9 +26,10 @@ namespace normal::executor::physical::hashjoin {
 class HashJoinBuildPOp : public PhysicalOp {
 
 public:
-  explicit HashJoinBuildPOp(const std::string &name, std::string columnName, long queryId = 0);
-
-  static std::shared_ptr<HashJoinBuildPOp> create(const std::string &name, const std::string &columnName);
+  explicit HashJoinBuildPOp(const std::string &name,
+                            std::string columnName,
+                            const std::vector<std::string> &projectColumnNames,
+                            long queryId = 0);
 
   void onReceive(const Envelope &msg) override;
 
