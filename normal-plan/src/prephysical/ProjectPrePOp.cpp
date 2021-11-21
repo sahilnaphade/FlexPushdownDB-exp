@@ -21,4 +21,9 @@ unordered_set<string> ProjectPrePOp::getUsedColumnNames() {
   }
   return usedColumnNames;
 }
+
+const vector<shared_ptr<Expression>> &ProjectPrePOp::getExprs() const {
+  return exprs_;
+}
+
 }

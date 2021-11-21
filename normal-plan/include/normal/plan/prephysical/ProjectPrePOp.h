@@ -20,6 +20,8 @@ public:
 
   unordered_set<string> getUsedColumnNames() override;
 
+  const vector<shared_ptr<Expression>> &getExprs() const;
+
 private:
   vector<shared_ptr<Expression>> exprs_;
 };

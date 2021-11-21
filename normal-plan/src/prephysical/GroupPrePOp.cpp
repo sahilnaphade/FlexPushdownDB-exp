@@ -26,4 +26,17 @@ unordered_set<string> GroupPrePOp::getUsedColumnNames() {
   }
   return usedColumnNames;
 }
+
+const vector<string> &GroupPrePOp::getGroupColumnNames() const {
+  return groupColumnNames_;
+}
+
+const vector<string> &GroupPrePOp::getAggOutputColumnNames() const {
+  return aggOutputColumnNames_;
+}
+
+const vector<shared_ptr<AggregatePrePFunction>> &GroupPrePOp::getFunctions() const {
+  return functions_;
+}
+
 }

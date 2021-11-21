@@ -93,7 +93,7 @@ void e2eWithoutServer() {
 
   // transform prephysical plan to physical plan
   const auto &mode = Mode::pullupMode();
-  auto prePToPTransformer = make_shared<PrePToPTransformer>(prePhysicalPlan, mode);
+  auto prePToPTransformer = make_shared<PrePToPTransformer>(prePhysicalPlan, mode, 1, 1);
   const auto &physicalPlan = prePToPTransformer->transform();
 }
 

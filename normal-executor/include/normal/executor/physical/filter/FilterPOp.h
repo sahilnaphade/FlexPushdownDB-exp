@@ -56,23 +56,21 @@ private:
   void sendTuples();
   void sendSegmentWeight();
 
-  /**
-   * Catalogue Table
-   */
-  std::shared_ptr<Table> table_;
+  bool isApplicable(const std::shared_ptr<normal::tuple::TupleSet>& tupleSet);
+
+  long totalNumRows_ = 0;
+  long filteredNumRows_ = 0;
 
   /**
    * Whether all predicate columns are covered in the schema of received tuples
    */
   std::shared_ptr<bool> applicable_;
-  bool isApplicable(const std::shared_ptr<normal::tuple::TupleSet>& tupleSet);
 
   /**
-   * Used to compute filter weight
+   * Used to compute filter weight, set to nullptr and {} if its producer is not table scan
    */
+  std::shared_ptr<Table> table_;
   std::vector<std::shared_ptr<normal::cache::SegmentKey>> weightedSegmentKeys_;
-  long totalNumRows_ = 0;
-  long filteredNumRows_ = 0;
 };
 
 inline bool recordSpeeds = false;

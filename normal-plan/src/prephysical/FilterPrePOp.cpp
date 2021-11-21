@@ -21,4 +21,8 @@ unordered_set<string> FilterPrePOp::getUsedColumnNames() {
   return usedColumnNames;
 }
 
+const shared_ptr<Expression> &FilterPrePOp::getPredicate() const {
+  return predicate_;
+}
+
 }

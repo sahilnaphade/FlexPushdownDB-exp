@@ -24,7 +24,6 @@ class CollatePOp : public PhysicalOp {
 
 public:
   explicit CollatePOp(std::string name,
-                      std::vector<std::string> projectColumnNames,
                       long queryId = 0);
   ~CollatePOp() override = default;
   void show();

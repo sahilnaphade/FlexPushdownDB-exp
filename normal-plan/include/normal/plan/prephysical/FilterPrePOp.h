@@ -20,6 +20,8 @@ public:
 
   unordered_set<string> getUsedColumnNames() override;
 
+  const shared_ptr<Expression> &getPredicate() const;
+
 private:
   shared_ptr<Expression> predicate_;
 };

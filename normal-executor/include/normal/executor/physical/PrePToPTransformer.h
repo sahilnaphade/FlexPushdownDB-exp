@@ -11,6 +11,10 @@
 #include <normal/plan/prephysical/SortPrePOp.h>
 #include <normal/plan/prephysical/AggregatePrePOp.h>
 #include <normal/plan/prephysical/AggregatePrePFunction.h>
+#include <normal/plan/prephysical/GroupPrePOp.h>
+#include <normal/plan/prephysical/ProjectPrePOp.h>
+#include <normal/plan/prephysical/FilterPrePOp.h>
+#include <normal/plan/prephysical/HashJoinPrePOp.h>
 #include <normal/plan/Mode.h>
 
 using namespace normal::plan;
@@ -21,7 +25,9 @@ namespace normal::executor::physical {
 class PrePToPTransformer {
 public:
   PrePToPTransformer(const shared_ptr<PrePhysicalPlan> &prePhysicalPlan,
-                     const shared_ptr<Mode> &mode);
+                     const shared_ptr<Mode> &mode,
+                     long queryId,
+                     int parallelDegree);
 
   shared_ptr<PhysicalPlan> transform();
 
@@ -45,6 +51,18 @@ private:
   pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
   transformAggregate(const shared_ptr<AggregatePrePOp> &aggregatePrePOp);
 
+  pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
+  transformGroup(const shared_ptr<GroupPrePOp> &groupPrePOp);
+
+  pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
+  transformProject(const shared_ptr<ProjectPrePOp> &projectPrePOp);
+
+  pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
+  transformFilter(const shared_ptr<FilterPrePOp> &filterPrePOp);
+
+  pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
+  transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoinPrePOp);
+
   /**
    * Transform aggregate and aggregate reduce function
    * @param alias
@@ -57,16 +75,21 @@ private:
                                                                         const shared_ptr<AggregatePrePFunction> &prePFunction);
 
   /**
-   * One-to-one connection between producers of consumers
+   * Connect producers and consumers
    * @param producers
    * @param consumers
    */
   void connectOneToOne(vector<shared_ptr<PhysicalOp>> &producers,
                        vector<shared_ptr<PhysicalOp>> &consumers);
+  void connectManyToMany(vector<shared_ptr<PhysicalOp>> &producers,
+                         vector<shared_ptr<PhysicalOp>> &consumers);
+  void connectManyToOne(vector<shared_ptr<PhysicalOp>> &producers,
+                        shared_ptr<PhysicalOp> &consumer);
 
   shared_ptr<PrePhysicalPlan> prePhysicalPlan_;
   shared_ptr<Mode> mode_;
   long queryId_;
+  int parallelDegree_;
 };
 
 }

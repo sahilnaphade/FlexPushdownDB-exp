@@ -42,6 +42,7 @@ target_link_libraries(TestCalcite PRIVATE normal-calcite)
 target_link_libraries(TestCalcite PRIVATE normal-plan)
 target_link_libraries(TestCalcite PRIVATE normal-executor)
 target_link_libraries(TestCalcite PRIVATE normal-util)
+target_link_libraries(TestCalcite PRIVATE ssl crypto)
 # need to add and link libraries on mac
 if (${APPLE})
   target_link_directories(TestCalcite PRIVATE /usr/local/opt/openssl/lib)

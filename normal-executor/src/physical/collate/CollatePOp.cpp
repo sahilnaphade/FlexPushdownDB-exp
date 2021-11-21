@@ -19,9 +19,8 @@ void CollatePOp::onStart() {
 }
 
 CollatePOp::CollatePOp(std::string name,
-                       std::vector<std::string> projectColumnNames,
                        long queryId) :
-  PhysicalOp(std::move(name), "Collate", std::move(projectColumnNames), queryId) {
+  PhysicalOp(std::move(name), "Collate", {}, queryId) {
 }
 
 void CollatePOp::onReceive(const normal::executor::message::Envelope &message) {

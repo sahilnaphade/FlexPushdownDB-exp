@@ -18,8 +18,11 @@ public:
               const vector<shared_ptr<AggregatePrePFunction>> &functions);
 
   string getTypeString() override;
-
   unordered_set<string> getUsedColumnNames() override;
+
+  const vector<string> &getGroupColumnNames() const;
+  const vector<string> &getAggOutputColumnNames() const;
+  const vector<shared_ptr<AggregatePrePFunction>> &getFunctions() const;
 
 private:
   vector<string> groupColumnNames_;

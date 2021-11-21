@@ -25,4 +25,12 @@ unordered_set<string> HashJoinPrePOp::getUsedColumnNames() {
   return usedColumnNames;
 }
 
+const vector<string> &HashJoinPrePOp::getLeftColumnNames() const {
+  return leftColumnNames_;
+}
+
+const vector<string> &HashJoinPrePOp::getRightColumnNames() const {
+  return rightColumnNames_;
+}
+
 }

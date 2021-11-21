@@ -20,6 +20,9 @@ public:
 
   unordered_set<string> getUsedColumnNames() override;
 
+  const vector<string> &getLeftColumnNames() const;
+  const vector<string> &getRightColumnNames() const;
+
 private:
   JoinType joinType_;
   vector<string> leftColumnNames_;
