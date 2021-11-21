@@ -18,7 +18,7 @@ private:
   constexpr static const char *const SUM_RESULT_KEY = "SUM";
 
 public:
-  Sum(std::string columnName, std::shared_ptr<normal::expression::gandiva::Expression> expression);
+  Sum(std::string alias, std::shared_ptr<normal::expression::gandiva::Expression> expression);
   ~Sum() override = default;
 
   void apply(std::shared_ptr<aggregate::AggregationResult> result, std::shared_ptr<TupleSet> tuples) override;

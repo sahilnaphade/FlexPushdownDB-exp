@@ -35,6 +35,7 @@ add_library(normal-executor STATIC
         src/physical/PhysicalOp.cpp include/normal/executor/physical/PhysicalOp.h
 #        physical operators
         include/normal/executor/physical/Globals.h
+        src/physical/sort/SortPOp.cpp include/normal/executor/physical/sort/SortPOp.h
         src/physical/aggregate/AggregatePOp.cpp include/normal/executor/physical/aggregate/AggregatePOp.h
         src/physical/aggregate/AggregationFunction.cpp include/normal/executor/physical/aggregate/AggregationFunction.h
         src/physical/aggregate/AggregationResult.cpp include/normal/executor/physical/aggregate/AggregationResult.h
@@ -69,7 +70,10 @@ add_library(normal-executor STATIC
         src/physical/s3/S3SelectScanAbstractPOp.cpp include/normal/executor/physical/s3/S3SelectScanAbstractPOp.h
         src/physical/s3/S3CSVParser.cpp include/normal/executor/physical/s3/S3CSVParser.h
         src/physical/s3/S3SelectCSVParseOptions.cpp include/normal/executor/physical/s3/S3SelectCSVParseOptions.h
-        src/physical/s3/S3SelectScanKernel.cpp include/normal/executor/physical/s3/S3SelectScanKernel.h)
+        src/physical/s3/S3SelectScanKernel.cpp include/normal/executor/physical/s3/S3SelectScanKernel.h
+#        physical plan
+        src/physical/PhysicalPlan.cpp include/normal/executor/physical/PhysicalPlan.h
+        src/physical/PrePToPTransformer.cpp include/normal/executor/physical/PrePToPTransformer.h)
 
 target_include_directories(normal-executor PUBLIC include)
 

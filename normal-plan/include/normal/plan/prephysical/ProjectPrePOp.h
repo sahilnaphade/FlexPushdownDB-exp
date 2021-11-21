@@ -16,7 +16,7 @@ class ProjectPrePOp: public PrePhysicalOp {
 public:
   ProjectPrePOp(const vector<shared_ptr<Expression>> &exprs);
 
-  string getName() override;
+  string getTypeString() override;
 
   unordered_set<string> getUsedColumnNames() override;
 

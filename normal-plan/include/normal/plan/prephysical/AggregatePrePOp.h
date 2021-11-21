@@ -15,7 +15,10 @@ public:
   AggregatePrePOp(const vector<string> &aggOutputColumnNames,
                   const vector<shared_ptr<AggregatePrePFunction>> &functions);
 
-  string getName() override;
+  const vector<string> &getAggOutputColumnNames() const;
+  const vector<shared_ptr<AggregatePrePFunction>> &getFunctions() const;
+
+  string getTypeString() override;
 
   unordered_set<string> getUsedColumnNames() override;
 

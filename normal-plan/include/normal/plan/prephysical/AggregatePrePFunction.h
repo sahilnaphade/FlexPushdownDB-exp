@@ -22,7 +22,9 @@ public:
                         const shared_ptr<expression::gandiva::Expression> &expression);
   virtual ~AggregatePrePFunction() = default;
 
+  AggregatePrePFunctionType getType() const;
   const shared_ptr<expression::gandiva::Expression> &getExpression() const;
+  string getTypeString() const;
 
 private:
   AggregatePrePFunctionType type_;

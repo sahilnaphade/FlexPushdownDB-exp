@@ -14,7 +14,7 @@ HashJoinPrePOp::HashJoinPrePOp(JoinType joinType,
   leftColumnNames_(leftColumnNames),
   rightColumnNames_(rightColumnNames) {}
 
-string HashJoinPrePOp::getName() {
+string HashJoinPrePOp::getTypeString() {
   return "HashJoinPrePOp";
 }
 

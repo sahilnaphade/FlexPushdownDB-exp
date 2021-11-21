@@ -11,8 +11,23 @@ AggregatePrePFunction::AggregatePrePFunction(AggregatePrePFunctionType type,
   type_(type),
   expression_(expression) {}
 
+AggregatePrePFunctionType AggregatePrePFunction::getType() const {
+  return type_;
+}
+
 const shared_ptr<expression::gandiva::Expression> &AggregatePrePFunction::getExpression() const {
   return expression_;
+}
+
+string AggregatePrePFunction::getTypeString() const {
+  switch (type_) {
+    case SUM: return "SUM";
+    case COUNT: return "COUNT";
+    case MAX: return "MAX";
+    case MIN: return "MIN";
+    case AVG: return "AVG";
+    default: return "UNKNOWN";
+  }
 }
 
 }

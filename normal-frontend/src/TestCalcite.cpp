@@ -2,9 +2,11 @@
 // Created by Yifei Yang on 10/30/21.
 //
 
+#include <normal/executor/physical/PrePToPTransformer.h>
 #include <normal/calcite/CalciteConfig.h>
 #include <normal/calcite/CalciteClient.h>
 #include <normal/plan/calcite/CalcitePlanJsonDeserializer.h>
+#include <normal/plan/Mode.h>
 #include <normal/catalogue/s3/S3CatalogueEntryReader.h>
 #include <normal/catalogue/Catalogue.h>
 #include <normal/aws/AWSClient.h>
@@ -15,8 +17,10 @@
 #include <iostream>
 #include <filesystem>
 
+using namespace normal::executor::physical;
 using namespace normal::calcite;
 using namespace normal::plan::calcite;
+using namespace normal::plan;
 using namespace normal::catalogue::s3;
 using namespace normal::util;
 using namespace normal::aws;
@@ -81,15 +85,16 @@ void e2eWithoutServer() {
   catalogue->putEntry(s3CatalogueEntry);
 
   // deserialize plan json string into prephysical plan
-  shared_ptr<CalcitePlanJsonDeserializer> planDeserializer = make_shared<CalcitePlanJsonDeserializer>(planResult,
-                                                                                                      s3CatalogueEntry);
+  auto planDeserializer = make_shared<CalcitePlanJsonDeserializer>(planResult, s3CatalogueEntry);
   const auto &prePhysicalPlan = planDeserializer->deserialize();
 
   // trim unused fields (Calcite trimmer does not trim completely)
   prePhysicalPlan->populateAndTrimProjectColumns();
 
-  // execute
-
+  // transform prephysical plan to physical plan
+  const auto &mode = Mode::pullupMode();
+  auto prePToPTransformer = make_shared<PrePToPTransformer>(prePhysicalPlan, mode);
+  const auto &physicalPlan = prePToPTransformer->transform();
 }
 
 int main() {

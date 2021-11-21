@@ -16,7 +16,7 @@ class FilterPrePOp: public PrePhysicalOp {
 public:
   FilterPrePOp(const shared_ptr<Expression> &predicate);
 
-  string getName() override;
+  string getTypeString() override;
 
   unordered_set<string> getUsedColumnNames() override;
 

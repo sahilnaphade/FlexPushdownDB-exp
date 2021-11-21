@@ -12,7 +12,15 @@ AggregatePrePOp::AggregatePrePOp(const vector<string> &aggOutputColumnNames,
   aggOutputColumnNames_(aggOutputColumnNames),
   functions_(functions) {}
 
-string AggregatePrePOp::getName() {
+const vector<string> &AggregatePrePOp::getAggOutputColumnNames() const {
+  return aggOutputColumnNames_;
+}
+
+const vector<shared_ptr<AggregatePrePFunction>> &AggregatePrePOp::getFunctions() const {
+  return functions_;
+}
+
+string AggregatePrePOp::getTypeString() {
   return "AggregatePrePOp";
 }
 
@@ -24,4 +32,5 @@ unordered_set<string> AggregatePrePOp::getUsedColumnNames() {
   }
   return usedColumnNames;
 }
+
 }

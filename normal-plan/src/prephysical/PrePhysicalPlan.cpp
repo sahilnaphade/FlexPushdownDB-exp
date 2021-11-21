@@ -8,6 +8,10 @@ namespace normal::plan::prephysical {
 
 PrePhysicalPlan::PrePhysicalPlan(const shared_ptr<PrePhysicalOp> &rootOp) : rootOp_(rootOp) {}
 
+const shared_ptr<PrePhysicalOp> &PrePhysicalPlan::getRootOp() const {
+  return rootOp_;
+}
+
 void PrePhysicalPlan::populateAndTrimProjectColumns() {
   populateProjectColumnsDfs(rootOp_);
   trimProjectColumnsDfs(rootOp_, nullopt);

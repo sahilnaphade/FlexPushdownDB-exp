@@ -16,7 +16,7 @@ public:
                  const vector<string> &leftColumnNames,
                  const vector<string> &rightColumnNames);
 
-  string getName() override;
+  string getTypeString() override;
 
   unordered_set<string> getUsedColumnNames() override;
 

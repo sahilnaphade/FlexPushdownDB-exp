@@ -14,7 +14,7 @@ GroupPrePOp::GroupPrePOp(const vector<string> &groupColumnNames,
    aggOutputColumnNames_(aggOutputColumnNames),
    functions_(functions) {}
 
-string GroupPrePOp::getName() {
+string GroupPrePOp::getTypeString() {
   return "GroupPrePOp";
 }
 

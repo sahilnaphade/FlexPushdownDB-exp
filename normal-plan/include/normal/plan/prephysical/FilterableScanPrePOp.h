@@ -18,7 +18,7 @@ class FilterableScanPrePOp: public PrePhysicalOp {
 public:
   FilterableScanPrePOp(const shared_ptr<Table> &table);
 
-  string getName() override;
+  string getTypeString() override;
 
   void setPredicate(const shared_ptr<Expression> &predicate);
 

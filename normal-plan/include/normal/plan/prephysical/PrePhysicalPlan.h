@@ -13,6 +13,8 @@ class PrePhysicalPlan {
 public:
   PrePhysicalPlan(const shared_ptr<PrePhysicalOp> &rootOp);
 
+  const shared_ptr<PrePhysicalOp> &getRootOp() const;
+
   void populateAndTrimProjectColumns();
 
 private:

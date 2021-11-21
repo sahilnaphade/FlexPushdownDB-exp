@@ -10,7 +10,7 @@ FilterPrePOp::FilterPrePOp(const shared_ptr<Expression> &predicate) :
   PrePhysicalOp(Filter),
   predicate_(predicate) {}
 
-string FilterPrePOp::getName() {
+string FilterPrePOp::getTypeString() {
   return "FilterPrePOp";
 }
 

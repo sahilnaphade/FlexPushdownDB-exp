@@ -20,9 +20,9 @@ public:
   virtual ~PrePhysicalOp() = default;
 
   PrePOpType getType() const;
+  virtual string getTypeString() = 0;
   const vector<shared_ptr<PrePhysicalOp>> &getProducers() const;
   const unordered_set<string> &getProjectColumnNames() const;
-  virtual string getName() = 0;
   virtual unordered_set<string> getUsedColumnNames() = 0;
 
   void setProducers(const vector<shared_ptr<PrePhysicalOp>> &producers);

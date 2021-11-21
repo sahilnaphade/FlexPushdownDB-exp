@@ -13,7 +13,7 @@ SortPrePOp::SortPrePOp(const vector<pair<string, FieldDirection>> &sortColumns) 
   PrePhysicalOp(Sort),
   sortColumns_(sortColumns) {}
 
-string SortPrePOp::getName() {
+string SortPrePOp::getTypeString() {
   return "SortPrePOp";
 }
 

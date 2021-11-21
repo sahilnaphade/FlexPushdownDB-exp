@@ -40,6 +40,7 @@ add_executable(TestCalcite src/TestCalcite.cpp)
 
 target_link_libraries(TestCalcite PRIVATE normal-calcite)
 target_link_libraries(TestCalcite PRIVATE normal-plan)
+target_link_libraries(TestCalcite PRIVATE normal-executor)
 target_link_libraries(TestCalcite PRIVATE normal-util)
 # need to add and link libraries on mac
 if (${APPLE})

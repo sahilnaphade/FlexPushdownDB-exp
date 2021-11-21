@@ -14,7 +14,7 @@ void FilterableScanPrePOp::setPredicate(const shared_ptr<Expression> &predicate)
   predicate_ = predicate;
 }
 
-string FilterableScanPrePOp::getName() {
+string FilterableScanPrePOp::getTypeString() {
   return "FilterableScanPrePOp";
 }
 

@@ -7,7 +7,8 @@
 
 namespace normal::executor::physical::aggregate {
 
-AggregationFunction::AggregationFunction(std::string columnName) : alias_(std::move(columnName)) {}
+AggregationFunction::AggregationFunction(std::string alias) :
+  alias_(std::move(alias)) {}
 
 const std::string &AggregationFunction::alias() const {
   return alias_;

@@ -16,7 +16,7 @@ class SortPrePOp: public PrePhysicalOp {
 public:
   SortPrePOp(const vector<pair<string, FieldDirection>> &sortColumns);
 
-  string getName() override;
+  string getTypeString() override;
 
   unordered_set<string> getUsedColumnNames() override;
 

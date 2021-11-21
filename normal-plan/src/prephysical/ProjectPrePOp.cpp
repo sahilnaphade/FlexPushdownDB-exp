@@ -9,7 +9,7 @@ ProjectPrePOp::ProjectPrePOp(const vector<shared_ptr<Expression>> &exprs) :
   PrePhysicalOp(Project),
   exprs_(exprs) {}
 
-string ProjectPrePOp::getName() {
+string ProjectPrePOp::getTypeString() {
   return "ProjectPrePOp";
 }
 

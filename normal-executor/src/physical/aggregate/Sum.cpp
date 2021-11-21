@@ -12,8 +12,8 @@
 
 namespace normal::executor::physical::aggregate {
 
-Sum::Sum(std::string columnName, std::shared_ptr<normal::expression::gandiva::Expression> expression) :
-    AggregationFunction(std::move(columnName)),
+Sum::Sum(std::string alias, std::shared_ptr<normal::expression::gandiva::Expression> expression) :
+    AggregationFunction(std::move(alias)),
     expression_(std::move(expression)) {}
 
 
