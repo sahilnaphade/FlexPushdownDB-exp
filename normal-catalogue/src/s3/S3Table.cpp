@@ -19,4 +19,8 @@ S3Table::S3Table(const string &name,
   Table(name, schema, format, apxColumnLengthMap, apxRowLength, zonemapColumnNames, catalogueEntry),
   s3Partitions_(s3Partitions) {}
 
+const vector<shared_ptr<S3Partition>> &S3Table::getS3Partitions() const {
+  return s3Partitions_;
+}
+
 }

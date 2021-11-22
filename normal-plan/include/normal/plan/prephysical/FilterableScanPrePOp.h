@@ -20,9 +20,12 @@ public:
 
   string getTypeString() override;
 
-  void setPredicate(const shared_ptr<Expression> &predicate);
-
   unordered_set<string> getUsedColumnNames() override;
+
+  const shared_ptr<Expression> &getPredicate() const;
+  const shared_ptr<Table> &getTable() const;
+
+  void setPredicate(const shared_ptr<Expression> &predicate);
 
 private:
   shared_ptr<Expression> predicate_;

@@ -2,7 +2,7 @@
 // Created by Yifei Yang on 10/30/21.
 //
 
-#include <normal/executor/physical/PrePToPTransformer.h>
+#include <normal/executor/physical/transform/PrePToPTransformer.h>
 #include <normal/calcite/CalciteConfig.h>
 #include <normal/calcite/CalciteClient.h>
 #include <normal/plan/calcite/CalcitePlanJsonDeserializer.h>
@@ -93,7 +93,7 @@ void e2eWithoutServer() {
 
   // transform prephysical plan to physical plan
   const auto &mode = Mode::pullupMode();
-  auto prePToPTransformer = make_shared<PrePToPTransformer>(prePhysicalPlan, mode, 1, 1);
+  auto prePToPTransformer = make_shared<PrePToPTransformer>(prePhysicalPlan, awsClient, mode, 1, 1);
   const auto &physicalPlan = prePToPTransformer->transform();
 }
 

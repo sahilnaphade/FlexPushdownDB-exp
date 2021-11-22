@@ -2,7 +2,7 @@
 // Created by Yifei Yang on 11/20/21.
 //
 
-#include <normal/executor/physical/PrePToPTransformer.h>
+#include <normal/executor/physical/transform/PrePToPTransformer.h>
 #include <normal/executor/physical/sort/SortPOp.h>
 #include <normal/executor/physical/aggregate/AggregatePOp.h>
 #include <normal/executor/physical/aggregate/Sum.h>
@@ -15,17 +15,17 @@
 #include <normal/executor/physical/shuffle/ShufflePOp.h>
 #include <normal/executor/physical/collate/CollatePOp.h>
 #include <normal/expression/gandiva/Column.h>
-#include <fmt/format.h>
 #include <cassert>
 
 namespace normal::executor::physical {
 
 PrePToPTransformer::PrePToPTransformer(const shared_ptr<PrePhysicalPlan> &prePhysicalPlan,
+                                       const shared_ptr<AWSClient> &awsClient,
                                        const shared_ptr<Mode> &mode,
                                        long queryId,
-                                       int parallelDegree):
+                                       int parallelDegree) :
   prePhysicalPlan_(prePhysicalPlan),
-  mode_(mode),
+  awsClient_(awsClient), mode_(mode),
   queryId_(queryId),
   parallelDegree_(parallelDegree) {}
 
@@ -70,7 +70,10 @@ PrePToPTransformer::transformDfs(const shared_ptr<PrePhysicalOp> &prePOp) {
       const auto &hashJoinPrePOp = std::static_pointer_cast<HashJoinPrePOp>(prePOp);
       return transformHashJoin(hashJoinPrePOp);
     }
-    case FilterableScan:
+    case FilterableScan: {
+      const auto &filterableScanPrePOp = std::static_pointer_cast<FilterableScanPrePOp>(prePOp);
+      return transformFilterableScan(filterableScanPrePOp);
+    }
     default: {
       throw runtime_error(fmt::format("Unsupported prephysical operator type: {}", prePOp->getTypeString()));
     }
@@ -358,6 +361,11 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
   connectOneToOne(rightTransRes.first, selfConnUpRightPOps);
 
   return make_pair(selfConnDownPOps, allPOps);
+}
+
+pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
+PrePToPTransformer::transformFilterableScan(const shared_ptr<FilterableScanPrePOp> &filterableScanPrePOp) {
+  return pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>();
 }
 
 shared_ptr<aggregate::AggregationFunction>

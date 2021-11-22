@@ -24,6 +24,8 @@ public:
           const vector<shared_ptr<S3Partition>> &s3Partitions,
           const shared_ptr<CatalogueEntry> &catalogueEntry);
 
+  const vector<shared_ptr<S3Partition>> &getS3Partitions() const;
+
 private:
   vector<shared_ptr<S3Partition>> s3Partitions_;
 };

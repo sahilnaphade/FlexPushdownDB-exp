@@ -73,7 +73,9 @@ add_library(normal-executor STATIC
         src/physical/s3/S3SelectScanKernel.cpp include/normal/executor/physical/s3/S3SelectScanKernel.h
 #        physical plan
         src/physical/PhysicalPlan.cpp include/normal/executor/physical/PhysicalPlan.h
-        src/physical/PrePToPTransformer.cpp include/normal/executor/physical/PrePToPTransformer.h)
+        src/physical/transform/PrePToPTransformer.cpp include/normal/executor/physical/transform/PrePToPTransformer.h
+        src/physical/transform/PrePToS3PTransformer.cpp include/normal/executor/physical/transform/PrePToS3PTransformer.h
+        src/physical/prune/PartitionPruner.cpp include/normal/executor/physical/prune/PartitionPruner.h)
 
 target_include_directories(normal-executor PUBLIC include)
 

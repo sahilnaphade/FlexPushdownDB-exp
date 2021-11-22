@@ -15,16 +15,20 @@
 #include <normal/plan/prephysical/ProjectPrePOp.h>
 #include <normal/plan/prephysical/FilterPrePOp.h>
 #include <normal/plan/prephysical/HashJoinPrePOp.h>
+#include <normal/plan/prephysical/FilterableScanPrePOp.h>
 #include <normal/plan/Mode.h>
+#include <normal/aws/AWSClient.h>
 
 using namespace normal::plan;
 using namespace normal::plan::prephysical;
+using namespace normal::aws;
 
 namespace normal::executor::physical {
 
 class PrePToPTransformer {
 public:
   PrePToPTransformer(const shared_ptr<PrePhysicalPlan> &prePhysicalPlan,
+                     const shared_ptr<AWSClient> &awsClient,
                      const shared_ptr<Mode> &mode,
                      long queryId,
                      int parallelDegree);
@@ -35,8 +39,6 @@ private:
   /**
    * Transform prephysical op to physical op in dfs style
    * @param prePOp: prephysical op
-   * @param upConnPOps: physical ops from upstream to connect, can be multiple groups of ops
-   * @param selfConnPOps: physical ops from self to connect, can be multiple groups of ops
    * @return a pair of connect physical ops (to producer) and current all (cumulative) physical ops
    */
   pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
@@ -63,6 +65,9 @@ private:
   pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
   transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoinPrePOp);
 
+  pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
+  transformFilterableScan(const shared_ptr<FilterableScanPrePOp> &filterableScanPrePOp);
+
   /**
    * Transform aggregate and aggregate reduce function
    * @param alias
@@ -87,6 +92,7 @@ private:
                         shared_ptr<PhysicalOp> &consumer);
 
   shared_ptr<PrePhysicalPlan> prePhysicalPlan_;
+  shared_ptr<AWSClient> awsClient_;
   shared_ptr<Mode> mode_;
   long queryId_;
   int parallelDegree_;

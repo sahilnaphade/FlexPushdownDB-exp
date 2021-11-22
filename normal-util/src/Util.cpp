@@ -15,11 +15,6 @@
 
 using namespace normal::util;
 
-//template<typename Base, typename T>
-//bool normal::util::instanceof(const T&) {
-//  return std::is_base_of<Base, T>::value;
-//}
-
 std::string normal::util::readFile(const std::string& filePath) {
   std::ifstream inFile(filePath);
   std::ostringstream buf;
