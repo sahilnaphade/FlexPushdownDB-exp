@@ -35,6 +35,10 @@ std::string LessThan::alias() {
   return genAliasForComparison("<");
 }
 
+std::string LessThan::getTypeString() {
+  return "LessThan";
+}
+
 std::shared_ptr<Expression> normal::expression::gandiva::lt(const std::shared_ptr<Expression>& Left, const std::shared_ptr<Expression>& Right) {
   return std::make_shared<LessThan>(Left, Right);
 }

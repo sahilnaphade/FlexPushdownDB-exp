@@ -43,6 +43,8 @@ public:
 
   virtual std::shared_ptr<std::vector<std::string>> involvedColumnNames() = 0;
 
+  virtual std::string getTypeString() = 0;
+
   ExpressionType getType() const;
   const ::gandiva::NodePtr &getGandivaExpression() const;
 

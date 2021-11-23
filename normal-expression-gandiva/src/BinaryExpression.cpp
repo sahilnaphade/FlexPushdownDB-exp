@@ -23,14 +23,6 @@ const std::shared_ptr<Expression> &BinaryExpression::getRight() const {
   return right_;
 }
 
-void BinaryExpression::compile(std::shared_ptr<arrow::Schema>) {
-  // noop
-}
-
-std::string BinaryExpression::alias() {
-  return std::string();
-}
-
 std::string BinaryExpression::genAliasForComparison(const std::string& compOp) {
   auto leftAlias = left_->alias();
   auto rightAlias = right_->alias();

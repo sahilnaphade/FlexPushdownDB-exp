@@ -22,7 +22,7 @@ public:
 
   void compile(std::shared_ptr<arrow::Schema> schema) override;
   std::string alias() override;
-
+  std::string getTypeString() override;
   std::shared_ptr<std::vector<std::string> > involvedColumnNames() override;
 
   [[nodiscard]] const std::string &getColumnName() const;

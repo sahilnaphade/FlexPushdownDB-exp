@@ -35,6 +35,10 @@ std::string EqualTo::alias() {
   return genAliasForComparison("=");
 }
 
+std::string EqualTo::getTypeString() {
+  return "EqualTo";
+}
+
 std::shared_ptr<Expression> normal::expression::gandiva::eq(const std::shared_ptr<Expression>& Left, const std::shared_ptr<Expression>& Right) {
   return std::make_shared<EqualTo>(Left, Right);
 }

@@ -31,6 +31,10 @@ std::string Or::alias() {
   return "(" + left_->alias() + " or " + right_->alias() + ")";
 }
 
+std::string Or::getTypeString() {
+  return "Or";
+}
+
 std::shared_ptr<Expression> normal::expression::gandiva::or_(const std::shared_ptr<Expression>& left,
                                                               const std::shared_ptr<Expression>& right) {
   return std::make_shared<Or>(left, right);

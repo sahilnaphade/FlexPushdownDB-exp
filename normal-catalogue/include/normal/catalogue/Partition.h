@@ -33,7 +33,8 @@ public:
 
   virtual size_t hash() = 0;
 
-  [[nodiscard]] const long &getNumBytes() const;
+  const long &getNumBytes() const;
+  const unordered_map<string, pair<shared_ptr<Scalar>, shared_ptr<Scalar>>> &getZoneMap() const;
 
   void setNumBytes(long numBytes);
   void addMinMax(const string &columnName,

@@ -102,6 +102,14 @@ std::shared_ptr<std::vector<std::string> > Cast::involvedColumnNames() {
   return expr_->involvedColumnNames();
 }
 
+const std::shared_ptr<Expression> &Cast::getExpr() const {
+  return expr_;
+}
+
+std::string Cast::getTypeString() {
+  return "Cast";
+}
+
 std::shared_ptr<Expression> normal::expression::gandiva::cast(const std::shared_ptr<Expression>& expr,
                                                               const std::shared_ptr<arrow::DataType> &type) {
   return std::make_shared<Cast>(expr, type);

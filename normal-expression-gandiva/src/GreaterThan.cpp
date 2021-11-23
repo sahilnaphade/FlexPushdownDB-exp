@@ -35,6 +35,10 @@ std::string normal::expression::gandiva::GreaterThan::alias() {
   return genAliasForComparison(">");
 }
 
+std::string GreaterThan::getTypeString() {
+  return "GreaterThan";
+}
+
 std::shared_ptr<Expression> normal::expression::gandiva::gt(const std::shared_ptr<Expression>& Left, const std::shared_ptr<Expression>& Right) {
   return std::make_shared<GreaterThan>(Left, Right);
 }

@@ -30,6 +30,10 @@ std::string And::alias() {
   return "(" + left_->alias() + " and " + right_->alias() + ")";
 }
 
+std::string And::getTypeString() {
+  return "And";
+}
+
 std::shared_ptr<Expression> normal::expression::gandiva::and_(const std::shared_ptr<Expression>& left,
 															  const std::shared_ptr<Expression>& right) {
   return std::make_shared<And>(left, right);

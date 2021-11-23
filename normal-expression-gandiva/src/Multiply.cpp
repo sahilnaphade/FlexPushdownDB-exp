@@ -28,6 +28,10 @@ std::string Multiply::alias() {
   return "?column?";
 }
 
+std::string Multiply::getTypeString() {
+  return "Multiply";
+}
+
 std::shared_ptr<Expression> normal::expression::gandiva::times(const std::shared_ptr<Expression>& left,
 															   const std::shared_ptr<Expression>& right) {
   return std::make_shared<Multiply>(left, right);

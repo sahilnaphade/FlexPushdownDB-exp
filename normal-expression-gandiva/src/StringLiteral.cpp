@@ -31,6 +31,10 @@ const std::string &StringLiteral::value() const {
   return value_;
 }
 
+std::string StringLiteral::getTypeString() {
+  return "StringLiteral";
+}
+
 std::shared_ptr<Expression> normal::expression::gandiva::str_lit(std::string value){
   return std::make_shared<StringLiteral>(value);
 }

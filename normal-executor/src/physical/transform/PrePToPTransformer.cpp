@@ -16,7 +16,6 @@
 #include <normal/executor/physical/shuffle/ShufflePOp.h>
 #include <normal/executor/physical/collate/CollatePOp.h>
 #include <normal/expression/gandiva/Column.h>
-#include <cassert>
 
 namespace normal::executor::physical {
 
@@ -95,7 +94,10 @@ pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
 PrePToPTransformer::transformSort(const shared_ptr<SortPrePOp> &sortPrePOp) {
   // transform producers
   const auto &producersTransRes = transformProducers(sortPrePOp);
-  assert(producersTransRes.size() == 1);
+  if (producersTransRes.size() != 1) {
+    throw runtime_error(fmt::format("Unsupported number of producers for sort, should be {}, but get {}",
+                                    1, producersTransRes.size()));
+  }
 
   // transform self
   const auto &producerTransRes = producersTransRes[0];
@@ -124,7 +126,10 @@ pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
 PrePToPTransformer::transformAggregate(const shared_ptr<AggregatePrePOp> &aggregatePrePOp) {
   // transform producers
   const auto &producersTransRes = transformProducers(aggregatePrePOp);
-  assert(producersTransRes.size() == 1);
+  if (producersTransRes.size() != 1) {
+    throw runtime_error(fmt::format("Unsupported number of producers for aggregate, should be {}, but get {}",
+                                    1, producersTransRes.size()));
+  }
 
   // aggregate functions
   vector<shared_ptr<aggregate::AggregationFunction>> aggFunctions, aggReduceFunctions;
@@ -178,7 +183,10 @@ pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
 PrePToPTransformer::transformGroup(const shared_ptr<GroupPrePOp> &groupPrePOp) {
   // transform producers
   const auto &producersTransRes = transformProducers(groupPrePOp);
-  assert(producersTransRes.size() == 1);
+  if (producersTransRes.size() != 1) {
+    throw runtime_error(fmt::format("Unsupported number of producers for group, should be {}, but get {}",
+                                    1, producersTransRes.size()));
+  }
 
   // aggregate functions
   vector<shared_ptr<aggregate::AggregationFunction>> aggFunctions, aggReduceFunctions;
@@ -236,7 +244,10 @@ pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
 PrePToPTransformer::transformProject(const shared_ptr<ProjectPrePOp> &projectPrePOp) {
   // transform producers
   const auto &producersTransRes = transformProducers(projectPrePOp);
-  assert(producersTransRes.size() == 1);
+  if (producersTransRes.size() != 1) {
+    throw runtime_error(fmt::format("Unsupported number of producers for project, should be {}, but get {}",
+                                    1, producersTransRes.size()));
+  }
 
   // transform self
   const auto &producerTransRes = producersTransRes[0];
@@ -267,7 +278,10 @@ pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
 PrePToPTransformer::transformFilter(const shared_ptr<FilterPrePOp> &filterPrePOp) {
   // transform producers
   const auto &producersTransRes = transformProducers(filterPrePOp);
-  assert(producersTransRes.size() == 1);
+  if (producersTransRes.size() != 1) {
+    throw runtime_error(fmt::format("Unsupported number of producers for filter, should be {}, but get {}",
+                                    1, producersTransRes.size()));
+  }
 
   // transform self
   const auto &producerTransRes = producersTransRes[0];
@@ -298,14 +312,18 @@ pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
 PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoinPrePOp) {
   // transform producers
   const auto &producersTransRes = transformProducers(hashJoinPrePOp);
-  assert(producersTransRes.size() == 2);
+  if (producersTransRes.size() != 2) {
+    throw runtime_error(fmt::format("Unsupported number of producers for filter, should be {}, but get {}",
+                                    2, producersTransRes.size()));
+  }
+
   auto leftTransRes = producersTransRes[0];
   auto rightTransRes = producersTransRes[1];
   auto allPOps = leftTransRes.second;
   allPOps.insert(allPOps.end(), rightTransRes.second.begin(), rightTransRes.second.end());
 
   // transform self
-  vector<shared_ptr<PhysicalOp>> selfConnUpLeftPOps, selfConnUpRightPOps, selfConnDownPOps;
+//  vector<shared_ptr<PhysicalOp>> selfConnDownPOps;
   vector<string> projectColumnNames{hashJoinPrePOp->getProjectColumnNames().begin(),
                                     hashJoinPrePOp->getProjectColumnNames().end()};
   // FIXME: support multiple pairs of join columns
@@ -330,9 +348,9 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
 
   // if num > 1, then we need shuffle operators
   if (parallelDegree_ == 1) {
-    selfConnUpLeftPOps = hashJoinBuildPOps;
-    selfConnUpRightPOps = hashJoinProbePOps;
-    selfConnDownPOps = hashJoinProbePOps;
+    // connect to upstream
+    connectManyToOne(leftTransRes.first, hashJoinBuildPOps[0]);
+    connectManyToOne(rightTransRes.first, hashJoinProbePOps[0]);
   } else {
     vector<shared_ptr<PhysicalOp>> shuffleLeftPOps, shuffleRightPOps;
     for (const auto &upLeftConnPOp: leftTransRes.first) {
@@ -353,16 +371,13 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
     allPOps.insert(allPOps.end(), shuffleRightPOps.begin(), shuffleRightPOps.end());
     connectManyToMany(shuffleLeftPOps, hashJoinBuildPOps);
     connectManyToMany(shuffleRightPOps, hashJoinProbePOps);
-    selfConnUpLeftPOps = shuffleLeftPOps;
-    selfConnUpRightPOps = shuffleRightPOps;
-    selfConnDownPOps = hashJoinProbePOps;
-  }
 
-  // connect to upstream
-  connectOneToOne(leftTransRes.first, selfConnUpLeftPOps);
-  connectOneToOne(rightTransRes.first, selfConnUpRightPOps);
+    // connect to upstream
+    connectOneToOne(leftTransRes.first, shuffleLeftPOps);
+    connectOneToOne(rightTransRes.first, shuffleRightPOps);
+  };
 
-  return make_pair(selfConnDownPOps, allPOps);
+  return make_pair(hashJoinProbePOps, allPOps);
 }
 
 pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
@@ -407,7 +422,10 @@ PrePToPTransformer::transformAggReduceFunction(const string &alias,
 
 void PrePToPTransformer::connectOneToOne(vector<shared_ptr<PhysicalOp>> &producers,
                                          vector<shared_ptr<PhysicalOp>> &consumers) {
-  assert(producers.size() == consumers.size());
+  if (producers.size() != consumers.size()) {
+    throw runtime_error(fmt::format("Bad one-to-one operator connection input, producers has {}, but consumers has {}",
+                                    producers.size(), consumers.size()));
+  }
   for (size_t i = 0; i < producers.size(); ++i) {
     producers[i]->produce(consumers[i]);
     consumers[i]->consume(producers[i]);

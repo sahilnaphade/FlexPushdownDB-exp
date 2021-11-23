@@ -35,6 +35,10 @@ std::string LessThanOrEqualTo::alias() {
   return genAliasForComparison("<=");
 }
 
+std::string LessThanOrEqualTo::getTypeString() {
+  return "LessThanOrEqualTo";
+}
+
 std::shared_ptr<Expression> normal::expression::gandiva::lte(const std::shared_ptr<Expression>& Left, const std::shared_ptr<Expression>& Right) {
   return std::make_shared<LessThanOrEqualTo>(Left, Right);
 }

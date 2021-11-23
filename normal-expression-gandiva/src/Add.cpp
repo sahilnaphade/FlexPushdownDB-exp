@@ -27,6 +27,10 @@ std::string Add::alias() {
   return "?column?";
 }
 
+std::string Add::getTypeString() {
+  return "Add";
+}
+
 std::shared_ptr<Expression> normal::expression::gandiva::plus(const std::shared_ptr<Expression>& left,
 															  const std::shared_ptr<Expression>& right) {
   return std::make_shared<Add>(left, right);

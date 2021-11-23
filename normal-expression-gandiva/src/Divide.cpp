@@ -28,6 +28,10 @@ std::string Divide::alias() {
   return "?column?";
 }
 
+std::string Divide::getTypeString() {
+  return "Divide";
+}
+
 std::shared_ptr<Expression> normal::expression::gandiva::divide(const std::shared_ptr<Expression>& left,
 																const std::shared_ptr<Expression>& right) {
   return std::make_shared<Divide>(left, right);

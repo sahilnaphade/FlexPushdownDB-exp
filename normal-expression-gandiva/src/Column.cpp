@@ -38,6 +38,10 @@ std::shared_ptr<std::vector<std::string> > Column::involvedColumnNames() {
   return involvedColumnNames;
 }
 
+std::string Column::getTypeString() {
+  return "Column";
+}
+
 std::shared_ptr<Expression> normal::expression::gandiva::col(const std::string& columnName) {
   auto canonicalColumnName = normal::tuple::ColumnName::canonicalize(columnName);
   return std::make_shared<Column>(canonicalColumnName);

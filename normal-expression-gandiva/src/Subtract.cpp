@@ -27,6 +27,10 @@ std::string Subtract::alias() {
   return "?column?";
 }
 
+std::string Subtract::getTypeString() {
+  return "Subtract";
+}
+
 std::shared_ptr<Expression> normal::expression::gandiva::minus(const std::shared_ptr<Expression>& left,
 															   const std::shared_ptr<Expression>& right) {
   return std::make_shared<Subtract>(left, right);

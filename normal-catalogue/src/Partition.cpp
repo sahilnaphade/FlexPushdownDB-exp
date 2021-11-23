@@ -11,6 +11,10 @@ const long &Partition::getNumBytes() const {
   return numBytes_;
 }
 
+const unordered_map<string, pair<shared_ptr<Scalar>, shared_ptr<Scalar>>> &Partition::getZoneMap() const {
+  return zoneMap_;
+}
+
 void Partition::setNumBytes(long numBytes) {
   numBytes_ = numBytes;
 }

@@ -95,6 +95,8 @@ void e2eWithoutServer() {
   const auto &mode = Mode::pullupMode();
   auto prePToPTransformer = make_shared<PrePToPTransformer>(prePhysicalPlan, awsClient, mode, 1, 1);
   const auto &physicalPlan = prePToPTransformer->transform();
+
+  return;
 }
 
 int main() {

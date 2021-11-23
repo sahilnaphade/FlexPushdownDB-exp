@@ -41,6 +41,10 @@ public:
     throw std::runtime_error("Numeric literal type not implemented");
   }
 
+  std::string getTypeString() override {
+    return "NumericLiteral";
+  }
+
   std::shared_ptr<std::vector<std::string>> involvedColumnNames() override{
     return std::make_shared<std::vector<std::string>>();
   }

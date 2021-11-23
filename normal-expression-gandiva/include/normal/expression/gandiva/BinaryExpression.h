@@ -21,9 +21,6 @@ public:
 
   std::shared_ptr<std::vector<std::string> > involvedColumnNames() override;
 
-  void compile(std::shared_ptr<arrow::Schema> schema) override;
-  std::string alias() override;
-
   [[nodiscard]] const std::shared_ptr<Expression> &getLeft() const;
   [[nodiscard]] const std::shared_ptr<Expression> &getRight() const;
 
