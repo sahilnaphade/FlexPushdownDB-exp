@@ -14,20 +14,42 @@
 
 namespace normal::expression::gandiva {
 
+enum ExpressionType {
+  ADD,
+  MULTIPLY,
+  SUBTRACT,
+  DIVIDE,
+  AND,
+  OR,
+  CAST,
+  COLUMN,
+  EQUAL_TO,
+  GREATER_THAN,
+  GREATER_THAN_OR_EQUAL_TO,
+  LESS_THAN,
+  LESS_THAN_OR_EQUAL_TO,
+  NUMERIC_LITERAL,
+  STRING_LITERAL
+};
+
 class Expression : public normal::expression::Expression {
 
 public:
+  Expression(ExpressionType type);
+
   virtual ~Expression() = default;
 
-  [[nodiscard]] virtual std::string alias() = 0;
+  virtual std::string alias() = 0;
 
-  [[nodiscard]] virtual std::shared_ptr<std::vector<std::string>> involvedColumnNames() = 0;
+  virtual std::shared_ptr<std::vector<std::string>> involvedColumnNames() = 0;
 
-  [[nodiscard]] const ::gandiva::NodePtr &getGandivaExpression() const;
+  ExpressionType getType() const;
+  const ::gandiva::NodePtr &getGandivaExpression() const;
 
   std::string showString();
 
 protected:
+  ExpressionType type_;
   ::gandiva::NodePtr gandivaExpression_;
 
 };
@@ -37,8 +59,8 @@ const inline std::string prefixFloat_ = "float:";
 std::shared_ptr<std::string> removePrefixInt(const std::string&);
 std::shared_ptr<std::string> removePrefixFloat(const std::string&);
 
-// FIXME: only applicable for ssb queries
-std::shared_ptr<normal::expression::gandiva::Expression> simpleCast(std::shared_ptr<normal::expression::gandiva::Expression> expr);
+std::shared_ptr<normal::expression::gandiva::Expression>
+cascadeCast(std::shared_ptr<normal::expression::gandiva::Expression> expr);
 
 }
 

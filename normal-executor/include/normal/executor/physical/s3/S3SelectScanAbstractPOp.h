@@ -52,8 +52,7 @@ public:
 			   std::shared_ptr<AWSClient> awsClient,
 			   bool scanOnStart,
 			   bool toCache,
-			   long queryId,
-         std::vector<std::shared_ptr<normal::cache::SegmentKey>> weightedSegmentKeys);
+			   long queryId);
 
   void onReceive(const Envelope &message) override;
 
@@ -65,12 +64,10 @@ protected:
 
   virtual void processScanMessage(const ScanMessage &message) = 0;
   virtual std::shared_ptr<TupleSet> readTuples() = 0;
-  virtual int getPredicateNum() = 0;
   virtual void readAndSendTuples();
 
   void requestStoreSegmentsInCache(const std::shared_ptr<TupleSet> &tupleSet);
   void put(const std::shared_ptr<TupleSet> &tupleSet);
-  void sendSegmentWeight();
 
   std::string s3Bucket_;
   std::string s3Object_;
@@ -89,11 +86,6 @@ protected:
    */
   bool scanOnStart_;
   bool toCache_;
-
-  /**
-   * used to compute filter weight
-   */
-  std::vector<std::shared_ptr<normal::cache::SegmentKey>> weightedSegmentKeys_;
 };
 
 }

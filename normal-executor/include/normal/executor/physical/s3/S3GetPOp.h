@@ -31,8 +31,7 @@ public:
            std::shared_ptr<AWSClient> awsClient,
            bool scanOnStart = true,
            bool toCache = false,
-           long queryId = 0,
-           std::vector<std::shared_ptr<normal::cache::SegmentKey>> weightedSegmentKeys = {});
+           long queryId = 0);
 
 private:
   std::shared_ptr<TupleSet> readCSVFile(std::shared_ptr<arrow::io::InputStream> &arrowInputStream);
@@ -64,7 +63,6 @@ private:
   void processScanMessage(const ScanMessage &message) override;
 
   std::shared_ptr<TupleSet> readTuples() override;
-  int getPredicateNum() override;
 };
 
 }

@@ -36,14 +36,6 @@ public:
          std::vector<std::shared_ptr<normal::cache::SegmentKey>> weightedSegmentKeys = {});
 
 private:
-  std::string filterSql_;   // "where ...."
-  std::shared_ptr<S3CSVParser> parser_;
-
-  // Used for collecting all results for split requests that are run in parallel, and for having a
-  // locks on shared variables when requests are split.
-  std::mutex splitReqLock_;
-  std::map<int, std::shared_ptr<arrow::Table>> splitReqNumToTable_;
-
 #ifdef __AVX2__
   std::shared_ptr<CSVToArrowSIMDChunkParser> generateSIMDCSVParser();
 #endif
@@ -62,7 +54,21 @@ private:
   void processScanMessage(const ScanMessage &message) override;
 
   std::shared_ptr<TupleSet> readTuples() override;
-  int getPredicateNum() override;
+  int getPredicateNum();
+  void sendSegmentWeight();
+
+  std::string filterSql_;   // "where ...."
+  std::shared_ptr<S3CSVParser> parser_;
+
+  // Used for collecting all results for split requests that are run in parallel, and for having a
+  // locks on shared variables when requests are split.
+  std::mutex splitReqLock_;
+  std::map<int, std::shared_ptr<arrow::Table>> splitReqNumToTable_;
+
+  /**
+   * used to compute filter weight
+   */
+  std::vector<std::shared_ptr<normal::cache::SegmentKey>> weightedSegmentKeys_;
 };
 
 }

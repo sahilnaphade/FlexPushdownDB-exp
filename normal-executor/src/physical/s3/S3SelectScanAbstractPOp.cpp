@@ -4,15 +4,12 @@
 
 
 #include <normal/executor/physical/s3/S3SelectScanAbstractPOp.h>
-#include <normal/executor/physical/Globals.h>
 #include <normal/executor/physical/cache/CacheHelper.h>
 #include <normal/executor/message/Message.h>
 #include <normal/executor/message/TupleMessage.h>
 #include <normal/executor/message/cache/LoadResponseMessage.h>
-#include <normal/cache/SegmentKey.h>
 #include <normal/catalogue/s3/S3Partition.h>
 #include <normal/tuple/TupleSet.h>
-#include <arrow/csv/options.h>
 #include <arrow/type_fwd.h>
 #include <aws/s3/model/GetObjectRequest.h>
 #include <aws/core/utils/ratelimiter/DefaultRateLimiter.h>
@@ -47,8 +44,7 @@ S3SelectScanAbstractPOp::S3SelectScanAbstractPOp(std::string name,
          std::shared_ptr<normal::aws::AWSClient> awsClient,
 			   bool scanOnStart,
 			   bool toCache,
-			   long queryId,
-         std::vector<std::shared_ptr<normal::cache::SegmentKey>> weightedSegmentKeys) :
+			   long queryId) :
 	PhysicalOp(std::move(name), std::move(type), std::move(projectColumnNames), queryId),
 	s3Bucket_(std::move(s3Bucket)),
 	s3Object_(std::move(s3Object)),
@@ -58,8 +54,7 @@ S3SelectScanAbstractPOp::S3SelectScanAbstractPOp(std::string name,
 	awsClient_(std::move(awsClient)),
 	columnsReadFromS3_(getProjectColumnNames().size()),
 	scanOnStart_(scanOnStart),
-	toCache_(toCache),
-  weightedSegmentKeys_(std::move(weightedSegmentKeys)) {
+	toCache_(toCache) {
 }
 
 void S3SelectScanAbstractPOp::onStart() {
@@ -154,44 +149,6 @@ void S3SelectScanAbstractPOp::requestStoreSegmentsInCache(const std::shared_ptr<
 
 S3SelectScanStats S3SelectScanAbstractPOp::getS3SelectScanStats() {
   return s3SelectScanStats_;
-}
-
-void S3SelectScanAbstractPOp::sendSegmentWeight() {
-  /**
-   * Compute selectivity, CSV and Parquet are different
-   */
-  auto filteredBytes = (double) s3SelectScanStats_.returnedBytes;
-  auto processedBytes = (double) s3SelectScanStats_.processedBytes;
-  auto lenRow = (double) table_->getApxRowLength();
-  double selectivity;
-  if (table_->getFormat()->getType() == catalogue::format::CSV) {
-    double lenColSum = 0.0;
-    for (auto const &returnedColumnName: getProjectColumnNames()) {
-      lenColSum += table_->getApxColumnLength(returnedColumnName);
-    }
-    double processedReturnedColumnBytes = (lenColSum / lenRow) * processedBytes;
-    selectivity = filteredBytes / processedReturnedColumnBytes;
-  } else {
-    selectivity = filteredBytes / processedBytes;
-  }
-
-  /**
-   * Weight function:
-   *   w = sel / vNetwork + (lenRow / (lenCol * vScan) + #pred / (lenCol * vFilter)) / #key
-   */
-  double predicateNum = getPredicateNum();
-  auto numKey = (double) weightedSegmentKeys_.size();
-  auto weightMap = std::make_shared<std::unordered_map<std::shared_ptr<SegmentKey>, double>>();
-  for (auto const &segmentKey: weightedSegmentKeys_) {
-    auto columnName = segmentKey->getColumnName();
-    auto lenCol = (double) table_->getApxColumnLength(columnName);
-
-    auto weight = selectivity / vNetwork + (lenRow / (lenCol * vS3Scan) + predicateNum / (lenCol * vS3Filter)) / numKey;
-    weightMap->emplace(segmentKey, weight);
-  }
-
-  ctx()->send(WeightRequestMessage::make(weightMap, getQueryId(), name()), "SegmentCache")
-          .map_error([](auto err) { throw std::runtime_error(err); });
 }
 
 }

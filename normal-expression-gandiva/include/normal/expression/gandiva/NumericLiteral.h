@@ -20,7 +20,9 @@ template<typename ARROW_TYPE, typename C_TYPE = typename ARROW_TYPE::c_type>
 class NumericLiteral : public Expression {
 
 public:
-  explicit NumericLiteral(C_TYPE value) : value_(value) {}
+  explicit NumericLiteral(C_TYPE value) :
+    Expression(NUMERIC_LITERAL),
+    value_(value) {}
 
   void compile(std::shared_ptr<arrow::Schema>) override {
     auto literal = ::gandiva::TreeExprBuilder::MakeLiteral(value_);

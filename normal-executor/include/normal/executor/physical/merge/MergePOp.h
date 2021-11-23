@@ -24,13 +24,13 @@ public:
 
   void onReceive(const Envelope &msg) override;
 
+  void setLeftProducer(const std::shared_ptr<PhysicalOp> &leftProducer);
+  void setRightProducer(const std::shared_ptr<PhysicalOp> &rightProducer);
+
 private:
   void onStart();
   void onComplete(const CompleteMessage &);
   void onTuple(const TupleMessage &message);
-
-  void setLeftProducer(const std::shared_ptr<PhysicalOp> &leftProducer);
-  void setRightProducer(const std::shared_ptr<PhysicalOp> &rightProducer);
 
   void merge();
 

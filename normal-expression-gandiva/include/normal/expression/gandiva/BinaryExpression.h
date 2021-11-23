@@ -15,7 +15,9 @@ namespace normal::expression::gandiva {
 class BinaryExpression : public Expression {
 
 public:
-  BinaryExpression(std::shared_ptr<Expression> left, std::shared_ptr<Expression> right);
+  BinaryExpression(std::shared_ptr<Expression> left,
+                   std::shared_ptr<Expression> right,
+                   ExpressionType type);
 
   std::shared_ptr<std::vector<std::string> > involvedColumnNames() override;
 

@@ -7,11 +7,20 @@
 #include <normal/executor/physical/s3/S3GetPOp.h>
 #include <normal/executor/physical/s3/S3SelectPOp.h>
 #include <normal/executor/physical/filter/FilterPOp.h>
+#include <normal/executor/physical/cache/CacheLoadPOp.h>
+#include <normal/executor/physical/merge/MergePOp.h>
 #include <normal/catalogue/s3/S3Table.h>
 
 using namespace normal::catalogue::s3;
 
 namespace normal::executor::physical {
+
+PrePToS3PTransformer::PrePToS3PTransformer(const shared_ptr<AWSClient> &awsClient,
+                                           const shared_ptr<Mode> &mode,
+                                           long queryId) :
+  awsClient_(awsClient),
+  mode_(mode),
+  queryId_(queryId) {}
 
 pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
 PrePToS3PTransformer::transformFilterableScan(const shared_ptr<FilterableScanPrePOp> &filterableScanPrePOp) {
@@ -22,11 +31,16 @@ PrePToS3PTransformer::transformFilterableScan(const shared_ptr<FilterableScanPre
                                     filterableScanPrePOp->getProjectColumnNames().end()};
 
   switch (mode_->id()) {
-    case Pullup: return transformFilterableScanPullup(filterableScanPrePOp, partitionPredicates, projectColumnNames);
-    case Pushdown: return transformFilterableScanPushdown(filterableScanPrePOp, partitionPredicates, projectColumnNames);
-    default: {
+    case Pullup:
+      return transformFilterableScanPullup(filterableScanPrePOp, partitionPredicates, projectColumnNames);
+    case Pushdown:
+      return transformFilterableScanPushdown(filterableScanPrePOp, partitionPredicates, projectColumnNames);
+    case CachingOnly:
+      return transformFilterableScanCachingOnly(filterableScanPrePOp, partitionPredicates, projectColumnNames);
+    case Hybrid:
+      return transformFilterableScanHybrid(filterableScanPrePOp, partitionPredicates, projectColumnNames);
+    default:
       throw runtime_error(fmt::format("Unsupported mode: {}", mode_->toString()));
-    }
   }
 }
 
@@ -37,17 +51,23 @@ PrePToS3PTransformer::transformFilterableScanPullup(const shared_ptr<FilterableS
   vector<shared_ptr<PhysicalOp>> scanPOps, filterPOps;
   const auto &s3Table = std::static_pointer_cast<S3Table>(filterableScanPrePOp->getTable());
 
+  /**
+   * For each partition, construct:
+   * a S3Get, a Filter if needed
+   */
   for (const auto &s3Partition: s3Table->getS3Partitions()) {
     const auto &s3Bucket = s3Partition->getBucket();
     const auto &s3Object = s3Partition->getObject();
     const auto &predicate = partitionPredicates.find(s3Partition)->second;
+    pair<long, long> scanRange{0, s3Partition->getNumBytes()};
 
-    const auto &scanPOp = make_shared<s3::S3GetPOp>(fmt::format("S3Get-{}/{}", s3Bucket, s3Object),
+    // s3 get
+    const auto &scanPOp = make_shared<s3::S3GetPOp>(fmt::format("S3Get - {}/{}", s3Bucket, s3Object),
                                                    s3Bucket,
                                                    s3Object,
                                                    projectColumnNames,
-                                                   0,
-                                                   s3Partition->getNumBytes(),
+                                                   scanRange.first,
+                                                   scanRange.second,
                                                    s3Table,
                                                    awsClient_,
                                                    true,
@@ -55,8 +75,9 @@ PrePToS3PTransformer::transformFilterableScanPullup(const shared_ptr<FilterableS
                                                    queryId_);
     scanPOps.emplace_back(scanPOp);
 
+    // filter
     if (predicate) {
-      const auto &filterPOp = make_shared<filter::FilterPOp>(fmt::format("Filter-{}/{}", s3Bucket, s3Object),
+      const auto &filterPOp = make_shared<filter::FilterPOp>(fmt::format("Filter - {}/{}", s3Bucket, s3Object),
                                                              predicate,
                                                              s3Table,
                                                              projectColumnNames,
@@ -84,19 +105,25 @@ PrePToS3PTransformer::transformFilterableScanPushdown(const shared_ptr<Filterabl
   vector<shared_ptr<PhysicalOp>> pOps;
   const auto &s3Table = std::static_pointer_cast<S3Table>(filterableScanPrePOp->getTable());
 
+  /**
+   * For each partition, construct:
+   * a S3Select
+   */
   for (const auto &s3Partition: s3Table->getS3Partitions()) {
     const auto &s3Bucket = s3Partition->getBucket();
     const auto &s3Object = s3Partition->getObject();
     const auto &predicate = partitionPredicates.find(s3Partition)->second;
     const auto &filterSql = genFilterSql(predicate);
+    pair<long, long> scanRange{0, s3Partition->getNumBytes()};
 
-    pOps.emplace_back(make_shared<s3::S3SelectPOp>(fmt::format("S3Select-{}/{}", s3Bucket, s3Object),
+    // s3 select
+    pOps.emplace_back(make_shared<s3::S3SelectPOp>(fmt::format("S3Select - {}/{}", s3Bucket, s3Object),
                                                    s3Bucket,
                                                    s3Object,
                                                    filterSql,
                                                    projectColumnNames,
-                                                   0,
-                                                   s3Partition->getNumBytes(),
+                                                   scanRange.first,
+                                                   scanRange.second,
                                                    s3Table,
                                                    awsClient_,
                                                    true,
@@ -111,14 +138,209 @@ pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
 PrePToS3PTransformer::transformFilterableScanCachingOnly(const shared_ptr<FilterableScanPrePOp> &filterableScanPrePOp,
                                                          const unordered_map<shared_ptr<Partition>, shared_ptr<Expression>, PartitionPointerHash, PartitionPointerPredicate> &partitionPredicates,
                                                          const vector<string> &projectColumnNames) {
-  return pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>();
+  const auto &s3Table = std::static_pointer_cast<S3Table>(filterableScanPrePOp->getTable());
+  vector<shared_ptr<PhysicalOp>> selfConnDownPOps, allPOps;
+
+  /**
+   * For each partition, construct:
+   * a CacheLoad, a S3Get, a Merge, a Filter if needed
+   */
+  for (const auto &s3Partition: s3Table->getS3Partitions()) {
+    const auto &s3Bucket = s3Partition->getBucket();
+    const auto &s3Object = s3Partition->getObject();
+    const auto &predicate = partitionPredicates.find(s3Partition)->second;
+    pair<long, long> scanRange{0, s3Partition->getNumBytes()};
+
+    // predicate columns and weighted segment keys
+    const auto &predicateColumnNames = *predicate->involvedColumnNames();
+    set<string> weightedColumnNames{predicateColumnNames.begin(), predicateColumnNames.end()};
+    weightedColumnNames.insert(projectColumnNames.begin(), projectColumnNames.end());
+    vector<shared_ptr<SegmentKey>> weightedSegmentKeys;
+    weightedSegmentKeys.reserve(weightedColumnNames.size());
+    for (const auto &weightedColumnName: weightedColumnNames) {
+      weightedSegmentKeys.emplace_back(
+              SegmentKey::make(s3Partition, weightedColumnName, SegmentRange::make(scanRange.first, scanRange.second)));
+    }
+
+    // cache load
+    const auto cacheLoadPOp = make_shared<cache::CacheLoadPOp>(fmt::format("CacheLoad - {}/{}", s3Bucket, s3Object),
+                                                               projectColumnNames,
+                                                               predicateColumnNames,
+                                                               s3Partition,
+                                                               scanRange.first,
+                                                               scanRange.second,
+                                                               awsClient_->getAwsConfig()->getS3ClientType(),
+                                                               queryId_);
+    allPOps.emplace_back(cacheLoadPOp);
+
+    // s3 get
+    const auto &scanPOp = make_shared<s3::S3GetPOp>(fmt::format("S3Get - {}/{}", s3Bucket, s3Object),
+                                                    s3Bucket,
+                                                    s3Object,
+                                                    projectColumnNames,
+                                                    scanRange.first,
+                                                    scanRange.second,
+                                                    s3Table,
+                                                    awsClient_,
+                                                    false,
+                                                    true,
+                                                    queryId_);
+    allPOps.emplace_back(scanPOp);
+
+    // merge
+    const auto &mergePOp = make_shared<merge::MergePOp>(fmt::format("Merge - {}/{}", s3Bucket, s3Object),
+                                                        projectColumnNames,
+                                                        queryId_);
+    allPOps.emplace_back(mergePOp);
+
+    // connect
+    cacheLoadPOp->setHitOperator(mergePOp);
+    cacheLoadPOp->setMissOperatorToCache(scanPOp);
+    scanPOp->produce(mergePOp);
+    scanPOp->consume(cacheLoadPOp);
+    mergePOp->setLeftProducer(cacheLoadPOp);
+    mergePOp->setRightProducer(scanPOp);
+
+    // filter
+    if (predicate) {
+      const auto &filterPOp = make_shared<filter::FilterPOp>(fmt::format("Filter - {}/{}", s3Bucket, s3Object),
+                                                             predicate,
+                                                             s3Table,
+                                                             projectColumnNames,
+                                                             queryId_);
+      mergePOp->produce(filterPOp);
+      filterPOp->consume(mergePOp);
+      allPOps.emplace_back(filterPOp);
+      selfConnDownPOps.emplace_back(filterPOp);
+    } else {
+      selfConnDownPOps.emplace_back(mergePOp);
+    }
+  }
+
+  return make_pair(selfConnDownPOps, allPOps);
 }
 
 pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
 PrePToS3PTransformer::transformFilterableScanHybrid(const shared_ptr<FilterableScanPrePOp> &filterableScanPrePOp,
                                                     const unordered_map<shared_ptr<Partition>, shared_ptr<Expression>, PartitionPointerHash, PartitionPointerPredicate> &partitionPredicates,
                                                     const vector<string> &projectColumnNames) {
-  return pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>();
+  const auto &s3Table = std::static_pointer_cast<S3Table>(filterableScanPrePOp->getTable());
+  vector<shared_ptr<PhysicalOp>> selfConnDownPOps, allPOps;
+
+  /**
+   * For each partition, construct:
+   * a CacheLoad, a S3Get which is to pull up segments to cache, a Merge, a Filter if needed
+   * a S3Select, a second Merge for local filtered segments + S3Select result
+   */
+  for (const auto &s3Partition: s3Table->getS3Partitions()) {
+    const auto &s3Bucket = s3Partition->getBucket();
+    const auto &s3Object = s3Partition->getObject();
+    const auto &predicate = partitionPredicates.find(s3Partition)->second;
+    const auto &filterSql = genFilterSql(predicate);
+    pair<long, long> scanRange{0, s3Partition->getNumBytes()};
+
+    // predicate columns and weighted segment keys
+    const auto &predicateColumnNames = *predicate->involvedColumnNames();
+    set<string> weightedColumnNames{predicateColumnNames.begin(), predicateColumnNames.end()};
+    weightedColumnNames.insert(projectColumnNames.begin(), projectColumnNames.end());
+    vector<shared_ptr<SegmentKey>> weightedSegmentKeys;
+    weightedSegmentKeys.reserve(weightedColumnNames.size());
+    for (const auto &weightedColumnName: weightedColumnNames) {
+      weightedSegmentKeys.emplace_back(
+              SegmentKey::make(s3Partition, weightedColumnName, SegmentRange::make(scanRange.first, scanRange.second)));
+    }
+
+    // cache load
+    const auto cacheLoadPOp = make_shared<cache::CacheLoadPOp>(fmt::format("CacheLoad - {}/{}", s3Bucket, s3Object),
+                                                               projectColumnNames,
+                                                               predicateColumnNames,
+                                                               s3Partition,
+                                                               scanRange.first,
+                                                               scanRange.second,
+                                                               awsClient_->getAwsConfig()->getS3ClientType(),
+                                                               queryId_);
+    allPOps.emplace_back(cacheLoadPOp);
+
+    // s3 select (cache)
+    const auto &scanPOp = make_shared<s3::S3SelectPOp>(fmt::format("S3Select (cache) - {}/{}", s3Bucket, s3Object),
+                                                       s3Bucket,
+                                                       s3Object,
+                                                       "",
+                                                       projectColumnNames,
+                                                       scanRange.first,
+                                                       scanRange.second,
+                                                       s3Table,
+                                                       awsClient_,
+                                                       false,
+                                                       true,
+                                                       queryId_);
+    allPOps.emplace_back(scanPOp);
+
+    // first merge
+    const auto &mergePOp1 = make_shared<merge::MergePOp>(fmt::format("merge1 - {}/{}", s3Bucket, s3Object),
+                                                      projectColumnNames,
+                                                      queryId_);
+    allPOps.emplace_back(mergePOp1);
+
+    // connect cache load, s3 select (to cache) and first merge
+    cacheLoadPOp->setHitOperator(mergePOp1);
+    cacheLoadPOp->setMissOperatorToCache(scanPOp);
+    scanPOp->produce(mergePOp1);
+    scanPOp->consume(cacheLoadPOp);
+    mergePOp1->setLeftProducer(cacheLoadPOp);
+    mergePOp1->setRightProducer(scanPOp);
+
+    // filter
+    shared_ptr<PhysicalOp> localResultPOp;
+    if (predicate) {
+      const auto &filterPOp = make_shared<filter::FilterPOp>(fmt::format("Filter - {}/{}", s3Bucket, s3Object),
+                                                             predicate,
+                                                             s3Table,
+                                                             projectColumnNames,
+                                                             queryId_);
+      allPOps.emplace_back(filterPOp);
+      mergePOp1->produce(filterPOp);
+      filterPOp->consume(mergePOp1);
+      localResultPOp = filterPOp;
+    } else {
+      localResultPOp = mergePOp1;
+    }
+
+    // s3 select (pushdown)
+    const auto &selectPOp = make_shared<s3::S3SelectPOp>(fmt::format("S3Select (pushdown) - {}/{}", s3Bucket, s3Object),
+                                                         s3Bucket,
+                                                         s3Object,
+                                                         filterSql,
+                                                         projectColumnNames,
+                                                         scanRange.first,
+                                                         scanRange.second,
+                                                         s3Table,
+                                                         awsClient_,
+                                                         false,
+                                                         false,
+                                                         queryId_,
+                                                         weightedSegmentKeys);
+    allPOps.emplace_back(selectPOp);
+
+    // second merge
+    const auto &mergePOp2 = make_shared<merge::MergePOp>(fmt::format("merge2 - {}/{}", s3Bucket, s3Object),
+                                                         projectColumnNames,
+                                                         queryId_);
+    allPOps.emplace_back(mergePOp2);
+
+    // connect op of local result, s3 select (pushdown) and second merge
+    cacheLoadPOp->setMissOperatorToPushdown(selectPOp);
+    localResultPOp->produce(mergePOp2);
+    selectPOp->consume(cacheLoadPOp);
+    selectPOp->produce(mergePOp2);
+    mergePOp2->setLeftProducer(localResultPOp);
+    mergePOp2->setRightProducer(selectPOp);
+
+    // second merge is the connect op to downstream
+    selfConnDownPOps.emplace_back(mergePOp2);
+  }
+
+  return make_pair(selfConnDownPOps, allPOps);
 }
 
 string PrePToS3PTransformer::genFilterSql(const shared_ptr<Expression> &predicate) {

@@ -8,16 +8,16 @@
 #include <normal/executor/message/CompleteMessage.h>
 #include <normal/executor/message/cache/WeightRequestMessage.h>
 #include <normal/expression/gandiva/Filter.h>
-#include <normal/expression/gandiva/And.h>
-#include <normal/expression/gandiva/Or.h>
+#include <normal/expression/gandiva/BinaryExpression.h>
 #include <normal/tuple/Globals.h>
 #include <utility>
 
 using namespace normal::executor::physical::filter;
 using namespace normal::cache;
+using namespace normal::expression::gandiva;
 
 FilterPOp::FilterPOp(std::string name,
-               std::shared_ptr<normal::expression::gandiva::Expression> predicate,
+               std::shared_ptr<Expression> predicate,
                std::shared_ptr<Table> table,
                std::vector<std::string> projectColumnNames,
                long queryId,
@@ -59,7 +59,7 @@ void FilterPOp::onTuple(const TupleMessage &Message) {
   /**
    * Check if this filter is applicable, if not, just send an empty table and complete
    */
-  auto tupleSet = Message.tuples();
+  const auto& tupleSet = Message.tuples();
   if (applicable_ == nullptr) {
     applicable_ = std::make_shared<bool>(isApplicable(tupleSet));
   }
@@ -132,7 +132,7 @@ bool FilterPOp::isApplicable(const std::shared_ptr<normal::tuple::TupleSet>& tup
 
 void FilterPOp::buildFilter() {
   if(!filter_.has_value()){
-	filter_ = normal::expression::gandiva::Filter::make(predicate_);
+	filter_ = Filter::make(predicate_);
 	filter_.value()->compile(Schema::make(received_->schema()));
   }
 }
@@ -160,9 +160,9 @@ void FilterPOp::sendTuples() {
   assert(filtered_->validate());
 }
 
-int getPredicateNum(const std::shared_ptr<normal::expression::gandiva::Expression> &expr) {
-  if (typeid(*expr) == typeid(normal::expression::gandiva::And) || typeid(*expr) == typeid(normal::expression::gandiva::Or)) {
-    auto biExpr = std::static_pointer_cast<normal::expression::gandiva::BinaryExpression>(expr);
+int getPredicateNum(const std::shared_ptr<Expression> &expr) {
+  if (expr->getType() == AND || expr->getType() == OR) {
+    auto biExpr = std::static_pointer_cast<BinaryExpression>(expr);
     return getPredicateNum(biExpr->getLeft()) + getPredicateNum(biExpr->getRight());
   } else {
     return 1;

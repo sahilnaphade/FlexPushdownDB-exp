@@ -31,6 +31,7 @@ target_include_directories(normal-expression-gandiva PUBLIC include)
 
 target_link_libraries(normal-expression-gandiva PUBLIC gandiva_static)
 target_link_libraries(normal-expression-gandiva PUBLIC normal-expression)
+target_link_libraries(normal-expression-gandiva PUBLIC normal-util)
 
 
 #-----------------------------------------------------------------------------------------------------------------------

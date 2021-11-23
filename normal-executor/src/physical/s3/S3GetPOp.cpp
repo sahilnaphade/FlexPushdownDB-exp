@@ -59,8 +59,7 @@ S3GetPOp::S3GetPOp(std::string name,
                std::shared_ptr<normal::aws::AWSClient> awsClient,
 						   bool scanOnStart,
                bool toCache,
-               long queryId,
-               std::vector<std::shared_ptr<normal::cache::SegmentKey>> weightedSegmentKeys) :
+               long queryId) :
   S3SelectScanAbstractPOp(std::move(name),
                           "S3Get",
                           std::move(s3Bucket),
@@ -72,8 +71,7 @@ S3GetPOp::S3GetPOp(std::string name,
                           std::move(awsClient),
                           scanOnStart,
                           toCache,
-                          queryId,
-                          std::move(weightedSegmentKeys)) {
+                          queryId) {
 }
 
 bool S3GetPOp::parallelTuplesetCreationSupported() {
@@ -474,15 +472,10 @@ std::shared_ptr<TupleSet> S3GetPOp::readTuples() {
     readTupleSet = s3GetFullRequest();
 #endif
 
-    // Store the read columns in the cache, if not in full-pushdown mode
+    // Store the read columns in the cache, if this operator is to load segments to cache
     if (toCache_) {
       // TODO: only send caching columns
       requestStoreSegmentsInCache(readTupleSet);
-    } else {
-      // send segment filter weight
-      if (!weightedSegmentKeys_.empty() && s3SelectScanStats_.processedBytes > 0) {
-        sendSegmentWeight();
-      }
     }
   }
 
@@ -494,10 +487,6 @@ void S3GetPOp::processScanMessage(const ScanMessage &message) {
   // This is for hybrid caching as we later determine which columns to pull up
   // Though currently this is only called for SELECT in our system
   setProjectColumnNames(message.getColumnNames());
-}
-
-int S3GetPOp::getPredicateNum() {
-  return 0;
 }
 
 }

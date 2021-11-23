@@ -11,8 +11,8 @@
 using namespace normal::expression::gandiva;
 
 Cast::Cast(std::shared_ptr<Expression> expr, std::shared_ptr<arrow::DataType> type) :
-	expr_(std::move(expr)), type_(std::move(type)) {
-}
+  Expression(CAST),
+	expr_(std::move(expr)), type_(std::move(type)) {}
 
 ::gandiva::NodePtr Cast::buildGandivaExpression() {
 

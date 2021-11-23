@@ -3,6 +3,7 @@
 //
 
 #include <normal/executor/physical/transform/PrePToPTransformer.h>
+#include <normal/executor/physical/transform/PrePToS3PTransformer.h>
 #include <normal/executor/physical/sort/SortPOp.h>
 #include <normal/executor/physical/aggregate/AggregatePOp.h>
 #include <normal/executor/physical/aggregate/Sum.h>
@@ -25,7 +26,8 @@ PrePToPTransformer::PrePToPTransformer(const shared_ptr<PrePhysicalPlan> &prePhy
                                        long queryId,
                                        int parallelDegree) :
   prePhysicalPlan_(prePhysicalPlan),
-  awsClient_(awsClient), mode_(mode),
+  awsClient_(awsClient),
+  mode_(mode),
   queryId_(queryId),
   parallelDegree_(parallelDegree) {}
 
@@ -365,7 +367,8 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
 
 pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
 PrePToPTransformer::transformFilterableScan(const shared_ptr<FilterableScanPrePOp> &filterableScanPrePOp) {
-  return pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>();
+  const auto s3PTransformer = make_shared<PrePToS3PTransformer>(awsClient_, mode_, queryId_);
+  return s3PTransformer->transformFilterableScan(filterableScanPrePOp);
 }
 
 shared_ptr<aggregate::AggregationFunction>

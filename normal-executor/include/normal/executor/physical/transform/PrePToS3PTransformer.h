@@ -21,6 +21,8 @@ namespace normal::executor::physical {
 
 class PrePToS3PTransformer {
 public:
+  PrePToS3PTransformer(const shared_ptr<AWSClient> &awsClient, const shared_ptr<Mode> &mode, long queryId);
+
   /**
    * Transform filterable scan prephysical op to physical op
    * @param prePOp: prephysical op
