@@ -36,7 +36,7 @@ private:
   static void readStats(const json &statsJObj,
                         unordered_map<string, unordered_map<string, int>> &apxColumnLengthMapMap,
                         unordered_map<string, int> &apxRowLengthMap);
-  static void readZonemap(const json &zonemapJObj,
+  static void readZoneMap(const json &zonemapJObj,
                           const unordered_map<string, shared_ptr<arrow::Schema>> &schemaMap,
                           unordered_map<string, vector<shared_ptr<S3Partition>>> &s3PartitionsMap,
                           unordered_map<string, unordered_set<string>> &zonemapColumnNamesMap);

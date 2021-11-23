@@ -1,9 +1,9 @@
 {
-  "schemaName": "ssb-sf100-sortlineorder/parquet_150MB/",
+  "schemaName": "ssb-sf100-sortlineorder/csv_150MB_initial_format/",
   "tables": [
     {
       "name": "lineorder",
-      "zonemap": [
+      "zoneMap": [
         {
           "field": "lo_orderdate",
           "valuePairs": [

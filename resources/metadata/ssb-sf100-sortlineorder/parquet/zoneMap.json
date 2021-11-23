@@ -1,9 +1,9 @@
 {
-  "schemaName": "ssb-sf100-sortlineorder/csv/",
+  "schemaName": "ssb-sf100-sortlineorder/parquet/",
   "tables": [
     {
       "name": "lineorder",
-      "zonemap": [
+      "zoneMap": [
         {
           "field": "lo_orderdate",
           "valuePairs": [

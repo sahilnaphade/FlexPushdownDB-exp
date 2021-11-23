@@ -31,7 +31,7 @@ S3CatalogueEntryReader::readS3CatalogueEntry(const shared_ptr<Catalogue> &catalo
   metadataPath = metadataPath.parent_path();
   auto statsJObj = json::parse(readFile(metadataPath.append("stats.json")));
   metadataPath = metadataPath.parent_path();
-  auto zonemapJObj = json::parse(readFile(metadataPath.append("zonemap.json")));
+  auto zoneMapJObj = json::parse(readFile(metadataPath.append("zoneMap.json")));
 
   // get all table names
   unordered_set<string> tableNames;
@@ -44,7 +44,7 @@ S3CatalogueEntryReader::readS3CatalogueEntry(const shared_ptr<Catalogue> &catalo
   unordered_map<string, shared_ptr<arrow::Schema>> schemaMap;
   unordered_map<string, unordered_map<string, int>> apxColumnLengthMapMap;
   unordered_map<string, int> apxRowLengthMap;
-  unordered_map<string, unordered_set<string>> zonemapColumnNamesMap;
+  unordered_map<string, unordered_set<string>> zoneMapColumnNamesMap;
   unordered_map<string, vector<shared_ptr<S3Partition>>> s3PartitionsMap;
 
   // read schema
@@ -53,8 +53,8 @@ S3CatalogueEntryReader::readS3CatalogueEntry(const shared_ptr<Catalogue> &catalo
   // read stats
   readStats(statsJObj, apxColumnLengthMapMap, apxRowLengthMap);
 
-  // read zonemap
-  readZonemap(zonemapJObj, schemaMap, s3PartitionsMap, zonemapColumnNamesMap);
+  // read zoneMap
+  readZoneMap(zoneMapJObj, schemaMap, s3PartitionsMap, zoneMapColumnNamesMap);
 
   // read partition size from s3 listObject
   readPartitionSize(s3Client, s3Bucket, schemaName, s3PartitionsMap);
@@ -71,7 +71,7 @@ S3CatalogueEntryReader::readS3CatalogueEntry(const shared_ptr<Catalogue> &catalo
                                                        formatMap.find(tableName)->second,
                                                        apxColumnLengthMapMap.find(tableName)->second,
                                                        apxRowLengthMap.find(tableName)->second,
-                                                       zonemapColumnNamesMap.find(tableName)->second,
+                                                       zoneMapColumnNamesMap.find(tableName)->second,
                                                        s3PartitionsMap.find(tableName)->second,
                                                        s3CatalogueEntry);
     s3CatalogueEntry->addS3Table(s3Table);
@@ -152,22 +152,22 @@ void S3CatalogueEntryReader::readStats(const json &statsJObj,
   }
 }
 
-void S3CatalogueEntryReader::readZonemap(const json &zonemapJObj,
+void S3CatalogueEntryReader::readZoneMap(const json &zoneMapJObj,
                                          const unordered_map<string, shared_ptr<arrow::Schema>> &schemaMap,
                                          unordered_map<string, vector<shared_ptr<S3Partition>>> &s3PartitionsMap,
-                                         unordered_map<string, unordered_set<string>> &zonemapColumnNamesMap) {
-  // read zonemaps
-  for (const auto &tableZonemapsJObj: zonemapJObj["tables"].get<vector<json>>()) {
-    const string &tableName = tableZonemapsJObj["name"].get<string>();
+                                         unordered_map<string, unordered_set<string>> &zoneMapColumnNamesMap) {
+  // read zoneMaps
+  for (const auto &tableZoneMapsJObj: zoneMapJObj["tables"].get<vector<json>>()) {
+    const string &tableName = tableZoneMapsJObj["name"].get<string>();
     const shared_ptr<arrow::Schema> &schema = schemaMap.find(tableName)->second;
     const vector<shared_ptr<S3Partition>> &s3Partitions = s3PartitionsMap.find(tableName)->second;
 
-    unordered_set<string> zonemapColumnNames;
-    for (const auto &tableZonemapJObj: tableZonemapsJObj["zonemap"].get<vector<json>>()) {
-      const string &fieldName = ColumnName::canonicalize(tableZonemapJObj["field"].get<string>());
-      zonemapColumnNames.emplace(fieldName);
+    unordered_set<string> zoneMapColumnNames;
+    for (const auto &tableZoneMapJObj: tableZoneMapsJObj["zoneMap"].get<vector<json>>()) {
+      const string &fieldName = ColumnName::canonicalize(tableZoneMapJObj["field"].get<string>());
+      zoneMapColumnNames.emplace(fieldName);
       const shared_ptr<arrow::DataType> fieldType = schema->GetFieldByName(fieldName)->type();
-      const auto valuePairsJArr = tableZonemapJObj["valuePairs"].get<vector<json>>();
+      const auto valuePairsJArr = tableZoneMapJObj["valuePairs"].get<vector<json>>();
 
       for (size_t i = 0; i < s3Partitions.size(); ++i) {
         const auto &s3Partition = s3Partitions[i];
@@ -175,14 +175,14 @@ void S3CatalogueEntryReader::readZonemap(const json &zonemapJObj,
         s3Partition->addMinMax(fieldName, jsonToMinMaxLiterals(valuePairJObj, fieldType));
       }
     }
-    zonemapColumnNamesMap.emplace(tableName, zonemapColumnNames);
+    zoneMapColumnNamesMap.emplace(tableName, zoneMapColumnNames);
   }
 
-  // fill zonemapColumnNamesMap for no-zonemap tables
+  // fill zoneMapColumnNamesMap for no-zoneMap tables
   for (const auto &it: schemaMap) {
     const string &tableName = it.first;
-    if (zonemapColumnNamesMap.find(tableName) == zonemapColumnNamesMap.end()) {
-      zonemapColumnNamesMap.emplace(tableName, unordered_set<string>{});
+    if (zoneMapColumnNamesMap.find(tableName) == zoneMapColumnNamesMap.end()) {
+      zoneMapColumnNamesMap.emplace(tableName, unordered_set<string>{});
     }
   }
 }
