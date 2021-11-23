@@ -9,7 +9,7 @@ namespace normal::catalogue::format {
 
 enum FormatType {
   CSV,
-  Parquet
+  PARQUET
 };
 
 }

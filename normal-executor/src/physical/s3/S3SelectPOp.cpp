@@ -84,7 +84,7 @@ std::shared_ptr<CSVToArrowSIMDChunkParser> S3SelectPOp::generateSIMDCSVParser() 
   }
   // The delimiter for S3 output is always ',' so this is hardcoded
   // FIXME: temporary fix of "parseChunkSize < payload size" issue on Airmettle Select
-  auto conversionBufferSize = (awsClient_->getAwsConfig()->getS3ClientType() != Airmettle) ?
+  auto conversionBufferSize = (awsClient_->getAwsConfig()->getS3ClientType() != AIRMETTLE) ?
                               DefaultS3ConversionBufferSize : DefaultS3ConversionBufferSizeAirmettleSelect;
   auto simdParser = std::make_shared<CSVToArrowSIMDChunkParser>(name(), conversionBufferSize,
                                                                 std::make_shared<::arrow::Schema>(fields),
@@ -156,7 +156,7 @@ std::shared_ptr<TupleSet> S3SelectPOp::s3Select(uint64_t startOffset, uint64_t e
 
   // Airmettle says they do not fully support byte range scans so
   // leave it out when running with Airmettle.
-  if (awsClient_->getAwsConfig()->getS3ClientType() != Airmettle) {
+  if (awsClient_->getAwsConfig()->getS3ClientType() != AIRMETTLE) {
     if (scanRangeSupported()) {
       ScanRange scanRange;
       scanRange.SetStart(startOffset);
@@ -199,7 +199,7 @@ std::shared_ptr<TupleSet> S3SelectPOp::s3Select(uint64_t startOffset, uint64_t e
     auto payload = recordsEvent.GetPayload();
     if (!payload.empty()) {
       // Airmettle doesn't trigger StatsEvent callback, so add up returned bytes here.
-      if (awsClient_->getAwsConfig()->getS3ClientType() == Airmettle) {
+      if (awsClient_->getAwsConfig()->getS3ClientType() == AIRMETTLE) {
         splitReqLock_.lock();
         s3SelectScanStats_.returnedBytes += payload.size();
         splitReqLock_.unlock();
@@ -242,7 +242,7 @@ std::shared_ptr<TupleSet> S3SelectPOp::s3Select(uint64_t startOffset, uint64_t e
                  statsEvent.GetDetails().GetBytesReturned());
     splitReqLock_.lock();
     s3SelectScanStats_.processedBytes += statsEvent.GetDetails().GetBytesProcessed();
-    if (awsClient_->getAwsConfig()->getS3ClientType() != Airmettle) {
+    if (awsClient_->getAwsConfig()->getS3ClientType() != AIRMETTLE) {
       s3SelectScanStats_.returnedBytes += statsEvent.GetDetails().GetBytesReturned();
     }
     splitReqLock_.unlock();

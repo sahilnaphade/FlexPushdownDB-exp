@@ -8,13 +8,13 @@
 namespace normal::plan::prephysical {
 
 enum PrePOpType {
-  FilterableScan,
-  Filter,
-  HashJoin,
-  Aggregate,
-  Group,
-  Sort,
-  Project
+  FILTERABLE_SCAN,
+  FILTER,
+  HASH_JOIN,
+  AGGREGATE,
+  GROUP,
+  SORT,
+  PROJECT
 };
 
 }

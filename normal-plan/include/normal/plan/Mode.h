@@ -10,10 +10,10 @@
 namespace normal::plan {
 
 enum ModeId {
-  Pullup,
-  Pushdown,
-  CachingOnly,
-  Hybrid
+  PULL_UP,
+  PUSHDOWN_ONLY,
+  CACHING_ONLY,
+  HYBRID
 };
 
 class Mode {
@@ -26,7 +26,7 @@ public:
   std::string toString();
 
   static std::shared_ptr<Mode> pullupMode();
-  static std::shared_ptr<Mode> pushdownMode();
+  static std::shared_ptr<Mode> pushdownOnlyMode();
   static std::shared_ptr<Mode> cachingOnlyMode();
   static std::shared_ptr<Mode> hybridMode();
 

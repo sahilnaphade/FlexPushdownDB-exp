@@ -60,7 +60,7 @@ std::shared_ptr<Aws::S3::S3Client> AWSClient::makeS3Client() {
               true);
       break;
     }
-    case Airmettle: {
+    case AIRMETTLE: {
       SPDLOG_DEBUG("Using Airmettle Client");
       config.endpointOverride = "54.151.121.20/s3/test";
       Aws::String accessKeyId = "test-test";
@@ -75,7 +75,7 @@ std::shared_ptr<Aws::S3::S3Client> AWSClient::makeS3Client() {
               false);
       break;
     }
-    case Minio: {
+    case MINIO: {
       SPDLOG_DEBUG("Using Minio Client");
       config.endpointOverride = "172.31.10.231:9000";
       Aws::String accessKeyId = "minioadmin";

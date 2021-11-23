@@ -6,7 +6,7 @@
 
 namespace normal::plan::prephysical {
 ProjectPrePOp::ProjectPrePOp(const vector<shared_ptr<Expression>> &exprs) :
-  PrePhysicalOp(Project),
+  PrePhysicalOp(PROJECT),
   exprs_(exprs) {}
 
 string ProjectPrePOp::getTypeString() {

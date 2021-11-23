@@ -249,7 +249,7 @@ GetObjectResult S3GetPOp::s3GetRequestOnly(const std::string &s3Object, uint64_t
   GetObjectRequest getObjectRequest;
   getObjectRequest.SetBucket(Aws::String(s3Bucket_));
   getObjectRequest.SetKey(Aws::String(s3Object));
-  if (awsClient_->getAwsConfig()->getS3ClientType() != Airmettle) {
+  if (awsClient_->getAwsConfig()->getS3ClientType() != AIRMETTLE) {
     std::stringstream ss;
     ss << "bytes=" << startOffset << '-' << endOffset;
     getObjectRequest.SetRange(ss.str().c_str());
@@ -462,7 +462,7 @@ std::shared_ptr<TupleSet> S3GetPOp::readTuples() {
     if (awsClient_->getAwsConfig()->getS3ClientType() == S3ClientType::S3 && parallelTuplesetCreationSupported()
         && (finishOffset_ - startOffset_ > DefaultS3RangeSize)) {
       readTupleSet = s3GetParallelReqs(false);
-    } else if (awsClient_->getAwsConfig()->getS3ClientType() == Airmettle && parallelTuplesetCreationSupported()) {
+    } else if (awsClient_->getAwsConfig()->getS3ClientType() == AIRMETTLE && parallelTuplesetCreationSupported()) {
       readTupleSet = s3GetParallelReqs(true);
     }
     else {

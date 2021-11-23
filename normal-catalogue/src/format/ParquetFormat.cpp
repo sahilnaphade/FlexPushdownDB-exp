@@ -6,6 +6,6 @@
 
 namespace normal::catalogue::format {
 
-ParquetFormat::ParquetFormat() : Format(Parquet) {}
+ParquetFormat::ParquetFormat() : Format(PARQUET) {}
 
 }

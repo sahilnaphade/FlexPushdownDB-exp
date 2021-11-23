@@ -8,10 +8,10 @@
 namespace normal::plan::prephysical {
 
 enum JoinType {
-  Inner,
-  Left,
-  Right,
-  Full
+  INNER,
+  LEFT,
+  RIGHT,
+  FULL
 };
 
 }

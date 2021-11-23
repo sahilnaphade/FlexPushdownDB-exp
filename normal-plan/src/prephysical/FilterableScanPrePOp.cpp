@@ -7,7 +7,7 @@
 namespace normal::plan::prephysical {
 
 FilterableScanPrePOp::FilterableScanPrePOp(const shared_ptr<Table> &table) :
-  PrePhysicalOp(FilterableScan),
+  PrePhysicalOp(FILTERABLE_SCAN),
   table_(table) {}
 
 string FilterableScanPrePOp::getTypeString() {

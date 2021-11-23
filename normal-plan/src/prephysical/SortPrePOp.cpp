@@ -10,7 +10,7 @@ using namespace std;
 namespace normal::plan::prephysical {
 
 SortPrePOp::SortPrePOp(const vector<pair<string, FieldDirection>> &sortColumns) :
-  PrePhysicalOp(Sort),
+  PrePhysicalOp(SORT),
   sortColumns_(sortColumns) {}
 
 string SortPrePOp::getTypeString() {

@@ -31,13 +31,13 @@ PrePToS3PTransformer::transformFilterableScan(const shared_ptr<FilterableScanPre
                                     filterableScanPrePOp->getProjectColumnNames().end()};
 
   switch (mode_->id()) {
-    case Pullup:
+    case PULL_UP:
       return transformFilterableScanPullup(filterableScanPrePOp, partitionPredicates, projectColumnNames);
-    case Pushdown:
+    case PUSHDOWN_ONLY:
       return transformFilterableScanPushdown(filterableScanPrePOp, partitionPredicates, projectColumnNames);
-    case CachingOnly:
+    case CACHING_ONLY:
       return transformFilterableScanCachingOnly(filterableScanPrePOp, partitionPredicates, projectColumnNames);
-    case Hybrid:
+    case HYBRID:
       return transformFilterableScanHybrid(filterableScanPrePOp, partitionPredicates, projectColumnNames);
     default:
       throw runtime_error(fmt::format("Unsupported mode: {}", mode_->toString()));

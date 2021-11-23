@@ -9,8 +9,8 @@ namespace normal::aws {
 
 enum S3ClientType {
   S3,
-  Airmettle,
-  Minio
+  AIRMETTLE,
+  MINIO
 };
 
 }

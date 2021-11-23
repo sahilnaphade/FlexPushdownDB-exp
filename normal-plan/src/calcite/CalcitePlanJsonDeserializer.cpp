@@ -330,7 +330,7 @@ shared_ptr<prephysical::HashJoinPrePOp> CalcitePlanJsonDeserializer::deserialize
   const auto &joinTypeStr = jObj["joinType"].get<string>();
   JoinType joinType;
   if (joinTypeStr == "INNER") {
-    joinType = Inner;
+    joinType = INNER;
   } else {
     throw runtime_error(fmt::format("Unsupported join type, {}, from: {}", joinTypeStr, to_string(jObj)));
   }
@@ -354,7 +354,7 @@ shared_ptr<prephysical::PrePhysicalOp> CalcitePlanJsonDeserializer::deserializeF
 
   // deserialize producers
   const auto &producers = deserializeProducers(jObj);
-  if (producers[0]->getType() == FilterableScan) {
+  if (producers[0]->getType() == FILTERABLE_SCAN) {
     // if the producer is filterable scan, then set its filter predicate
     const auto &filterableScan = static_pointer_cast<FilterableScanPrePOp>(producers[0]);
     filterableScan->setPredicate(predicate);

@@ -15,10 +15,10 @@ ModeId Mode::id() const {
 
 std::string Mode::toString() {
   switch(id_) {
-    case Pullup: return "Pullup";
-    case Pushdown: return "Pushdown";
-    case CachingOnly: return "Caching-only";
-    case Hybrid: return "Hybrid";
+    case PULL_UP: return "Pullup";
+    case PUSHDOWN_ONLY: return "Pushdown-only";
+    case CACHING_ONLY: return "Caching-only";
+    case HYBRID: return "Hybrid";
     default:
       /*
        * Shouldn't occur, but we'll throw a serious-ish exception if it ever does
@@ -32,19 +32,19 @@ bool Mode::is(const std::shared_ptr<Mode>& mode) {
 }
 
 std::shared_ptr<Mode> Mode::pullupMode() {
-  return std::make_shared<Mode>(Pullup);
+  return std::make_shared<Mode>(PULL_UP);
 }
 
-std::shared_ptr<Mode> Mode::pushdownMode() {
-  return std::make_shared<Mode>(Pushdown);
+std::shared_ptr<Mode> Mode::pushdownOnlyMode() {
+  return std::make_shared<Mode>(PUSHDOWN_ONLY);
 }
 
 std::shared_ptr<Mode> Mode::cachingOnlyMode() {
-  return std::make_shared<Mode>(CachingOnly);
+  return std::make_shared<Mode>(CACHING_ONLY);
 }
 
 std::shared_ptr<Mode> Mode::hybridMode() {
-  return std::make_shared<Mode>(Hybrid);
+  return std::make_shared<Mode>(HYBRID);
 }
 
 }

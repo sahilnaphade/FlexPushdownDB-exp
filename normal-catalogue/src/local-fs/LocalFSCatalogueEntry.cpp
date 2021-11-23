@@ -11,7 +11,7 @@ namespace normal::catalogue::local_fs {
 
 LocalFSCatalogueEntry::LocalFSCatalogueEntry(string schemaName,
                                              shared_ptr<Catalogue> catalogue) :
-  CatalogueEntry(LocalFS,
+  CatalogueEntry(LOCAL_FS,
                  move(schemaName),
                  move(catalogue)) {}
 

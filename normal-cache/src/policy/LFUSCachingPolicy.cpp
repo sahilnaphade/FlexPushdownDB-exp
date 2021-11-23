@@ -135,7 +135,7 @@ LFUSCachingPolicy::onStore(const std::shared_ptr<SegmentKey> &key) {
 std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>>
 LFUSCachingPolicy::onToCache(std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> segmentKeys) {
     auto startTime = std::chrono::steady_clock::now();
-    if (mode_->id() == CachingOnly) {
+    if (mode_->id() == CACHING_ONLY) {
         return segmentKeys;
     }
 

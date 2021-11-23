@@ -8,7 +8,7 @@ namespace normal::plan::prephysical {
 
 AggregatePrePOp::AggregatePrePOp(const vector<string> &aggOutputColumnNames,
                                  const vector<shared_ptr<AggregatePrePFunction>> &functions):
-  PrePhysicalOp(Aggregate),
+  PrePhysicalOp(AGGREGATE),
   aggOutputColumnNames_(aggOutputColumnNames),
   functions_(functions) {}
 

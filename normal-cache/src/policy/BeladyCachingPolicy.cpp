@@ -44,7 +44,7 @@ BeladyCachingPolicy::BeladyCachingPolicy(size_t maxSize,
   helper_->setSegmentSizeMap(getSegmentSizeMap());
 }
 
-void BeladyCachingPolicy::onLoad(const std::shared_ptr<SegmentKey> &key) {
+void BeladyCachingPolicy::onLoad(const std::shared_ptr<SegmentKey> &) {
   // Nothing to do for Belady caching policy
 }
 
@@ -114,7 +114,7 @@ BeladyCachingPolicy::onStore(const std::shared_ptr<SegmentKey> &key) {
 
 std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>>
 BeladyCachingPolicy::onToCache(std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> segmentKeys) {
-  if (mode_->id() == CachingOnly) {
+  if (mode_->id() == CACHING_ONLY) {
     return segmentKeys;
   }
 

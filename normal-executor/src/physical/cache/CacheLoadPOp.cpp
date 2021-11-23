@@ -125,7 +125,7 @@ void CacheLoadPOp::onCacheLoadResponse(const LoadResponseMessage &Message) {
   bool cachingResultNeeded;
 
   // FIXME: Airmettle doesn't support intra-partition hybrid as it doesn't preserve order
-  if (s3ClientType_ != Airmettle) {
+  if (s3ClientType_ != AIRMETTLE) {
     /**
      * Caching result is not needed when:
      *    hitColumns + missCachingColumns don't cover all predicateColumns or

@@ -168,7 +168,7 @@ LFUCachingPolicy::onStore(const std::shared_ptr<SegmentKey> &key) {
 
 std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>>
 LFUCachingPolicy::onToCache(std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> segmentKeys) {
-  if (mode_->id() == CachingOnly) {
+  if (mode_->id() == CACHING_ONLY) {
     return segmentKeys;
   }
 

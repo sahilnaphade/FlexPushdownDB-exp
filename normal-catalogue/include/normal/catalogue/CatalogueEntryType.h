@@ -8,7 +8,7 @@
 namespace normal::catalogue {
 
 enum CatalogueEntryType {
-  LocalFS,
+  LOCAL_FS,
   S3
 };
 

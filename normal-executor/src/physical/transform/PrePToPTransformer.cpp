@@ -47,31 +47,31 @@ shared_ptr<PhysicalPlan> PrePToPTransformer::transform() {
 pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
 PrePToPTransformer::transformDfs(const shared_ptr<PrePhysicalOp> &prePOp) {
   switch (prePOp->getType()) {
-    case Sort: {
+    case SORT: {
       const auto &sortPrePOp = std::static_pointer_cast<SortPrePOp>(prePOp);
       return transformSort(sortPrePOp);
     }
-    case Aggregate: {
+    case AGGREGATE: {
       const auto &aggregatePrePOp = std::static_pointer_cast<AggregatePrePOp>(prePOp);
       return transformAggregate(aggregatePrePOp);
     }
-    case Group: {
+    case GROUP: {
       const auto &groupPrePOp = std::static_pointer_cast<GroupPrePOp>(prePOp);
       return transformGroup(groupPrePOp);
     }
-    case Project: {
+    case PROJECT: {
       const auto &projectPrePOp = std::static_pointer_cast<ProjectPrePOp>(prePOp);
       return transformProject(projectPrePOp);
     }
-    case PrePOpType::Filter: {
+    case FILTER: {
       const auto &filterPrePOp = std::static_pointer_cast<FilterPrePOp>(prePOp);
       return transformFilter(filterPrePOp);
     }
-    case HashJoin: {
+    case HASH_JOIN: {
       const auto &hashJoinPrePOp = std::static_pointer_cast<HashJoinPrePOp>(prePOp);
       return transformHashJoin(hashJoinPrePOp);
     }
-    case FilterableScan: {
+    case FILTERABLE_SCAN: {
       const auto &filterableScanPrePOp = std::static_pointer_cast<FilterableScanPrePOp>(prePOp);
       return transformFilterableScan(filterableScanPrePOp);
     }
