@@ -323,7 +323,6 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
   allPOps.insert(allPOps.end(), rightTransRes.second.begin(), rightTransRes.second.end());
 
   // transform self
-//  vector<shared_ptr<PhysicalOp>> selfConnDownPOps;
   vector<string> projectColumnNames{hashJoinPrePOp->getProjectColumnNames().begin(),
                                     hashJoinPrePOp->getProjectColumnNames().end()};
   // FIXME: support multiple pairs of join columns
@@ -361,7 +360,7 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
               queryId_));
     }
     for (const auto &upRightConnPOp: rightTransRes.first) {
-      shuffleLeftPOps.emplace_back(make_shared<shuffle::ShufflePOp>(
+      shuffleRightPOps.emplace_back(make_shared<shuffle::ShufflePOp>(
               fmt::format("Shuffle-{}", upRightConnPOp->name()),
               rightColumnName,
               upRightConnPOp->getProjectColumnNames(),
