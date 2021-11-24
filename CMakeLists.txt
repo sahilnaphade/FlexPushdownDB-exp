@@ -51,7 +51,6 @@ add_subdirectory(normal-plan)
 add_subdirectory(normal-cache)
 add_subdirectory(normal-executor)
 add_subdirectory(normal-frontend)
-add_subdirectory(normal-sql)
 add_subdirectory(normal-ssb)
 
 
