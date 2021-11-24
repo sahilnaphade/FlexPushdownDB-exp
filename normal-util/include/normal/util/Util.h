@@ -8,6 +8,9 @@
 #include <normal/util/Globals.h>
 #include <vector>
 #include <unordered_map>
+#include <set>
+
+using namespace std;
 
 namespace normal::util {
   /**
@@ -18,7 +21,7 @@ namespace normal::util {
    */
   template<typename Base, typename T>
   inline bool instanceof(const T&) {
-    return std::is_base_of<Base, T>::value;
+    return is_base_of<Base, T>::value;
   }
 
   /**
@@ -26,15 +29,15 @@ namespace normal::util {
    * @param filePath
    * @return
    */
-  std::string readFile(const std::string& filePath);
-  std::vector<std::string> readFileByLine(const std::string& filePath);
+  string readFile(const string& filePath);
+  vector<string> readFileByLine(const string& filePath);
 
   /**
    * Config utils
    * @param fileName
    * @return
    */
-  std::unordered_map<std::string, std::string> readConfig(const std::string &fileName);
+  unordered_map<string, string> readConfig(const string &fileName);
 
   /**
    * Given a start and finish number, will create pairs of numbers from start to finish (inclusive)
@@ -52,22 +55,29 @@ namespace normal::util {
    * @return
    */
   template<typename T>
-  static std::vector<std::pair<T, T>> ranges(T start, T finish, T numRanges) {
-    std::vector<std::pair<T, T>> result;
+  static vector<pair<T, T>> ranges(T start, T finish, T numRanges) {
+    vector<pair<T, T>> result;
 
     T rangeSize = ((finish - start) / numRanges) + 1;
 
     for (int i = 0; i < numRanges; ++i) {
       T rangeStart = rangeSize * i;
-      T rangeStop = std::min((rangeStart + rangeSize) - 1, finish);
-      result.push_back(std::pair{rangeStart, rangeStop});
+      T rangeStop = min((rangeStart + rangeSize) - 1, finish);
+      result.push_back(pair{rangeStart, rangeStop});
     }
 
     return result;
   }
+  
+  template<typename T>
+  vector<T> union_(const vector<T> &vec1, const vector<T> &vec2) {
+    set<T> unionSet{vec1.begin(), vec1.end()};
+    unionSet.insert(vec2.begin(), vec2.end());
+    return vector<T>{unionSet.begin(), unionSet.end()};
+  }
 
-  bool isInteger(const std::string& str);
-  std::string getLocalIp();
+  bool isInteger(const string& str);
+  string getLocalIp();
 }
 
 

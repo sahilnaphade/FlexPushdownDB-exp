@@ -23,6 +23,7 @@ public:
   explicit CacheLoadPOp(std::string name,
 					 std::vector<std::string> projectColumnNames,
 					 std::vector<std::string> predicateColumnNames,
+           std::vector<std::string> columnNames,
 					 std::shared_ptr<Partition> partition,
 					 int64_t startOffset,
 					 int64_t finishOffset,
@@ -44,8 +45,8 @@ private:
   /**
    * columnNames = projectColumnNames + predicateColumnNames
    */
-  std::vector<std::string> columnNames_;
   std::vector<std::string> predicateColumnNames_;
+  std::vector<std::string> columnNames_;
 
   std::shared_ptr<Partition> partition_;
   int64_t startOffset_;

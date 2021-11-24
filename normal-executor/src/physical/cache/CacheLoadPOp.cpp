@@ -14,24 +14,19 @@ using namespace normal::executor::physical::cache;
 CacheLoadPOp::CacheLoadPOp(std::string name,
            std::vector<std::string> projectColumnNames,
            std::vector<std::string> predicateColumnNames,
+           std::vector<std::string> columnNames,
 					 std::shared_ptr<Partition> Partition,
 					 int64_t StartOffset,
 					 int64_t FinishOffset,
            S3ClientType s3ClientType,
 					 long queryId) :
 					 PhysicalOp(std::move(name), "CacheLoad", std::move(projectColumnNames), queryId),
-					 predicateColumnNames_(predicateColumnNames),
+					 predicateColumnNames_(std::move(predicateColumnNames)),
+					 columnNames_(std::move(columnNames)),
 					 partition_(std::move(Partition)),
 					 startOffset_(StartOffset),
 					 finishOffset_(FinishOffset),
-					 s3ClientType_(s3ClientType) {
-
-  auto allColumnNames_ = std::make_shared<std::vector<std::string>>();
-  allColumnNames_->insert(allColumnNames_->end(), getProjectColumnNames().begin(), getProjectColumnNames().end());
-  allColumnNames_->insert(allColumnNames_->end(), predicateColumnNames.begin(), predicateColumnNames.end());
-  auto columnNameSet = std::make_shared<std::set<std::string>>(allColumnNames_->begin(), allColumnNames_->end());
-  columnNames_.assign(columnNameSet->begin(), columnNameSet->end());
-}
+					 s3ClientType_(s3ClientType) {}
 
 void CacheLoadPOp::onReceive(const Envelope &message) {
   if (message.message().type() == "StartMessage") {

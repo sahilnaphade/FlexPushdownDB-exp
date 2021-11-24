@@ -34,6 +34,9 @@ public:
            long queryId = 0);
 
 private:
+  void processScanMessage(const ScanMessage &message) override;
+
+  std::shared_ptr<TupleSet> readTuples() override;
   std::shared_ptr<TupleSet> readCSVFile(std::shared_ptr<arrow::io::InputStream> &arrowInputStream);
   std::shared_ptr<TupleSet> readParquetFile(std::basic_iostream<char, std::char_traits<char>> &retrievedFile);
   std::shared_ptr<TupleSet> s3GetFullRequest();
@@ -55,14 +58,10 @@ private:
   std::mutex splitReqLock_;
   std::map<int, std::shared_ptr<arrow::Table>> splitReqNumToTable_;
   std::unordered_map<int, std::vector<char>> reqNumToAdditionalOutput_;
-  #ifdef __AVX2__
+#ifdef __AVX2__
   std::unordered_map<int, std::shared_ptr<CSVToArrowSIMDChunkParser>> reqNumToParser_;
-  #endif
+#endif
 
-
-  void processScanMessage(const ScanMessage &message) override;
-
-  std::shared_ptr<TupleSet> readTuples() override;
 };
 
 }

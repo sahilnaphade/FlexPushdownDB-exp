@@ -27,6 +27,7 @@ public:
 
   void setPredicate(const shared_ptr<Expression> &predicate);
 
+
 private:
   shared_ptr<Expression> predicate_;
   shared_ptr<Table> table_;
