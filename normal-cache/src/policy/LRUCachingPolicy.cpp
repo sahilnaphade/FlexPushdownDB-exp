@@ -9,13 +9,11 @@
 using namespace normal::cache::policy;
 
 LRUCachingPolicy::LRUCachingPolicy(size_t maxSize,
-                                   std::shared_ptr<Mode> mode,
                                    std::shared_ptr<CatalogueEntry> catalogueEntry) :
-    CachingPolicy(LRU,
-                  maxSize,
-                  std::move(mode),
-                  std::move(catalogueEntry),
-                  false) {}
+  CachingPolicy(LRU,
+                maxSize,
+                std::move(catalogueEntry),
+                false) {}
 
 void LRUCachingPolicy::erase(const std::shared_ptr<SegmentKey> &key) {
   auto keyIndexEntry = keyIndexMap_.find(key);

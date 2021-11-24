@@ -21,7 +21,6 @@ class LFUSCachingPolicy: public CachingPolicy {
 
 public:
   explicit LFUSCachingPolicy(size_t maxSize,
-                             std::shared_ptr<Mode> mode,
                              std::shared_ptr<CatalogueEntry> catalogueEntry);
 
   void onLoad(const std::shared_ptr<SegmentKey> &key) override;

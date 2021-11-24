@@ -19,7 +19,6 @@ class WLFUCachingPolicy : public CachingPolicy {
 
 public:
   explicit WLFUCachingPolicy(size_t maxSize,
-                             std::shared_ptr<Mode> mode,
                              std::shared_ptr<CatalogueEntry> catalogueEntry);
 
   void onLoad(const std::shared_ptr<SegmentKey> &key) override;

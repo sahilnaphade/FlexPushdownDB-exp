@@ -33,13 +33,11 @@ bool BeladyCachingPolicy::lessKeyValue (const std::shared_ptr<SegmentKey> &key1,
 }
 
 BeladyCachingPolicy::BeladyCachingPolicy(size_t maxSize,
-                                         std::shared_ptr<Mode> mode,
                                          std::shared_ptr<CatalogueEntry> catalogueEntry) :
-        CachingPolicy(BELADY,
-                      maxSize,
-                      std::move(mode),
-                      std::move(catalogueEntry),
-                      true) {
+  CachingPolicy(BELADY,
+                maxSize,
+                std::move(catalogueEntry),
+                true) {
   // set segment sizes to helper_
   helper_->setSegmentSizeMap(getSegmentSizeMap());
 }
@@ -114,10 +112,6 @@ BeladyCachingPolicy::onStore(const std::shared_ptr<SegmentKey> &key) {
 
 std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>>
 BeladyCachingPolicy::onToCache(std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> segmentKeys) {
-  if (mode_->id() == CACHING_ONLY) {
-    return segmentKeys;
-  }
-
   auto keysToCache = std::make_shared<std::vector<std::shared_ptr<SegmentKey>>>();
   int currentQueryNum = helper_->getCurrentQueryNum();
   auto queryKey = queryNumToKeysInCache_.find(currentQueryNum);

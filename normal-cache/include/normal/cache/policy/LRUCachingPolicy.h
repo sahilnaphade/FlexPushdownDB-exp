@@ -22,7 +22,6 @@ class LRUCachingPolicy: public CachingPolicy {
 
 public:
   explicit LRUCachingPolicy(size_t maxSize,
-                            std::shared_ptr<Mode> mode,
                             std::shared_ptr<CatalogueEntry> catalogueEntry);
 
   std::optional<std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>>> onStore(const std::shared_ptr<SegmentKey> &key) override;

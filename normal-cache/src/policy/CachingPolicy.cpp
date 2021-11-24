@@ -12,13 +12,11 @@ namespace normal::cache::policy {
 
 CachingPolicy::CachingPolicy(CachingPolicyType type,
                              size_t maxSize,
-                             std::shared_ptr<Mode> mode,
                              std::shared_ptr<CatalogueEntry> catalogueEntry,
                              bool readSegmentSize) :
   type_(type),
   maxSize_(maxSize),
   freeSize_(maxSize),
-  mode_(std::move(mode)),
   catalogueEntry_(std::move(catalogueEntry)) {
 
   // read segment size if the caching policy needs

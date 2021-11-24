@@ -23,8 +23,7 @@ add_library(normal-cache STATIC
 
 target_include_directories(normal-cache PUBLIC include)
 
-target_link_libraries(normal-cache PUBLIC normal-plan)
-target_link_libraries(normal-cache PUBLIC normal-tuple)
+target_link_libraries(normal-cache PUBLIC normal-catalogue)
 
 
 #-----------------------------------------------------------------------------------------------------------------------

@@ -9,7 +9,8 @@
 namespace normal::executor::cache {
 
 std::shared_ptr<LoadResponseMessage> SegmentCacheActor::load(const LoadRequestMessage &msg,
-															 stateful_actor<SegmentCacheActorState> *self) {
+                                                             stateful_actor<SegmentCacheActorState> *self,
+                                                             const std::shared_ptr<Mode> &mode) {
 
   SPDLOG_DEBUG("Handling load request. loadRequestMessage: {}", msg.toString());
 
@@ -34,13 +35,15 @@ std::shared_ptr<LoadResponseMessage> SegmentCacheActor::load(const LoadRequestMe
 	}
   }
 
-  auto segmentKeysToCache = self->state.cache->toCache(missSegmentKeys);
+
+  // with no pushdown, all missing segments are required to load no matter we will cache them or not
+  auto segmentKeysToCache = mode->id() == CACHING_ONLY ?
+          missSegmentKeys : self->state.cache->toCache(missSegmentKeys);
 
   return LoadResponseMessage::make(segments, self->state.name, *segmentKeysToCache);
 }
 
-void SegmentCacheActor::store(const StoreRequestMessage &msg,
-							  stateful_actor<SegmentCacheActorState> *self) {
+void SegmentCacheActor::store(const StoreRequestMessage &msg, stateful_actor<SegmentCacheActorState> *self) {
   SPDLOG_DEBUG("Store  |  storeMessage: {}", msg.toString());
   for (const auto &segmentEntry: msg.getSegments()) {
 	auto segmentKey = segmentEntry.first;
@@ -49,8 +52,7 @@ void SegmentCacheActor::store(const StoreRequestMessage &msg,
   }
 }
 
-void SegmentCacheActor::weight(const WeightRequestMessage &msg,
-							   stateful_actor<SegmentCacheActorState> *self) {
+void SegmentCacheActor::weight(const WeightRequestMessage &msg, stateful_actor<SegmentCacheActorState> *self) {
   auto cachingPolicy = self->state.cache->getCachingPolicy();
   if (cachingPolicy->getType() == WLFU) {
 	auto fbrCachingPolicy = std::static_pointer_cast<WLFUCachingPolicy>(cachingPolicy);
@@ -58,8 +60,7 @@ void SegmentCacheActor::weight(const WeightRequestMessage &msg,
   }
 }
 
-void SegmentCacheActor::metrics(const CacheMetricsMessage &msg,
-                stateful_actor<SegmentCacheActorState> *self) {
+void SegmentCacheActor::metrics(const CacheMetricsMessage &msg, stateful_actor<SegmentCacheActorState> *self) {
   self->state.cache->addHitNum(msg.getHitNum());
   self->state.cache->addMissNum(msg.getMissNum());
   self->state.cache->addShardHitNum(msg.getShardHitNum());
@@ -72,7 +73,8 @@ void SegmentCacheActor::metrics(const CacheMetricsMessage &msg,
 }
 
 [[maybe_unused]] behavior SegmentCacheActor::makeBehaviour(stateful_actor<SegmentCacheActorState> *self,
-										  const std::optional<std::shared_ptr<CachingPolicy>> &cachingPolicy) {
+                                                           const std::optional<std::shared_ptr<CachingPolicy>> &cachingPolicy,
+                                                           const std::shared_ptr<Mode> &mode) {
 
   if (cachingPolicy.has_value())
 	self->state.cache = SegmentCache::make(cachingPolicy.value());
@@ -96,7 +98,7 @@ void SegmentCacheActor::metrics(const CacheMetricsMessage &msg,
 
   return {
 	  [=](LoadAtom, const std::shared_ptr<LoadRequestMessage> &m) {
-		return load(*m, self);
+		return load(*m, self, mode);
 	  },
 	  [=](StoreAtom, const std::shared_ptr<StoreRequestMessage> &m) {
 		store(*m, self);

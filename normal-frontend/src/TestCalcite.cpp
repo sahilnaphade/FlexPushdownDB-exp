@@ -2,6 +2,7 @@
 // Created by Yifei Yang on 10/30/21.
 //
 
+#include <normal/executor/Executor.h>
 #include <normal/executor/physical/transform/PrePToPTransformer.h>
 #include <normal/calcite/CalciteConfig.h>
 #include <normal/calcite/CalciteClient.h>
@@ -17,6 +18,7 @@
 #include <iostream>
 #include <filesystem>
 
+using namespace normal::executor;
 using namespace normal::executor::physical;
 using namespace normal::calcite;
 using namespace normal::plan::calcite;
@@ -95,6 +97,12 @@ void e2eWithoutServer() {
   const auto &mode = Mode::pullupMode();
   auto prePToPTransformer = make_shared<PrePToPTransformer>(prePhysicalPlan, awsClient, mode, 1, 1);
   const auto &physicalPlan = prePToPTransformer->transform();
+
+  // execute
+  const auto &executor = make_shared<Executor>(mode);
+  executor->start();
+  const auto &queryRes = executor->execute(physicalPlan);
+  executor->stop();
 
   return;
 }

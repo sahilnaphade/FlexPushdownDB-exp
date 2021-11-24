@@ -5,17 +5,19 @@
 #ifndef NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_CACHE_SEGMENTCACHEACTOR_H
 #define NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_CACHE_SEGMENTCACHEACTOR_H
 
-#include <normal/cache/SegmentCache.h>
 #include <normal/executor/message/cache/LoadRequestMessage.h>
 #include <normal/executor/message/cache/LoadResponseMessage.h>
 #include <normal/executor/message/cache/StoreRequestMessage.h>
 #include <normal/executor/message/cache/WeightRequestMessage.h>
 #include <normal/executor/message/cache/CacheMetricsMessage.h>
 #include <normal/cache/policy/CachingPolicy.h>
+#include <normal/cache/SegmentCache.h>
+#include <normal/plan/Mode.h>
 #include <caf/all.hpp>
 
 using namespace normal::executor::message;
 using namespace normal::cache;
+using namespace normal::plan;
 using namespace caf;
 
 namespace normal::executor::cache {
@@ -45,10 +47,12 @@ class SegmentCacheActor {
 
 public:
   [[maybe_unused]] static behavior makeBehaviour(stateful_actor<SegmentCacheActorState> *self,
-								const std::optional<std::shared_ptr<CachingPolicy>> &cachingPolicy);
+                                                 const std::optional<std::shared_ptr<CachingPolicy>> &cachingPolicy,
+                                                 const std::shared_ptr<Mode> &mode);
 
   static std::shared_ptr<LoadResponseMessage> load(const LoadRequestMessage &msg,
-												   stateful_actor<SegmentCacheActorState> *self);
+                                                   stateful_actor<SegmentCacheActorState> *self,
+                                                   const std::shared_ptr<Mode> &mode);
   static void store(const StoreRequestMessage &msg, stateful_actor<SegmentCacheActorState> *self);
   static void weight(const WeightRequestMessage &msg, stateful_actor<SegmentCacheActorState> *self);
   static void metrics(const CacheMetricsMessage &msg, stateful_actor<SegmentCacheActorState> *self);

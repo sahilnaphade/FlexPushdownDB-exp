@@ -16,14 +16,12 @@ bool LFUCachingPolicy::lessValue (const std::shared_ptr<SegmentKey> &key1, const
 }
 
 LFUCachingPolicy::LFUCachingPolicy(size_t maxSize,
-                                   std::shared_ptr<Mode> mode,
                                    std::shared_ptr<CatalogueEntry> catalogueEntry) :
-        CachingPolicy(LFU,
-                      maxSize,
-                      std::move(mode),
-                      std::move(catalogueEntry),
-                      false),
-        minFreq_(0) {}
+  CachingPolicy(LFU,
+                maxSize,
+                std::move(catalogueEntry),
+                false),
+  minFreq_(0) {}
 
 void LFUCachingPolicy::eraseFreqMap(int freq, std::list<std::shared_ptr<SegmentKey>>::iterator it) {
   freqMap_[freq].erase(it);
@@ -168,10 +166,6 @@ LFUCachingPolicy::onStore(const std::shared_ptr<SegmentKey> &key) {
 
 std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>>
 LFUCachingPolicy::onToCache(std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> segmentKeys) {
-  if (mode_->id() == CACHING_ONLY) {
-    return segmentKeys;
-  }
-
   auto keysToCache = std::make_shared<std::vector<std::shared_ptr<SegmentKey>>>();
 
   // FIXME: an estimation here, if freeSize_ >= c * maxSize_, we try to cache all segments

@@ -6,14 +6,12 @@
 #define NORMAL_NORMAL_CACHE_INCLUDE_NORMAL_CACHE_CACHINGPOLICY_H
 
 #include <normal/cache/SegmentKey.h>
-#include <normal/plan/Mode.h>
 #include <normal/catalogue/CatalogueEntry.h>
 #include <memory>
 #include <optional>
 #include <vector>
 #include <unordered_set>
 
-using namespace normal::plan;
 using namespace normal::catalogue;
 using namespace normal::cache;
 
@@ -33,7 +31,6 @@ public:
 
   CachingPolicy(CachingPolicyType type,
                 size_t maxSize,
-                std::shared_ptr<Mode> mode,
                 std::shared_ptr<CatalogueEntry> catalogueEntry,
                 bool readSegmentSize);
 
@@ -105,7 +102,6 @@ protected:
   size_t maxSize_;
   size_t freeSize_;
 
-  std::shared_ptr<Mode> mode_;
   std::shared_ptr<CatalogueEntry> catalogueEntry_;
   std::unordered_map<std::shared_ptr<SegmentKey>, size_t,
           SegmentKeyPointerHash, SegmentKeyPointerPredicate> segmentSizeMap_;

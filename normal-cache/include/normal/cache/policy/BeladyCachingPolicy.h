@@ -24,7 +24,6 @@ class BeladyCachingPolicy: public CachingPolicy {
 
 public:
   explicit BeladyCachingPolicy(size_t maxSize,
-                               std::shared_ptr<Mode> mode,
                                std::shared_ptr<CatalogueEntry> catalogueEntry);
 
   void onLoad(const std::shared_ptr<SegmentKey> &key) override;

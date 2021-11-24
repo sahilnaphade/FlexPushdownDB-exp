@@ -23,13 +23,11 @@ bool LFUSCachingPolicy::lessValue(const std::shared_ptr<SegmentKey> &key1, const
 }
 
 LFUSCachingPolicy::LFUSCachingPolicy(size_t maxSize,
-                                     std::shared_ptr<Mode> mode,
                                      std::shared_ptr<CatalogueEntry> catalogueEntry) :
-        CachingPolicy(LFUS,
-                      maxSize,
-                      std::move(mode),
-                      std::move(catalogueEntry),
-                      true) {}
+  CachingPolicy(LFUS,
+                maxSize,
+                std::move(catalogueEntry),
+                true) {}
 
 void LFUSCachingPolicy::onLoad(const std::shared_ptr<SegmentKey> &key) {
     auto startTime = std::chrono::steady_clock::now();
@@ -135,10 +133,6 @@ LFUSCachingPolicy::onStore(const std::shared_ptr<SegmentKey> &key) {
 std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>>
 LFUSCachingPolicy::onToCache(std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> segmentKeys) {
     auto startTime = std::chrono::steady_clock::now();
-    if (mode_->id() == CACHING_ONLY) {
-        return segmentKeys;
-    }
-
     auto keysToCache = std::make_shared<std::vector<std::shared_ptr<SegmentKey>>>();
 
     // used only in testing math model

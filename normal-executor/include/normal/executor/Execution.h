@@ -1,0 +1,17 @@
+//
+// Created by Yifei Yang on 11/23/21.
+//
+
+#ifndef NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_EXECUTION_H
+#define NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_EXECUTION_H
+
+namespace normal::executor {
+
+class Execution {
+
+};
+
+}
+
+
+#endif //NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_EXECUTION_H
