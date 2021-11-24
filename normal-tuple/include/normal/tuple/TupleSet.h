@@ -47,6 +47,7 @@ public:
 
   bool valid() const;
   bool validate() const;
+  void clear();
   int64_t numRows() const;
   int64_t numColumns() const;
   size_t size() const;
@@ -89,7 +90,7 @@ public:
    * Returns a short string representing the tuple set
    * @return
    */
-  std::string toString();
+  std::string toString() const;
 
   /**
    * Perform a custom function which returns an scalar value on the table.

@@ -3,6 +3,7 @@
 //
 
 #include <normal/executor/Executor.h>
+#include <normal/executor/Execution.h>
 #include <normal/executor/cache/SegmentCacheActor.h>
 
 using namespace normal::executor::cache;
@@ -15,8 +16,8 @@ Executor::Executor(const shared_ptr<Mode> &mode,
   mode_(mode),
   queryCounter_(0),
   running_(false) {
-  actorSystem = make_unique<caf::actor_system>(actorSystemConfig);
-  rootActor_ = make_shared<caf::scoped_actor>(*actorSystem);
+  actorSystem_ = make_shared<caf::actor_system>(actorSystemConfig_);
+  rootActor_ = make_unique<caf::scoped_actor>(*actorSystem_);
 }
 
 Executor::~Executor() {
@@ -27,7 +28,7 @@ Executor::~Executor() {
 
 void Executor::start() {
   if (isCacheUsed()) {
-    segmentCacheActor_ = actorSystem->spawn(SegmentCacheActor::makeBehaviour, cachingPolicy_, mode_);
+    segmentCacheActor_ = actorSystem_->spawn(SegmentCacheActor::makeBehaviour, cachingPolicy_, mode_);
   } else {
     segmentCacheActor_ = nullptr;
   }
@@ -43,12 +44,16 @@ void Executor::stop() {
   // Stop the root actor (seems, being defined by "scope", it needs to actually be destroyed to stop it)
   rootActor_.reset();
 
-  this->actorSystem->await_all_actors_done();
+  this->actorSystem_->await_all_actors_done();
   running_ = false;
 }
 
 shared_ptr<TupleSet> Executor::execute(const shared_ptr<PhysicalPlan> &physicalPlan) {
-  return shared_ptr<TupleSet>();
+  const auto &execution = make_shared<Execution>(nextQueryId(),
+                                                 actorSystem_,
+                                                 segmentCacheActor_,
+                                                 physicalPlan);
+  return execution->execute();
 }
 
 const actor &Executor::getSegmentCacheActor() const {
@@ -56,7 +61,7 @@ const actor &Executor::getSegmentCacheActor() const {
 }
 
 const shared_ptr<caf::actor_system> &Executor::getActorSystem() const {
-  return actorSystem;
+  return actorSystem_;
 }
 
 bool Executor::isCacheUsed() {
@@ -75,7 +80,7 @@ std::string Executor::showCacheMetrics() {
     throw std::runtime_error(to_string(error));
   };
 
-  scoped_actor self{*actorSystem};
+  scoped_actor self{*actorSystem_};
   self->request(segmentCacheActor_, infinite, GetNumHitsAtom::value).receive(
           [&](int numHits) {
             hitNum = numHits;
@@ -157,7 +162,7 @@ double Executor::getCrtQueryHitRatio() {
   };
 
   // NOTE: Creating a new scoped_actor will work, but can use rootActor_ as well
-  scoped_actor self{*actorSystem};
+  scoped_actor self{*actorSystem_};
   self->request(segmentCacheActor_, infinite, GetCrtQueryNumHitsAtom::value).receive(
           [&](int numHits) {
             crtQueryHitNum = numHits;
@@ -186,7 +191,7 @@ double Executor::getCrtQueryShardHitRatio() {
   };
 
   // NOTE: Creating a new scoped_actor will work, but can use rootActor_ as well
-  scoped_actor self{*actorSystem};
+  scoped_actor self{*actorSystem_};
   self->request(segmentCacheActor_, infinite, GetCrtQueryNumShardHitsAtom::value).receive(
           [&](int numShardHits) {
             crtQueryShardHitNum = numShardHits;

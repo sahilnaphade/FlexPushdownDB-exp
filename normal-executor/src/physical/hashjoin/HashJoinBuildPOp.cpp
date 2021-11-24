@@ -15,7 +15,7 @@ HashJoinBuildPOp::HashJoinBuildPOp(const std::string &name,
                                    std::string columnName,
                                    const std::vector<std::string> &projectColumnNames,
                                    long queryId) :
-	PhysicalOp(name, "HashJoinBuild", projectColumnNames, queryId),
+	PhysicalOp(name, "HashJoinBuildPOp", projectColumnNames, queryId),
 	columnName_(std::move(columnName)),
 	kernel_(HashJoinBuildKernel2::make(columnName_)){
 }

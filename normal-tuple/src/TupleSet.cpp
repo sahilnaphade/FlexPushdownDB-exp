@@ -97,12 +97,24 @@ bool TupleSet::validate() const {
     return true;
 }
 
+void TupleSet::clear() {
+  table_ = nullptr;
+}
+
 int64_t TupleSet::numRows() const {
-  return table_->num_rows();
+  if (table_) {
+    return table_->num_rows();
+  } else {
+    return 0;
+  }
 }
 
 int64_t TupleSet::numColumns() const {
-  return table_->num_columns();
+  if (table_) {
+    return table_->num_columns();
+  } else {
+    return 0;
+  }
 }
 
 size_t TupleSet::size() const {
@@ -350,7 +362,7 @@ std::string TupleSet::showString(TupleSetShowOptions options) {
   }
 }
 
-std::string TupleSet::toString() {
+std::string TupleSet::toString() const {
   if(valid())
     return fmt::format("<TupleSet2: {} x {}>", numColumns(), numRows());
   else

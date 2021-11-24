@@ -61,7 +61,7 @@ S3GetPOp::S3GetPOp(std::string name,
                bool toCache,
                long queryId) :
   S3SelectScanAbstractPOp(std::move(name),
-                          "S3Get",
+                          "S3GetPOp",
                           std::move(s3Bucket),
                           std::move(s3Object),
                           std::move(projectColumnNames),

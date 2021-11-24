@@ -37,7 +37,7 @@ class ArrayHasherWrapper : public ArrayHasher {
 public:
   explicit ArrayHasherWrapper(std::shared_ptr<ArrowArrayType> array) : array_(array) {}
 
-  size_t hash(int64_t i) override {
+  size_t hash(int64_t ) override {
     // overrided by each type
     return 0;
   }

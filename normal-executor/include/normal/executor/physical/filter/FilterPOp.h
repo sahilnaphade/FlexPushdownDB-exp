@@ -31,6 +31,10 @@ public:
 
   void onReceive(const Envelope &Envelope) override;
 
+  [[nodiscard]] size_t getFilterTimeNS() const;
+  [[nodiscard]] size_t getFilterInputBytes() const;
+  [[nodiscard]] size_t getFilterOutputBytes() const;
+
 private:
   shared_ptr<normal::expression::gandiva::Expression> predicate_;
 
@@ -60,6 +64,9 @@ private:
 
   long totalNumRows_ = 0;
   long filteredNumRows_ = 0;
+  size_t filterTimeNS_ = 0;
+  size_t inputBytesFiltered_ = 0;
+  size_t outputBytesFiltered_ = 0;
 
   /**
    * Whether all predicate columns are covered in the schema of received tuples

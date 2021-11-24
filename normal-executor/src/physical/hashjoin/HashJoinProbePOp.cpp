@@ -15,7 +15,7 @@ HashJoinProbePOp::HashJoinProbePOp(std::string name,
                                    HashJoinPredicate pred,
                                    std::vector<std::string> projectColumnNames,
                                    long queryId) :
-	PhysicalOp(std::move(name), "HashJoinProbe", std::move(projectColumnNames), queryId),
+	PhysicalOp(std::move(name), "HashJoinProbePOp", std::move(projectColumnNames), queryId),
 	kernel_(HashJoinProbeKernel2::make(std::move(pred),
                                      std::set<std::string>(getProjectColumnNames().begin(), getProjectColumnNames().end()))){
 }

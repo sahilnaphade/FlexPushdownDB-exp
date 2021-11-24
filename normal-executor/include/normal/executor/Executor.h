@@ -20,6 +20,9 @@ using namespace std;
 
 namespace normal::executor {
 
+/**
+ * Query executor
+ */
 class Executor {
 
 public:
@@ -57,9 +60,9 @@ private:
   bool isCacheUsed();
   long nextQueryId();
 
-  caf::actor_system_config actorSystemConfig;
-  shared_ptr<caf::actor_system> actorSystem;
-  shared_ptr<caf::scoped_actor> rootActor_;
+  caf::actor_system_config actorSystemConfig_;
+  shared_ptr<caf::actor_system> actorSystem_;
+  unique_ptr<caf::scoped_actor> rootActor_;
   caf::actor segmentCacheActor_;
   shared_ptr<CachingPolicy> cachingPolicy_;
   shared_ptr<Mode> mode_;

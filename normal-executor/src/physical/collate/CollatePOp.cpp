@@ -20,7 +20,7 @@ void CollatePOp::onStart() {
 
 CollatePOp::CollatePOp(std::string name,
                        long queryId) :
-  PhysicalOp(std::move(name), "Collate", {}, queryId) {
+  PhysicalOp(std::move(name), "CollatePOp", {}, queryId) {
 }
 
 void CollatePOp::onReceive(const normal::executor::message::Envelope &message) {

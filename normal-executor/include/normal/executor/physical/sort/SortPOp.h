@@ -10,17 +10,23 @@
 #include <normal/executor/message/TupleMessage.h>
 
 using namespace normal::executor::message;
+using namespace std;
 
 namespace normal::executor::physical::sort {
 
 class SortPOp : public PhysicalOp {
 
 public:
-  SortPOp(const std::string &name,
-          const std::vector<std::string> &projectColumnNames,
+  SortPOp(const string &name,
+          const vector<string> &projectColumnNames,
           long queryId = 0);
 
   void onReceive(const Envelope &msg) override;
+
+private:
+  void onStart();
+  void onComplete(const CompleteMessage &);
+  void onTuple(const TupleMessage &message);
 
 };
 

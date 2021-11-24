@@ -87,6 +87,9 @@ target_link_libraries(normal-executor PUBLIC normal-cache)
 target_link_libraries(normal-executor PUBLIC normal-expression-gandiva)
 target_link_libraries(normal-executor PUBLIC caf::libcaf_core_static)
 target_link_libraries(normal-executor PUBLIC caf::libcaf_io_static)
+target_link_libraries(normal-executor PUBLIC graphviz_gvc_shared)
+target_link_libraries(normal-executor PUBLIC graphviz_dot_layout_shared)
+target_link_libraries(normal-executor PUBLIC graphviz_neato_layout_shared)
 
 
 #-----------------------------------------------------------------------------------------------------------------------

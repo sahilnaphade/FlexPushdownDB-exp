@@ -138,17 +138,25 @@ void FilterPOp::buildFilter() {
 }
 
 void FilterPOp::filterTuples() {
+  // input metrics
   if (recordSpeeds) {
     totalBytesFiltered_ += received_->size();
   }
-
   totalNumRows_ += received_->numRows();
+  inputBytesFiltered_ += received_->size();
+
+  // do filter
+  std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now();
   filtered_ = filter_.value()->evaluate(*received_);
   assert(filtered_->validate());
+  std::chrono::steady_clock::time_point stopTime = std::chrono::steady_clock::now();
+  filterTimeNS_ += std::chrono::duration_cast<std::chrono::nanoseconds>(stopTime - startTime).count();
 
+  // output metrics
   filteredNumRows_ += filtered_->numRows();
+  outputBytesFiltered_ += filtered_->size();
 
-  received_.reset();
+  received_->clear();
   assert(received_->validate());
 }
 
@@ -156,7 +164,7 @@ void FilterPOp::sendTuples() {
   std::shared_ptr<Message> tupleMessage = std::make_shared<TupleMessage>(filtered_, name());
 
   ctx()->tell(tupleMessage);
-  filtered_.reset();
+  filtered_->clear();
   assert(filtered_->validate());
 }
 
@@ -189,4 +197,16 @@ void FilterPOp::sendSegmentWeight() {
 
   ctx()->send(WeightRequestMessage::make(weightMap, getQueryId(), name()), "SegmentCache")
           .map_error([](auto err) { throw std::runtime_error(err); });
+}
+
+size_t FilterPOp::getFilterTimeNS() const {
+  return filterTimeNS_;
+}
+
+size_t FilterPOp::getFilterInputBytes() const {
+  return inputBytesFiltered_;
+}
+
+size_t FilterPOp::getFilterOutputBytes() const {
+  return outputBytesFiltered_;
 }

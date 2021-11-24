@@ -16,7 +16,7 @@ ShufflePOp::ShufflePOp(std::string name,
                        std::string columnName,
                        std::vector<std::string> projectColumnNames,
                        long queryId) :
-	PhysicalOp(std::move(name), "Shuffle", std::move(projectColumnNames), queryId),
+	PhysicalOp(std::move(name), "ShufflePOp", std::move(projectColumnNames), queryId),
 	columnName_(std::move(columnName)) {}
 
 void ShufflePOp::onReceive(const Envelope &msg) {
@@ -46,12 +46,10 @@ void ShufflePOp::onStart() {
 
 void ShufflePOp::onComplete(const CompleteMessage &) {
   if (!ctx()->isComplete() && ctx()->operatorMap().allComplete(POpRelationshipType::Producer)) {
-    int partitionIndex = 0;
-    for (const auto &buffer: buffers_) {
+    for (int partitionIndex = 0; partitionIndex < buffers_.size(); ++partitionIndex) {
       auto sendResult = send(partitionIndex, true);
       if (!sendResult)
         throw std::runtime_error(sendResult.error());
-      ++partitionIndex;
     }
 
     ctx()->notifyComplete();

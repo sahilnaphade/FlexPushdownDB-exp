@@ -31,7 +31,7 @@ FileScanPOp::FileScanPOp(std::string name,
 				   unsigned long finishOffset,
 				   long queryId,
 				   bool scanOnStart) :
-	PhysicalOp(std::move(name), "FileScan", std::move(columnNames), queryId),
+	PhysicalOp(std::move(name), "FileScanPOp", std::move(columnNames), queryId),
 	scanOnStart_(scanOnStart),
 	kernel_(FileScanKernel::make(filePath, fileType, startOffset, finishOffset)){}
 

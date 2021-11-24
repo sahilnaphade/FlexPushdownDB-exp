@@ -62,7 +62,7 @@ S3SelectPOp::S3SelectPOp(std::string name,
                long queryId,
                std::vector<std::shared_ptr<normal::cache::SegmentKey>> weightedSegmentKeys) :
   S3SelectScanAbstractPOp(std::move(name),
-                          "S3Select",
+                          "S3SelectPOp",
                           std::move(s3Bucket),
                           std::move(s3Object),
                           std::move(projectColumnNames),

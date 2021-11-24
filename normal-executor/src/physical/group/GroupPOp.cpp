@@ -14,7 +14,7 @@ GroupPOp::GroupPOp(const std::string &name,
 			 const std::vector<std::shared_ptr<aggregate::AggregationFunction>> &aggregateFunctions,
        const std::vector<std::string> &projectColumnNames,
 			 long queryId) :
-	PhysicalOp(name, "Group", projectColumnNames, queryId),
+	PhysicalOp(name, "GroupPOp", projectColumnNames, queryId),
   kernel2_(std::make_unique<GroupKernel2>(groupColumnNames, aggregateColumnNames, aggregateFunctions)) {
 }
 

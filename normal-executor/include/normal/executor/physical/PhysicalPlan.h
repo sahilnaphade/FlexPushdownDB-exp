@@ -16,6 +16,8 @@ class PhysicalPlan {
 public:
   PhysicalPlan(const vector<shared_ptr<PhysicalOp>> &physicalOps);
 
+  const vector<shared_ptr<PhysicalOp>> &getPhysicalOps() const;
+
 private:
   vector<shared_ptr<PhysicalOp>> physicalOps_;
 };
