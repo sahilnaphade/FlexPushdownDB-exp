@@ -34,7 +34,6 @@ class GroupPOp : public PhysicalOp {
 public:
   GroupPOp(const std::string &name,
 		const std::vector<std::string> &groupColumnNames,
-    const std::vector<std::string> &aggregateColumnNames,
 		const std::vector<std::shared_ptr<aggregate::AggregationFunction>> &aggregateFunctions,
     const std::vector<std::string> &projectColumnNames,
 		long queryId = 0);

@@ -7,6 +7,7 @@
 
 #include <normal/executor/physical/aggregate/AggregationResult.h>
 #include <normal/expression/Projector.h>
+#include <normal/expression/gandiva/Expression.h>
 #include <normal/tuple/TupleSet.h>
 #include <memory>
 
@@ -32,8 +33,19 @@ protected:
    */
   std::optional<std::shared_ptr<arrow::Schema>> inputSchema_;
 
+  /**
+   * Field name of aggregate result
+   */
+  std::string alias_;
+
+  /**
+   * Compute Expression for this aggregate function, like "A*B" in sum(A * B)
+   */
+  std::shared_ptr<normal::expression::gandiva::Expression> expression_;
+
 public:
-  explicit AggregationFunction(std::string alias);
+  explicit AggregationFunction(std::string alias,
+                               std::shared_ptr<normal::expression::gandiva::Expression> expression);
   virtual ~AggregationFunction() = default;
 
   /**
@@ -44,7 +56,8 @@ public:
    *
    * @return
    */
-  [[nodiscard]] const std::string &alias() const;
+  const std::string &getAlias() const;
+  const std::shared_ptr<normal::expression::gandiva::Expression> &getExpression() const;
 
   virtual void apply(std::shared_ptr<aggregate::AggregationResult> result, std::shared_ptr<TupleSet> tuples) = 0;
   virtual std::shared_ptr<arrow::DataType> returnType() = 0;
@@ -54,9 +67,6 @@ public:
    * compute its final result.
    */
   virtual void finalize(std::shared_ptr<aggregate::AggregationResult> result) = 0;
-
-private:
-  std::string alias_;
 
 };
 

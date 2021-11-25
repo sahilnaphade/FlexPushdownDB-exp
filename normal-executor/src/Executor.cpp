@@ -48,12 +48,15 @@ void Executor::stop() {
   running_ = false;
 }
 
-shared_ptr<TupleSet> Executor::execute(const shared_ptr<PhysicalPlan> &physicalPlan) {
+pair<shared_ptr<TupleSet>, long> Executor::execute(const shared_ptr<PhysicalPlan> &physicalPlan) {
   const auto &execution = make_shared<Execution>(nextQueryId(),
                                                  actorSystem_,
                                                  segmentCacheActor_,
                                                  physicalPlan);
-  return execution->execute();
+  const auto &result = execution->execute();
+  long elapsedTime = execution->getElapsedTime();
+  cout << execution->showMetrics(true, false) << endl;
+  return make_pair(result, elapsedTime);
 }
 
 const actor &Executor::getSegmentCacheActor() const {

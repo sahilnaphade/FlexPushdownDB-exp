@@ -161,7 +161,8 @@ void FilterPOp::filterTuples() {
 }
 
 void FilterPOp::sendTuples() {
-  std::shared_ptr<Message> tupleMessage = std::make_shared<TupleMessage>(filtered_, name());
+  std::shared_ptr<Message> tupleMessage = std::make_shared<TupleMessage>(TupleSet::make(filtered_->table()),
+                                                                         name());
 
   ctx()->tell(tupleMessage);
   filtered_->clear();

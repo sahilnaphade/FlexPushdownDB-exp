@@ -13,9 +13,9 @@
 #include <normal/aws/AWSClient.h>
 #include <normal/aws/AWSConfig.h>
 #include <normal/util/Util.h>
-
 #include <memory>
 #include <iostream>
+#include <sstream>
 #include <filesystem>
 
 using namespace normal::executor;
@@ -61,7 +61,7 @@ void e2eWithoutServer() {
   // Plan query
   string queryPath = std::filesystem::current_path()
           .parent_path()
-          .append("resources/query/ssb/4.1.sql")
+          .append("resources/query/ssb/2.1.sql")
           .string();
   string query = readFile(queryPath);
   string schemaName = "ssb-sf1-sortlineorder/csv/";
@@ -95,16 +95,21 @@ void e2eWithoutServer() {
 
   // transform prephysical plan to physical plan
   const auto &mode = Mode::pullupMode();
-  auto prePToPTransformer = make_shared<PrePToPTransformer>(prePhysicalPlan, awsClient, mode, 1, 1);
+  auto prePToPTransformer = make_shared<PrePToPTransformer>(prePhysicalPlan, awsClient, mode, 1, 8);
   const auto &physicalPlan = prePToPTransformer->transform();
 
   // execute
   const auto &executor = make_shared<Executor>(mode);
   executor->start();
-  const auto &queryRes = executor->execute(physicalPlan);
+  const auto &execRes = executor->execute(physicalPlan);
   executor->stop();
 
-  return;
+  // show output
+  stringstream ss;
+  ss << fmt::format("Result |\n{}", execRes.first->showString(
+          TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
+  ss << fmt::format("\nTime: {} secs", (double) (execRes.second) / 1000000000.0);
+  cout << ss.str() << endl;
 }
 
 int main() {

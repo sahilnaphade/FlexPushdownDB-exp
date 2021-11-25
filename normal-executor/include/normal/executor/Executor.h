@@ -39,9 +39,9 @@ public:
   /**
    * Execute a physical plan
    * @param physicalPlan
-   * @return
+   * @return query result and execution time
    */
-  shared_ptr<TupleSet> execute(const shared_ptr<PhysicalPlan> &physicalPlan);
+  pair<shared_ptr<TupleSet>, long> execute(const shared_ptr<PhysicalPlan> &physicalPlan);
 
   const caf::actor &getSegmentCacheActor() const;
   const shared_ptr<caf::actor_system> &getActorSystem() const;

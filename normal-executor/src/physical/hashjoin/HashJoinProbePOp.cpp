@@ -44,7 +44,7 @@ void HashJoinProbePOp::onStart() {
 
 void HashJoinProbePOp::onTuple(const TupleMessage &msg) {
   // Incremental join immediately
-  auto tupleSet = msg.tuples();
+  const auto& tupleSet = msg.tuples();
   auto result = kernel_.joinProbeTupleSet(tupleSet);
   if(!result)
     throw std::runtime_error(fmt::format("{}, {}", result.error(), name()));
@@ -72,10 +72,13 @@ void HashJoinProbePOp::onHashTable(const TupleSetIndexMessage &msg) {
 
 void HashJoinProbePOp::send(bool force) {
   auto buffer = kernel_.getBuffer();
-  if (buffer.has_value() && (force || buffer.value()->numRows() >= DefaultBufferSize)) {
-    std::shared_ptr<Message>
-            tupleMessage = std::make_shared<TupleMessage>(buffer.value(), name());
-    ctx()->tell(tupleMessage);
-    kernel_.clear();
+  if (buffer.has_value()) {
+    auto numRows = buffer.value()->numRows();
+    if (numRows >= DefaultBufferSize || (force && numRows > 0)) {
+      std::shared_ptr<Message> tupleMessage = std::make_shared<TupleMessage>(
+              TupleSet::make(buffer.value()->table()),name());
+      ctx()->tell(tupleMessage);
+      kernel_.clear();
+    }
   }
 }

@@ -108,7 +108,7 @@ PrePToPTransformer::transformSort(const shared_ptr<SortPrePOp> &sortPrePOp) {
   vector<string> projectColumnNames{sortPrePOp->getProjectColumnNames().begin(),
                                     sortPrePOp->getProjectColumnNames().end()};
   for (size_t i = 0; i < upConnPOps.size(); ++i) {
-    selfPOps.emplace_back(make_shared<sort::SortPOp>(fmt::format("Sort-{}", index),
+    selfPOps.emplace_back(make_shared<sort::SortPOp>(fmt::format("Sort-{}", i),
                                                      projectColumnNames,
                                                      queryId_));
   }
@@ -149,7 +149,7 @@ PrePToPTransformer::transformAggregate(const shared_ptr<AggregatePrePOp> &aggreg
   vector<string> projectColumnNames{aggregatePrePOp->getProjectColumnNames().begin(),
                                     aggregatePrePOp->getProjectColumnNames().end()};
   for (size_t i = 0; i < upConnPOps.size(); ++i) {
-    selfPOps.emplace_back(make_shared<aggregate::AggregatePOp>(fmt::format("Aggregate-{}", index),
+    selfPOps.emplace_back(make_shared<aggregate::AggregatePOp>(fmt::format("Aggregate-{}", i),
                                                                projectColumnNames,
                                                                aggFunctions,
                                                                queryId_));
@@ -206,9 +206,8 @@ PrePToPTransformer::transformGroup(const shared_ptr<GroupPrePOp> &groupPrePOp) {
   vector<string> projectColumnNames{groupPrePOp->getProjectColumnNames().begin(),
                                     groupPrePOp->getProjectColumnNames().end()};
   for (size_t i = 0; i < upConnPOps.size(); ++i) {
-    selfPOps.emplace_back(make_shared<group::GroupPOp>(fmt::format("Group-{}", index),
+    selfPOps.emplace_back(make_shared<group::GroupPOp>(fmt::format("Group-{}", i),
                                                        groupPrePOp->getGroupColumnNames(),
-                                                       groupPrePOp->getAggOutputColumnNames(),
                                                        aggFunctions,
                                                        projectColumnNames,
                                                        queryId_));
@@ -221,7 +220,6 @@ PrePToPTransformer::transformGroup(const shared_ptr<GroupPrePOp> &groupPrePOp) {
   } else {
     shared_ptr<PhysicalOp> groupReducePOp = make_shared<group::GroupPOp>("GroupReduce",
                                                                          groupPrePOp->getGroupColumnNames(),
-                                                                         groupPrePOp->getAggOutputColumnNames(),
                                                                          aggReduceFunctions,
                                                                          projectColumnNames,
                                                                          queryId_);
@@ -258,7 +256,7 @@ PrePToPTransformer::transformProject(const shared_ptr<ProjectPrePOp> &projectPre
   vector<string> projectColumnNames{projectPrePOp->getProjectColumnNames().begin(),
                                     projectPrePOp->getProjectColumnNames().end()};
   for (size_t i = 0; i < upConnPOps.size(); ++i) {
-    selfPOps.emplace_back(make_shared<project::ProjectPOp>(fmt::format("Project-{}", index),
+    selfPOps.emplace_back(make_shared<project::ProjectPOp>(fmt::format("Project-{}", i),
                                                      projectPrePOp->getExprs(),
                                                      vector<string>{},  // FIXME: add exprNames to ProjectPrePOp
                                                      projectColumnNames,
@@ -292,7 +290,7 @@ PrePToPTransformer::transformFilter(const shared_ptr<FilterPrePOp> &filterPrePOp
   vector<string> projectColumnNames{filterPrePOp->getProjectColumnNames().begin(),
                                     filterPrePOp->getProjectColumnNames().end()};
   for (size_t i = 0; i < upConnPOps.size(); ++i) {
-    selfPOps.emplace_back(make_shared<filter::FilterPOp>(fmt::format("Filter-{}", index),
+    selfPOps.emplace_back(make_shared<filter::FilterPOp>(fmt::format("Filter-{}", i),
                                                          filterPrePOp->getPredicate(),
                                                          nullptr,
                                                          projectColumnNames,
@@ -325,7 +323,7 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
   // transform self
   vector<string> projectColumnNames{hashJoinPrePOp->getProjectColumnNames().begin(),
                                     hashJoinPrePOp->getProjectColumnNames().end()};
-  // FIXME: support multiple pairs of join columns
+  // TODO: support multiple pairs of join columns
   const auto leftColumnName = hashJoinPrePOp->getLeftColumnNames()[0];
   const auto rightColumnName = hashJoinPrePOp->getRightColumnNames()[0];
 
@@ -344,6 +342,7 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
   }
   allPOps.insert(allPOps.end(), hashJoinBuildPOps.begin(), hashJoinBuildPOps.end());
   allPOps.insert(allPOps.end(), hashJoinProbePOps.begin(), hashJoinProbePOps.end());
+  connectOneToOne(hashJoinBuildPOps, hashJoinProbePOps);
 
   // if num > 1, then we need shuffle operators
   if (parallelDegree_ == 1) {

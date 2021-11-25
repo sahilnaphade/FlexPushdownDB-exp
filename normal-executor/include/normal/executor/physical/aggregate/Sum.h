@@ -7,14 +7,12 @@
 
 #include <normal/executor/physical/aggregate/AggregationFunction.h>
 #include <normal/executor/message/TupleMessage.h>
-#include <normal/expression/gandiva/Expression.h>
 
 namespace normal::executor::physical::aggregate {
 
 class Sum : public AggregationFunction {
 
 private:
-  std::shared_ptr<normal::expression::gandiva::Expression> expression_;
   constexpr static const char *const SUM_RESULT_KEY = "SUM";
 
 public:

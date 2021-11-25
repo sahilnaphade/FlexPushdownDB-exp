@@ -5,7 +5,6 @@
 #include <normal/executor/physical/aggregate/Sum.h>
 #include <normal/expression/gandiva/Projector.h>
 #include <normal/tuple/arrow/ScalarHelperBuilder.h>
-#include <arrow/visitor_inline.h>
 #include <arrow/scalar.h>
 #include <sstream>
 #include <utility>
@@ -13,8 +12,7 @@
 namespace normal::executor::physical::aggregate {
 
 Sum::Sum(std::string alias, std::shared_ptr<normal::expression::gandiva::Expression> expression) :
-    AggregationFunction(std::move(alias)),
-    expression_(std::move(expression)) {}
+  AggregationFunction(std::move(alias), std::move(expression)) {}
 
 
 void Sum::apply(std::shared_ptr<aggregate::AggregationResult> result, std::shared_ptr<TupleSet> tuples) {

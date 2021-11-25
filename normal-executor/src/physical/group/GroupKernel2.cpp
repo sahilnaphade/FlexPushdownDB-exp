@@ -6,16 +6,16 @@
 #include <normal/executor/physical/group/GroupKey2.h>
 #include <normal/executor/physical/aggregate/AggregateBuilderWrapper.h>
 #include <normal/tuple/ArrayAppenderWrapper.h>
+#include <normal/util/Util.h>
 #include <utility>
-#include <iostream>
+
+using namespace normal::util;
 
 namespace normal::executor::physical::group {
 
 GroupKernel2::GroupKernel2(const std::vector<std::string>& columnNames,
-               const std::vector<std::string>& aggregateColumnNames,
-						   std::vector<std::shared_ptr<AggregationFunction>> aggregateFunctions) :
+                           std::vector<std::shared_ptr<AggregationFunction>> aggregateFunctions) :
 	groupColumnNames_(ColumnName::canonicalize(columnNames)),
-	aggregateColumnNames_(ColumnName::canonicalize(aggregateColumnNames)),
 	aggregateFunctions_(std::move(aggregateFunctions)) {}
 
 tl::expected<void, std::string> GroupKernel2::group(TupleSet &tupleSet) {
@@ -85,6 +85,15 @@ void GroupKernel2::computeGroupAggregates() {
   }
 }
 
+std::vector<std::string> GroupKernel2::getAggregateColumnNames() {
+  std::vector<std::string> aggregateColumnNames;
+  for (const auto &aggregateFunction: aggregateFunctions_) {
+    aggregateColumnNames = union_(aggregateColumnNames,
+                                  *aggregateFunction->getExpression()->involvedColumnNames());
+  }
+  return aggregateColumnNames;
+}
+
 tl::expected<void, std::string> GroupKernel2::cache(const TupleSet &tupleSet) {
 
   if(!tupleSet.valid())
@@ -108,7 +117,7 @@ tl::expected<void, std::string> GroupKernel2::cache(const TupleSet &tupleSet) {
 	  groupColumnIndices_.push_back(fieldIndex);
 	}
 
-	for (const auto &columnName: aggregateColumnNames_) {
+	for (const auto &columnName: getAggregateColumnNames()) {
     auto fieldIndex = inputSchema_.value()->GetFieldIndex(columnName);
     if (fieldIndex == -1)
     return tl::make_unexpected(fmt::format("Aggregate column '{}' not found in input schema", columnName));
@@ -228,7 +237,7 @@ tl::expected<std::shared_ptr<arrow::Schema>, std::string> GroupKernel2::makeOutp
 	if (!returnType) {
     return tl::make_unexpected("No return type from makeOutputSchema");
 	}
-	std::shared_ptr<arrow::Field> field = arrow::field(function->alias(), returnType);
+	std::shared_ptr<arrow::Field> field = arrow::field(function->getAlias(), returnType);
 	fields.emplace_back(field);
   }
 

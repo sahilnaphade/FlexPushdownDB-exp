@@ -82,8 +82,8 @@ tl::expected<void, std::string> ShufflePOp::buffer(const std::shared_ptr<TupleSe
 tl::expected<void, std::string> ShufflePOp::send(int partitionIndex, bool force) {
   // If the tupleset is big enough, send it, then clear the buffer
   if (buffers_[partitionIndex].has_value() && (force || buffers_[partitionIndex].value()->numRows() >= DefaultBufferSize)) {
-	std::shared_ptr<Message> tupleMessage =
-	        std::make_shared<TupleMessage>(buffers_[partitionIndex].value(), name());
+	std::shared_ptr<Message> tupleMessage = std::make_shared<TupleMessage>(
+	        TupleSet::make(buffers_[partitionIndex].value()->table()), name());
 	ctx()->send(tupleMessage, consumers_[partitionIndex]);
 	buffers_[partitionIndex] = std::nullopt;
   }

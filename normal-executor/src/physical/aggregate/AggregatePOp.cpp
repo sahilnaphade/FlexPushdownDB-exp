@@ -54,7 +54,7 @@ void AggregatePOp::onComplete(const normal::executor::message::CompleteMessage &
     std::shared_ptr<arrow::Schema> schema;
     std::vector<std::shared_ptr<arrow::Field>> fields;
     for (const auto &function: functions_) {
-      std::shared_ptr<arrow::Field> field = arrow::field(function->alias(), function->returnType());
+      std::shared_ptr<arrow::Field> field = arrow::field(function->getAlias(), function->returnType());
       fields.emplace_back(field);
     }
     schema = arrow::schema(fields);

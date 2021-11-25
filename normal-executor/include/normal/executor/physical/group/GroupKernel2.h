@@ -41,8 +41,7 @@ class GroupKernel2 {
 
 public:
   GroupKernel2(const std::vector<std::string>& groupColumnNames,
-         const std::vector<std::string>& aggregateColumnNames,
-			   std::vector<std::shared_ptr<AggregationFunction>> aggregateFunctions);
+               std::vector<std::shared_ptr<AggregationFunction>> aggregateFunctions);
 
   /**
    * Groups the input tuple set and computes intermediate aggregates
@@ -63,7 +62,6 @@ public:
 
 private:
   std::vector<std::string> groupColumnNames_;
-  std::vector<std::string> aggregateColumnNames_;
   std::vector<std::shared_ptr<AggregationFunction>> aggregateFunctions_;
 
   std::vector<int> groupColumnIndices_;
@@ -78,6 +76,12 @@ private:
 
   // FIXME: this is a workaround because we cannot append a single scalar to appender directly
   GroupArrayVectorMap groupKeyBuffer_;
+
+  /**
+   * Collect aggregate column names from all aggregate functions
+   * @return
+   */
+  std::vector<std::string> getAggregateColumnNames();
 
   /**
    * Caches input schema, indices to group columns, and makes output schema
