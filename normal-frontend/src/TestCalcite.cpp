@@ -61,7 +61,7 @@ void e2eWithoutServer() {
   // Plan query
   string queryPath = std::filesystem::current_path()
           .parent_path()
-          .append("resources/query/ssb/2.1.sql")
+          .append("resources/query/ssb/4.1.sql")
           .string();
   string query = readFile(queryPath);
   string schemaName = "ssb-sf1-sortlineorder/csv/";
@@ -94,7 +94,7 @@ void e2eWithoutServer() {
   prePhysicalPlan->populateAndTrimProjectColumns();
 
   // transform prephysical plan to physical plan
-  const auto &mode = Mode::pullupMode();
+  const auto &mode = Mode::pushdownOnlyMode();
   auto prePToPTransformer = make_shared<PrePToPTransformer>(prePhysicalPlan, awsClient, mode, 1, 8);
   const auto &physicalPlan = prePToPTransformer->transform();
 

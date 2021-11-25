@@ -37,7 +37,7 @@ void GroupPOp::onStart() {
 }
 
 void GroupPOp::onTuple(const TupleMessage &message) {
-  auto tupleSet = message.tuples();
+  const auto &tupleSet = message.tuples();
   auto expectedGroupResult = kernel2_->group(*tupleSet);
   if(!expectedGroupResult)
     throw std::runtime_error(expectedGroupResult.error());

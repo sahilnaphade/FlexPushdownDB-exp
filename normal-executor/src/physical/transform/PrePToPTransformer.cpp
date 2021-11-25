@@ -131,15 +131,6 @@ PrePToPTransformer::transformAggregate(const shared_ptr<AggregatePrePOp> &aggreg
                                     1, producersTransRes.size()));
   }
 
-  // aggregate functions
-  vector<shared_ptr<aggregate::AggregationFunction>> aggFunctions, aggReduceFunctions;
-  for (size_t i = 0; i < aggregatePrePOp->getFunctions().size(); ++i) {
-    const auto &prepFunction = aggregatePrePOp->getFunctions()[i];
-    const auto alias = aggregatePrePOp->getAggOutputColumnNames()[i];
-    aggFunctions.emplace_back(transformAggFunction(alias, prepFunction));
-    aggReduceFunctions.emplace_back(transformAggReduceFunction(alias, prepFunction));
-  }
-
   // transform self
   const auto &producerTransRes = producersTransRes[0];
   auto upConnPOps = producerTransRes.first;
@@ -149,6 +140,14 @@ PrePToPTransformer::transformAggregate(const shared_ptr<AggregatePrePOp> &aggreg
   vector<string> projectColumnNames{aggregatePrePOp->getProjectColumnNames().begin(),
                                     aggregatePrePOp->getProjectColumnNames().end()};
   for (size_t i = 0; i < upConnPOps.size(); ++i) {
+    // aggregate functions, better to let each operator has its own copy of aggregate functions
+    vector<shared_ptr<aggregate::AggregationFunction>> aggFunctions;
+    for (size_t j = 0; j < aggregatePrePOp->getFunctions().size(); ++j) {
+      const auto &prepFunction = aggregatePrePOp->getFunctions()[j];
+      const auto &alias = aggregatePrePOp->getAggOutputColumnNames()[j];
+      aggFunctions.emplace_back(transformAggFunction(alias, prepFunction));
+    }
+
     selfPOps.emplace_back(make_shared<aggregate::AggregatePOp>(fmt::format("Aggregate-{}", i),
                                                                projectColumnNames,
                                                                aggFunctions,
@@ -160,6 +159,14 @@ PrePToPTransformer::transformAggregate(const shared_ptr<AggregatePrePOp> &aggreg
     selfConnUpPOps = selfPOps;
     selfConnDownPOps = selfPOps;
   } else {
+    // aggregate reduce functions
+    vector<shared_ptr<aggregate::AggregationFunction>> aggReduceFunctions;
+    for (size_t j = 0; j < aggregatePrePOp->getFunctions().size(); ++j) {
+      const auto &prepFunction = aggregatePrePOp->getFunctions()[j];
+      const auto &alias = aggregatePrePOp->getAggOutputColumnNames()[j];
+      aggReduceFunctions.emplace_back(transformAggReduceFunction(alias, prepFunction));
+    }
+
     shared_ptr<PhysicalOp> aggReducePOp = make_shared<aggregate::AggregatePOp>("AggregateReduce",
                                                                                projectColumnNames,
                                                                                aggReduceFunctions,
@@ -188,15 +195,6 @@ PrePToPTransformer::transformGroup(const shared_ptr<GroupPrePOp> &groupPrePOp) {
                                     1, producersTransRes.size()));
   }
 
-  // aggregate functions
-  vector<shared_ptr<aggregate::AggregationFunction>> aggFunctions, aggReduceFunctions;
-  for (size_t i = 0; i < groupPrePOp->getFunctions().size(); ++i) {
-    const auto &prepFunction = groupPrePOp->getFunctions()[i];
-    const auto alias = groupPrePOp->getAggOutputColumnNames()[i];
-    aggFunctions.emplace_back(transformAggFunction(alias, prepFunction));
-    aggReduceFunctions.emplace_back(transformAggReduceFunction(alias, prepFunction));
-  }
-
   // transform self
   const auto &producerTransRes = producersTransRes[0];
   auto upConnPOps = producerTransRes.first;
@@ -206,6 +204,14 @@ PrePToPTransformer::transformGroup(const shared_ptr<GroupPrePOp> &groupPrePOp) {
   vector<string> projectColumnNames{groupPrePOp->getProjectColumnNames().begin(),
                                     groupPrePOp->getProjectColumnNames().end()};
   for (size_t i = 0; i < upConnPOps.size(); ++i) {
+    // aggregate functions, better to let each operator has its own copy of aggregate functions
+    vector<shared_ptr<aggregate::AggregationFunction>> aggFunctions;
+    for (size_t j = 0; j < groupPrePOp->getFunctions().size(); ++j) {
+      const auto &prepFunction = groupPrePOp->getFunctions()[j];
+      const auto &alias = groupPrePOp->getAggOutputColumnNames()[j];
+      aggFunctions.emplace_back(transformAggFunction(alias, prepFunction));
+    }
+
     selfPOps.emplace_back(make_shared<group::GroupPOp>(fmt::format("Group-{}", i),
                                                        groupPrePOp->getGroupColumnNames(),
                                                        aggFunctions,
@@ -218,6 +224,14 @@ PrePToPTransformer::transformGroup(const shared_ptr<GroupPrePOp> &groupPrePOp) {
     selfConnUpPOps = selfPOps;
     selfConnDownPOps = selfPOps;
   } else {
+    // aggregate reduce functions
+    vector<shared_ptr<aggregate::AggregationFunction>> aggReduceFunctions;
+    for (size_t j = 0; j < groupPrePOp->getFunctions().size(); ++j) {
+      const auto &prepFunction = groupPrePOp->getFunctions()[j];
+      const auto &alias = groupPrePOp->getAggOutputColumnNames()[j];
+      aggReduceFunctions.emplace_back(transformAggReduceFunction(alias, prepFunction));
+    }
+
     shared_ptr<PhysicalOp> groupReducePOp = make_shared<group::GroupPOp>("GroupReduce",
                                                                          groupPrePOp->getGroupColumnNames(),
                                                                          aggReduceFunctions,
