@@ -251,7 +251,7 @@
         },
         {
           "name": "lo_extendedprice",
-          "type": "int32"
+          "type": "int64"
         },
         {
           "name": "lo_ordtotalprice",
@@ -259,7 +259,7 @@
         },
         {
           "name": "lo_discount",
-          "type": "int32"
+          "type": "int64"
         },
         {
           "name": "lo_revenue",
