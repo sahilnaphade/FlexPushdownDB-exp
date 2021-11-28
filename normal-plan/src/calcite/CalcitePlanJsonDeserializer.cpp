@@ -172,14 +172,16 @@ pair<vector<string>, vector<string>> CalcitePlanJsonDeserializer::deserializeHas
 shared_ptr<SortPrePOp> CalcitePlanJsonDeserializer::deserializeSort(const json &jObj) {
   // deserialize sort fields
   const auto &sortFieldsJArr = jObj["sortFields"].get<vector<json>>();
-  vector<pair<string, FieldDirection>> sortFields;
+  vector<arrow::compute::SortKey> sortKeys;
   for (const auto &sortFieldJObj: sortFieldsJArr) {
     const string &columnName = ColumnName::canonicalize(sortFieldJObj["field"].get<string>());
     const string &directionStr = sortFieldJObj["direction"].get<string>();
-    auto direction = (directionStr == "ASCENDING") ? ASC : DESC;
-    sortFields.emplace_back(make_pair(columnName, direction));
+    auto direction = (directionStr == "ASCENDING") ?
+            arrow::compute::SortOrder::Ascending : arrow::compute::SortOrder::Descending;
+    sortKeys.emplace_back(arrow::compute::SortKey(columnName, direction));
   }
-  shared_ptr<SortPrePOp> sortPrePOp = make_shared<SortPrePOp>(sortFields);
+  arrow::compute::SortOptions sortOptions(sortKeys);
+  shared_ptr<SortPrePOp> sortPrePOp = make_shared<SortPrePOp>(sortOptions);
 
   // deserialize producers
   sortPrePOp->setProducers(deserializeProducers(jObj));

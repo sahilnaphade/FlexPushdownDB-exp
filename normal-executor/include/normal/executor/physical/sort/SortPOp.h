@@ -8,6 +8,7 @@
 #include <normal/executor/physical/PhysicalOp.h>
 #include <normal/executor/message/CompleteMessage.h>
 #include <normal/executor/message/TupleMessage.h>
+#include <arrow/compute/api.h>
 
 using namespace normal::executor::message;
 using namespace std;
@@ -18,6 +19,7 @@ class SortPOp : public PhysicalOp {
 
 public:
   SortPOp(const string &name,
+          const arrow::compute::SortOptions &sortOptions,
           const vector<string> &projectColumnNames,
           long queryId = 0);
 
@@ -28,6 +30,11 @@ private:
   void onComplete(const CompleteMessage &);
   void onTuple(const TupleMessage &message);
 
+  void buffer(const shared_ptr<TupleSet> &tupleSet);
+  shared_ptr<TupleSet> sort();
+
+  arrow::compute::SortOptions sortOptions_;
+  optional<shared_ptr<TupleSet>> buffer_;
 };
 
 }

@@ -137,39 +137,6 @@ void TupleSet::table(const std::shared_ptr<arrow::Table> &table) {
   table_ = table;
 }
 
-std::shared_ptr<TupleSet> TupleSet::concatenate(const std::shared_ptr<TupleSet> &tp1,
-                                                const std::shared_ptr<TupleSet> &tp2) {
-#ifndef NDEBUG
-  {
-	assert(tp1);
-	assert(tp2);
-	assert(tp1->table_);
-	assert(tp2->table_);
-
-	auto res = tp1->table_->ValidateFull();
-	if (!res.ok()) {
-	  throw std::runtime_error(res.message());
-	}
-
-	res = tp2->table_->ValidateFull();
-	if (!res.ok()) {
-	  throw std::runtime_error(res.message());
-	}
-
-  }
-#endif
-
-  std::shared_ptr<arrow::Table> tb1 = tp1->table_;
-  std::shared_ptr<arrow::Table> tb2 = tp2->table_;
-  std::vector<std::shared_ptr<arrow::Table>> tblVector = {tb1, tb2};
-
-  auto res = arrow::ConcatenateTables(tblVector);
-  if (!res.ok())
-    throw std::runtime_error(res.status().message());
-  auto resTupleSet = make(*res);
-  return resTupleSet;
-}
-
 tl::expected<std::shared_ptr<TupleSet>,
         std::string> TupleSet::concatenate(const std::vector<std::shared_ptr<TupleSet>> &tupleSets) {
 

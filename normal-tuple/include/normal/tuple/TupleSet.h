@@ -58,7 +58,6 @@ public:
   /**
    * Concatenate tupleSets.
    */
-  static std::shared_ptr<TupleSet> concatenate(const std::shared_ptr<TupleSet>&,const std::shared_ptr<TupleSet>&);
   static tl::expected<std::shared_ptr<TupleSet>, std::string> concatenate(const std::vector<std::shared_ptr<TupleSet>>& tupleSets);
 
   /**

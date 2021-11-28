@@ -7,6 +7,7 @@
 
 #include <normal/plan/prephysical/FieldDirection.h>
 #include <normal/plan/prephysical/PrePhysicalOp.h>
+#include <arrow/compute/api.h>
 
 using namespace std;
 
@@ -14,14 +15,16 @@ namespace normal::plan::prephysical {
 
 class SortPrePOp: public PrePhysicalOp {
 public:
-  SortPrePOp(const vector<pair<string, FieldDirection>> &sortColumns);
+  SortPrePOp(const arrow::compute::SortOptions &sortOptions);
 
   string getTypeString() override;
 
   unordered_set<string> getUsedColumnNames() override;
 
+  const arrow::compute::SortOptions &getSortOptions() const;
+
 private:
-  vector<pair<string, FieldDirection>> sortColumns_;
+  arrow::compute::SortOptions sortOptions_;
 };
 
 }

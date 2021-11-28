@@ -104,22 +104,19 @@ PrePToPTransformer::transformSort(const shared_ptr<SortPrePOp> &sortPrePOp) {
   auto upConnPOps = producerTransRes.first;
   auto allPOps = producerTransRes.second;
 
-  vector<shared_ptr<PhysicalOp>> selfPOps;
   vector<string> projectColumnNames{sortPrePOp->getProjectColumnNames().begin(),
                                     sortPrePOp->getProjectColumnNames().end()};
-  for (size_t i = 0; i < upConnPOps.size(); ++i) {
-    selfPOps.emplace_back(make_shared<sort::SortPOp>(fmt::format("Sort-{}", i),
-                                                     projectColumnNames,
-                                                     queryId_));
-  }
+
+  shared_ptr<PhysicalOp> sortPOp = make_shared<sort::SortPOp>(fmt::format("Sort"),
+                                                              sortPrePOp->getSortOptions(),
+                                                              projectColumnNames,
+                                                              queryId_);
+  allPOps.emplace_back(sortPOp);
 
   // connect to upstream
-  connectOneToOne(upConnPOps, selfPOps);
+  connectManyToOne(upConnPOps, sortPOp);
 
-  // collect all physical ops
-  allPOps.insert(allPOps.end(), selfPOps.begin(), selfPOps.end());
-
-  return make_pair(selfPOps, allPOps);
+  return make_pair(vector<shared_ptr<PhysicalOp>>{sortPOp}, allPOps);
 }
 
 pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>

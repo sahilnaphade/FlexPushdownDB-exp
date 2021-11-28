@@ -9,9 +9,9 @@ using namespace std;
 
 namespace normal::plan::prephysical {
 
-SortPrePOp::SortPrePOp(const vector<pair<string, FieldDirection>> &sortColumns) :
+SortPrePOp::SortPrePOp(const arrow::compute::SortOptions &sortOptions) :
   PrePhysicalOp(SORT),
-  sortColumns_(sortColumns) {}
+  sortOptions_(sortOptions) {}
 
 string SortPrePOp::getTypeString() {
   return "SortPrePOp";
@@ -19,6 +19,10 @@ string SortPrePOp::getTypeString() {
 
 unordered_set<string> SortPrePOp::getUsedColumnNames() {
   return getProjectColumnNames();
+}
+
+const arrow::compute::SortOptions &SortPrePOp::getSortOptions() const {
+  return sortOptions_;
 }
 
 }

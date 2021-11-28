@@ -95,7 +95,7 @@ void e2eWithoutServer(const string &queryFileName) {
   prePhysicalPlan->populateAndTrimProjectColumns();
 
   // transform prephysical plan to physical plan
-  const auto &mode = Mode::pullupMode();
+  const auto &mode = Mode::pushdownOnlyMode();
   auto prePToPTransformer = make_shared<PrePToPTransformer>(prePhysicalPlan, awsClient, mode, 1, 8);
   const auto &physicalPlan = prePToPTransformer->transform();
 
