@@ -52,7 +52,7 @@ void e2eWithServer() {
   calciteClient.shutdownServer();
 }
 
-void e2eWithoutServer() {
+void e2eWithoutServer(const string &queryFileName) {
   // Create and start Calcite client
   shared_ptr<CalciteConfig> calciteConfig = parseCalciteConfig();
   CalciteClient calciteClient(calciteConfig);
@@ -61,7 +61,8 @@ void e2eWithoutServer() {
   // Plan query
   string queryPath = std::filesystem::current_path()
           .parent_path()
-          .append("resources/query/ssb/4.1.sql")
+          .append("resources/query")
+          .append(queryFileName)
           .string();
   string query = readFile(queryPath);
   string schemaName = "ssb-sf1-sortlineorder/csv/";
@@ -94,7 +95,7 @@ void e2eWithoutServer() {
   prePhysicalPlan->populateAndTrimProjectColumns();
 
   // transform prephysical plan to physical plan
-  const auto &mode = Mode::pushdownOnlyMode();
+  const auto &mode = Mode::pullupMode();
   auto prePToPTransformer = make_shared<PrePToPTransformer>(prePhysicalPlan, awsClient, mode, 1, 8);
   const auto &physicalPlan = prePToPTransformer->transform();
 
@@ -112,7 +113,7 @@ void e2eWithoutServer() {
   cout << ss.str() << endl;
 }
 
-int main() {
-  e2eWithoutServer();
+int main(int, char* argv[]) {
+  e2eWithoutServer(argv[1]);
   return 0;
 }

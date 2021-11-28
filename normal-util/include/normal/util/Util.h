@@ -14,17 +14,6 @@ using namespace std;
 
 namespace normal::util {
   /**
-   * Equivalent to java instanceof
-   * @tparam Base
-   * @tparam T
-   * @return
-   */
-  template<typename Base, typename T>
-  inline bool instanceof(const T&) {
-    return is_base_of<Base, T>::value;
-  }
-
-  /**
    * File utils
    * @param filePath
    * @return

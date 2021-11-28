@@ -21,7 +21,7 @@ namespace normal::executor::physical {
 unordered_map<shared_ptr<Partition>, shared_ptr<Expression>, PartitionPointerHash, PartitionPointerPredicate>
 PartitionPruner::prune(const vector<shared_ptr<Partition>> &partitions, const shared_ptr<Expression> &predicate) {
   unordered_map<shared_ptr<Partition>, shared_ptr<Expression>, PartitionPointerHash, PartitionPointerPredicate> pruneRes;
-
+  // No predicate, then no partition can be pruned
   if (!predicate) {
     for (const auto &partition: partitions) {
       pruneRes.emplace(partition, nullptr);
@@ -38,7 +38,11 @@ PartitionPruner::prune(const vector<shared_ptr<Partition>> &partitions, const sh
       const auto &valuePair = it.second;
       prunedPredicate = prunePredicate(prunedPredicate, columnName, valuePair.first, valuePair.second);
     }
-    pruneRes.emplace(partition, prunedPredicate);
+
+    // if after pruning there is no predicate left, the partition can be pruned
+    if (prunedPredicate) {
+      pruneRes.emplace(partition, prunedPredicate);
+    }
   }
 
   return pruneRes;
@@ -132,13 +136,13 @@ shared_ptr<Scalar> PartitionPruner::litToScalar(const shared_ptr<Expression> &li
       return Scalar::make(arrow::MakeScalar(strLit->value()));
     }
     case expression::gandiva::NUMERIC_LITERAL: {
-      if (instanceof<NumericLiteral<arrow::Int32Type>>(literal)) {
+      if (literal->getTypeString() == "NumericLiteral<Int32>") {
         const auto &numLit = static_pointer_cast<NumericLiteral<arrow::Int32Type>>(literal);
         return Scalar::make(arrow::MakeScalar(numLit->value()));
-      } else if (instanceof<NumericLiteral<arrow::Int64Type>>(literal)) {
+      } else if (literal->getTypeString() == "NumericLiteral<Int64>") {
         const auto &numLit = static_pointer_cast<NumericLiteral<arrow::Int64Type>>(literal);
         return Scalar::make(arrow::MakeScalar(numLit->value()));
-      } if (instanceof<NumericLiteral<arrow::DoubleType>>(literal)) {
+      } if (literal->getTypeString() == "NumericLiteral<Double>") {
         const auto &numLit = static_pointer_cast<NumericLiteral<arrow::DoubleType>>(literal);
         return Scalar::make(arrow::MakeScalar(numLit->value()));
       } else {

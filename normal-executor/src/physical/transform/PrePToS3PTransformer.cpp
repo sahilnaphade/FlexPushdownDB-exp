@@ -51,16 +51,17 @@ PrePToS3PTransformer::transformFilterableScanPullup(const shared_ptr<FilterableS
                                                     const unordered_map<shared_ptr<Partition>, shared_ptr<Expression>, PartitionPointerHash, PartitionPointerPredicate> &partitionPredicates,
                                                     const vector<string> &projectColumnNames) {
   vector<shared_ptr<PhysicalOp>> scanPOps, filterPOps;
-  const auto &s3Table = std::static_pointer_cast<S3Table>(filterableScanPrePOp->getTable());
+  const auto &table = filterableScanPrePOp->getTable();
 
   /**
    * For each partition, construct:
    * a S3Get, a Filter if needed
    */
-  for (const auto &s3Partition: s3Table->getS3Partitions()) {
+   for (const auto &partitionPredicateIt: partitionPredicates) {
+    const auto &s3Partition = static_pointer_cast<S3Partition>(partitionPredicateIt.first);
+    const auto &predicate = partitionPredicateIt.second;
     const auto &s3Bucket = s3Partition->getBucket();
     const auto &s3Object = s3Partition->getObject();
-    const auto &predicate = partitionPredicates.find(s3Partition)->second;
     pair<long, long> scanRange{0, s3Partition->getNumBytes()};
 
     // project column names and its union with project column names
@@ -74,7 +75,7 @@ PrePToS3PTransformer::transformFilterableScanPullup(const shared_ptr<FilterableS
                                                    projPredColumnNames,
                                                    scanRange.first,
                                                    scanRange.second,
-                                                   s3Table,
+                                                   table,
                                                    awsClient_,
                                                    true,
                                                    false,
@@ -85,7 +86,7 @@ PrePToS3PTransformer::transformFilterableScanPullup(const shared_ptr<FilterableS
     if (predicate) {
       const auto &filterPOp = make_shared<filter::FilterPOp>(fmt::format("Filter - {}/{}", s3Bucket, s3Object),
                                                              predicate,
-                                                             s3Table,
+                                                             table,
                                                              projectColumnNames,
                                                              queryId_);
       filterPOps.emplace_back(filterPOp);
@@ -109,16 +110,17 @@ PrePToS3PTransformer::transformFilterableScanPushdown(const shared_ptr<Filterabl
                                                       const unordered_map<shared_ptr<Partition>, shared_ptr<Expression>, PartitionPointerHash, PartitionPointerPredicate> &partitionPredicates,
                                                       const vector<string> &projectColumnNames) {
   vector<shared_ptr<PhysicalOp>> pOps;
-  const auto &s3Table = std::static_pointer_cast<S3Table>(filterableScanPrePOp->getTable());
+  const auto &table = filterableScanPrePOp->getTable();
 
   /**
    * For each partition, construct:
    * a S3Select
    */
-  for (const auto &s3Partition: s3Table->getS3Partitions()) {
+  for (const auto &partitionPredicateIt: partitionPredicates) {
+    const auto &s3Partition = static_pointer_cast<S3Partition>(partitionPredicateIt.first);
+    const auto &predicate = partitionPredicateIt.second;
     const auto &s3Bucket = s3Partition->getBucket();
     const auto &s3Object = s3Partition->getObject();
-    const auto &predicate = partitionPredicates.find(s3Partition)->second;
     const auto &filterSql = genFilterSql(predicate);
     pair<long, long> scanRange{0, s3Partition->getNumBytes()};
 
@@ -130,7 +132,7 @@ PrePToS3PTransformer::transformFilterableScanPushdown(const shared_ptr<Filterabl
                                                    projectColumnNames,
                                                    scanRange.first,
                                                    scanRange.second,
-                                                   s3Table,
+                                                   table,
                                                    awsClient_,
                                                    true,
                                                    false,
@@ -144,17 +146,18 @@ pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
 PrePToS3PTransformer::transformFilterableScanCachingOnly(const shared_ptr<FilterableScanPrePOp> &filterableScanPrePOp,
                                                          const unordered_map<shared_ptr<Partition>, shared_ptr<Expression>, PartitionPointerHash, PartitionPointerPredicate> &partitionPredicates,
                                                          const vector<string> &projectColumnNames) {
-  const auto &s3Table = std::static_pointer_cast<S3Table>(filterableScanPrePOp->getTable());
   vector<shared_ptr<PhysicalOp>> selfConnDownPOps, allPOps;
+  const auto &table = filterableScanPrePOp->getTable();
 
   /**
    * For each partition, construct:
    * a CacheLoad, a S3Get, a Merge, a Filter if needed
    */
-  for (const auto &s3Partition: s3Table->getS3Partitions()) {
+  for (const auto &partitionPredicateIt: partitionPredicates) {
+    const auto &s3Partition = static_pointer_cast<S3Partition>(partitionPredicateIt.first);
+    const auto &predicate = partitionPredicateIt.second;
     const auto &s3Bucket = s3Partition->getBucket();
     const auto &s3Object = s3Partition->getObject();
-    const auto &predicate = partitionPredicates.find(s3Partition)->second;
     pair<long, long> scanRange{0, s3Partition->getNumBytes()};
 
     // project column names and its union with project column names
@@ -188,7 +191,7 @@ PrePToS3PTransformer::transformFilterableScanCachingOnly(const shared_ptr<Filter
                                                     projPredColumnNames,
                                                     scanRange.first,
                                                     scanRange.second,
-                                                    s3Table,
+                                                    table,
                                                     awsClient_,
                                                     false,
                                                     true,
@@ -213,7 +216,7 @@ PrePToS3PTransformer::transformFilterableScanCachingOnly(const shared_ptr<Filter
     if (predicate) {
       const auto &filterPOp = make_shared<filter::FilterPOp>(fmt::format("Filter - {}/{}", s3Bucket, s3Object),
                                                              predicate,
-                                                             s3Table,
+                                                             table,
                                                              projectColumnNames,
                                                              queryId_);
       mergePOp->produce(filterPOp);
@@ -232,18 +235,19 @@ pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
 PrePToS3PTransformer::transformFilterableScanHybrid(const shared_ptr<FilterableScanPrePOp> &filterableScanPrePOp,
                                                     const unordered_map<shared_ptr<Partition>, shared_ptr<Expression>, PartitionPointerHash, PartitionPointerPredicate> &partitionPredicates,
                                                     const vector<string> &projectColumnNames) {
-  const auto &s3Table = std::static_pointer_cast<S3Table>(filterableScanPrePOp->getTable());
   vector<shared_ptr<PhysicalOp>> selfConnDownPOps, allPOps;
+  const auto &table = filterableScanPrePOp->getTable();
 
   /**
    * For each partition, construct:
    * a CacheLoad, a S3Get which is to pull up segments to cache, a Merge, a Filter if needed
    * a S3Select, a second Merge for local filtered segments + S3Select result
    */
-  for (const auto &s3Partition: s3Table->getS3Partitions()) {
+  for (const auto &partitionPredicateIt: partitionPredicates) {
+    const auto &s3Partition = static_pointer_cast<S3Partition>(partitionPredicateIt.first);
+    const auto &predicate = partitionPredicateIt.second;
     const auto &s3Bucket = s3Partition->getBucket();
     const auto &s3Object = s3Partition->getObject();
-    const auto &predicate = partitionPredicates.find(s3Partition)->second;
     const auto &filterSql = genFilterSql(predicate);
     pair<long, long> scanRange{0, s3Partition->getNumBytes()};
 
@@ -279,7 +283,7 @@ PrePToS3PTransformer::transformFilterableScanHybrid(const shared_ptr<FilterableS
                                                        projPredColumnNames,
                                                        scanRange.first,
                                                        scanRange.second,
-                                                       s3Table,
+                                                       table,
                                                        awsClient_,
                                                        false,
                                                        true,
@@ -305,7 +309,7 @@ PrePToS3PTransformer::transformFilterableScanHybrid(const shared_ptr<FilterableS
     if (predicate) {
       const auto &filterPOp = make_shared<filter::FilterPOp>(fmt::format("Filter - {}/{}", s3Bucket, s3Object),
                                                              predicate,
-                                                             s3Table,
+                                                             table,
                                                              projectColumnNames,
                                                              queryId_);
       allPOps.emplace_back(filterPOp);
@@ -324,7 +328,7 @@ PrePToS3PTransformer::transformFilterableScanHybrid(const shared_ptr<FilterableS
                                                          projectColumnNames,
                                                          scanRange.first,
                                                          scanRange.second,
-                                                         s3Table,
+                                                         table,
                                                          awsClient_,
                                                          false,
                                                          false,

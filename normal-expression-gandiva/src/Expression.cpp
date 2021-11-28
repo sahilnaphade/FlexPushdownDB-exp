@@ -49,11 +49,11 @@ std::shared_ptr<std::string> normal::expression::gandiva::removePrefixFloat(cons
 }
 
 std::shared_ptr<arrow::DataType> getNumericType(const std::shared_ptr<normal::expression::gandiva::Expression>& expr) {
-  if (instanceof<normal::expression::gandiva::NumericLiteral<arrow::Int32Type>>(expr)) {
+  if (expr->getTypeString() == "NumericLiteral<Int32>") {
     return arrow::int32();
-  } else if (instanceof<normal::expression::gandiva::NumericLiteral<arrow::Int64Type>>(expr)) {
+  } else if (expr->getTypeString() == "NumericLiteral<Int64>") {
     return arrow::int64();
-  } else if (instanceof<normal::expression::gandiva::NumericLiteral<arrow::DoubleType>>(expr)) {
+  } else if (expr->getTypeString() == "NumericLiteral<Double>") {
     return arrow::float64();
   } else {
     return nullptr;

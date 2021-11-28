@@ -7,6 +7,7 @@
 
 #include <string>
 #include <memory>
+#include <sstream>
 
 #include <arrow/api.h>
 #include <gandiva/node.h>
@@ -34,15 +35,25 @@ public:
   std::string alias() override {
     if (typeid(ARROW_TYPE) == typeid(arrow::Int32Type) || typeid(ARROW_TYPE) == typeid(arrow::Int64Type)) {
       return prefixInt_ + std::to_string(value_);
-    } else if (typeid(ARROW_TYPE) == typeid(arrow::FloatType)) {
+    } else if (typeid(ARROW_TYPE) == typeid(arrow::DoubleType)) {
       return prefixFloat_ + std::to_string(value_);
     }
-
-    throw std::runtime_error("Numeric literal type not implemented");
+    throw std::runtime_error("Unsupported numeric literal type");
   }
 
   std::string getTypeString() override {
-    return "NumericLiteral";
+    std::stringstream ss;
+    ss << "NumericLiteral";
+    if (typeid(ARROW_TYPE) == typeid(arrow::Int32Type)) {
+      ss << "<Int32>";
+    } else if (typeid(ARROW_TYPE) == typeid(arrow::Int64Type)) {
+      ss << "<Int64>";
+    } else if (typeid(ARROW_TYPE) == typeid(arrow::DoubleType)) {
+      ss << "<Double>";
+    } else {
+      throw std::runtime_error("Unsupported numeric literal type");
+    }
+    return ss.str();
   }
 
   std::shared_ptr<std::vector<std::string>> involvedColumnNames() override{
