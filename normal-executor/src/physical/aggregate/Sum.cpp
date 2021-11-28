@@ -110,7 +110,11 @@ std::shared_ptr<arrow::DataType> Sum::returnType() {
 }
 
 void Sum::finalize(std::shared_ptr<aggregate::AggregationResult> result) {
-  result->finalize(result->get(SUM_RESULT_KEY).value());
+  const auto expResultValue = result->get(SUM_RESULT_KEY);
+  if (!expResultValue.has_value()) {
+    throw std::runtime_error("No aggregate result to finalize");
+  }
+  result->finalize(expResultValue.value());
 }
 
 void Sum::buildAndCacheProjector() {
