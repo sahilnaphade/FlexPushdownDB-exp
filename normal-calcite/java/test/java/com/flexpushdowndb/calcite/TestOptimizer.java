@@ -18,7 +18,7 @@ public class TestOptimizer {
 
   @Test
   public void testSsbSingle() throws Exception {
-    Path queryPath = ssbQueryDirPath.resolve("4.1.sql");
+    Path queryPath = ssbQueryDirPath.resolve("2.2.sql");
     String query = FileUtils.readFile(queryPath);
     String schemaName = "ssb-sf1-sortlineorder/csv";
     Optimizer optimizer = new Optimizer();

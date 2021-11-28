@@ -81,7 +81,7 @@ shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeExpression(const 
   else if (jObj.contains("literal")) {
     const auto &literalJObj = jObj["literal"];
     const auto &type = literalJObj["type"].get<string>();
-    if (type == "VARCHAR") {
+    if (type == "CHAR" || type == "VARCHAR") {
       const string &value = literalJObj["value"].get<string>();
       return str_lit(value);
     } else if (type == "INTEGER") {

@@ -222,6 +222,7 @@ public class RexJsonSerializer {
 
   private static Comparable<?> serializeSargEndPoint(SqlTypeName basicTypeName, Comparable<?> endpoint) {
     switch (basicTypeName) {
+      case CHAR:
       case VARCHAR: {
         return ((NlsString) endpoint).getValue();
       }
