@@ -58,4 +58,6 @@ add_subdirectory(normal-ssb)
 # Resources
 #-----------------------------------------------------------------------------------------------------------------------
 
-file(COPY resources DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+file(COPY resources/config/ DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/resources/config/)
+file(COPY resources/metadata/ DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/resources/metadata/)
+file(COPY resources/query/ DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/resources/query/)
