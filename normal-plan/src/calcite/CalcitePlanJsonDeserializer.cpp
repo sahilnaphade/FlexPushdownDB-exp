@@ -86,7 +86,9 @@ shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeExpression(const 
       return str_lit(value);
     } else if (type == "INTEGER") {
       const int value = literalJObj["value"].get<int>();
-      return num_lit<arrow::Int32Type>(value);
+      // gandiva only supports binary expressions with same left, right and return type,
+      // so to avoid casting we make all integer fields as int64, as well as scalars.
+      return num_lit<arrow::Int64Type>(value);
     } else if (type == "BIGINT") {
       const long value = literalJObj["value"].get<long>();
       return num_lit<arrow::Int64Type>(value);

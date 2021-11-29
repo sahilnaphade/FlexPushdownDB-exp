@@ -10,7 +10,7 @@
       "fields": [
         {
           "name": "d_datekey",
-          "type": "int32"
+          "type": "int64"
         },
         {
           "name": "d_date",
@@ -22,15 +22,15 @@
         },
         {
           "name": "d_month",
-          "type": "int32"
+          "type": "int64"
         },
         {
           "name": "d_year",
-          "type": "int32"
+          "type": "int64"
         },
         {
           "name": "d_yearmonthnum",
-          "type": "int32"
+          "type": "int64"
         },
         {
           "name": "d_yearmonth",
@@ -38,23 +38,23 @@
         },
         {
           "name": "d_daynuminweek",
-          "type": "int32"
+          "type": "int64"
         },
         {
           "name": "d_daynuminmonth",
-          "type": "int32"
+          "type": "int64"
         },
         {
           "name": "d_daynuminyear",
-          "type": "int32"
+          "type": "int64"
         },
         {
           "name": "d_monthnuminyear",
-          "type": "int32"
+          "type": "int64"
         },
         {
           "name": "d_weeknuminyear",
-          "type": "int32"
+          "type": "int64"
         },
         {
           "name": "d_sellingseason",
@@ -87,7 +87,7 @@
       "fields": [
         {
           "name": "s_suppkey",
-          "type": "int32"
+          "type": "int64"
         },
         {
           "name": "s_name",
@@ -124,7 +124,7 @@
       "fields": [
         {
           "name": "c_custkey",
-          "type": "int32"
+          "type": "int64"
         },
         {
           "name": "c_name",
@@ -165,7 +165,7 @@
       "fields": [
         {
           "name": "p_partkey",
-          "type": "int32"
+          "type": "int64"
         },
         {
           "name": "p_name",
@@ -193,7 +193,7 @@
         },
         {
           "name": "p_size",
-          "type": "int32"
+          "type": "int64"
         },
         {
           "name": "p_container",
@@ -210,27 +210,27 @@
       "fields": [
         {
           "name": "lo_orderkey",
-          "type": "int32"
+          "type": "int64"
         },
         {
           "name": "lo_linenumber",
-          "type": "int32"
+          "type": "int64"
         },
         {
           "name": "lo_custkey",
-          "type": "int32"
+          "type": "int64"
         },
         {
           "name": "lo_partkey",
-          "type": "int32"
+          "type": "int64"
         },
         {
           "name": "lo_suppkey",
-          "type": "int32"
+          "type": "int64"
         },
         {
           "name": "lo_orderdate",
-          "type": "int32"
+          "type": "int64"
         },
         {
           "name": "lo_orderpriority",
@@ -238,11 +238,11 @@
         },
         {
           "name": "lo_shippriority",
-          "type": "int32"
+          "type": "int64"
         },
         {
           "name": "lo_quantity",
-          "type": "int32"
+          "type": "int64"
         },
         {
           "name": "lo_extendedprice",
@@ -250,7 +250,7 @@
         },
         {
           "name": "lo_ordtotalprice",
-          "type": "int32"
+          "type": "int64"
         },
         {
           "name": "lo_discount",
@@ -266,11 +266,11 @@
         },
         {
           "name": "lo_tax",
-          "type": "int32"
+          "type": "int64"
         },
         {
           "name": "lo_commitdate",
-          "type": "int32"
+          "type": "int64"
         },
         {
           "name": "lo_shipmode",
