@@ -14,7 +14,7 @@ string FilterableScanPrePOp::getTypeString() {
   return "FilterableScanPrePOp";
 }
 
-unordered_set<string> FilterableScanPrePOp::getUsedColumnNames() {
+set<string> FilterableScanPrePOp::getUsedColumnNames() {
   return getProjectColumnNames();
 }
 

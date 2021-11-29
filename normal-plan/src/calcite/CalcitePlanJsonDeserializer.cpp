@@ -23,7 +23,7 @@
 #include <normal/tuple/ColumnName.h>
 
 #include <fmt/format.h>
-#include <unordered_set>
+#include <set>
 #include <utility>
 
 using namespace normal::catalogue;
@@ -251,7 +251,7 @@ shared_ptr<PrePhysicalOp> CalcitePlanJsonDeserializer::deserializeAggregateOrGro
   }
 
   // project column names
-  unordered_set<string> projectColumnNames;
+  set<string> projectColumnNames;
   projectColumnNames.insert(aggOutputColumnNames.begin(), aggOutputColumnNames.end());
 
   // decide if it's an Aggregate op or a Group op
@@ -276,7 +276,7 @@ shared_ptr<prephysical::PrePhysicalOp> CalcitePlanJsonDeserializer::deserializeP
   // only when there is an expr, we need to keep the Project
   if (jObj.contains("consumedFieldsId")) {
     const vector<size_t> &consumedFieldsIdVec = jObj["consumedFieldsId"].get<vector<size_t>>();
-    unordered_set<size_t> consumedFieldsIdSet(consumedFieldsIdVec.begin(), consumedFieldsIdVec.end());
+    set<size_t> consumedFieldsIdSet(consumedFieldsIdVec.begin(), consumedFieldsIdVec.end());
     // check each project field
     const vector<json> &fieldsJArr = jObj["fields"].get<vector<json>>();
     for (size_t i = 0; i < fieldsJArr.size(); ++i) {
@@ -296,7 +296,7 @@ shared_ptr<prephysical::PrePhysicalOp> CalcitePlanJsonDeserializer::deserializeP
   }
 
   // project columns and exprs
-  unordered_set<string> projectColumnNames;
+  set<string> projectColumnNames;
   vector<shared_ptr<Expression>> exprs;
   const auto &fieldsJArr = jObj["fields"].get<vector<json>>();
   for (const auto &fieldJObj: fieldsJArr) {
@@ -307,7 +307,7 @@ shared_ptr<prephysical::PrePhysicalOp> CalcitePlanJsonDeserializer::deserializeP
       const auto &expr = deserializeExpression(fieldJObj);
       exprs.emplace_back(expr);
       const auto &exprUsedColumnNames = expr->involvedColumnNames();
-      projectColumnNames.insert(exprUsedColumnNames->begin(), exprUsedColumnNames->end());
+      projectColumnNames.insert(exprUsedColumnNames.begin(), exprUsedColumnNames.end());
     }
   }
 
@@ -377,7 +377,7 @@ shared_ptr<prephysical::FilterableScanPrePOp> CalcitePlanJsonDeserializer::deser
   const string &tableName = jObj["table"].get<string>();
   shared_ptr<Table> table;
 
-  unordered_set<string> columnNameSet;
+  set<string> columnNameSet;
   // fetch table from catalogue entry
   if (catalogueEntry_->getType() == S3) {
     const auto s3CatalogueEntry = static_pointer_cast<s3::S3CatalogueEntry>(catalogueEntry_);

@@ -98,7 +98,7 @@ std::string Cast::alias() {
   return expr_->alias();
 }
 
-std::shared_ptr<std::vector<std::string> > Cast::involvedColumnNames() {
+std::set<std::string> Cast::involvedColumnNames() {
   return expr_->involvedColumnNames();
 }
 

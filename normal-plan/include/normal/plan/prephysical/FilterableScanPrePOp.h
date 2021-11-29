@@ -20,7 +20,7 @@ public:
 
   string getTypeString() override;
 
-  unordered_set<string> getUsedColumnNames() override;
+  set<string> getUsedColumnNames() override;
 
   const shared_ptr<Expression> &getPredicate() const;
   const shared_ptr<Table> &getTable() const;

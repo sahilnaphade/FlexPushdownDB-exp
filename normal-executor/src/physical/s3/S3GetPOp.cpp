@@ -6,7 +6,6 @@
 #include <normal/executor/physical/Globals.h>
 #include <normal/executor/message/Message.h>
 #include <normal/executor/message/cache/LoadResponseMessage.h>
-#include <normal/cache/SegmentKey.h>
 #include <normal/catalogue/format/CSVFormat.h>
 #include <normal/tuple/TupleSet.h>
 #include <normal/tuple/arrow/ArrowAWSInputStream.h>

@@ -73,6 +73,13 @@ public:
   tl::expected<std::shared_ptr<Column>, std::string> getColumnByIndex(const int &columnIndex) const;
 
   /**
+   * Project specified columns, ignore non-existing ones.
+   * @param columnNames
+   * @return
+   */
+  tl::expected<std::shared_ptr<TupleSet>, std::string> projectExist(const std::vector<std::string> &columnNames) const;
+
+  /**
    * Rename columns.
    */
   tl::expected<void, std::string> renameColumns(const std::vector<std::string>& columnNames);

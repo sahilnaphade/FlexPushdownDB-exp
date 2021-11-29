@@ -5,7 +5,6 @@
 #ifndef NORMAL_NORMAL_PLAN_INCLUDE_NORMAL_PLAN_PREPHYSICALOP_SORTPREPOP_H
 #define NORMAL_NORMAL_PLAN_INCLUDE_NORMAL_PLAN_PREPHYSICALOP_SORTPREPOP_H
 
-#include <normal/plan/prephysical/FieldDirection.h>
 #include <normal/plan/prephysical/PrePhysicalOp.h>
 #include <arrow/compute/api.h>
 
@@ -19,7 +18,7 @@ public:
 
   string getTypeString() override;
 
-  unordered_set<string> getUsedColumnNames() override;
+  set<string> getUsedColumnNames() override;
 
   const arrow::compute::SortOptions &getSortOptions() const;
 

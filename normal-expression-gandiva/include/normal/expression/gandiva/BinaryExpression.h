@@ -19,7 +19,7 @@ public:
                    std::shared_ptr<Expression> right,
                    ExpressionType type);
 
-  std::shared_ptr<std::vector<std::string> > involvedColumnNames() override;
+  std::set<std::string> involvedColumnNames() override;
 
   [[nodiscard]] const std::shared_ptr<Expression> &getLeft() const;
   [[nodiscard]] const std::shared_ptr<Expression> &getRight() const;

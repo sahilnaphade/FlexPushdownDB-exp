@@ -53,8 +53,14 @@ void MergePOp::merge() {
     } else {
       // Send merged tupleset
       auto mergedTupleSet = expectedMergedTupleSet.value();
-      std::shared_ptr<Message>
-              tupleMessage = std::make_shared<TupleMessage>(mergedTupleSet, name());
+
+      // Project using projectColumnNames
+      auto expProjectTupleSet = mergedTupleSet->projectExist(getProjectColumnNames());
+      if (!expProjectTupleSet) {
+        throw std::runtime_error(expProjectTupleSet.error());
+      }
+
+      std::shared_ptr<Message> tupleMessage = std::make_shared<TupleMessage>(expProjectTupleSet.value(), name());
       ctx()->tell(tupleMessage);
     }
 

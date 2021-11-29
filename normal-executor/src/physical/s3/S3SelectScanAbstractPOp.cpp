@@ -58,7 +58,7 @@ S3SelectScanAbstractPOp::S3SelectScanAbstractPOp(std::string name,
 }
 
 void S3SelectScanAbstractPOp::onStart() {
-  SPDLOG_DEBUG("Starting");
+  SPDLOG_DEBUG("Starting operator  |  name: '{}'", this->name());
   if (scanOnStart_) {
     readAndSendTuples();
   }

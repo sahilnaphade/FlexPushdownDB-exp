@@ -45,10 +45,10 @@ std::string BinaryExpression::genAliasForComparison(const std::string& compOp) {
   }
 }
 
-std::shared_ptr<std::vector<std::string> > BinaryExpression::involvedColumnNames() {
+std::set<std::string> BinaryExpression::involvedColumnNames() {
   auto leftInvolvedColumnNames = getLeft()->involvedColumnNames();
   auto rightInvolvedColumnNames = getRight()->involvedColumnNames();
-  leftInvolvedColumnNames->insert(leftInvolvedColumnNames->end(), rightInvolvedColumnNames->begin(), rightInvolvedColumnNames->end());
+  leftInvolvedColumnNames.insert(rightInvolvedColumnNames.begin(), rightInvolvedColumnNames.end());
   return leftInvolvedColumnNames;
 }
 

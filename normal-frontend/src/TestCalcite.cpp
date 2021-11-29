@@ -4,6 +4,10 @@
 
 #include <normal/executor/Executor.h>
 #include <normal/executor/physical/transform/PrePToPTransformer.h>
+#include <normal/cache/policy/LRUCachingPolicy.h>
+#include <normal/cache/policy/LFUCachingPolicy.h>
+#include <normal/cache/policy/LFUSCachingPolicy.h>
+#include <normal/cache/policy/WLFUCachingPolicy.h>
 #include <normal/calcite/CalciteConfig.h>
 #include <normal/calcite/CalciteClient.h>
 #include <normal/plan/calcite/CalcitePlanJsonDeserializer.h>
@@ -13,6 +17,7 @@
 #include <normal/aws/AWSClient.h>
 #include <normal/aws/AWSConfig.h>
 #include <normal/util/Util.h>
+#include <spdlog/spdlog.h>
 #include <memory>
 #include <iostream>
 #include <sstream>
@@ -20,6 +25,7 @@
 
 using namespace normal::executor;
 using namespace normal::executor::physical;
+using namespace normal::cache;
 using namespace normal::calcite;
 using namespace normal::plan::calcite;
 using namespace normal::plan;
@@ -52,22 +58,13 @@ void e2eWithServer() {
   calciteClient.shutdownServer();
 }
 
-void e2eWithoutServer(const string &queryFileName) {
-  // Create and start Calcite client
-  shared_ptr<CalciteConfig> calciteConfig = parseCalciteConfig();
-  CalciteClient calciteClient(calciteConfig);
-  calciteClient.startClient();
+void e2eWithoutServer(int numQuery, char* queryFileNames[]) {
+//  spdlog::set_level(spdlog::level::debug);
 
-  // Plan query
-  string queryPath = std::filesystem::current_path()
-          .parent_path()
-          .append("resources/query")
-          .append(queryFileName)
-          .string();
-  string query = readFile(queryPath);
-  string schemaName = "ssb-sf1-sortlineorder/csv/";
-  string planResult = calciteClient.planQuery(query, schemaName);
-  cout << planResult << endl;
+  // AWS client
+  shared_ptr<AWSClient> awsClient = make_shared<AWSClient>(
+          make_shared<AWSConfig>(normal::aws::S3, 0));
+  awsClient->init();
 
   // make catalogue
   string s3Bucket = "flexpushdowndb";
@@ -76,44 +73,68 @@ void e2eWithoutServer(const string &queryFileName) {
           .append("resources/metadata");
   shared_ptr<Catalogue> catalogue = make_shared<Catalogue>("main", metadataPath);
 
-  // AWS client
-  shared_ptr<AWSClient> awsClient = make_shared<AWSClient>(
-          make_shared<AWSConfig>(normal::aws::S3, 0));
-
   // read catalogue entry
+  string schemaName = "ssb-sf1-sortlineorder/csv/";
   const auto &s3CatalogueEntry = S3CatalogueEntryReader::readS3CatalogueEntry(catalogue,
                                                                               s3Bucket,
                                                                               schemaName,
                                                                               awsClient->getS3Client());
   catalogue->putEntry(s3CatalogueEntry);
 
-  // deserialize plan json string into prephysical plan
-  auto planDeserializer = make_shared<CalcitePlanJsonDeserializer>(planResult, s3CatalogueEntry);
-  const auto &prePhysicalPlan = planDeserializer->deserialize();
+  // Create and start Calcite client
+  shared_ptr<CalciteConfig> calciteConfig = parseCalciteConfig();
+  CalciteClient calciteClient(calciteConfig);
+  calciteClient.startClient();
 
-  // trim unused fields (Calcite trimmer does not trim completely)
-  prePhysicalPlan->populateAndTrimProjectColumns();
+  // mode, caching policy, executor
+  const auto &mode = Mode::hybridMode();
+  const auto &cachingPolicy = make_shared<LFUCachingPolicy>(1L * 1024 * 1024 * 1024, s3CatalogueEntry);
 
-  // transform prephysical plan to physical plan
-  const auto &mode = Mode::pushdownOnlyMode();
-  auto prePToPTransformer = make_shared<PrePToPTransformer>(prePhysicalPlan, awsClient, mode, 1, 8);
-  const auto &physicalPlan = prePToPTransformer->transform();
-
-  // execute
-  const auto &executor = make_shared<Executor>(mode);
+  const auto &executor = make_shared<Executor>(mode, cachingPolicy);
   executor->start();
-  const auto &execRes = executor->execute(physicalPlan);
-  executor->stop();
 
-  // show output
-  stringstream ss;
-  ss << fmt::format("Result |\n{}", execRes.first->showString(
-          TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
-  ss << fmt::format("\nTime: {} secs", (double) (execRes.second) / 1000000000.0);
-  cout << ss.str() << endl;
+  for (int i = 0; i < numQuery; ++i) {
+    const auto &queryFileName = queryFileNames[i];
+    cout << "Query: " << queryFileName << endl;
+
+    // Plan query
+    string queryPath = std::filesystem::current_path()
+            .parent_path()
+            .append("resources/query/ssb")
+            .append(queryFileName)
+            .string();
+    string query = readFile(queryPath);
+    string planResult = calciteClient.planQuery(query, schemaName);
+
+    // deserialize plan json string into prephysical plan
+    auto planDeserializer = make_shared<CalcitePlanJsonDeserializer>(planResult, s3CatalogueEntry);
+    const auto &prePhysicalPlan = planDeserializer->deserialize();
+
+    // trim unused fields (Calcite trimmer does not trim completely)
+    prePhysicalPlan->populateAndTrimProjectColumns();
+
+    // transform prephysical plan to physical plan
+    auto prePToPTransformer = make_shared<PrePToPTransformer>(prePhysicalPlan, awsClient, mode, 1, 1);
+    const auto &physicalPlan = prePToPTransformer->transform();
+
+    // execute
+    const auto &execRes = executor->execute(physicalPlan);
+
+    // show output
+    stringstream ss;
+    ss << fmt::format("Result |\n{}", execRes.first->showString(
+            TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
+    ss << fmt::format("\nTime: {} secs", (double) (execRes.second) / 1000000000.0);
+    ss << endl;
+    cout << ss.str() << endl;
+  }
+
+  // stop, need to shutdown awsClient first
+  awsClient->shutdown();
+  executor->stop();
 }
 
-int main(int, char* argv[]) {
-  e2eWithoutServer(argv[1]);
+int main(int argc, char* argv[]) {
+  e2eWithoutServer(argc - 1, argv + 1);
   return 0;
 }

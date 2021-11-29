@@ -89,7 +89,7 @@ std::vector<std::string> GroupKernel2::getAggregateColumnNames() {
   std::vector<std::string> aggregateColumnNames;
   for (const auto &aggregateFunction: aggregateFunctions_) {
     aggregateColumnNames = union_(aggregateColumnNames,
-                                  *aggregateFunction->getExpression()->involvedColumnNames());
+                                  aggregateFunction->getExpression()->involvedColumnNames());
   }
   return aggregateColumnNames;
 }

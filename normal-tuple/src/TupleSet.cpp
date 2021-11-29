@@ -228,6 +228,21 @@ tl::expected<std::shared_ptr<Column>, std::string> TupleSet::getColumnByIndex(co
   }
 }
 
+tl::expected<std::shared_ptr<TupleSet>, std::string>
+TupleSet::projectExist(const std::vector<std::string> &columnNames) const {
+  std::vector<std::shared_ptr<Column>> columns;
+  for (const auto &columnName: columnNames) {
+    const auto &expColumn = getColumnByName(columnName);
+    if (expColumn.has_value()) {
+      columns.emplace_back(expColumn.value());
+    }
+  }
+  if (columns.empty()) {
+    return tl::make_unexpected("No column exists.");
+  }
+  return make(columns);
+}
+
 tl::expected<void, std::string> TupleSet::renameColumns(const std::vector<std::string>& columnNames){
   if(valid()){
     auto expectedTable = table_->RenameColumns(columnNames);

@@ -56,8 +56,8 @@ public:
     return ss.str();
   }
 
-  std::shared_ptr<std::vector<std::string>> involvedColumnNames() override{
-    return std::make_shared<std::vector<std::string>>();
+  std::set<std::string> involvedColumnNames() override{
+    return std::set<std::string>();
   }
 
   C_TYPE value() const {

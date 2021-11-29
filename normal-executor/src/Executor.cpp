@@ -12,13 +12,11 @@ namespace normal::executor {
 
 Executor::Executor(const shared_ptr<Mode> &mode,
                    const shared_ptr<CachingPolicy> &cachingPolicy) :
+  actorSystem_(make_shared<caf::actor_system>(actorSystemConfig_)),
   cachingPolicy_(cachingPolicy),
   mode_(mode),
   queryCounter_(0),
-  running_(false) {
-  actorSystem_ = make_shared<caf::actor_system>(actorSystemConfig_);
-  rootActor_ = make_unique<caf::scoped_actor>(*actorSystem_);
-}
+  running_(false) {}
 
 Executor::~Executor() {
   if (running_) {
@@ -27,11 +25,11 @@ Executor::~Executor() {
 }
 
 void Executor::start() {
-  if (isCacheUsed()) {
-    segmentCacheActor_ = actorSystem_->spawn(SegmentCacheActor::makeBehaviour, cachingPolicy_, mode_);
-  } else {
-    segmentCacheActor_ = nullptr;
+  rootActor_ = make_unique<caf::scoped_actor>(*actorSystem_);
+  if ((mode_->id() == CACHING_ONLY || mode_->id() == HYBRID) && !cachingPolicy_) {
+    throw runtime_error(fmt::format("Failed to start, missing caching policy for mode: {}", mode_->toString()));
   }
+  segmentCacheActor_ = actorSystem_->spawn(SegmentCacheActor::makeBehaviour, cachingPolicy_, mode_);
   running_ = true;
 }
 
@@ -55,7 +53,8 @@ pair<shared_ptr<TupleSet>, long> Executor::execute(const shared_ptr<PhysicalPlan
                                                  physicalPlan);
   const auto &result = execution->execute();
   long elapsedTime = execution->getElapsedTime();
-  cout << execution->showMetrics(true, false) << endl;
+//  cout << execution->showMetrics(true, false) << endl;
+  cout << showCacheMetrics() << endl;
   return make_pair(result, elapsedTime);
 }
 
@@ -76,40 +75,39 @@ long Executor::nextQueryId() {
 }
 
 std::string Executor::showCacheMetrics() {
-  int hitNum, missNum;
-  int shardHitNum, shardMissNum;
+  size_t hitNum, missNum;
+  size_t shardHitNum, shardMissNum;
 
-  auto errorHandler = [&](const caf::error& error){
+  auto errorHandler = [&](const caf::error &error) {
     throw std::runtime_error(to_string(error));
   };
 
   scoped_actor self{*actorSystem_};
   self->request(segmentCacheActor_, infinite, GetNumHitsAtom::value).receive(
-          [&](int numHits) {
+          [&](size_t numHits) {
             hitNum = numHits;
           },
           errorHandler);
 
   self->request(segmentCacheActor_, infinite, GetNumMissesAtom::value).receive(
-          [&](int numMisses) {
+          [&](size_t numMisses) {
             missNum = numMisses;
           },
           errorHandler);
 
-  double hitRate = (hitNum + missNum == 0) ? 0.0 : (double) hitNum / (double) (hitNum + missNum);
-
   self->request(segmentCacheActor_, infinite, GetNumShardHitsAtom::value).receive(
-          [&](int numShardHits) {
+          [&](size_t numShardHits) {
             shardHitNum = numShardHits;
           },
           errorHandler);
 
   self->request(segmentCacheActor_, infinite, GetNumShardMissesAtom::value).receive(
-          [&](int numShardMisses) {
+          [&](size_t numShardMisses) {
             shardMissNum = numShardMisses;
           },
           errorHandler);
 
+  double hitRate = (hitNum + missNum == 0) ? 0.0 : (double) hitNum / (double) (hitNum + missNum);
   double shardHitRate = (shardHitNum + shardMissNum == 0) ? 0.0 : (double) shardHitNum / (double) (shardHitNum + shardMissNum);
 
   std::stringstream ss;
@@ -159,6 +157,7 @@ void Executor::clearCrtQueryShardMetrics() {
 double Executor::getCrtQueryHitRatio() {
   int crtQueryHitNum;
   int crtQueryMissNum;
+
 
   auto errorHandler = [&](const caf::error& error){
     throw std::runtime_error(to_string(error));

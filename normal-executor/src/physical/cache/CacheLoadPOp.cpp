@@ -106,12 +106,7 @@ void CacheLoadPOp::onCacheLoadResponse(const LoadResponseMessage &Message) {
        * otherwise we make missedPushdownColumnNames as all projectedColumnNames_
        */
       missedPushdownColumnNames.emplace_back(columnName);
-	  } else {
-      if (std::find(getProjectColumnNames().begin(), getProjectColumnNames().end(), columnName)
-              != getProjectColumnNames().end()) {
-        missedPushdownColumnNames.emplace_back(columnName);
-      }
-    }
+	  }
   }
 
   /**

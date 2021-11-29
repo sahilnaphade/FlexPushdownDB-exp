@@ -75,8 +75,13 @@ void HashJoinProbePOp::send(bool force) {
   if (buffer.has_value()) {
     auto numRows = buffer.value()->numRows();
     if (numRows >= DefaultBufferSize || (force && numRows > 0)) {
-      std::shared_ptr<Message> tupleMessage = std::make_shared<TupleMessage>(
-              TupleSet::make(buffer.value()->table()),name());
+      // Project using projectColumnNames
+      auto expProjectTupleSet = TupleSet::make(buffer.value()->table())->projectExist(getProjectColumnNames());
+      if (!expProjectTupleSet) {
+        throw std::runtime_error(expProjectTupleSet.error());
+      }
+
+      std::shared_ptr<Message> tupleMessage = std::make_shared<TupleMessage>(expProjectTupleSet.value(), name());
       ctx()->tell(tupleMessage);
       kernel_.clear();
     }

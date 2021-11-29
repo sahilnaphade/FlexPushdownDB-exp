@@ -33,7 +33,7 @@ void GroupPOp::onReceive(const Envelope &msg) {
 }
 
 void GroupPOp::onStart() {
-  SPDLOG_DEBUG("Starting");
+  SPDLOG_DEBUG("Starting operator  |  name: '{}'", this->name());
 }
 
 void GroupPOp::onTuple(const TupleMessage &message) {
@@ -51,8 +51,13 @@ void GroupPOp::onComplete(const CompleteMessage &) {
       if (!expectedGroupedTupleSet)
         throw std::runtime_error(expectedGroupedTupleSet.error());
 
-      std::shared_ptr<Message> tupleMessage = std::make_shared<TupleMessage>(expectedGroupedTupleSet.value(),
-                                                                             this->name());
+      // Project using projectColumnNames
+      auto expProjectTupleSet = expectedGroupedTupleSet.value()->projectExist(getProjectColumnNames());
+      if (!expProjectTupleSet) {
+        throw std::runtime_error(expProjectTupleSet.error());
+      }
+
+      std::shared_ptr<Message> tupleMessage = std::make_shared<TupleMessage>(expProjectTupleSet.value(), this->name());
       ctx()->tell(tupleMessage);
     }
 

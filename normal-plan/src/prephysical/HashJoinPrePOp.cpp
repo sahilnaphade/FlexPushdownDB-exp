@@ -18,8 +18,8 @@ string HashJoinPrePOp::getTypeString() {
   return "HashJoinPrePOp";
 }
 
-unordered_set<string> HashJoinPrePOp::getUsedColumnNames() {
-  unordered_set<string> usedColumnNames = getProjectColumnNames();
+set<string> HashJoinPrePOp::getUsedColumnNames() {
+  set<string> usedColumnNames = getProjectColumnNames();
   usedColumnNames.insert(leftColumnNames_.begin(), leftColumnNames_.end());
   usedColumnNames.insert(rightColumnNames_.begin(), rightColumnNames_.end());
   return usedColumnNames;

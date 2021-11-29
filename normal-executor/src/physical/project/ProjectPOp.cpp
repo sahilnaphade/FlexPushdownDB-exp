@@ -89,29 +89,43 @@ void ProjectPOp::bufferTuples(const TupleMessage &message) {
 void ProjectPOp::projectAndSendTuples() {
   if(tuples_ && tuples_->numRows() > 0) {
     // Project expressions
-    auto projectedTuples = projector_.value()->evaluate(*tuples_);
+    auto projExprTuples = projector_.value()->evaluate(*tuples_);
 
-    // TODO: add project columns
-//    std::vector<std::shared_ptr<arrow::Field>> fields;
-//    std::vector<std::shared_ptr<arrow::ChunkedArray>> arrowColumns;
-//    for (auto const &expression: exprs_) {
-//      auto columnName = std::static_pointer_cast<normal::expression::gandiva::Column>(expression)->getColumnName();
-//      auto arrowColumn = tuples_->table()->GetColumnByName(columnName);
-//      arrowColumns.emplace_back(arrowColumn);
-//      fields.emplace_back(std::make_shared<arrow::Field>(columnName, arrowColumn->type()));
-//    }
-//    auto projectedTuples = TupleSet::make(std::make_shared<arrow::Schema>(fields), arrowColumns);
+    // Rename project columns
+    projExprTuples->renameColumns(exprNames_);
 
-    sendTuples(projectedTuples);
+    // Combine with input columns
+    std::vector<std::shared_ptr<Column>> columns;
+    for (int c = 0; c < tuples_->numColumns(); ++c) {
+      const auto &expColumn = tuples_->getColumnByIndex(c);
+      if (!expColumn.has_value()) {
+        throw std::runtime_error(expColumn.error());
+      }
+      columns.emplace_back(expColumn.value());
+    }
+    for (int c = 0; c < projExprTuples->numColumns(); ++c) {
+      const auto &expColumn = projExprTuples->getColumnByIndex(c);
+      if (!expColumn.has_value()) {
+        throw std::runtime_error(expColumn.error());
+      }
+      columns.emplace_back(expColumn.value());
+    }
+    const auto &fullTupleSet = TupleSet::make(columns);
 
-    // FIXME: Either set tuples to size 0 or use an optional
-    tuples_ = nullptr;
+    // Project using projectColumnNames
+    auto expProjectTupleSet = fullTupleSet->projectExist(getProjectColumnNames());
+    if (!expProjectTupleSet) {
+      throw std::runtime_error(expProjectTupleSet.error());
+    }
+
+    // Send
+    sendTuples(expProjectTupleSet.value());
+    tuples_->clear();
   }
 }
 
 void ProjectPOp::sendTuples(std::shared_ptr<TupleSet> &projected) {
-	std::shared_ptr<Message>
-		tupleMessage = std::make_shared<TupleMessage>(projected, name());
+	std::shared_ptr<Message> tupleMessage = std::make_shared<TupleMessage>(projected, name());
 	ctx()->tell(tupleMessage);
 }
 

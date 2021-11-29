@@ -18,7 +18,7 @@ public:
 
   string getTypeString() override;
 
-  unordered_set<string> getUsedColumnNames() override;
+  set<string> getUsedColumnNames() override;
 
   const vector<shared_ptr<Expression>> &getExprs() const;
 

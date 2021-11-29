@@ -32,9 +32,9 @@ const std::string &Column::getColumnName() const {
   return columnName_;
 }
 
-std::shared_ptr<std::vector<std::string> > Column::involvedColumnNames() {
-  auto involvedColumnNames = std::make_shared<std::vector<std::string>>();
-  involvedColumnNames->emplace_back(columnName_);
+std::set<std::string> Column::involvedColumnNames() {
+  std::set<std::string> involvedColumnNames;
+  involvedColumnNames.insert(columnName_);
   return involvedColumnNames;
 }
 

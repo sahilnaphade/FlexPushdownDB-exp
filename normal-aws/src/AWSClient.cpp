@@ -7,14 +7,14 @@
 
 namespace normal::aws {
 
-AWSClient::AWSClient(const shared_ptr<AWSConfig> &awsConfig) : awsConfig_(awsConfig) {
-  init();
-  s3Client_ = makeS3Client();
+AWSClient::AWSClient(const shared_ptr<AWSConfig> &awsConfig) :
+  awsConfig_(awsConfig) {
 }
 
 void AWSClient::init() {
   options_.loggingOptions.logLevel = Aws::Utils::Logging::LogLevel::Info;
   Aws::InitAPI(options_);
+  s3Client_ = makeS3Client();
 }
 
 [[maybe_unused]] void AWSClient::shutdown() {

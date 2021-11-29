@@ -57,6 +57,13 @@ namespace normal::util {
 
     return result;
   }
+
+  template<typename T>
+  vector<T> union_(const vector<T> &vec1, const set<T> &set2) {
+    set<T> unionSet{vec1.begin(), vec1.end()};
+    unionSet.insert(set2.begin(), set2.end());
+    return vector<T>{unionSet.begin(), unionSet.end()};
+  }
   
   template<typename T>
   vector<T> union_(const vector<T> &vec1, const vector<T> &vec2) {

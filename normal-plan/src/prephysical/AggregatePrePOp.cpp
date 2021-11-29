@@ -24,11 +24,11 @@ string AggregatePrePOp::getTypeString() {
   return "AggregatePrePOp";
 }
 
-unordered_set<string> AggregatePrePOp::getUsedColumnNames() {
-  unordered_set<string> usedColumnNames;
+set<string> AggregatePrePOp::getUsedColumnNames() {
+  set<string> usedColumnNames;
   for (const auto &function: functions_) {
     const auto involvedColumnNames = function->getExpression()->involvedColumnNames();
-    usedColumnNames.insert(involvedColumnNames->begin(), involvedColumnNames->end());
+    usedColumnNames.insert(involvedColumnNames.begin(), involvedColumnNames.end());
   }
   return usedColumnNames;
 }

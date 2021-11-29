@@ -20,7 +20,7 @@ public:
 
   string getTypeString() override;
 
-  unordered_set<string> getUsedColumnNames() override;
+  set<string> getUsedColumnNames() override;
 
 private:
   vector<string> aggOutputColumnNames_;

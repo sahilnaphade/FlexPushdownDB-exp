@@ -93,8 +93,14 @@ void AggregatePOp::onComplete(const normal::executor::message::CompleteMessage &
 
       SPDLOG_DEBUG("Completing  |  Aggregation result: \n{}", aggregatedTuples->toString());
 
-      std::shared_ptr<normal::executor::message::Message>
-              tupleMessage = std::make_shared<normal::executor::message::TupleMessage>(aggregatedTuples, this->name());
+      // Project using projectColumnNames
+      auto expProjectTupleSet = aggregatedTuples->projectExist(getProjectColumnNames());
+      if (!expProjectTupleSet) {
+        throw std::runtime_error(expProjectTupleSet.error());
+      }
+
+      std::shared_ptr<normal::executor::message::Message> tupleMessage =
+              std::make_shared<normal::executor::message::TupleMessage>(expProjectTupleSet.value(), this->name());
       ctx()->tell(tupleMessage);
     }
 

@@ -122,7 +122,7 @@ bool FilterPOp::isApplicable(const std::shared_ptr<normal::tuple::TupleSet>& tup
     tupleColumnNames->emplace_back(field->name());
   }
 
-  for (auto const &columnName: *predicateColumnNames) {
+  for (auto const &columnName: predicateColumnNames) {
     if (std::find(tupleColumnNames->begin(), tupleColumnNames->end(), columnName) == tupleColumnNames->end()) {
       return false;
     }
@@ -161,9 +161,13 @@ void FilterPOp::filterTuples() {
 }
 
 void FilterPOp::sendTuples() {
-  std::shared_ptr<Message> tupleMessage = std::make_shared<TupleMessage>(TupleSet::make(filtered_->table()),
-                                                                         name());
+  // Project using projectColumnNames
+  auto expProjectTupleSet = TupleSet::make(filtered_->table())->projectExist(getProjectColumnNames());
+  if (!expProjectTupleSet) {
+    throw std::runtime_error(expProjectTupleSet.error());
+  }
 
+  std::shared_ptr<Message> tupleMessage = std::make_shared<TupleMessage>(expProjectTupleSet.value(),name());
   ctx()->tell(tupleMessage);
   filtered_->clear();
   assert(filtered_->validate());

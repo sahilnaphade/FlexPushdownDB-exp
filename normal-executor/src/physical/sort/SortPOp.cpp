@@ -35,7 +35,14 @@ void SortPOp::onStart() {
 void SortPOp::onComplete(const CompleteMessage &) {
   if(!ctx()->isComplete() && ctx()->operatorMap().allComplete(POpRelationshipType::Producer)){
     const auto &sortedTupleSet = sort();
-    shared_ptr<Message> tupleMessage = make_shared<TupleMessage>(sortedTupleSet, name());
+
+    // Project using projectColumnNames
+    auto expProjectTupleSet = sortedTupleSet->projectExist(getProjectColumnNames());
+    if (!expProjectTupleSet) {
+      throw std::runtime_error(expProjectTupleSet.error());
+    }
+
+    shared_ptr<Message> tupleMessage = make_shared<TupleMessage>(expProjectTupleSet.value(), name());
     ctx()->tell(tupleMessage);
     ctx()->notifyComplete();
   }

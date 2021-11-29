@@ -5,12 +5,11 @@
 #ifndef NORMAL_NORMAL_EXPRESSION_GANDIVA_INCLUDE_NORMAL_EXPRESSION_GANDIVA_EXPRESSION_H
 #define NORMAL_NORMAL_EXPRESSION_GANDIVA_INCLUDE_NORMAL_EXPRESSION_GANDIVA_EXPRESSION_H
 
-#include <memory>
-
+#include <normal/expression/Expression.h>
 #include <arrow/type.h>
 #include <gandiva/node.h>
-
-#include <normal/expression/Expression.h>
+#include <memory>
+#include <set>
 
 namespace normal::expression::gandiva {
 
@@ -41,7 +40,7 @@ public:
 
   virtual std::string alias() = 0;
 
-  virtual std::shared_ptr<std::vector<std::string>> involvedColumnNames() = 0;
+  virtual std::set<std::string> involvedColumnNames() = 0;
 
   virtual std::string getTypeString() = 0;
 

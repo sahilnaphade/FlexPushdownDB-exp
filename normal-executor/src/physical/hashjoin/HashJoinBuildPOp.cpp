@@ -40,7 +40,7 @@ void HashJoinBuildPOp::onStart() {
 }
 
 void HashJoinBuildPOp::onTuple(const TupleMessage &msg) {
-  auto tupleSet = msg.tuples();
+  const auto& tupleSet = msg.tuples();
 
   SPDLOG_DEBUG("Adding tuple set to hash table  |  operator: '{}', tupleSet:\n{}", this->name(), tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented, 1000)));
 

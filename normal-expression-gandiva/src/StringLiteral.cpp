@@ -23,8 +23,8 @@ std::string StringLiteral::alias(){
   return "\'" + value_ + "\'";
 }
 
-std::shared_ptr<std::vector<std::string> > StringLiteral::involvedColumnNames() {
-  return std::make_shared<std::vector<std::string>>();
+std::set<std::string> StringLiteral::involvedColumnNames() {
+  return std::set<std::string>();
 }
 
 const std::string &StringLiteral::value() const {

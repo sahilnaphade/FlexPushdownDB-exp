@@ -16,7 +16,7 @@ const vector<shared_ptr<PrePhysicalOp>> &PrePhysicalOp::getProducers() const {
   return producers_;
 }
 
-const unordered_set<string> &PrePhysicalOp::getProjectColumnNames() const {
+const set<string> &PrePhysicalOp::getProjectColumnNames() const {
   return projectColumnNames_;
 }
 
@@ -24,7 +24,7 @@ void PrePhysicalOp::setProducers(const vector<shared_ptr<PrePhysicalOp>> &produc
   producers_ = producers;
 }
 
-void PrePhysicalOp::setProjectColumnNames(const unordered_set<string> &projectColumnNames) {
+void PrePhysicalOp::setProjectColumnNames(const set<string> &projectColumnNames) {
   projectColumnNames_ = projectColumnNames;
 }
 

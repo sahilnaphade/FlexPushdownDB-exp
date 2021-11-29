@@ -65,7 +65,11 @@ PrePToS3PTransformer::transformFilterableScanPullup(const shared_ptr<FilterableS
     pair<long, long> scanRange{0, s3Partition->getNumBytes()};
 
     // project column names and its union with project column names
-    vector<string> predicateColumnNames = predicate ? *predicate->involvedColumnNames() : vector<string>{};
+    vector<string> predicateColumnNames;
+    if (predicate) {
+      const auto predicateColumnNameSet = predicate->involvedColumnNames();
+      predicateColumnNames.assign(predicateColumnNameSet.begin(), predicateColumnNameSet.end());
+    }
     const auto &projPredColumnNames = union_(projectColumnNames, predicateColumnNames);
 
     // s3 get
@@ -161,7 +165,11 @@ PrePToS3PTransformer::transformFilterableScanCachingOnly(const shared_ptr<Filter
     pair<long, long> scanRange{0, s3Partition->getNumBytes()};
 
     // project column names and its union with project column names
-    vector<string> predicateColumnNames = predicate ? *predicate->involvedColumnNames() : vector<string>{};
+    vector<string> predicateColumnNames;
+    if (predicate) {
+      const auto predicateColumnNameSet = predicate->involvedColumnNames();
+      predicateColumnNames.assign(predicateColumnNameSet.begin(), predicateColumnNameSet.end());
+    }
     const auto &projPredColumnNames = union_(projectColumnNames, predicateColumnNames);
 
     // weighted segment keys
@@ -218,7 +226,8 @@ PrePToS3PTransformer::transformFilterableScanCachingOnly(const shared_ptr<Filter
                                                              predicate,
                                                              table,
                                                              projectColumnNames,
-                                                             queryId_);
+                                                             queryId_,
+                                                             weightedSegmentKeys);
       mergePOp->produce(filterPOp);
       filterPOp->consume(mergePOp);
       allPOps.emplace_back(filterPOp);
@@ -252,7 +261,11 @@ PrePToS3PTransformer::transformFilterableScanHybrid(const shared_ptr<FilterableS
     pair<long, long> scanRange{0, s3Partition->getNumBytes()};
 
     // project column names and its union with project column names
-    vector<string> predicateColumnNames = predicate ? *predicate->involvedColumnNames() : vector<string>{};
+    vector<string> predicateColumnNames;
+    if (predicate) {
+      const auto predicateColumnNameSet = predicate->involvedColumnNames();
+      predicateColumnNames.assign(predicateColumnNameSet.begin(), predicateColumnNameSet.end());
+    }
     const auto &projPredColumnNames = union_(projectColumnNames, predicateColumnNames);
 
     // weighted segment keys
@@ -311,7 +324,8 @@ PrePToS3PTransformer::transformFilterableScanHybrid(const shared_ptr<FilterableS
                                                              predicate,
                                                              table,
                                                              projectColumnNames,
-                                                             queryId_);
+                                                             queryId_,
+                                                             weightedSegmentKeys);
       allPOps.emplace_back(filterPOp);
       mergePOp1->produce(filterPOp);
       filterPOp->consume(mergePOp1);

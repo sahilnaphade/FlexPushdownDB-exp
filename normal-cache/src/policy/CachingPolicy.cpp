@@ -21,14 +21,14 @@ CachingPolicy::CachingPolicy(CachingPolicyType type,
 
   // read segment size if the caching policy needs
   if (readSegmentSize && catalogueEntry_) {
-    if (catalogueEntry->getType() == S3) {
-      const auto schemaName = catalogueEntry->getSchemaName();
+    if (catalogueEntry_->getType() == S3) {
+      const auto schemaName = catalogueEntry_->getSchemaName();
       filesystem::path metadataPath = catalogueEntry_
               ->getCatalogue()
               ->getMetadataPath()
               .append(schemaName)
               .append("segment_info");
-      const auto &s3Bucket = std::static_pointer_cast<s3::S3CatalogueEntry>(catalogueEntry)->getS3Bucket();
+      const auto &s3Bucket = std::static_pointer_cast<s3::S3CatalogueEntry>(catalogueEntry_)->getS3Bucket();
       segmentSizeMap_ = Util::readSegmentKeySize(s3Bucket, schemaName, metadataPath);
     } else {
       throw runtime_error(fmt::format("Read segment size unsupported, catalogue entry: {}",
