@@ -1,13 +1,10 @@
 //
-// Created by Yifei Yang on 10/30/21.
+// Created by Yifei Yang on 11/30/21.
 //
 
+#include "TestUtil.h"
 #include <normal/executor/Executor.h>
 #include <normal/executor/physical/transform/PrePToPTransformer.h>
-#include <normal/cache/policy/LRUCachingPolicy.h>
-#include <normal/cache/policy/LFUCachingPolicy.h>
-#include <normal/cache/policy/LFUSCachingPolicy.h>
-#include <normal/cache/policy/WLFUCachingPolicy.h>
 #include <normal/calcite/CalciteConfig.h>
 #include <normal/calcite/CalciteClient.h>
 #include <normal/plan/calcite/CalcitePlanJsonDeserializer.h>
@@ -17,11 +14,6 @@
 #include <normal/aws/AWSClient.h>
 #include <normal/aws/AWSConfig.h>
 #include <normal/util/Util.h>
-#include <spdlog/spdlog.h>
-#include <memory>
-#include <iostream>
-#include <sstream>
-#include <filesystem>
 
 using namespace normal::executor;
 using namespace normal::executor::physical;
@@ -33,32 +25,11 @@ using namespace normal::catalogue::s3;
 using namespace normal::util;
 using namespace normal::aws;
 using namespace Aws::S3;
-using namespace std;
 
-void e2eWithServer() {
-  // Create Calcite client
-  shared_ptr<CalciteConfig> calciteConfig = CalciteConfig::parseCalciteConfig();
-  CalciteClient calciteClient(calciteConfig);
+namespace normal::frontend::test {
 
-  // Start Calcite server and client
-  calciteClient.startServer();
-  calciteClient.startClient();
-
-  // Plan query
-  string queryPath = std::filesystem::current_path()
-          .parent_path()
-          .append("resources/query/ssb/3.1.sql")
-          .string();
-  string query = readFile(queryPath);
-  string schemaName = "ssb-sf1-sortlineorder/csv";
-  string planResult = calciteClient.planQuery(query, schemaName);
-  cout << planResult << endl;
-
-  // Shutdown Calcite server
-  calciteClient.shutdownServer();
-}
-
-void e2eWithoutServer(int numQuery, char* queryFileNames[]) {
+void TestUtil::e2eNoStartCalciteServer(const string &schemaName,
+                                       const vector<string> &queryFileNames) {
 //  spdlog::set_level(spdlog::level::debug);
 
   // AWS client
@@ -74,7 +45,6 @@ void e2eWithoutServer(int numQuery, char* queryFileNames[]) {
   shared_ptr<Catalogue> catalogue = make_shared<Catalogue>("main", metadataPath);
 
   // read catalogue entry
-  string schemaName = "ssb-sf1-sortlineorder/csv/";
   const auto &s3CatalogueEntry = S3CatalogueEntryReader::readS3CatalogueEntry(catalogue,
                                                                               s3Bucket,
                                                                               schemaName,
@@ -87,20 +57,19 @@ void e2eWithoutServer(int numQuery, char* queryFileNames[]) {
   calciteClient.startClient();
 
   // mode, caching policy, executor
-  const auto &mode = Mode::hybridMode();
-  const auto &cachingPolicy = make_shared<WLFUCachingPolicy>(1L * 1024 * 1024 * 1024, s3CatalogueEntry);
+  const auto &mode = Mode::pullupMode();
+  const auto &cachingPolicy = nullptr;
 
   const auto &executor = make_shared<Executor>(mode, cachingPolicy, false, false);
   executor->start();
 
-  for (int i = 0; i < numQuery; ++i) {
-    const auto &queryFileName = queryFileNames[i];
+  for (const auto &queryFileName: queryFileNames) {
     cout << "Query: " << queryFileName << endl;
 
     // Plan query
     string queryPath = std::filesystem::current_path()
             .parent_path()
-            .append("resources/query/ssb")
+            .append("resources/query")
             .append(queryFileName)
             .string();
     string query = readFile(queryPath);
@@ -134,7 +103,4 @@ void e2eWithoutServer(int numQuery, char* queryFileNames[]) {
   executor->stop();
 }
 
-int main(int argc, char* argv[]) {
-  e2eWithoutServer(argc - 1, argv + 1);
-  return 0;
 }

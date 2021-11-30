@@ -1,5 +1,5 @@
 # Arrow
-set(ARROW_VERSION "apache-arrow-5.0.0")
+set(ARROW_VERSION "apache-arrow-6.0.0")
 set(ARROW_GIT_URL "https://github.com/apache/arrow.git")
 
 

@@ -7,7 +7,7 @@ project(normal-frontend VERSION "${PROJECT_VERSION}" LANGUAGES C CXX)
 function(linkForMacExecutable target)
   # missing linking on mac
   target_link_directories(${target} PRIVATE /usr/local/opt/openssl/lib)
-  target_link_directories(${target} PRIVATE /usr/local/opt/llvm@11/lib)
+  target_link_directories(${target} PRIVATE /usr/local/opt/llvm/lib)
   target_link_directories(${target} PRIVATE /usr/local/opt/libdeflate/lib)
 
   # remove -lrt from link.txt which mac does not have or need
@@ -59,15 +59,22 @@ if (${APPLE})
 endif()
 
 
-# TestCalcite
-add_executable(TestCalcite src/TestCalcite.cpp)
+#-----------------------------------------------------------------------------------------------------------------------
+# Test
+#-----------------------------------------------------------------------------------------------------------------------
 
-target_link_libraries(TestCalcite PRIVATE normal-calcite)
-target_link_libraries(TestCalcite PRIVATE normal-plan)
-target_link_libraries(TestCalcite PRIVATE normal-executor)
-target_link_libraries(TestCalcite PRIVATE normal-util)
-target_link_libraries(TestCalcite PRIVATE ssl crypto)
+add_executable(normal-frontend-test
+        test/Globals.h
+        test/MainTest.cpp
+        test/SSBTest.cpp test/TestUtil.cpp test/TestUtil.h)
+
+target_link_libraries(normal-frontend-test PRIVATE normal-calcite)
+target_link_libraries(normal-frontend-test PRIVATE normal-plan)
+target_link_libraries(normal-frontend-test PRIVATE normal-executor)
+target_link_libraries(normal-frontend-test PRIVATE normal-util)
+target_link_libraries(normal-frontend-test PRIVATE ssl crypto)
+target_link_libraries(normal-frontend-test PRIVATE doctest::doctest)
 # need to add and link libraries on mac
 if (${APPLE})
-  linkForMacExecutable(TestCalcite)
+  linkForMacExecutable(normal-frontend-test)
 endif()
