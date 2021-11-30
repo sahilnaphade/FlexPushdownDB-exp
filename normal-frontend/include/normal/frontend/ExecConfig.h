@@ -5,39 +5,58 @@
 #ifndef NORMAL_NORMAL_FRONTEND_INCLUDE_NORMAL_FRONTEND_EXECCONFIG_H
 #define NORMAL_NORMAL_FRONTEND_INCLUDE_NORMAL_FRONTEND_EXECCONFIG_H
 
+#include <normal/cache/policy/CachingPolicy.h>
 #include <normal/plan/Mode.h>
-#include <normal/cache/CachingPolicy.h>
+#include <normal/catalogue/Catalogue.h>
+#include <normal/aws/AWSClient.h>
 #include <unordered_map>
 #include <string>
 
-using namespace normal::plan::operator_::mode;
-using namespace normal::cache;
+using namespace normal::cache::policy;
+using namespace normal::plan;
+using namespace normal::catalogue;
+using namespace normal::aws;
 
 namespace normal::frontend{
 
 class ExecConfig {
 public:
-  ExecConfig(const std::shared_ptr<Mode> &mode, const std::shared_ptr<CachingPolicy> &cachingPolicy, std::string s3Bucket,
-         std::string s3Dir, bool showOpTimes, bool showScanMetrics);
+  ExecConfig(const shared_ptr<Mode> &mode,
+             const shared_ptr<CachingPolicy> &cachingPolicy,
+             string s3Bucket,
+             string schemaName,
+             int parallelDegree,
+             bool showOpTimes,
+             bool showScanMetrics);
 
-  const std::shared_ptr<Mode> &getMode() const;
-  const std::shared_ptr<CachingPolicy> &getCachingPolicy() const;
-  const std::string &getS3Bucket() const;
-  const std::string &getS3Dir() const;
+  static shared_ptr<ExecConfig> parseExecConfig(const shared_ptr<Catalogue> &catalogue,
+                                                const shared_ptr<AWSClient> &awsClient);
+
+  const shared_ptr<Mode> &getMode() const;
+  const shared_ptr<CachingPolicy> &getCachingPolicy() const;
+  const string &getS3Bucket() const;
+  const string &getSchemaName() const;
+  int getParallelDegree() const;
   bool showOpTimes() const;
   bool showScanMetrics() const;
 
 private:
-  std::shared_ptr<Mode> mode_;
-  std::shared_ptr<CachingPolicy> cachingPolicy_;
-  std::string s3Bucket_;
-  std::string s3Dir_;
+  static size_t parseCacheSize(const string& stringToParse);
+  static shared_ptr<Mode> parseMode(const string& stringToParse);
+  static shared_ptr<CachingPolicy> parseCachingPolicy(const string& stringToParse,
+                                                      size_t cacheSize,
+                                                      const shared_ptr<CatalogueEntry> &catalogueEntry);
+
+  shared_ptr<Mode> mode_;
+  shared_ptr<CachingPolicy> cachingPolicy_;
+  string s3Bucket_;
+  string schemaName_;
+  int parallelDegree_;
   bool showOpTimes_;
   bool showScanMetrics_;
 
 };
 
-std::shared_ptr<ExecConfig> parseExecConfig();
 }
 
 

@@ -30,13 +30,13 @@ public class CalciteServerHandler implements CalciteServer.Iface{
   }
 
   public void ping() throws TException {
-    System.out.println("Client ping");
+    System.out.println("[Java] Client ping");
   }
 
   public void shutdown() throws TException{
     server.stop();
     serverTransport.close();
-    System.out.println("Calcite server shutdown...");
+    System.out.println("[Java] Calcite server shutdown...");
   }
 
   @Override
@@ -47,7 +47,6 @@ public class CalciteServerHandler implements CalciteServer.Iface{
       RelNode queryPlan = optimizer.planQuery(query, schemaName);
       tPlanResult.plan_result = RelJsonSerializer.serialize(queryPlan).toString(2);
     } catch (Exception e) {
-      e.printStackTrace();
       throw new ParsePlanningError(Arrays.toString(e.getStackTrace()));
     }
     tPlanResult.execution_time_ms = System.currentTimeMillis() - startTime;

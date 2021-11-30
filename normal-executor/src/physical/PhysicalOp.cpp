@@ -11,12 +11,10 @@ namespace normal::executor::physical {
 
 PhysicalOp::PhysicalOp(std::string name,
                        std::string type,
-                       std::vector<std::string> projectColumnNames,
-                       long queryId) :
-    name_(std::move(name)),
-    type_(std::move(type)),
-    projectColumnNames_(std::move(projectColumnNames)),
-    queryId_(queryId) {
+                       std::vector<std::string> projectColumnNames) :
+  name_(std::move(name)),
+  type_(std::move(type)),
+  projectColumnNames_(std::move(projectColumnNames)) {
 }
 
 const std::string &PhysicalOp::getType() const {
@@ -71,6 +69,10 @@ void PhysicalOp::destroyActor() {
 
 long PhysicalOp::getQueryId() const {
   return queryId_;
+}
+
+void PhysicalOp::setQueryId(long queryId) {
+  queryId_ = queryId;
 }
 
 } // namespace

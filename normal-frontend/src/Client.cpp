@@ -3,172 +3,144 @@
 //
 
 #include <normal/frontend/Client.h>
-#include <normal/frontend/ExecConfig.h>
-#include <normal/connector/MiniCatalogue.h>
-#include <normal/connector/s3/S3SelectConnector.h>
-#include <normal/connector/s3/S3Util.h>
-#include <normal/connector/s3/S3SelectExplicitPartitioningScheme.h>
-#include <normal/connector/s3/S3SelectCatalogueEntry.h>
-#include <normal/pushdown/Globals.h>
+#include <normal/executor/physical/transform/PrePToPTransformer.h>
+#include <normal/plan/calcite/CalcitePlanJsonDeserializer.h>
+#include <normal/catalogue/s3/S3CatalogueEntryReader.h>
 #include <normal/util/Util.h>
 
-using namespace normal::frontend;
-using namespace normal::connector;
-using namespace normal::sql;
+using namespace normal::plan::calcite;
+using namespace normal::catalogue::s3;
 using namespace normal::util;
-using namespace normal::pushdown;
 
-Client::Client(){
-  execConfig_ = parseExecConfig();
+namespace normal::frontend {
+
+Client::Client() = default;
+
+path Client::getDefaultMetadataPath() {
+  return current_path().parent_path().append("resources/metadata");
 }
 
-std::string Client::boot() {
-  /* Initialize query processing */
-  DefaultS3Client = AWSClient::defaultS3Client();
-  defaultMiniCatalogue = MiniCatalogue::defaultMiniCatalogue(execConfig_->getS3Bucket(), execConfig_->getS3Dir());
-  interpreter_ = std::make_shared<Interpreter>(execConfig_->getMode(), execConfig_->getCachingPolicy());
-  configureS3ConnectorMultiPartition(interpreter_, execConfig_->getS3Bucket(), execConfig_->getS3Dir());
-  interpreter_->boot();
-  std::string output = "Client booted";
-  return output;
+string Client::getDefaultCatalogueName() {
+  return "main";
 }
 
-std::string Client::stop() {
-  interpreter_->getOperatorGraph().reset();
-  interpreter_->stop();
-  interpreter_.reset();
-  defaultMiniCatalogue.reset();
+string Client::start() {
+  // catalogue
+  catalogue_ = make_shared<Catalogue>(getDefaultCatalogueName(), getDefaultMetadataPath());
+
+  // AWS client
+  const auto &awsConfig = AWSConfig::parseExecConfig();
+  awsClient_ = make_shared<AWSClient>(awsConfig);
+  awsClient_->init();
+  SPDLOG_INFO("AWS client started");
+
+  // calcite client
+  const auto &calciteConfig = CalciteConfig::parseCalciteConfig();
+  calciteClient_ = make_shared<CalciteClient>(calciteConfig);
+  calciteClient_->startServer();
+  SPDLOG_INFO("Calcite server started");
+  calciteClient_->startClient();
+  SPDLOG_INFO("Calcite client started");
+
+  // execution config
+  execConfig_ = ExecConfig::parseExecConfig(catalogue_, awsClient_);
+
+  // executor
+  executor_ = make_shared<Executor>(execConfig_->getMode(),
+                                    execConfig_->getCachingPolicy(),
+                                    execConfig_->showOpTimes(),
+                                    execConfig_->showScanMetrics());
+  executor_->start();
+  SPDLOG_INFO("Executor started");
+
+  return "Client started";
+}
+
+string Client::stop() {
+  // AWS client
+  awsClient_->shutdown();
+  SPDLOG_INFO("AWS client stopped");
+
+  // calcite client
+  calciteClient_->shutdownServer();
+  SPDLOG_INFO("Calcite server stopped");
+
+  // executor
+  executor_->stop();
+  SPDLOG_INFO("Executor stopped");
+
   return "Client stopped";
 }
 
-std::string Client::reboot() {
+string Client::restart() {
   stop();
-  boot();
-  return "Client rebooted";
+  start();
+  return "Client restarted";
 }
 
-std::shared_ptr<TupleSet> Client::execute() {
-  interpreter_->getCachingPolicy()->onNewQuery();
-  interpreter_->getOperatorGraph()->boot();
-  interpreter_->getOperatorGraph()->start();
-  interpreter_->getOperatorGraph()->join();
-  auto tuples = interpreter_->getOperatorGraph()->getQueryResult();
-  return tuples;
-}
+string Client::executeQuery(const string &query) {
+  // fetch catalogue entry
+  const auto &catalogueEntry = getCatalogueEntry(execConfig_->getSchemaName());
 
-std::string Client::executeSql(const std::string &sql) {
-  interpreter_->clearOperatorGraph();
-  interpreter_->parse(sql);
-  auto tuples = execute();
-  auto tupleSet = TupleSet2::create(tuples);
-  std::string output = fmt::format("Result |\n{}", tupleSet->showString(
+  // plan
+  const auto &physicalPlan = plan(query, catalogueEntry);
+
+  // execute
+  const auto execRes = execute(physicalPlan);
+
+  // output
+  stringstream ss;
+  ss << fmt::format("Result |\n{}", execRes.first->showString(
           TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
-  output += fmt::format("{}", interpreter_->getOperatorGraph()->showMetrics(
-          execConfig_->showOpTimes(), execConfig_->showScanMetrics()));
-  output += fmt::format("\nFinished, time: {} secs",
-                        (double) (interpreter_->getOperatorGraph()->getElapsedTime().value()) / 1000000000.0);
-  return output;
+  ss << fmt::format("\nTime: {} secs", (double) (execRes.second) / 1000000000.0);
+  ss << endl;
+  return ss.str();
 }
 
-std::string Client::executeSqlFile(const std::string &filePath) {
-  auto sql = readFile(filePath);
-  return executeSql(sql);
+string Client::executeQueryFile(const string &queryFilePath) {
+  const auto &query = readFile(queryFilePath);
+  return executeQuery(query);
 }
 
-void Client::configureS3ConnectorSinglePartition(std::shared_ptr<Interpreter> &i, std::string bucket_name, const std::string& dir_prefix) {
-  auto conn = std::make_shared<normal::connector::s3::S3SelectConnector>("s3");
-  auto cat = std::make_shared<normal::connector::Catalogue>("s3", conn);
-
-  // look up tables
-  auto tableNames = normal::connector::defaultMiniCatalogue->tables();
-  auto s3Objects = std::make_shared<std::vector<std::string>>();
-  for (const auto &tableName: *tableNames) {
-    auto s3Object = dir_prefix + tableName + ".tbl";
-    s3Objects->emplace_back(s3Object);
+shared_ptr<CatalogueEntry> Client::getCatalogueEntry(const string &schemaName) {
+  shared_ptr<CatalogueEntry> catalogueEntry;
+  const auto expCatalogueEntry = catalogue_->getEntry(
+          fmt::format("s3://{}/{}", execConfig_->getS3Bucket(), schemaName));
+  if (expCatalogueEntry.has_value()) {
+    return expCatalogueEntry.value();
+  } else {
+    catalogueEntry = S3CatalogueEntryReader::readS3CatalogueEntry(catalogue_,
+                                                                  execConfig_->getS3Bucket(),
+                                                                  schemaName,
+                                                                  awsClient_->getS3Client());
+    catalogue_->putEntry(catalogueEntry);
+    return catalogueEntry;
   }
-  auto objectNumBytes_Map = normal::connector::s3::S3Util::listObjects(bucket_name, dir_prefix, *s3Objects, DefaultS3Client);
-
-  // configure s3Connector
-  for (size_t tbl_id = 0; tbl_id < tableNames->size(); tbl_id++) {
-    auto &tableName = tableNames->at(tbl_id);
-    auto &s3Object = s3Objects->at(tbl_id);
-    auto numBytes = objectNumBytes_Map.find(s3Object)->second;
-    auto partitioningScheme = std::make_shared<S3SelectExplicitPartitioningScheme>();
-    partitioningScheme->add(std::make_shared<S3SelectPartition>(bucket_name, s3Object, numBytes));
-    cat->put(std::make_shared<normal::connector::s3::S3SelectCatalogueEntry>(tableName, partitioningScheme, cat));
-  }
-  i->put(cat);
 }
 
-void Client::configureS3ConnectorMultiPartition(std::shared_ptr<Interpreter> &i, std::string bucket_name, const std::string& dir_prefix) {
-  auto conn = std::make_shared<normal::connector::s3::S3SelectConnector>("s3");
-  auto cat = std::make_shared<normal::connector::Catalogue>("s3", conn);
+shared_ptr<PhysicalPlan> Client::plan(const string &query, const shared_ptr<CatalogueEntry> &catalogueEntry) {
+  // calcite planning
+  string planResult = calciteClient_->planQuery(query, execConfig_->getSchemaName());
 
-  // get partitionNums
-  auto s3ObjectsMap = std::make_shared<std::unordered_map<std::string, std::shared_ptr<std::vector<std::string>>>>();
-  auto partitionNums = normal::connector::defaultMiniCatalogue->partitionNums();
-  for (auto const &partitionNumEntry: *partitionNums) {
-    auto tableName = partitionNumEntry.first;
-    auto partitionNum = partitionNumEntry.second;
-    auto objects = std::make_shared<std::vector<std::string>>();
-    if (partitionNum == 1) {
-      if (dir_prefix.find("csv") != std::string::npos) {
-        objects->emplace_back(dir_prefix + tableName + ".tbl");
-      } else if (dir_prefix.find("parquet") != std::string::npos) {
-        objects->emplace_back(dir_prefix + tableName + ".parquet");
-      } else {
-        // something went wrong, this will cause an error later
-        SPDLOG_ERROR("Unknown file name to use for directory with prefix: {}", dir_prefix);
-      }
-      s3ObjectsMap->emplace(tableName, objects);
-    } else {
-      for (int i = 0; i < partitionNum; i++) {
-        if (dir_prefix.find("csv") != std::string::npos) {
-          objects->emplace_back(fmt::format("{0}{1}_sharded/{1}.tbl.{2}", dir_prefix, tableName, i));
-        } else if (dir_prefix.find("parquet") != std::string::npos) {
-          objects->emplace_back(fmt::format("{0}{1}_sharded/{1}.parquet.{2}", dir_prefix, tableName, i));
-        } else {
-          // something went wrong, this will cause an error later
-          SPDLOG_ERROR("Unknown file name to use for directory with prefix: {}", dir_prefix);
-        }
-      }
-      s3ObjectsMap->emplace(tableName, objects);
-    }
-  }
+  // deserialize plan json string into prephysical plan
+  auto planDeserializer = make_shared<CalcitePlanJsonDeserializer>(planResult, catalogueEntry);
+  const auto &prePhysicalPlan = planDeserializer->deserialize();
 
-  // look up tables
-  auto s3Objects = std::make_shared<std::vector<std::string>>();
-  for (auto const &s3ObjectPair: *s3ObjectsMap) {
-    auto objects = s3ObjectPair.second;
-    s3Objects->insert(s3Objects->end(), objects->begin(), objects->end());
-  }
-  auto objectNumBytes_Map = normal::connector::s3::S3Util::listObjects(bucket_name, dir_prefix, *s3Objects, DefaultS3Client);
+  // trim unused fields (Calcite trimmer does not trim completely)
+  prePhysicalPlan->populateAndTrimProjectColumns();
 
-  // configure s3Connector
-  for (auto const &s3ObjectPair: *s3ObjectsMap) {
-    auto tableName = s3ObjectPair.first;
-    auto objects = s3ObjectPair.second;
-    auto partitioningScheme = std::make_shared<S3SelectExplicitPartitioningScheme>();
-    for (auto const &s3Object: *objects) {
-      auto numBytes = objectNumBytes_Map.find(s3Object)->second;
-      partitioningScheme->add(std::make_shared<S3SelectPartition>(bucket_name, s3Object, numBytes));
-    }
-    cat->put(std::make_shared<normal::connector::s3::S3SelectCatalogueEntry>(tableName, partitioningScheme, cat));
-  }
-  i->put(cat);
+  // transform prephysical plan to physical plan
+  auto prePToPTransformer = make_shared<PrePToPTransformer>(prePhysicalPlan,
+                                                            awsClient_,
+                                                            execConfig_->getMode(),
+                                                            execConfig_->getParallelDegree());
+  const auto &physicalPlan = prePToPTransformer->transform();
+
+  return physicalPlan;
 }
 
-std::vector<std::string> normal::frontend::readAllRemoteIps() {
-  auto localIp = getLocalIp();
-  auto ips = readFileByLine(std::filesystem::current_path()
-          .parent_path()
-          .append("resources/config/cluster_ips")
-          .string());
-  for (auto it = ips.begin(); it != ips.end(); it++) {
-    if (localIp == *it) {
-      ips.erase(it);
-      return ips;
-    }
-  }
-  return ips;
+pair<shared_ptr<TupleSet>, long> Client::execute(const shared_ptr<PhysicalPlan> &physicalPlan) {
+  return executor_->execute(physicalPlan);;
+}
+
 }

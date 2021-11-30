@@ -37,7 +37,7 @@ using namespace std;
 
 void e2eWithServer() {
   // Create Calcite client
-  shared_ptr<CalciteConfig> calciteConfig = parseCalciteConfig();
+  shared_ptr<CalciteConfig> calciteConfig = CalciteConfig::parseCalciteConfig();
   CalciteClient calciteClient(calciteConfig);
 
   // Start Calcite server and client
@@ -82,15 +82,15 @@ void e2eWithoutServer(int numQuery, char* queryFileNames[]) {
   catalogue->putEntry(s3CatalogueEntry);
 
   // Create and start Calcite client
-  shared_ptr<CalciteConfig> calciteConfig = parseCalciteConfig();
+  shared_ptr<CalciteConfig> calciteConfig = CalciteConfig::parseCalciteConfig();
   CalciteClient calciteClient(calciteConfig);
   calciteClient.startClient();
 
   // mode, caching policy, executor
   const auto &mode = Mode::hybridMode();
-  const auto &cachingPolicy = make_shared<LFUCachingPolicy>(1L * 1024 * 1024 * 1024, s3CatalogueEntry);
+  const auto &cachingPolicy = make_shared<WLFUCachingPolicy>(1L * 1024 * 1024 * 1024, s3CatalogueEntry);
 
-  const auto &executor = make_shared<Executor>(mode, cachingPolicy);
+  const auto &executor = make_shared<Executor>(mode, cachingPolicy, false, false);
   executor->start();
 
   for (int i = 0; i < numQuery; ++i) {
@@ -114,7 +114,7 @@ void e2eWithoutServer(int numQuery, char* queryFileNames[]) {
     prePhysicalPlan->populateAndTrimProjectColumns();
 
     // transform prephysical plan to physical plan
-    auto prePToPTransformer = make_shared<PrePToPTransformer>(prePhysicalPlan, awsClient, mode, 1, 1);
+    auto prePToPTransformer = make_shared<PrePToPTransformer>(prePhysicalPlan, awsClient, mode, 1);
     const auto &physicalPlan = prePToPTransformer->transform();
 
     // execute

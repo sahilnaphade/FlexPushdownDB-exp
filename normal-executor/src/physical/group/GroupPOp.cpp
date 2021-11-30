@@ -11,9 +11,8 @@ namespace normal::executor::physical::group {
 GroupPOp::GroupPOp(const std::string &name,
 			 const std::vector<std::string> &groupColumnNames,
 			 const std::vector<std::shared_ptr<aggregate::AggregationFunction>> &aggregateFunctions,
-       const std::vector<std::string> &projectColumnNames,
-			 long queryId) :
-	PhysicalOp(name, "GroupPOp", projectColumnNames, queryId),
+       const std::vector<std::string> &projectColumnNames) :
+	PhysicalOp(name, "GroupPOp", projectColumnNames),
   kernel2_(std::make_unique<GroupKernel2>(groupColumnNames, aggregateFunctions)) {
 }
 

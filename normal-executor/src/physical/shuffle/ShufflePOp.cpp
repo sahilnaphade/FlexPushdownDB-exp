@@ -14,9 +14,8 @@ using namespace normal::tuple;
 
 ShufflePOp::ShufflePOp(std::string name,
                        std::string columnName,
-                       std::vector<std::string> projectColumnNames,
-                       long queryId) :
-	PhysicalOp(std::move(name), "ShufflePOp", std::move(projectColumnNames), queryId),
+                       std::vector<std::string> projectColumnNames) :
+	PhysicalOp(std::move(name), "ShufflePOp", std::move(projectColumnNames)),
 	columnName_(std::move(columnName)) {}
 
 void ShufflePOp::onReceive(const Envelope &msg) {
@@ -46,7 +45,7 @@ void ShufflePOp::onStart() {
 
 void ShufflePOp::onComplete(const CompleteMessage &) {
   if (!ctx()->isComplete() && ctx()->operatorMap().allComplete(POpRelationshipType::Producer)) {
-    for (int partitionIndex = 0; partitionIndex < buffers_.size(); ++partitionIndex) {
+    for (int partitionIndex = 0; partitionIndex < static_cast<int>(buffers_.size()); ++partitionIndex) {
       auto sendResult = send(partitionIndex, true);
       if (!sendResult)
         throw std::runtime_error(sendResult.error());

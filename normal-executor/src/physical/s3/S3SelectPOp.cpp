@@ -59,7 +59,6 @@ S3SelectPOp::S3SelectPOp(std::string name,
                std::shared_ptr<normal::aws::AWSClient> awsClient,
 						   bool scanOnStart,
                bool toCache,
-               long queryId,
                std::vector<std::shared_ptr<normal::cache::SegmentKey>> weightedSegmentKeys) :
   S3SelectScanAbstractPOp(std::move(name),
                           "S3SelectPOp",
@@ -70,8 +69,8 @@ S3SelectPOp::S3SelectPOp(std::string name,
                           finishOffset,
                           std::move(table),
                           std::move(awsClient),
-                          scanOnStart, toCache,
-                          queryId),
+                          scanOnStart,
+                          toCache),
 	filterSql_(std::move(filterSql)),
 	weightedSegmentKeys_(std::move(weightedSegmentKeys)) {
 }
@@ -472,7 +471,7 @@ void S3SelectPOp::sendSegmentWeight() {
     weightMap->emplace(segmentKey, weight);
   }
 
-  ctx()->send(WeightRequestMessage::make(weightMap, getQueryId(), name()), "SegmentCache")
+  ctx()->send(WeightRequestMessage::make(weightMap, name()), "SegmentCache")
           .map_error([](auto err) { throw std::runtime_error(err); });
 }
 

@@ -34,14 +34,14 @@ private:
 public:
   explicit PhysicalOp(std::string name,
                       std::string type,
-                      std::vector<std::string> projectColumnNames,
-                      long queryId);
+                      std::vector<std::string> projectColumnNames);
   virtual ~PhysicalOp() = default;
 
   std::string &name();
   const std::string &getType() const;
   const std::vector<std::string> &getProjectColumnNames() const;
   long getQueryId() const;
+  void setQueryId(long queryId);
   std::map<std::string, std::string> producers();
   std::map<std::string, std::string> consumers();
   std::shared_ptr<POpContext> ctx();

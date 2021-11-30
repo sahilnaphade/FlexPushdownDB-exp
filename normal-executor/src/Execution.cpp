@@ -37,9 +37,15 @@ shared_ptr<TupleSet> Execution::execute() {
 void Execution::boot() {
   startTime_ = chrono::steady_clock::now();
 
-  // Add physical operators to operator directory
+  // Tell segment cache actor that new query comes
+  if (segmentCacheActor_) {
+    (*rootActor_)->anon_send(segmentCacheActor_, cache::NewQueryAtom::value);
+  }
+
+  // Set query id, and add physical operators to operator directory
   for (const auto &op: physicalPlan_->getPhysicalOps()) {
     assert(op);
+    op->setQueryId(queryId_);
     opDirectory_.insert(POpDirectoryEntry(op, nullptr, false));
   }
 
@@ -450,7 +456,7 @@ string Execution::showMetrics(bool showOpTimes, bool showScanMetrics) {
                                  ((double) s3SelectScanStats.getConvertTimeNS / 1.0e9) << " MB/s/req";
       formattedGetTransferConvertRate << ((double) s3SelectScanStats.returnedBytes / 1024.0 / 1024.0) /
                                          (((double) s3SelectScanStats.getTransferTimeNS +
-                                           s3SelectScanStats.getConvertTimeNS) / 1.0e9) << " MB/s/req";
+                                         (double) s3SelectScanStats.getConvertTimeNS) / 1.0e9) << " MB/s/req";
     } else {
       formattedGetTransferRate << "NA";
       formattedGetConvertRate << "NA";

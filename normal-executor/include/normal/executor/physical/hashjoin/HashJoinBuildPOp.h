@@ -28,8 +28,7 @@ class HashJoinBuildPOp : public PhysicalOp {
 public:
   explicit HashJoinBuildPOp(const std::string &name,
                             std::string columnName,
-                            const std::vector<std::string> &projectColumnNames,
-                            long queryId = 0);
+                            const std::vector<std::string> &projectColumnNames);
 
   void onReceive(const Envelope &msg) override;
 

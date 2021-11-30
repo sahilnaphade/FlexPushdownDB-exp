@@ -28,8 +28,7 @@ public:
   ProjectPOp(std::string name,
           std::vector<std::shared_ptr<normal::expression::gandiva::Expression>> exprs,
           std::vector<std::string> exprNames,
-          std::vector<std::string> projectColumnNames,
-          long queryId = 0);
+          std::vector<std::string> projectColumnNames);
 
   /**
    * Default destructor

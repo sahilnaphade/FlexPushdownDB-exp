@@ -30,6 +30,7 @@ struct SegmentCacheActorState {
 using LoadAtom = atom_constant<atom("Load")>;
 using StoreAtom = atom_constant<atom("Store")>;
 using WeightAtom = atom_constant<atom("Weight")>;
+using NewQueryAtom = atom_constant<atom("NewQuery")>;
 using GetNumHitsAtom = atom_constant<atom("NumHits")>;
 using GetNumMissesAtom = atom_constant<atom("NumMisses")>;
 using GetNumShardHitsAtom = atom_constant<atom("NumShrdHit")>;
@@ -39,8 +40,6 @@ using GetCrtQueryNumMissesAtom = atom_constant<atom("CNumMisses")>;
 using GetCrtQueryNumShardHitsAtom = atom_constant<atom("CNmShrdHit")>;
 using GetCrtQueryNumShardMissesAtom = atom_constant<atom("CNmShrdMis")>;
 using ClearMetricsAtom = atom_constant<atom("ClrMetrics")>;
-using ClearCrtQueryMetricsAtom = atom_constant<atom("ClrCMetric")>;
-using ClearCrtQueryShardMetricsAtom = atom_constant<atom("ClrCShrMet")>;
 using MetricsAtom = atom_constant<atom("Metrics")>;
 
 class SegmentCacheActor {

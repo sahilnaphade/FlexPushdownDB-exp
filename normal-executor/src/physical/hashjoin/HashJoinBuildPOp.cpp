@@ -13,9 +13,8 @@ using namespace normal::tuple;
 
 HashJoinBuildPOp::HashJoinBuildPOp(const std::string &name,
                                    std::string columnName,
-                                   const std::vector<std::string> &projectColumnNames,
-                                   long queryId) :
-	PhysicalOp(name, "HashJoinBuildPOp", projectColumnNames, queryId),
+                                   const std::vector<std::string> &projectColumnNames) :
+	PhysicalOp(name, "HashJoinBuildPOp", projectColumnNames),
 	columnName_(std::move(columnName)),
 	kernel_(HashJoinBuildKernel2::make(columnName_)){
 }

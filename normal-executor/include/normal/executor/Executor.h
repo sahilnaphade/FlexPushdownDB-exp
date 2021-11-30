@@ -27,7 +27,9 @@ class Executor {
 
 public:
   Executor(const shared_ptr<Mode> &mode,
-           const shared_ptr<CachingPolicy> &cachingPolicy = nullptr);
+           const shared_ptr<CachingPolicy> &cachingPolicy,
+           bool showOpTimes,
+           bool showScanMetrics);
   ~Executor();
 
   /**
@@ -51,8 +53,6 @@ public:
    */
   std::string showCacheMetrics();
   void clearCacheMetrics();
-  void clearCrtQueryMetrics();
-  void clearCrtQueryShardMetrics();
   double getCrtQueryHitRatio();
   double getCrtQueryShardHitRatio();
 
@@ -68,6 +68,9 @@ private:
   shared_ptr<Mode> mode_;
   std::atomic<long> queryCounter_;
   bool running_;
+
+  bool showOpTimes_;
+  bool showScanMetrics_;
 };
 
 }

@@ -57,8 +57,7 @@ S3GetPOp::S3GetPOp(std::string name,
                std::shared_ptr<Table> table,
                std::shared_ptr<normal::aws::AWSClient> awsClient,
 						   bool scanOnStart,
-               bool toCache,
-               long queryId) :
+               bool toCache) :
   S3SelectScanAbstractPOp(std::move(name),
                           "S3GetPOp",
                           std::move(s3Bucket),
@@ -69,8 +68,7 @@ S3GetPOp::S3GetPOp(std::string name,
                           std::move(table),
                           std::move(awsClient),
                           scanOnStart,
-                          toCache,
-                          queryId) {
+                          toCache) {
 }
 
 bool S3GetPOp::parallelTuplesetCreationSupported() {

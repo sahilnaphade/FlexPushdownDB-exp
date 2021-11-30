@@ -23,8 +23,7 @@ class ShufflePOp : public PhysicalOp {
 public:
   ShufflePOp(std::string name,
              std::string columnName,
-             std::vector<std::string> projectColumnNames,
-             long queryId);
+             std::vector<std::string> projectColumnNames);
 
   /**
    * Operators message handler

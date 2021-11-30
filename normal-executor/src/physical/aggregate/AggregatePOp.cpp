@@ -17,9 +17,8 @@ namespace normal::executor::physical::aggregate {
 
 AggregatePOp::AggregatePOp(std::string name,
                      std::vector<std::string> projectColumnNames,
-                     std::vector<std::shared_ptr<aggregate::AggregationFunction>> functions,
-                     long queryId)
-    : PhysicalOp(std::move(name), "AggregatePOp", std::move(projectColumnNames), queryId),
+                     std::vector<std::shared_ptr<aggregate::AggregationFunction>> functions)
+    : PhysicalOp(std::move(name), "AggregatePOp", std::move(projectColumnNames)),
       functions_(std::move(functions)) {}
 
 void AggregatePOp::onStart() {

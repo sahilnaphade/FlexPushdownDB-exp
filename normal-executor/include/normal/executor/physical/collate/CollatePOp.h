@@ -23,8 +23,7 @@ namespace normal::executor::physical::collate {
 class CollatePOp : public PhysicalOp {
 
 public:
-  explicit CollatePOp(std::string name,
-                      long queryId = 0);
+  explicit CollatePOp(std::string name);
   ~CollatePOp() override = default;
   void show();
   std::shared_ptr<TupleSet> tuples();

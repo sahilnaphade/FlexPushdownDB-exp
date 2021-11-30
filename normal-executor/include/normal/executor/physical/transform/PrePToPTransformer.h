@@ -30,7 +30,6 @@ public:
   PrePToPTransformer(const shared_ptr<PrePhysicalPlan> &prePhysicalPlan,
                      const shared_ptr<AWSClient> &awsClient,
                      const shared_ptr<Mode> &mode,
-                     long queryId,
                      int parallelDegree);
 
   shared_ptr<PhysicalPlan> transform();
@@ -94,7 +93,6 @@ private:
   shared_ptr<PrePhysicalPlan> prePhysicalPlan_;
   shared_ptr<AWSClient> awsClient_;
   shared_ptr<Mode> mode_;
-  long queryId_;
   int parallelDegree_;
 };
 

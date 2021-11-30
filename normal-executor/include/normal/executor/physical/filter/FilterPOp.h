@@ -26,7 +26,6 @@ public:
                   std::shared_ptr<normal::expression::gandiva::Expression> predicate,
                   std::shared_ptr<Table> table,
                   std::vector<std::string> projectColumnNames,
-                  long queryId = 0,
                   std::vector<std::shared_ptr<normal::cache::SegmentKey>> weightedSegmentKeys = {});
 
   void onReceive(const Envelope &Envelope) override;

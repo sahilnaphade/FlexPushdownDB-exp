@@ -3,6 +3,7 @@
 //
 
 #include <normal/util/Util.h>
+#include <fmt/format.h>
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
@@ -17,6 +18,9 @@ using namespace normal::util;
 
 string normal::util::readFile(const string& filePath) {
   ifstream inFile(filePath);
+  if (!inFile.good()) {
+    throw runtime_error(fmt::format("File not exists: {}", filePath));
+  }
   ostringstream buf;
   char ch;
   while (buf && inFile.get(ch)) {
@@ -27,6 +31,9 @@ string normal::util::readFile(const string& filePath) {
 
 vector<string> normal::util::readFileByLine(const string &filePath) {
   ifstream inFile(filePath);
+  if (!inFile.good()) {
+    throw runtime_error(fmt::format("File not exists: {}", filePath));
+  }
   vector<string> lines;
   string line;
   while (getline(inFile, line)) {
@@ -55,6 +62,14 @@ unordered_map<string, string> normal::util::readConfig(const string &fileName) {
   return configMap;
 }
 
+bool normal::util::parseBool(const string& stringToParse) {
+  if (stringToParse == "TRUE") {
+    return true;
+  } else {
+    return false;
+  }
+}
+
 bool normal::util::isInteger(const string& str) {
   try {
     int parsedInt = stoi(str);
@@ -68,7 +83,7 @@ string normal::util::getLocalIp() {
   char hostBuffer[256];
   int hostName = gethostname(hostBuffer, sizeof(hostBuffer));
   struct hostent *host_entry = gethostbyname(hostBuffer);
-  if (host_entry == NULL) {
+  if (host_entry == nullptr) {
     cerr << "Cannot get local ip" << endl;
     return "";
   }

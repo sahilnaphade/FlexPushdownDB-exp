@@ -29,6 +29,30 @@ namespace normal::util {
   unordered_map<string, string> readConfig(const string &fileName);
 
   /**
+   * Parsing bool string
+   * @param stringToParse
+   * @return
+   */
+  bool parseBool(const string& stringToParse);
+
+  /**
+   * Union two vectors or one vector with one set
+   */
+  template<typename T>
+  vector<T> union_(const vector<T> &vec1, const set<T> &set2) {
+    set<T> unionSet{vec1.begin(), vec1.end()};
+    unionSet.insert(set2.begin(), set2.end());
+    return vector<T>{unionSet.begin(), unionSet.end()};
+  }
+
+  template<typename T>
+  vector<T> union_(const vector<T> &vec1, const vector<T> &vec2) {
+    set<T> unionSet{vec1.begin(), vec1.end()};
+    unionSet.insert(vec2.begin(), vec2.end());
+    return vector<T>{unionSet.begin(), unionSet.end()};
+  }
+
+  /**
    * Given a start and finish number, will create pairs of numbers from start to finish (inclusive)
    * evenly split across the number of ranges given.
    *
@@ -56,20 +80,6 @@ namespace normal::util {
     }
 
     return result;
-  }
-
-  template<typename T>
-  vector<T> union_(const vector<T> &vec1, const set<T> &set2) {
-    set<T> unionSet{vec1.begin(), vec1.end()};
-    unionSet.insert(set2.begin(), set2.end());
-    return vector<T>{unionSet.begin(), unionSet.end()};
-  }
-  
-  template<typename T>
-  vector<T> union_(const vector<T> &vec1, const vector<T> &vec2) {
-    set<T> unionSet{vec1.begin(), vec1.end()};
-    unionSet.insert(vec2.begin(), vec2.end());
-    return vector<T>{unionSet.begin(), unionSet.end()};
   }
 
   bool isInteger(const string& str);

@@ -13,9 +13,8 @@ using namespace normal::executor::physical::hashjoin;
 
 HashJoinProbePOp::HashJoinProbePOp(std::string name,
                                    HashJoinPredicate pred,
-                                   std::vector<std::string> projectColumnNames,
-                                   long queryId) :
-	PhysicalOp(std::move(name), "HashJoinProbePOp", std::move(projectColumnNames), queryId),
+                                   std::vector<std::string> projectColumnNames) :
+	PhysicalOp(std::move(name), "HashJoinProbePOp", std::move(projectColumnNames)),
 	kernel_(HashJoinProbeKernel2::make(std::move(pred),
                                      std::set<std::string>(getProjectColumnNames().begin(), getProjectColumnNames().end()))){
 }

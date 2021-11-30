@@ -13,6 +13,7 @@ add_library(normal-aws
 
 target_include_directories(normal-aws PUBLIC include)
 
+target_link_libraries(normal-aws PUBLIC normal-util)
 target_link_libraries(normal-aws PUBLIC spdlog::spdlog)
 target_link_libraries(normal-aws PUBLIC aws-cpp-sdk-core)
 target_link_libraries(normal-aws PUBLIC aws-cpp-sdk-s3)

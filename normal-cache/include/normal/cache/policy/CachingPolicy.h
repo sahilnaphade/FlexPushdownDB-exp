@@ -86,7 +86,7 @@ public:
   virtual std::string toString() = 0;
 
   /**
-   * Some updates (FBRS, WFBR) when a new query comes
+   * Some updates (LFUS, WLFU) when a new query comes
    */
   virtual void onNewQuery() = 0;
 

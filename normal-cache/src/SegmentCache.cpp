@@ -67,6 +67,11 @@ SegmentCache::toCache(std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> 
   return cachingPolicy_->onToCache(std::move(segmentKeys));
 }
 
+void SegmentCache::newQuery() {
+  cachingPolicy_->onNewQuery();
+  clearCrtQueryMetrics();
+}
+
 size_t SegmentCache::hitNum() const {
   return hitNum_;
 }
@@ -88,6 +93,10 @@ void SegmentCache::clearMetrics() {
   missNum_ = 0;
   shardHitNum_ = 0;
   shardMissNum_ = 0;
+  crtQueryHitNum_ = 0;
+  crtQueryMissNum_ = 0;
+  crtQueryShardHitNum_ = 0;
+  crtQueryShardMissNum_ = 0;
 }
 
 const std::shared_ptr<CachingPolicy> &SegmentCache::getCachingPolicy() const {
@@ -113,9 +122,6 @@ size_t SegmentCache::crtQueryShardMissNum() const {
 void SegmentCache::clearCrtQueryMetrics() {
   crtQueryHitNum_ = 0;
   crtQueryMissNum_ = 0;
-}
-
-void SegmentCache::clearCrtQueryShardMetrics() {
   crtQueryShardHitNum_ = 0;
   crtQueryShardMissNum_ = 0;
 }
@@ -152,7 +158,7 @@ void SegmentCache::addCrtQueryShardMissNum(size_t shardMissNum) {
   crtQueryShardMissNum_ += shardMissNum;
 }
 
-void SegmentCache::checkCacheConsistensyWithCachePolicy() {
+void SegmentCache::checkCacheConsistencyWithCachePolicy() {
   auto keysInCachePolicy = cachingPolicy_->getKeysetInCachePolicy();
   if (keysInCachePolicy->size() != map_.size()) {
     throw std::runtime_error("Error, cache policy key set has different size than segment cache keyset");

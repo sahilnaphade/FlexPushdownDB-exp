@@ -6,21 +6,15 @@
 
 using namespace normal::executor::message;
 
-WeightRequestMessage::WeightRequestMessage(const std::shared_ptr<std::unordered_map<std::shared_ptr<SegmentKey>, double>> weightMap,
-                                           long queryId,
+WeightRequestMessage::WeightRequestMessage(const std::shared_ptr<std::unordered_map<std::shared_ptr<SegmentKey>, double>> &weightMap,
                                            const std::string &sender) :
   Message("WeightRequestMessage", sender),
-  weightMap_(weightMap),
-  queryId_(queryId) {}
+  weightMap_(weightMap) {}
 
-std::shared_ptr<WeightRequestMessage> WeightRequestMessage::make(const std::shared_ptr<std::unordered_map<std::shared_ptr<SegmentKey>, double>> weightMap,
-                                                                 long queryId,
-                                                                 const std::string &sender) {
-  return std::make_shared<WeightRequestMessage>(weightMap, queryId, sender);
-}
-
-long WeightRequestMessage::getQueryId() const {
-  return queryId_;
+std::shared_ptr<WeightRequestMessage> WeightRequestMessage::make(
+        const std::shared_ptr<std::unordered_map<std::shared_ptr<SegmentKey>, double>> &weightMap,
+        const std::string &sender) {
+  return std::make_shared<WeightRequestMessage>(weightMap, sender);
 }
 
 const std::shared_ptr<std::unordered_map<std::shared_ptr<SegmentKey>, double>> &

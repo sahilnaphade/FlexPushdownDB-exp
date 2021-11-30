@@ -20,8 +20,7 @@ class SortPOp : public PhysicalOp {
 public:
   SortPOp(const string &name,
           const arrow::compute::SortOptions &sortOptions,
-          const vector<string> &projectColumnNames,
-          long queryId = 0);
+          const vector<string> &projectColumnNames);
 
   void onReceive(const Envelope &msg) override;
 

@@ -232,6 +232,6 @@ std::string LFUSCachingPolicy::toString() {
 }
 
 void LFUSCachingPolicy::onNewQuery() {
-    freeSizeOTC_ = freeSize_;
-    keysInCacheOTC_.assign(keysInCache_.begin(), keysInCache_.end());
+  freeSizeOTC_ = freeSize_;
+  keysInCacheOTC_.assign(keysInCache_.begin(), keysInCache_.end());
 }

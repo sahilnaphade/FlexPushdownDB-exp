@@ -27,8 +27,7 @@ public:
 					 std::shared_ptr<Partition> partition,
 					 int64_t startOffset,
 					 int64_t finishOffset,
-					 S3ClientType s3ClientType,
-					 long queryId = 0);
+					 S3ClientType s3ClientType);
   ~CacheLoadPOp() override = default;
 
   void onReceive(const Envelope &msg) override;

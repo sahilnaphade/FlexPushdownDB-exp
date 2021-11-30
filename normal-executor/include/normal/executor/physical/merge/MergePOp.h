@@ -19,8 +19,7 @@ class MergePOp : public PhysicalOp {
 
 public:
   explicit MergePOp(const std::string &name,
-                    const std::vector<std::string> &projectColumnNames,
-                    long queryId);
+                    const std::vector<std::string> &projectColumnNames);
 
   void onReceive(const Envelope &msg) override;
 

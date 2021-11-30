@@ -28,8 +28,7 @@ class HashJoinProbePOp : public PhysicalOp {
 public:
   HashJoinProbePOp(std::string name,
                    HashJoinPredicate pred,
-                   std::vector<std::string> projectColumnNames,
-                   long queryId = 0);
+                   std::vector<std::string> projectColumnNames);
 
   void onReceive(const Envelope &msg) override;
 

@@ -20,9 +20,8 @@ FilterPOp::FilterPOp(std::string name,
                std::shared_ptr<Expression> predicate,
                std::shared_ptr<Table> table,
                std::vector<std::string> projectColumnNames,
-               long queryId,
                std::vector<std::shared_ptr<SegmentKey>> weightedSegmentKeys) :
-	PhysicalOp(std::move(name), "FilterPOp", std::move(projectColumnNames), queryId),
+	PhysicalOp(std::move(name), "FilterPOp", std::move(projectColumnNames)),
   predicate_(std::move(predicate)),
 	received_(normal::tuple::TupleSet::makeWithNullTable()),
 	filtered_(normal::tuple::TupleSet::makeWithNullTable()),
@@ -200,7 +199,7 @@ void FilterPOp::sendSegmentWeight() {
     weightMap->emplace(segmentKey, weight);
   }
 
-  ctx()->send(WeightRequestMessage::make(weightMap, getQueryId(), name()), "SegmentCache")
+  ctx()->send(WeightRequestMessage::make(weightMap, name()), "SegmentCache")
           .map_error([](auto err) { throw std::runtime_error(err); });
 }
 

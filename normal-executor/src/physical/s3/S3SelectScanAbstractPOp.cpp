@@ -43,9 +43,8 @@ S3SelectScanAbstractPOp::S3SelectScanAbstractPOp(std::string name,
          std::shared_ptr<Table> table,
          std::shared_ptr<normal::aws::AWSClient> awsClient,
 			   bool scanOnStart,
-			   bool toCache,
-			   long queryId) :
-	PhysicalOp(std::move(name), std::move(type), std::move(projectColumnNames), queryId),
+			   bool toCache) :
+	PhysicalOp(std::move(name), std::move(type), std::move(projectColumnNames)),
 	s3Bucket_(std::move(s3Bucket)),
 	s3Object_(std::move(s3Object)),
 	startOffset_(startOffset),

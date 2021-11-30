@@ -19,20 +19,17 @@ namespace normal::executor::message {
 class WeightRequestMessage : public Message {
 
 public:
-  WeightRequestMessage(const std::shared_ptr<std::unordered_map<std::shared_ptr<SegmentKey>, double>> weightMap,
-                       long queryId,
+  WeightRequestMessage(const std::shared_ptr<std::unordered_map<std::shared_ptr<SegmentKey>, double>> &weightMap,
                        const std::string &sender);
 
-  static std::shared_ptr<WeightRequestMessage> make(const std::shared_ptr<std::unordered_map<std::shared_ptr<SegmentKey>, double>> weightMap,
-                                                    long queryId,
-                                                    const std::string &sender);
+  static std::shared_ptr<WeightRequestMessage> make(
+          const std::shared_ptr<std::unordered_map<std::shared_ptr<SegmentKey>, double>> &weightMap,
+          const std::string &sender);
 
   const std::shared_ptr<std::unordered_map<std::shared_ptr<SegmentKey>, double>> &getWeightMap() const;
-  long getQueryId() const;
 
 private:
   std::shared_ptr<std::unordered_map<std::shared_ptr<SegmentKey>, double>> weightMap_;
-  long queryId_;
 };
 
 }

@@ -8,9 +8,8 @@
 using namespace normal::executor::physical::merge;
 
 MergePOp::MergePOp(const std::string &name,
-                   const std::vector<std::string> &projectColumnNames,
-                   long queryId) :
-	PhysicalOp(name, "MergePOp", projectColumnNames, queryId) {
+                   const std::vector<std::string> &projectColumnNames) :
+	PhysicalOp(name, "MergePOp", projectColumnNames) {
 }
 
 void MergePOp::onReceive(const Envelope &msg) {

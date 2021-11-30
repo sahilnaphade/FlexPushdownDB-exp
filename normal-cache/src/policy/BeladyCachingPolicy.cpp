@@ -247,7 +247,7 @@ std::string BeladyCachingPolicy::printLayoutAfterEveryQuery() {
 }
 
 void BeladyCachingPolicy::assertDecreasingOrderingOfSegmentKeys(const std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>>& segmentKeys) {
-  for (int i = 0; i < segmentKeys->size() - 1; i++) {
+  for (size_t i = 0; i < segmentKeys->size() - 1; i++) {
     auto key1 = segmentKeys->at(i);
     auto key2 = segmentKeys->at(i + 1);
     if (lessKeyValue(key1, key2)) {

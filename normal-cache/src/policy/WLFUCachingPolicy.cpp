@@ -25,8 +25,7 @@ WLFUCachingPolicy::WLFUCachingPolicy(size_t maxSize,
   CachingPolicy(WLFU,
                 maxSize,
                 std::move(catalogueEntry),
-                true),
-  currentQueryId_(0) {}
+                true) {}
 
 void WLFUCachingPolicy::onLoad(const std::shared_ptr<SegmentKey> &key) {
     auto startTime = std::chrono::steady_clock::now();
@@ -57,13 +56,7 @@ void WLFUCachingPolicy::onLoad(const std::shared_ptr<SegmentKey> &key) {
     onLoadTime += std::chrono::duration_cast<std::chrono::nanoseconds>(stopTime - startTime).count();
 }
 
-void WLFUCachingPolicy::onWeight(const std::shared_ptr<std::unordered_map<std::shared_ptr<SegmentKey>, double>> &weightMap, long queryId) {
-  // if new query executes, clear temporary weight updated keys
-  if (queryId > currentQueryId_) {
-    weightUpdatedKeys_.clear();
-    currentQueryId_ = queryId;
-  }
-
+void WLFUCachingPolicy::onWeight(const std::shared_ptr<std::unordered_map<std::shared_ptr<SegmentKey>, double>> &weightMap) {
   // update value using weight
   for (auto const &weightEntry: *weightMap) {
     auto segmentKey = weightEntry.first;
@@ -249,6 +242,7 @@ std::string WLFUCachingPolicy::toString() {
 }
 
 void WLFUCachingPolicy::onNewQuery() {
-    freeSizeOTC_ = freeSize_;
-    keysInCacheOTC_.assign(keysInCache_.begin(), keysInCache_.end());
+  weightUpdatedKeys_.clear();
+  freeSizeOTC_ = freeSize_;
+  keysInCacheOTC_.assign(keysInCache_.begin(), keysInCache_.end());
 }

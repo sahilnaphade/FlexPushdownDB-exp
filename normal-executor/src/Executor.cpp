@@ -11,12 +11,16 @@ using namespace normal::executor::cache;
 namespace normal::executor {
 
 Executor::Executor(const shared_ptr<Mode> &mode,
-                   const shared_ptr<CachingPolicy> &cachingPolicy) :
+                   const shared_ptr<CachingPolicy> &cachingPolicy,
+                   bool showOpTimes,
+                   bool showScanMetrics) :
   actorSystem_(make_shared<caf::actor_system>(actorSystemConfig_)),
   cachingPolicy_(cachingPolicy),
   mode_(mode),
   queryCounter_(0),
-  running_(false) {}
+  running_(false),
+  showOpTimes_(showOpTimes),
+  showScanMetrics_(showScanMetrics) {}
 
 Executor::~Executor() {
   if (running_) {
@@ -29,7 +33,11 @@ void Executor::start() {
   if ((mode_->id() == CACHING_ONLY || mode_->id() == HYBRID) && !cachingPolicy_) {
     throw runtime_error(fmt::format("Failed to start, missing caching policy for mode: {}", mode_->toString()));
   }
-  segmentCacheActor_ = actorSystem_->spawn(SegmentCacheActor::makeBehaviour, cachingPolicy_, mode_);
+  if (cachingPolicy_) {
+    segmentCacheActor_ = actorSystem_->spawn(SegmentCacheActor::makeBehaviour, cachingPolicy_, mode_);
+  } else {
+    segmentCacheActor_ = nullptr;
+  }
   running_ = true;
 }
 
@@ -53,8 +61,9 @@ pair<shared_ptr<TupleSet>, long> Executor::execute(const shared_ptr<PhysicalPlan
                                                  physicalPlan);
   const auto &result = execution->execute();
   long elapsedTime = execution->getElapsedTime();
-//  cout << execution->showMetrics(true, false) << endl;
-  cout << showCacheMetrics() << endl;
+  if (showOpTimes_ || showScanMetrics_) {
+    cout << execution->showMetrics(showOpTimes_, showScanMetrics_) << endl;
+  }
   return make_pair(result, elapsedTime);
 }
 
@@ -82,30 +91,37 @@ std::string Executor::showCacheMetrics() {
     throw std::runtime_error(to_string(error));
   };
 
-  scoped_actor self{*actorSystem_};
-  self->request(segmentCacheActor_, infinite, GetNumHitsAtom::value).receive(
-          [&](size_t numHits) {
-            hitNum = numHits;
-          },
-          errorHandler);
+  if (!isCacheUsed()) {
+    hitNum = 0;
+    missNum = 0;
+    shardHitNum = 0;
+    shardMissNum = 0;
+  } else {
+    scoped_actor self{*actorSystem_};
+    self->request(segmentCacheActor_, infinite, GetNumHitsAtom::value).receive(
+            [&](size_t numHits) {
+              hitNum = numHits;
+            },
+            errorHandler);
 
-  self->request(segmentCacheActor_, infinite, GetNumMissesAtom::value).receive(
-          [&](size_t numMisses) {
-            missNum = numMisses;
-          },
-          errorHandler);
+    self->request(segmentCacheActor_, infinite, GetNumMissesAtom::value).receive(
+            [&](size_t numMisses) {
+              missNum = numMisses;
+            },
+            errorHandler);
 
-  self->request(segmentCacheActor_, infinite, GetNumShardHitsAtom::value).receive(
-          [&](size_t numShardHits) {
-            shardHitNum = numShardHits;
-          },
-          errorHandler);
+    self->request(segmentCacheActor_, infinite, GetNumShardHitsAtom::value).receive(
+            [&](size_t numShardHits) {
+              shardHitNum = numShardHits;
+            },
+            errorHandler);
 
-  self->request(segmentCacheActor_, infinite, GetNumShardMissesAtom::value).receive(
-          [&](size_t numShardMisses) {
-            shardMissNum = numShardMisses;
-          },
-          errorHandler);
+    self->request(segmentCacheActor_, infinite, GetNumShardMissesAtom::value).receive(
+            [&](size_t numShardMisses) {
+              shardMissNum = numShardMisses;
+            },
+            errorHandler);
+  }
 
   double hitRate = (hitNum + missNum == 0) ? 0.0 : (double) hitNum / (double) (hitNum + missNum);
   double shardHitRate = (shardHitNum + shardMissNum == 0) ? 0.0 : (double) shardHitNum / (double) (shardHitNum + shardMissNum);
@@ -143,71 +159,68 @@ std::string Executor::showCacheMetrics() {
 }
 
 void Executor::clearCacheMetrics() {
-  (*rootActor_)->anon_send(segmentCacheActor_, ClearMetricsAtom::value);
-}
-
-void Executor::clearCrtQueryMetrics() {
-  (*rootActor_)->anon_send(segmentCacheActor_, ClearCrtQueryMetricsAtom::value);
-}
-
-void Executor::clearCrtQueryShardMetrics() {
-  (*rootActor_)->anon_send(segmentCacheActor_, ClearCrtQueryShardMetricsAtom::value);
+  if (isCacheUsed()) {
+    (*rootActor_)->anon_send(segmentCacheActor_, ClearMetricsAtom::value);
+  }
 }
 
 double Executor::getCrtQueryHitRatio() {
-  int crtQueryHitNum;
-  int crtQueryMissNum;
+  size_t crtQueryHitNum;
+  size_t crtQueryMissNum;
 
+  if (!isCacheUsed()) {
+    crtQueryHitNum = 0;
+    crtQueryMissNum = 0;
+  } else {
+    auto errorHandler = [&](const caf::error &error) {
+      throw std::runtime_error(to_string(error));
+    };
 
-  auto errorHandler = [&](const caf::error& error){
-    throw std::runtime_error(to_string(error));
-  };
+    // NOTE: Creating a new scoped_actor will work, but can use rootActor_ as well
+    scoped_actor self{*actorSystem_};
+    self->request(segmentCacheActor_, infinite, GetCrtQueryNumHitsAtom::value).receive(
+            [&](size_t numHits) {
+              crtQueryHitNum = numHits;
+            },
+            errorHandler);
 
-  // NOTE: Creating a new scoped_actor will work, but can use rootActor_ as well
-  scoped_actor self{*actorSystem_};
-  self->request(segmentCacheActor_, infinite, GetCrtQueryNumHitsAtom::value).receive(
-          [&](int numHits) {
-            crtQueryHitNum = numHits;
-          },
-          errorHandler);
-
-  self->request(segmentCacheActor_, infinite, GetCrtQueryNumMissesAtom::value).receive(
-          [&](int numMisses) {
-            crtQueryMissNum = numMisses;
-          },
-          errorHandler);
-
-  // NOTE: anon_send a bit lighter than send
-  self->anon_send(segmentCacheActor_, ClearCrtQueryMetricsAtom::value);
+    self->request(segmentCacheActor_, infinite, GetCrtQueryNumMissesAtom::value).receive(
+            [&](size_t numMisses) {
+              crtQueryMissNum = numMisses;
+            },
+            errorHandler);
+  }
 
   return (crtQueryHitNum + crtQueryMissNum == 0) ? 0.0 :
     (double) crtQueryHitNum / (double) (crtQueryHitNum + crtQueryMissNum);
 }
 
 double Executor::getCrtQueryShardHitRatio() {
-  int crtQueryShardHitNum;
-  int crtQueryShardMissNum;
+  size_t crtQueryShardHitNum;
+  size_t crtQueryShardMissNum;
 
-  auto errorHandler = [&](const caf::error& error){
-    throw std::runtime_error(to_string(error));
-  };
+  if (isCacheUsed()) {
+    crtQueryShardHitNum = 0;
+    crtQueryShardMissNum = 0;
+  } else {
+    auto errorHandler = [&](const caf::error &error) {
+      throw std::runtime_error(to_string(error));
+    };
 
-  // NOTE: Creating a new scoped_actor will work, but can use rootActor_ as well
-  scoped_actor self{*actorSystem_};
-  self->request(segmentCacheActor_, infinite, GetCrtQueryNumShardHitsAtom::value).receive(
-          [&](int numShardHits) {
-            crtQueryShardHitNum = numShardHits;
-          },
-          errorHandler);
+    // NOTE: Creating a new scoped_actor will work, but can use rootActor_ as well
+    scoped_actor self{*actorSystem_};
+    self->request(segmentCacheActor_, infinite, GetCrtQueryNumShardHitsAtom::value).receive(
+            [&](size_t numShardHits) {
+              crtQueryShardHitNum = numShardHits;
+            },
+            errorHandler);
 
-  self->request(segmentCacheActor_, infinite, GetCrtQueryNumShardMissesAtom::value).receive(
-          [&](int numShardMisses) {
-            crtQueryShardMissNum = numShardMisses;
-          },
-          errorHandler);
-
-  // NOTE: anon_send a bit lighter than send
-  self->anon_send(segmentCacheActor_, ClearCrtQueryShardMetricsAtom::value);
+    self->request(segmentCacheActor_, infinite, GetCrtQueryNumShardMissesAtom::value).receive(
+            [&](size_t numShardMisses) {
+              crtQueryShardMissNum = numShardMisses;
+            },
+            errorHandler);
+  }
 
   return (crtQueryShardHitNum + crtQueryShardMissNum == 0) ? 0.0 :
     (double) crtQueryShardHitNum / (double) (crtQueryShardHitNum + crtQueryShardMissNum);

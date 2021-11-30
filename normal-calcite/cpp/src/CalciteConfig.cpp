@@ -23,7 +23,7 @@ const string &CalciteConfig::getJarName() const {
   return jarName_;
 }
 
-shared_ptr<CalciteConfig> parseCalciteConfig() {
+std::shared_ptr<CalciteConfig> CalciteConfig::parseCalciteConfig() {
   unordered_map<string, string> configMap = readConfig("calcite.conf");
   int port = stoi(configMap["SERVER_PORT"]);
   string jarName = configMap["JAR_NAME"];

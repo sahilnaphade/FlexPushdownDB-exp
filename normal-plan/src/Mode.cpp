@@ -3,7 +3,7 @@
 //
 
 #include <normal/plan/Mode.h>
-#include <string>
+#include <fmt/format.h>
 
 namespace normal::plan {
 
@@ -20,10 +20,7 @@ std::string Mode::toString() {
     case CACHING_ONLY: return "Caching-only";
     case HYBRID: return "Hybrid";
     default:
-      /*
-       * Shouldn't occur, but we'll throw a serious-ish exception if it ever does
-       */
-      throw std::domain_error("Cannot get string for mode '" + std::to_string(id_ )+ "'. Unrecognized mode");
+      throw std::runtime_error(fmt::format("Unknown mode, id: {}", id_));
   }
 }
 

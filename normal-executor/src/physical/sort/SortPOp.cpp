@@ -8,9 +8,8 @@ namespace normal::executor::physical::sort {
 
 SortPOp::SortPOp(const string &name,
                  const arrow::compute::SortOptions &sortOptions,
-                 const vector<string> &projectColumnNames,
-                 long queryId) :
-  PhysicalOp(name, "SortPOp", projectColumnNames, queryId),
+                 const vector<string> &projectColumnNames) :
+  PhysicalOp(name, "SortPOp", projectColumnNames),
   sortOptions_(sortOptions) {}
 
 void SortPOp::onReceive(const Envelope &message) {

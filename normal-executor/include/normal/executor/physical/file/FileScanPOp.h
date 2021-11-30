@@ -26,7 +26,6 @@ public:
 		   std::vector<std::string> columnNames,
 		   unsigned long startOffset,
 		   unsigned long finishOffset,
-		   long queryId = 0,
 		   bool scanOnStart = false);
 
   [[nodiscard]] const std::unique_ptr<FileScanKernel> &getKernel() const;

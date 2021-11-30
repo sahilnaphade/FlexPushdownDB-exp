@@ -28,10 +28,10 @@ public class Server {
       TServer server = new TSimpleServer(new Args(serverTransport).processor(processor));
       handler.setServerTransport(serverTransport);
       handler.setServer(server);
-      System.out.println("Calcite server start...");
+      System.out.println("[Java] Calcite server start...");
       server.serve();
     } catch (Exception e) {
-      System.out.println("Calcite server start error");
+      System.out.println("[Java] Calcite server start error");
       e.printStackTrace();
     }
   }

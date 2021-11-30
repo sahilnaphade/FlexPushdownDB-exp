@@ -22,7 +22,7 @@ public:
                              std::shared_ptr<CatalogueEntry> catalogueEntry);
 
   void onLoad(const std::shared_ptr<SegmentKey> &key) override;
-  void onWeight(const std::shared_ptr<std::unordered_map<std::shared_ptr<SegmentKey>, double>> &weightMap, long queryId);
+  void onWeight(const std::shared_ptr<std::unordered_map<std::shared_ptr<SegmentKey>, double>> &weightMap);
   void onRemove(const std::shared_ptr<SegmentKey> &key) override;
   std::optional<std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>>> onStore(const std::shared_ptr<SegmentKey> &key) override;
   std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> onToCache(std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> segmentKeys) override;
@@ -43,10 +43,9 @@ private:
   std::vector<std::shared_ptr<SegmentKey>> keysInCacheOTC_;
 
   /**
-   * WeightRequestMessage are sent from both S3SelectScan and filter in hybrid caching, they are contain weight
+   * WeightRequestMessage are sent from both S3SelectScan and filter in hybrid caching, they both contain weight
    * on predicate columns, but we should only update once
    */
-  long currentQueryId_;
   std::unordered_set<std::shared_ptr<SegmentKey>, SegmentKeyPointerHash, SegmentKeyPointerPredicate> weightUpdatedKeys_;
 
   static bool lessValue(const std::shared_ptr<SegmentKey> &key1, const std::shared_ptr<SegmentKey> &key2);

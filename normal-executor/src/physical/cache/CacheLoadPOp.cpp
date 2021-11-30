@@ -18,9 +18,8 @@ CacheLoadPOp::CacheLoadPOp(std::string name,
 					 std::shared_ptr<Partition> Partition,
 					 int64_t StartOffset,
 					 int64_t FinishOffset,
-           S3ClientType s3ClientType,
-					 long queryId) :
-					 PhysicalOp(std::move(name), "CacheLoadPOp", std::move(projectColumnNames), queryId),
+           S3ClientType s3ClientType) :
+					 PhysicalOp(std::move(name), "CacheLoadPOp", std::move(projectColumnNames)),
 					 predicateColumnNames_(std::move(predicateColumnNames)),
 					 columnNames_(std::move(columnNames)),
 					 partition_(std::move(Partition)),

@@ -30,8 +30,7 @@ public:
            std::shared_ptr<Table> table,
            std::shared_ptr<AWSClient> awsClient,
            bool scanOnStart = true,
-           bool toCache = false,
-           long queryId = 0);
+           bool toCache = false);
 
 private:
   void processScanMessage(const ScanMessage &message) override;

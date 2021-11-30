@@ -55,8 +55,8 @@ void SegmentCacheActor::store(const StoreRequestMessage &msg, stateful_actor<Seg
 void SegmentCacheActor::weight(const WeightRequestMessage &msg, stateful_actor<SegmentCacheActorState> *self) {
   auto cachingPolicy = self->state.cache->getCachingPolicy();
   if (cachingPolicy->getType() == WLFU) {
-	auto fbrCachingPolicy = std::static_pointer_cast<WLFUCachingPolicy>(cachingPolicy);
-	fbrCachingPolicy->onWeight(msg.getWeightMap(), msg.getQueryId());
+    auto wlfuCachingPolicy = std::static_pointer_cast<WLFUCachingPolicy>(cachingPolicy);
+    wlfuCachingPolicy->onWeight(msg.getWeightMap());
   }
 }
 
@@ -106,6 +106,9 @@ void SegmentCacheActor::metrics(const CacheMetricsMessage &msg, stateful_actor<S
 	  [=](WeightAtom, const std::shared_ptr<WeightRequestMessage> &m) {
 		weight(*m, self);
 	  },
+    [=](NewQueryAtom) {
+    self->state.cache->newQuery();
+	  },
 	  [=](GetNumHitsAtom) {
 		return self->state.cache->hitNum();
 	  },
@@ -132,12 +135,6 @@ void SegmentCacheActor::metrics(const CacheMetricsMessage &msg, stateful_actor<S
 	  },
 	  [=](ClearMetricsAtom) {
 		self->state.cache->clearMetrics();
-	  },
-	  [=](ClearCrtQueryMetricsAtom) {
-		self->state.cache->clearCrtQueryMetrics();
-	  },
-	  [=](ClearCrtQueryShardMetricsAtom) {
-	  self->state.cache->clearCrtQueryShardMetrics();
 	  },
 	  [=](MetricsAtom, const std::shared_ptr<CacheMetricsMessage> &m) {
     metrics(*m, self);

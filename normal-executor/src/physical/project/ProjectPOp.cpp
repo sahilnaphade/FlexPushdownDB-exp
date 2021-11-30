@@ -15,9 +15,8 @@ namespace normal::executor::physical::project {
 ProjectPOp::ProjectPOp(std::string name,
                  std::vector<std::shared_ptr<normal::expression::gandiva::Expression>> exprs,
                  std::vector<std::string> exprNames,
-                 std::vector<std::string> projectColumnNames,
-                 long queryId)
-    : PhysicalOp(std::move(name), "ProjectPOp", std::move(projectColumnNames), queryId),
+                 std::vector<std::string> projectColumnNames)
+    : PhysicalOp(std::move(name), "ProjectPOp", std::move(projectColumnNames)),
       exprs_(std::move(exprs)),
       exprNames_(std::move(exprNames)) {}
 

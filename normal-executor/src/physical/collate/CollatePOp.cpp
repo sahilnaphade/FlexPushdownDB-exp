@@ -18,9 +18,8 @@ void CollatePOp::onStart() {
   this->tuples_.reset();
 }
 
-CollatePOp::CollatePOp(std::string name,
-                       long queryId) :
-  PhysicalOp(std::move(name), "CollatePOp", {}, queryId) {
+CollatePOp::CollatePOp(std::string name) :
+  PhysicalOp(std::move(name), "CollatePOp", {}) {
 }
 
 void CollatePOp::onReceive(const normal::executor::message::Envelope &message) {

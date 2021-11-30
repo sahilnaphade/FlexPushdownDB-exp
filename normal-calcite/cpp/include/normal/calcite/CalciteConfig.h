@@ -15,6 +15,8 @@ class CalciteConfig {
 public:
   CalciteConfig(int port, string jarName);
 
+  static std::shared_ptr<CalciteConfig> parseCalciteConfig();
+
   int getPort() const;
   const string &getJarName() const;
 
@@ -22,8 +24,6 @@ private:
   int port_;
   string jarName_;
 };
-
-std::shared_ptr<CalciteConfig> parseCalciteConfig();
 
 }
 

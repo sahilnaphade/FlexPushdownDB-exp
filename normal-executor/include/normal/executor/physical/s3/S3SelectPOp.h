@@ -32,7 +32,6 @@ public:
          std::shared_ptr<AWSClient> awsClient,
          bool scanOnStart = true,
          bool toCache = false,
-         long queryId = 0,
          std::vector<std::shared_ptr<normal::cache::SegmentKey>> weightedSegmentKeys = {});
 
 private:

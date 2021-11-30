@@ -3,55 +3,70 @@
 //
 
 #include <normal/frontend/ExecConfig.h>
+#include <normal/cache/policy/LRUCachingPolicy.h>
+#include <normal/cache/policy/LFUCachingPolicy.h>
+#include <normal/cache/policy/LFUSCachingPolicy.h>
+#include <normal/cache/policy/WLFUCachingPolicy.h>
+#include <normal/catalogue/CatalogueEntry.h>
+#include <normal/catalogue/s3/S3CatalogueEntryReader.h>
 #include <normal/util/Util.h>
-#include <normal/plan/mode/Modes.h>
+#include <fmt/format.h>
 #include <string>
-#include <sstream>
 #include <utility>
-#include <normal/cache/LRUCachingPolicy.h>
-#include <normal/cache/FBRCachingPolicy.h>
-#include <normal/cache/FBRSCachingPolicy.h>
-#include <normal/cache/WFBRCachingPolicy.h>
 
-using namespace std;
+using namespace normal::catalogue::s3;
 using namespace normal::util;
 
 namespace normal::frontend {
 
-ExecConfig::ExecConfig(const shared_ptr<Mode> &mode, const shared_ptr<CachingPolicy> &cachingPolicy, string s3Bucket,
-               string s3Dir, bool showOpTimes, bool showScanMetrics) :
-               mode_(mode), cachingPolicy_(cachingPolicy), s3Bucket_(std::move(s3Bucket)), s3Dir_(std::move(s3Dir)),
-               showOpTimes_(showOpTimes), showScanMetrics_(showScanMetrics) {}
+ExecConfig::ExecConfig(const shared_ptr<Mode> &mode,
+                       const shared_ptr<CachingPolicy> &cachingPolicy,
+                       string s3Bucket,
+                       string schemaName,
+                       int parallelDegree,
+                       bool showOpTimes,
+                       bool showScanMetrics) :
+  mode_(mode),
+  cachingPolicy_(cachingPolicy),
+  s3Bucket_(move(s3Bucket)),
+  schemaName_(move(schemaName)),
+  parallelDegree_(parallelDegree),
+  showOpTimes_(showOpTimes),
+  showScanMetrics_(showScanMetrics) {}
 
-const shared_ptr<Mode> &ExecConfig::getMode() const {
-  return mode_;
+shared_ptr<ExecConfig> ExecConfig::parseExecConfig(const shared_ptr<Catalogue> &catalogue,
+                                                   const shared_ptr<AWSClient> &awsClient) {
+  // read config
+  unordered_map<string, string> configMap = readConfig("exec.conf");
+  string s3Bucket = configMap["S3_BUCKET"];
+  string schemaName = configMap["SCHEMA_NAME"];
+  size_t cacheSize = parseCacheSize(configMap["CACHE_SIZE"]);
+  shared_ptr<Mode> mode = parseMode(configMap["MODE"]);
+  int parallelDegree = stoi(configMap["PARALLEL_DEGREE"]);
+  bool showOpTimes = parseBool(configMap["SHOW_OP_TIMES"]);
+  bool showScanMetrics = parseBool(configMap["SHOW_SCAN_METRICS"]);
+
+  // catalogue entry
+  shared_ptr<CatalogueEntry> catalogueEntry;
+  const auto expCatalogueEntry = catalogue->getEntry(fmt::format("s3://{}/{}", s3Bucket, schemaName));
+  if (expCatalogueEntry.has_value()) {
+    catalogueEntry = expCatalogueEntry.value();
+  } else {
+    catalogueEntry = S3CatalogueEntryReader::readS3CatalogueEntry(catalogue, s3Bucket, schemaName, awsClient->getS3Client());
+    catalogue->putEntry(catalogueEntry);
+  }
+
+  // caching policy
+  shared_ptr<CachingPolicy> cachingPolicy = parseCachingPolicy(configMap["CACHING_POLICY"], cacheSize, catalogueEntry);
+
+  return make_shared<ExecConfig>(mode, cachingPolicy, s3Bucket, schemaName, parallelDegree, showOpTimes, showScanMetrics);
 }
 
-const shared_ptr<CachingPolicy> &ExecConfig::getCachingPolicy() const {
-  return cachingPolicy_;
-}
-
-const string &ExecConfig::getS3Bucket() const {
-  return s3Bucket_;
-}
-
-const string &ExecConfig::getS3Dir() const {
-  return s3Dir_;
-}
-
-bool ExecConfig::showOpTimes() const {
-  return showOpTimes_;
-}
-
-bool ExecConfig::showScanMetrics() const {
-  return showScanMetrics_;
-}
-
-size_t parseCacheSize(const string& stringToParse) {
+size_t ExecConfig::parseCacheSize(const string& stringToParse) {
   size_t cacheSize;
   if (stringToParse.substr(stringToParse.length() - 2) == "GB"
-    || stringToParse.substr(stringToParse.length() - 2) == "MB"
-    || stringToParse.substr(stringToParse.length() - 2) == "KB") {
+      || stringToParse.substr(stringToParse.length() - 2) == "MB"
+      || stringToParse.substr(stringToParse.length() - 2) == "KB") {
     auto cacheSizeStr = stringToParse.substr(0, stringToParse.length() - 2);
     stringstream ss(cacheSizeStr);
     ss >> cacheSize;
@@ -71,50 +86,59 @@ size_t parseCacheSize(const string& stringToParse) {
   return 0;
 }
 
-std::shared_ptr<Mode> parseMode(const string& stringToParse) {
+shared_ptr<Mode> ExecConfig::parseMode(const string& stringToParse) {
   if (stringToParse == "PULLUP") {
-    return Modes::fullPullupMode();
+    return Mode::pullupMode();
   } else if (stringToParse == "PUSHDOWN_ONLY") {
-    return Modes::fullPushdownMode();
+    return Mode::pushdownOnlyMode();
   } else if (stringToParse == "CACHING_ONLY") {
-    return Modes::pullupCachingMode();
+    return Mode::cachingOnlyMode();
   } else if (stringToParse == "HYBRID") {
-    return Modes::hybridCachingMode();
+    return Mode::hybridMode();
   }
-  return Modes::fullPullupMode();
+  throw runtime_error(fmt::format("Unknown mode: {}", stringToParse));
 }
 
-std::shared_ptr<CachingPolicy> parseCachingPolicy(const string& stringToParse, size_t cacheSize,
-                                                  std::shared_ptr<Mode> mode) {
+shared_ptr<CachingPolicy> ExecConfig::parseCachingPolicy(const string& stringToParse,
+                                                         size_t cacheSize,
+                                                         const shared_ptr<CatalogueEntry> &catalogueEntry) {
   if (stringToParse == "LRU") {
-    return LRUCachingPolicy::make(cacheSize, std::move(mode));
+    return make_shared<LRUCachingPolicy>(cacheSize, catalogueEntry);
   } else if (stringToParse == "LFU") {
-    return FBRCachingPolicy::make(cacheSize, std::move(mode));
+    return make_shared<LFUCachingPolicy>(cacheSize, catalogueEntry);
   } else if (stringToParse == "LFU-S") {
-    return FBRSCachingPolicy::make(cacheSize, std::move(mode));
+    return make_shared<LFUSCachingPolicy>(cacheSize, catalogueEntry);
   } else if (stringToParse == "W-LFU") {
-    return WFBRCachingPolicy::make(cacheSize, std::move(mode));
+    return make_shared<WLFUCachingPolicy>(cacheSize, catalogueEntry);
   }
-  return FBRSCachingPolicy::make(cacheSize, std::move(mode));
+  throw runtime_error(fmt::format("Unknown caching policy: {}", stringToParse));
 }
 
-bool parseBool(const string& stringToParse) {
-  if (stringToParse == "TRUE") {
-    return true;
-  } else {
-    return false;
-  }
+const shared_ptr<Mode> &ExecConfig::getMode() const {
+  return mode_;
 }
 
-std::shared_ptr<ExecConfig> parseExecConfig() {
-  unordered_map<string, string> configMap = readConfig("exec.conf");
-  size_t cacheSize = parseCacheSize(configMap["CACHE_SIZE"]);
-  std::shared_ptr<Mode> mode = parseMode(configMap["MODE"]);
-  std::shared_ptr<CachingPolicy> cachingPolicy = parseCachingPolicy(configMap["CACHING_POLICY"], cacheSize, mode);
-  string s3Bucket = configMap["S3_BUCKET"];
-  string s3Dir = configMap["S3_DIR"];
-  bool showOpTimes = parseBool(configMap["SHOW_OP_TIMES"]);
-  bool showScanMetrics = parseBool(configMap["SHOW_SCAN_METRICS"]);
-  return std::make_shared<ExecConfig>(mode, cachingPolicy, s3Bucket, s3Dir, showOpTimes, showScanMetrics);
+const shared_ptr<CachingPolicy> &ExecConfig::getCachingPolicy() const {
+  return cachingPolicy_;
+}
+
+const string &ExecConfig::getS3Bucket() const {
+  return s3Bucket_;
+}
+
+const string &ExecConfig::getSchemaName() const {
+  return schemaName_;
+}
+
+int ExecConfig::getParallelDegree() const {
+  return parallelDegree_;
+}
+
+bool ExecConfig::showOpTimes() const {
+  return showOpTimes_;
+}
+
+bool ExecConfig::showScanMetrics() const {
+  return showScanMetrics_;
 }
 }

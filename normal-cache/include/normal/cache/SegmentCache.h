@@ -27,6 +27,7 @@ public:
   unsigned long remove(const std::shared_ptr<SegmentKey>& key);
   unsigned long remove(const std::function<bool(const SegmentKey& entry)>& predicate);
   std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> toCache(std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> segmentKeys);
+  void newQuery();
 
   size_t getSize() const;
   const std::shared_ptr<CachingPolicy> &getCachingPolicy() const;
@@ -48,10 +49,9 @@ public:
   void addCrtQueryShardMissNum(size_t shardMissNum);
   void clearMetrics();
   void clearCrtQueryMetrics();
-  void clearCrtQueryShardMetrics();
 
 private:
-  void checkCacheConsistensyWithCachePolicy();
+  void checkCacheConsistencyWithCachePolicy();
 
   std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>, SegmentKeyPointerHash, SegmentKeyPointerPredicate> map_;
 	std::shared_ptr<CachingPolicy> cachingPolicy_;

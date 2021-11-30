@@ -51,8 +51,7 @@ public:
          std::shared_ptr<Table> table,
 			   std::shared_ptr<AWSClient> awsClient,
 			   bool scanOnStart,
-			   bool toCache,
-			   long queryId);
+			   bool toCache);
 
   void onReceive(const Envelope &message) override;
 

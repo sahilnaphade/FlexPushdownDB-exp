@@ -21,8 +21,7 @@ class AggregatePOp : public normal::executor::physical::PhysicalOp {
 public:
   AggregatePOp(std::string name,
             std::vector<std::string> projectColumnNames,
-            std::vector<std::shared_ptr<aggregate::AggregationFunction>> functions,
-            long queryId = 0);
+            std::vector<std::shared_ptr<aggregate::AggregationFunction>> functions);
   ~AggregatePOp() override = default;
 
   void onReceive(const normal::executor::message::Envelope &message) override;
