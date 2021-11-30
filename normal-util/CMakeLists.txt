@@ -6,18 +6,16 @@ project(normal-util VERSION "${PROJECT_VERSION}" LANGUAGES C CXX)
 #-----------------------------------------------------------------------------------------------------------------------
 
 add_library(normal-util
-        src/Globals.cpp include/normal/util/Globals.h
+        include/normal/util/Globals.h
         include/normal/util/Traits.h
-        include/normal/util/Util.h src/Util.cpp)
+        src/Util.cpp include/normal/util/Util.h)
 
 target_include_directories(normal-util PUBLIC include)
 
-target_link_libraries(normal-util PRIVATE LLVM-filesystem)
-target_link_libraries(normal-util PRIVATE fmt::fmt)
-target_link_libraries(normal-util PRIVATE spdlog::spdlog)
+target_link_libraries(normal-util PUBLIC LLVM-filesystem)
+target_link_libraries(normal-util PUBLIC fmt::fmt)
+target_link_libraries(normal-util PUBLIC spdlog::spdlog)
 target_link_libraries(normal-util PUBLIC boost_callable_traits)
-target_link_libraries(normal-util PUBLIC caf::libcaf_core_shared)
-target_link_libraries(normal-util PUBLIC caf::libcaf_io_shared)
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -40,5 +38,4 @@ target_link_libraries(normal-util-test normal-util)
 # Diagnostics
 #-----------------------------------------------------------------------------------------------------------------------
 
-#showTargetProps(normal-ssb-test)
-#showTargetProps(normal-ssb-benchmark)
+#showTargetProps(normal-util)

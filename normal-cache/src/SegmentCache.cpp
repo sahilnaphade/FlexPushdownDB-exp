@@ -2,19 +2,15 @@
 // Created by matt on 19/5/20.
 //
 
-#include "normal/cache/SegmentCache.h"
-
+#include <normal/cache/SegmentCache.h>
+#include <normal/cache/policy/LRUCachingPolicy.h>
+#include <fmt/format.h>
 #include <utility>
-#include <normal/cache/LRUCachingPolicy.h>
 
 using namespace normal::cache;
 
 SegmentCache::SegmentCache(std::shared_ptr<CachingPolicy> cachingPolicy) :
 	cachingPolicy_(std::move(cachingPolicy)) {
-}
-
-std::shared_ptr<SegmentCache> SegmentCache::make() {
-  return std::make_shared<SegmentCache>(LRUCachingPolicy::make());
 }
 
 std::shared_ptr<SegmentCache> SegmentCache::make(const std::shared_ptr<CachingPolicy>& cachingPolicy) {
@@ -68,22 +64,27 @@ size_t SegmentCache::getSize() const {
 
 std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>>
 SegmentCache::toCache(std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> segmentKeys) {
-  return cachingPolicy_->onToCache(segmentKeys);
+  return cachingPolicy_->onToCache(std::move(segmentKeys));
 }
 
-int SegmentCache::hitNum() const {
+void SegmentCache::newQuery() {
+  cachingPolicy_->onNewQuery();
+  clearCrtQueryMetrics();
+}
+
+size_t SegmentCache::hitNum() const {
   return hitNum_;
 }
 
-int SegmentCache::missNum() const {
+size_t SegmentCache::missNum() const {
   return missNum_;
 }
 
-int SegmentCache::shardHitNum() const {
+size_t SegmentCache::shardHitNum() const {
   return shardHitNum_;
 }
 
-int SegmentCache::shardMissNum() const {
+size_t SegmentCache::shardMissNum() const {
   return shardMissNum_;
 }
 
@@ -92,34 +93,35 @@ void SegmentCache::clearMetrics() {
   missNum_ = 0;
   shardHitNum_ = 0;
   shardMissNum_ = 0;
+  crtQueryHitNum_ = 0;
+  crtQueryMissNum_ = 0;
+  crtQueryShardHitNum_ = 0;
+  crtQueryShardMissNum_ = 0;
 }
 
 const std::shared_ptr<CachingPolicy> &SegmentCache::getCachingPolicy() const {
   return cachingPolicy_;
 }
 
-int SegmentCache::crtQueryHitNum() const {
+size_t SegmentCache::crtQueryHitNum() const {
   return crtQueryHitNum_;
 }
 
-int SegmentCache::crtQueryMissNum() const {
+size_t SegmentCache::crtQueryMissNum() const {
   return crtQueryMissNum_;
 }
 
-int SegmentCache::crtQueryShardHitNum() const {
+size_t SegmentCache::crtQueryShardHitNum() const {
   return crtQueryShardHitNum_;
 }
 
-int SegmentCache::crtQueryShardMissNum() const {
+size_t SegmentCache::crtQueryShardMissNum() const {
   return crtQueryShardMissNum_;
 }
 
 void SegmentCache::clearCrtQueryMetrics() {
   crtQueryHitNum_ = 0;
   crtQueryMissNum_ = 0;
-}
-
-void SegmentCache::clearCrtQueryShardMetrics() {
   crtQueryShardHitNum_ = 0;
   crtQueryShardMissNum_ = 0;
 }
@@ -156,7 +158,7 @@ void SegmentCache::addCrtQueryShardMissNum(size_t shardMissNum) {
   crtQueryShardMissNum_ += shardMissNum;
 }
 
-void SegmentCache::checkCacheConsistensyWithCachePolicy() {
+void SegmentCache::checkCacheConsistencyWithCachePolicy() {
   auto keysInCachePolicy = cachingPolicy_->getKeysetInCachePolicy();
   if (keysInCachePolicy->size() != map_.size()) {
     throw std::runtime_error("Error, cache policy key set has different size than segment cache keyset");
@@ -165,7 +167,7 @@ void SegmentCache::checkCacheConsistensyWithCachePolicy() {
   // make sure all keys in caching policy cache are in segment cache
   // don't need to worry about checking the other way around since we are comparing sets and they are the same size
   // so checking one way will show any errors
-  for (auto segmentKey : *keysInCachePolicy) {
+  for (const auto& segmentKey : *keysInCachePolicy) {
     if (map_.find(segmentKey) == map_.end()) {
       throw std::runtime_error("Error, cache policy key set has a key not present in the segment cache");
     }

@@ -5,16 +5,15 @@
 #ifndef NORMAL_FRONTEND_CLIENT_H
 #define NORMAL_FRONTEND_CLIENT_H
 
-#include <normal/frontend/Global.h>
-#include <normal/frontend/Config.h>
-#include <normal/cache/CachingPolicy.h>
-#include <normal/plan/mode/Modes.h>
-#include <normal/sql/Interpreter.h>
-#include <normal/core/OperatorActor.h>
+#include <normal/frontend/ExecConfig.h>
+#include <normal/executor/Executor.h>
+#include <normal/executor/physical/PhysicalPlan.h>
+#include <normal/calcite/CalciteClient.h>
 
-using namespace normal::plan::operator_::mode;
-using namespace normal::sql;
-using namespace normal::core;
+using namespace normal::executor;
+using namespace normal::executor::physical;
+using namespace normal::calcite;
+using namespace std::filesystem;
 
 namespace normal::frontend {
 
@@ -22,27 +21,37 @@ class Client {
 
 public:
   explicit Client();
-  void processConfig();
-  std::string boot();
-  std::string stop();
-  std::string reboot();
-  std::string setCachingPolicy(int cachingPolicyType);
-  std::string setMode(int modeType);
-  std::string executeSql(const std::string &sql);
-  std::string executeSqlFile(const std::string &filePath);
+
+  static path getDefaultMetadataPath();
+  static string getDefaultCatalogueName();
+
+  string start();
+  string stop();
+  string restart();
+
+  string executeQuery(const string &query);
+  string executeQueryFile(const string &queryFilePath);
 
 private:
-  /* Config parameters */
-  std::shared_ptr<Config> config_;
+  shared_ptr<CatalogueEntry> getCatalogueEntry(const string &schemaName);
+  shared_ptr<PhysicalPlan> plan(const string &query, const shared_ptr<CatalogueEntry> &catalogueEntry);
+  pair<shared_ptr<TupleSet>, long> execute(const shared_ptr<PhysicalPlan> &physicalPlan);
 
-  std::shared_ptr<Interpreter> interpreter_;
+  // catalogue
+  shared_ptr<Catalogue> catalogue_;
 
-  void configureS3ConnectorSinglePartition(std::shared_ptr<Interpreter> &i, std::string bucket_name, const std::string& dir_prefix);
-  void configureS3ConnectorMultiPartition(std::shared_ptr<Interpreter> &i, std::string bucket_name, const std::string& dir_prefix);
-  std::shared_ptr<TupleSet> execute();
+  // AWS client
+  shared_ptr<AWSClient> awsClient_;
+
+  // calcite client
+  shared_ptr<CalciteClient> calciteClient_;
+
+  // config parameters
+  shared_ptr<ExecConfig> execConfig_;
+
+  // executor
+  shared_ptr<Executor> executor_;
 };
-
-std::vector<std::string> readAllRemoteIps();
 
 }
 

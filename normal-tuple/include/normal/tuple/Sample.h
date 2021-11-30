@@ -8,7 +8,7 @@
 #include <memory>
 #include <random>
 
-#include "TupleSet2.h"
+#include "TupleSet.h"
 
 namespace normal::tuple {
 
@@ -24,7 +24,7 @@ public:
    *
    * @return
    */
-  [[maybe_unused]] static std::shared_ptr<TupleSet2> sample3x3String();
+  [[maybe_unused]] static std::shared_ptr<TupleSet> sample3x3String();
 
   static std::shared_ptr<Column> sample3String();
 
@@ -37,27 +37,27 @@ public:
    * @param numRows
    * @return
    */
-  static std::shared_ptr<TupleSet2> sampleCxRString(int numCols, int numRows);
-  static std::shared_ptr<TupleSet2> sampleCxRRealString(int numCols, int numRows, std::uniform_real_distribution<double> dis = std::uniform_real_distribution(0.0, 9.0));
-  static std::shared_ptr<TupleSet2> sampleCxRIntString(int numCols, int numRows, std::uniform_int_distribution<int> dis = std::uniform_int_distribution(0, 9));
-  static std::shared_ptr<TupleSet2> sampleCxRString(int numCols, int numRows, const std::function<std::string()> &valueGenerator);
+  static std::shared_ptr<TupleSet> sampleCxRString(int numCols, int numRows);
+  static std::shared_ptr<TupleSet> sampleCxRRealString(int numCols, int numRows, std::uniform_real_distribution<double> dis = std::uniform_real_distribution(0.0, 9.0));
+  static std::shared_ptr<TupleSet> sampleCxRIntString(int numCols, int numRows, std::uniform_int_distribution<int> dis = std::uniform_int_distribution(0, 9));
+  static std::shared_ptr<TupleSet> sampleCxRString(int numCols, int numRows, const std::function<std::string()> &valueGenerator);
 
   template <typename CType, typename ArrowType>
-  static std::shared_ptr<TupleSet2> sampleCxRInt(int numCols, int numRows, std::uniform_int_distribution<int> dist = std::uniform_int_distribution(0, 9)) {
+  static std::shared_ptr<TupleSet> sampleCxRInt(int numCols, int numRows, std::uniform_int_distribution<int> dist = std::uniform_int_distribution(0, 9)) {
 	std::random_device rd;
 	std::mt19937 gen(rd());
 	return sampleCxR<CType, ArrowType>(numCols, numRows, [&]() -> auto { return dist(gen); });
   }
 
   template <typename CType, typename ArrowType>
-  [[maybe_unused]] static std::shared_ptr<TupleSet2> sampleCxRReal(int numCols, int numRows, std::uniform_real_distribution<double> dist = std::uniform_real_distribution(0.0, 9.0)) {
+  [[maybe_unused]] static std::shared_ptr<TupleSet> sampleCxRReal(int numCols, int numRows, std::uniform_real_distribution<double> dist = std::uniform_real_distribution(0.0, 9.0)) {
 	std::random_device rd;
 	std::mt19937 gen(rd());
 	return sampleCxR<CType, ArrowType>(numCols, numRows, [&]() -> auto { return dist(gen); });
   }
 
   template <typename CType, typename ArrowType>
-  static std::shared_ptr<TupleSet2> sampleCxR(int numCols, int numRows, const std::function<CType()> &valueGenerator) {
+  static std::shared_ptr<TupleSet> sampleCxR(int numCols, int numRows, const std::function<CType()> &valueGenerator) {
 
 	std::vector<std::vector<CType>> data;
 	for (int c = 0; c < numCols; ++c) {
@@ -76,7 +76,6 @@ public:
 	}
 
 	auto arrowSchema = arrow::schema(fields);
-	auto schema = Schema::make(arrowSchema);
 
 	std::vector<std::shared_ptr<::arrow::Array>> arrays;
 	arrays.reserve(numCols);
@@ -90,7 +89,7 @@ public:
 	  columns.emplace_back(normal::tuple::Column::make(fields[c]->name(), arrays[c]));
 	}
 
-	auto tupleSet = TupleSet2::make(schema, columns);
+	auto tupleSet = TupleSet::make(arrowSchema, columns);
 
 	return tupleSet;
   }

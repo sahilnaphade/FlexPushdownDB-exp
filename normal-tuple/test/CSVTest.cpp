@@ -39,7 +39,7 @@ std::shared_ptr<Schema> parseSchema(int64_t bufferSize) {
   return schema;
 }
 
-std::shared_ptr<TupleSet2> parseData(int64_t bufferSize,
+std::shared_ptr<TupleSet> parseData(int64_t bufferSize,
 									 int64_t startOffset = 0,
 									 std::optional<int64_t> finishOffset = std::nullopt) {
 
@@ -61,31 +61,31 @@ void checkSchemaAll(std::shared_ptr<Schema> &&schema) {
 	  CHECK_EQ(schema->fields()[2]->name(), "c");
 }
 
-void checkDataRow1(std::shared_ptr<TupleSet2> &tupleSet, int pos) {
-	  CHECK_EQ(tupleSet->getString("a", pos), "1");
-	  CHECK_EQ(tupleSet->getString("b", pos), "2");
-	  CHECK_EQ(tupleSet->getString("c", pos), "3");
+void checkDataRow1(std::shared_ptr<TupleSet> &tupleSet, int pos) {
+	  CHECK_EQ(tupleSet->stringValue("a", pos), "1");
+	  CHECK_EQ(tupleSet->stringValue("b", pos), "2");
+	  CHECK_EQ(tupleSet->stringValue("c", pos), "3");
 }
 
-void checkDataRow2(std::shared_ptr<TupleSet2> &tupleSet, int pos) {
-	  CHECK_EQ(tupleSet->getString("a", pos), "4");
-	  CHECK_EQ(tupleSet->getString("b", pos), "5");
-	  CHECK_EQ(tupleSet->getString("c", pos), "6");
+void checkDataRow2(std::shared_ptr<TupleSet> &tupleSet, int pos) {
+	  CHECK_EQ(tupleSet->stringValue("a", pos), "4");
+	  CHECK_EQ(tupleSet->stringValue("b", pos), "5");
+	  CHECK_EQ(tupleSet->stringValue("c", pos), "6");
 }
 
-void checkDataRow3(std::shared_ptr<TupleSet2> &tupleSet, int pos) {
-	  CHECK_EQ(tupleSet->getString("a", pos), "7");
-	  CHECK_EQ(tupleSet->getString("b", pos), "8");
-	  CHECK_EQ(tupleSet->getString("c", pos), "9");
+void checkDataRow3(std::shared_ptr<TupleSet> &tupleSet, int pos) {
+	  CHECK_EQ(tupleSet->stringValue("a", pos), "7");
+	  CHECK_EQ(tupleSet->stringValue("b", pos), "8");
+	  CHECK_EQ(tupleSet->stringValue("c", pos), "9");
 }
 
-void checkShape(std::shared_ptr<TupleSet2> &tupleSet, int cols, int rows) {
+void checkShape(std::shared_ptr<TupleSet> &tupleSet, int cols, int rows) {
 	  CHECK_EQ(tupleSet->numColumns(), cols);
 	  CHECK_EQ(tupleSet->numRows(), rows);
 }
 
-void checkAll(std::shared_ptr<TupleSet2> &&tupleSet) {
-  checkSchemaAll(tupleSet->schema().value());
+void checkAll(std::shared_ptr<TupleSet> &&tupleSet) {
+  checkSchemaAll(Schema::make(tupleSet->schema()));
   checkShape(tupleSet, 3, 3);
   checkDataRow1(tupleSet, 0);
   checkDataRow2(tupleSet, 1);

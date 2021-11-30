@@ -10,8 +10,7 @@
 using namespace normal::expression::gandiva;
 
 Or::Or(std::shared_ptr<Expression> left, std::shared_ptr<Expression> right)
-        : BinaryExpression(std::move(left), std::move(right)) {
-}
+        : BinaryExpression(std::move(left), std::move(right), OR) {}
 
 void Or::compile(std::shared_ptr<arrow::Schema> schema) {
 
@@ -30,6 +29,10 @@ void Or::compile(std::shared_ptr<arrow::Schema> schema) {
 
 std::string Or::alias() {
   return "(" + left_->alias() + " or " + right_->alias() + ")";
+}
+
+std::string Or::getTypeString() {
+  return "Or";
 }
 
 std::shared_ptr<Expression> normal::expression::gandiva::or_(const std::shared_ptr<Expression>& left,

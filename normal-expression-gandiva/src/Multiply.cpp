@@ -11,8 +11,7 @@
 using namespace normal::expression::gandiva;
 
 Multiply::Multiply(std::shared_ptr<Expression> left, std::shared_ptr<Expression> right)
-	: BinaryExpression(std::move(left), std::move(right)) {
-}
+	: BinaryExpression(std::move(left), std::move(right), MULTIPLY) {}
 
 void Multiply::compile(std::shared_ptr<arrow::Schema> schema) {
   left_->compile(schema);
@@ -27,6 +26,10 @@ void Multiply::compile(std::shared_ptr<arrow::Schema> schema) {
 
 std::string Multiply::alias() {
   return "?column?";
+}
+
+std::string Multiply::getTypeString() {
+  return "Multiply";
 }
 
 std::shared_ptr<Expression> normal::expression::gandiva::times(const std::shared_ptr<Expression>& left,

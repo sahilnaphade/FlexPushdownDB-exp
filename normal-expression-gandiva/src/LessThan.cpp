@@ -12,7 +12,7 @@
 using namespace normal::expression::gandiva;
 
 LessThan::LessThan(std::shared_ptr<Expression> Left, std::shared_ptr<Expression> Right)
-	: BinaryExpression(std::move(Left), std::move(Right)) {}
+	: BinaryExpression(std::move(Left), std::move(Right), LESS_THAN) {}
 
 void LessThan::compile(std::shared_ptr<arrow::Schema> Schema) {
 
@@ -33,6 +33,10 @@ void LessThan::compile(std::shared_ptr<arrow::Schema> Schema) {
 
 std::string LessThan::alias() {
   return genAliasForComparison("<");
+}
+
+std::string LessThan::getTypeString() {
+  return "LessThan";
 }
 
 std::shared_ptr<Expression> normal::expression::gandiva::lt(const std::shared_ptr<Expression>& Left, const std::shared_ptr<Expression>& Right) {

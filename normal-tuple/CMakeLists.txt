@@ -8,7 +8,6 @@ project(normal-tuple VERSION "${PROJECT_VERSION}" LANGUAGES C CXX)
 add_library(normal-tuple STATIC
         include/normal/tuple/Globals.h
         src/TupleSet.cpp include/normal/tuple/TupleSet.h
-        src/TupleSet2.cpp include/normal/tuple/TupleSet2.h
         src/Scalar.cpp include/normal/tuple/Scalar.h
         src/Column.cpp include/normal/tuple/Column.h
         src/Schema.cpp include/normal/tuple/Schema.h
@@ -35,7 +34,6 @@ add_library(normal-tuple STATIC
         src/TupleSetIndexFinderWrapper.cpp include/normal/tuple/TupleSetIndexFinderWrapper.h
         src/Converter.cpp include/normal/tuple/Converter.h
         src/parquet/ParquetReader.cpp include/normal/tuple/parquet/ParquetReader.h
-        src/Util.cpp include/normal/tuple/Util.h
         src/FileReader.cpp include/normal/tuple/FileReader.h
         src/FileType.cpp include/normal/tuple/FileType.h
         src/FileReaderBuilder.cpp include/normal/tuple/FileReaderBuilder.h
@@ -51,9 +49,9 @@ add_library(normal-tuple STATIC
 target_include_directories(normal-tuple PUBLIC include)
 
 
-target_link_libraries(normal-tuple PRIVATE spdlog::spdlog)
-target_link_libraries(normal-tuple PRIVATE fmt::fmt)
-target_link_libraries(normal-tuple PRIVATE LLVM-filesystem)
+target_link_libraries(normal-tuple PUBLIC spdlog::spdlog)
+target_link_libraries(normal-tuple PUBLIC fmt::fmt)
+target_link_libraries(normal-tuple PUBLIC LLVM-filesystem)
 target_link_libraries(normal-tuple PUBLIC expected)
 target_link_libraries(normal-tuple PUBLIC arrow_static)
 target_link_libraries(normal-tuple PUBLIC parquet_static)

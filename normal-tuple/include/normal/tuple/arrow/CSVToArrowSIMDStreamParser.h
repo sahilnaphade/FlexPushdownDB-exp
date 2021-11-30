@@ -10,7 +10,6 @@
 #include <immintrin.h>
 #include "normal/tuple/arrow/SIMDParserHelpers.h"
 #include "normal/tuple/TupleSet.h"
-#include "normal/tuple/TupleSet2.h"
 
 class CSVToArrowSIMDStreamParser {
 public:
@@ -29,7 +28,7 @@ public:
                                       char csvFileDelimiter);
   ~CSVToArrowSIMDStreamParser();
 
-  std::shared_ptr<normal::tuple::TupleSet2> constructTupleSet();
+  std::shared_ptr<normal::tuple::TupleSet> constructTupleSet();
 
 private:
 

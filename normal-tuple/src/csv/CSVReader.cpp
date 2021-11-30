@@ -16,7 +16,7 @@ tl::expected<std::shared_ptr<CSVReader>, std::string> CSVReader::make(const std:
   return std::make_shared<CSVReader>(absolutePath);
 }
 
-tl::expected<std::shared_ptr<TupleSet2>, std::string>
+tl::expected<std::shared_ptr<TupleSet>, std::string>
 CSVReader::read(const std::vector<std::string> &columnNames, unsigned long startPos, unsigned long finishPos) {
   CSVParser parser(path_, columnNames, startPos, finishPos);
   return parser.parse();

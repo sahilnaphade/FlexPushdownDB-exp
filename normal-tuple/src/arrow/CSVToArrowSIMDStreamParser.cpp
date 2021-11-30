@@ -286,11 +286,11 @@ void CSVToArrowSIMDStreamParser::initializeDataStructures(ParsedCSV & pcsv) {
   }
 }
 
-std::shared_ptr<normal::tuple::TupleSet2> CSVToArrowSIMDStreamParser::constructTupleSet() {
+std::shared_ptr<normal::tuple::TupleSet> CSVToArrowSIMDStreamParser::constructTupleSet() {
   uint64_t bytesReadFromFile = loadBuffer();
   if (bytesReadFromFile == 0) {
     // empty file, return empty TupleSet
-    return normal::tuple::TupleSet2::make2();
+    return normal::tuple::TupleSet::makeWithEmptyTable();
   }
   // #TODO The following allocation is taken from the source code and potentially more conservative than necessary
   //       Leaving it for now but can check if we can trim it down later
@@ -326,8 +326,7 @@ std::shared_ptr<normal::tuple::TupleSet2> CSVToArrowSIMDStreamParser::constructT
     arrays.emplace_back(result.ValueOrDie());
   }
   std::shared_ptr<arrow::Table> table = arrow::Table::Make(outputSchema_, arrays, rows);
-  auto tupleSetV1 = normal::tuple::TupleSet::make(table);
-  return normal::tuple::TupleSet2::create(tupleSetV1);
+  return normal::tuple::TupleSet::make(table);
 }
 
 #endif

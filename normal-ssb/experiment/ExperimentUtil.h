@@ -9,7 +9,7 @@
 #include <normal/pushdown/AWSClient.h>
 #include <fstream>
 #include <sstream>
-#include <normal/plan/mode/Mode.h>
+#include <normal/plan/Mode.h>
 #include <normal/cache/BeladyCachingPolicy.h>
 #include <filesystem>
 #include <normal/sql/Interpreter.h>

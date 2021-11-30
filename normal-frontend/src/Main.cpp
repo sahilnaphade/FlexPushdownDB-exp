@@ -2,18 +2,17 @@
 // Created by Yifei Yang on 2/9/21.
 //
 
-#include <normal/frontend/Global.h>
 #include <normal/frontend/Client.h>
 #include <normal/util/Util.h>
 
-#define CMD_BEGIN(isNewLine) { std::cout << "FlexPushdownDB> "; if(!isNewLine) std::cout << "  ";}
-#define RESULT(content) std::cout << content << std::endl;
-#define ERROR(content) std::cout << "[ERROR] " << content << std::endl;
+#define CMD_BEGIN(isNewLine) { std::cout << "FlexPushdownDB> "; if(!(isNewLine)) std::cout << "  ";}
+#define RESULT(content) std::cout << (content) << std::endl;
+#define ERROR(content) std::cout << "[ERROR] " << (content) << std::endl;
 
 using namespace normal::frontend;
 using namespace normal::util;
 
-std::string set(const std::string& command, const std::shared_ptr<Client>& client) {
+std::string setConfig(const std::string& command, const std::shared_ptr<Client>& client) {
   size_t whiteIndex = command.find(' ');
   std::string output;
   if (whiteIndex != std::string::npos) {
@@ -46,15 +45,15 @@ bool execute(const std::string& command, const std::shared_ptr<Client>& client) 
     auto word2 = command.substr(whiteIndex + 1);
     try {
       if (word1 == "file") {
-        auto content = client->executeSqlFile(word2);
+        auto content = client->executeQueryFile(word2);
         RESULT(content)
         return false;
       } else if (word1 == "sql") {
-        auto content = client->executeSql(word2 + ";");
+        auto content = client->executeQuery(word2 + ";");
         RESULT(content)
         return false;
       } else if (word1 == "set") {
-        RESULT(set(word2, client));
+        RESULT(setConfig(word2, client));
         return false;
       } else if (word1 == "local_ip") {
         RESULT(getLocalIp());
@@ -82,7 +81,7 @@ int main() {
   std::string line, appendLine;
   CMD_BEGIN(true)
   std::shared_ptr<Client> client = std::make_shared<Client>();
-  client->boot();
+  client->start();
 
   while (std::getline(std::cin, appendLine)) {
     if (line.length() > 0) {

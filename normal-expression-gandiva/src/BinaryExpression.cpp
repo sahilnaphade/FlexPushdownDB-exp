@@ -8,8 +8,12 @@
 
 using namespace normal::expression::gandiva;
 
-BinaryExpression::BinaryExpression(std::shared_ptr<Expression> left, std::shared_ptr<Expression> right)
-        : left_(std::move(left)), right_(std::move(right)) {}
+BinaryExpression::BinaryExpression(std::shared_ptr<Expression> left,
+                                   std::shared_ptr<Expression> right,
+                                   ExpressionType type) :
+  Expression(type),
+  left_(std::move(left)),
+  right_(std::move(right)) {}
 
 const std::shared_ptr<Expression> &BinaryExpression::getLeft() const {
   return left_;
@@ -17,14 +21,6 @@ const std::shared_ptr<Expression> &BinaryExpression::getLeft() const {
 
 const std::shared_ptr<Expression> &BinaryExpression::getRight() const {
   return right_;
-}
-
-void BinaryExpression::compile(std::shared_ptr<arrow::Schema> schema) {
-
-}
-
-std::string BinaryExpression::alias() {
-  return std::string();
 }
 
 std::string BinaryExpression::genAliasForComparison(const std::string& compOp) {
@@ -49,10 +45,10 @@ std::string BinaryExpression::genAliasForComparison(const std::string& compOp) {
   }
 }
 
-std::shared_ptr<std::vector<std::string> > BinaryExpression::involvedColumnNames() {
+std::set<std::string> BinaryExpression::involvedColumnNames() {
   auto leftInvolvedColumnNames = getLeft()->involvedColumnNames();
   auto rightInvolvedColumnNames = getRight()->involvedColumnNames();
-  leftInvolvedColumnNames->insert(leftInvolvedColumnNames->end(), rightInvolvedColumnNames->begin(), rightInvolvedColumnNames->end());
+  leftInvolvedColumnNames.insert(rightInvolvedColumnNames.begin(), rightInvolvedColumnNames.end());
   return leftInvolvedColumnNames;
 }
 

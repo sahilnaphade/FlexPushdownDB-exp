@@ -12,7 +12,7 @@
 using namespace normal::expression::gandiva;
 
 GreaterThan::GreaterThan(std::shared_ptr<Expression> Left, std::shared_ptr<Expression> Right)
-  : BinaryExpression(std::move(Left), std::move(Right)) {}
+  : BinaryExpression(std::move(Left), std::move(Right), GREATER_THAN) {}
 
 void GreaterThan::compile(std::shared_ptr<arrow::Schema> schema) {
 
@@ -33,6 +33,10 @@ void GreaterThan::compile(std::shared_ptr<arrow::Schema> schema) {
 
 std::string normal::expression::gandiva::GreaterThan::alias() {
   return genAliasForComparison(">");
+}
+
+std::string GreaterThan::getTypeString() {
+  return "GreaterThan";
 }
 
 std::shared_ptr<Expression> normal::expression::gandiva::gt(const std::shared_ptr<Expression>& Left, const std::shared_ptr<Expression>& Right) {

@@ -7,22 +7,16 @@
 
 #include <doctest/doctest.h>
 
-#include <normal/core/type/DecimalType.h>
 #include <normal/expression/gandiva/Column.h>
-#include <normal/core/type/Float64Type.h>
 #include <normal/expression/gandiva/Cast.h>
 #include <normal/expression/gandiva/Multiply.h>
-#include <normal/expression/Projector.h>
 #include <normal/expression/gandiva/Projector.h>
-#include <normal/tuple/TupleSet2.h>
-#include <normal/core/type/Integer32Type.h>
-#include <normal/core/type/Integer64Type.h>
+#include <normal/tuple/TupleSet.h>
 
 #include "Globals.h"
 #include "TestUtil.h"
 
 using namespace normal::tuple;
-using namespace normal::core::type;
 using namespace normal::expression::gandiva;
 using namespace normal::expression::gandiva::test;
 
@@ -32,23 +26,21 @@ TEST_SUITE ("multiply" * doctest::skip(SKIP_SUITE)) {
 
 TEST_CASE ("simple" * doctest::skip(false || SKIP_SUITE)) {
 
-  auto tuples = TestUtil::prepareTupleSet();
-  auto inputTupleSet = normal::tuple::TupleSet2::create(tuples);
+  auto inputTupleSet = TestUtil::prepareTupleSet();
 
   SPDLOG_DEBUG("Input:\n{}", inputTupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 
   auto expressions = std::vector<std::shared_ptr<normal::expression::gandiva::Expression>>{
-	  times(cast(col("a"), float64Type()),
-			cast(col("b"), float64Type()))
+	  times(cast(col("a"), arrow::float64()),
+			cast(col("b"), arrow::float64()))
   };
 
   auto projector = std::make_shared<Projector>(expressions);
-  projector->compile(tuples->table()->schema());
+  projector->compile(inputTupleSet->schema());
 
   SPDLOG_DEBUG("Projector:\n{}", projector->showString());
 
-  auto evaluated = projector->evaluate(*tuples);
-  auto evaluatedTupleSet = normal::tuple::TupleSet2::create(evaluated);
+  auto evaluatedTupleSet = projector->evaluate(*inputTupleSet);
   SPDLOG_DEBUG("Output:\n{}", evaluatedTupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 
 	  CHECK_EQ(evaluatedTupleSet->numColumns(), 1);
@@ -62,39 +54,36 @@ TEST_CASE ("simple" * doctest::skip(false || SKIP_SUITE)) {
 
 TEST_CASE ("empty" * doctest::skip(false || SKIP_SUITE)) {
 
-  auto tuples = TestUtil::prepareEmptyTupleSet();
-  auto inputTupleSet = normal::tuple::TupleSet2::create(tuples);
+  auto inputTupleSet = TestUtil::prepareEmptyTupleSet();
 
   SPDLOG_DEBUG("Input:\n{}", inputTupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 
   auto expressions = std::vector<std::shared_ptr<normal::expression::gandiva::Expression>>{
-	  times(cast(col("a"), float64Type()),
-			cast(col("b"), float64Type()))
+	  times(cast(col("a"), arrow::float64()),
+			cast(col("b"), arrow::float64()))
   };
 
   auto projector = std::make_shared<Projector>(expressions);
-  CHECK_THROWS(projector->compile(tuples->table()->schema()));
+  CHECK_THROWS(projector->compile(inputTupleSet->schema()));
 }
 
 TEST_CASE ("0-rows" * doctest::skip(false || SKIP_SUITE)) {
 
-  auto tuples = TestUtil::prepare3x0TupleSet();
-  auto inputTupleSet = normal::tuple::TupleSet2::create(tuples);
+  auto inputTupleSet = TestUtil::prepare3x0TupleSet();
 
   SPDLOG_DEBUG("Input:\n{}", inputTupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 
   auto expressions = std::vector<std::shared_ptr<normal::expression::gandiva::Expression>>{
-	  times(cast(col("a"), float64Type()),
-			cast(col("b"), float64Type()))
+	  times(cast(col("a"), arrow::float64()),
+			cast(col("b"), arrow::float64()))
   };
 
   auto projector = std::make_shared<Projector>(expressions);
-  projector->compile(tuples->table()->schema());
+  projector->compile(inputTupleSet->schema());
 
   SPDLOG_DEBUG("Projector:\n{}", projector->showString());
 
-  auto evaluated = projector->evaluate(*tuples);
-  auto evaluatedTupleSet = normal::tuple::TupleSet2::create(evaluated);
+  auto evaluatedTupleSet = projector->evaluate(*inputTupleSet);
   SPDLOG_DEBUG("Output:\n{}", evaluatedTupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 
 	  CHECK_EQ(evaluatedTupleSet->numColumns(), 1);

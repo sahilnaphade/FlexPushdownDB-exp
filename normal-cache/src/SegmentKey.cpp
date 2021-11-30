@@ -2,8 +2,7 @@
 // Created by matt on 19/5/20.
 //
 
-#include "normal/cache/SegmentKey.h"
-
+#include <normal/cache/SegmentKey.h>
 #include <fmt/format.h>
 
 using namespace normal::cache;

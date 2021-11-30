@@ -18,11 +18,11 @@ std::shared_ptr<Filter> Filter::make(const std::shared_ptr<Expression> &Pred) {
   return std::make_shared<Filter>(Pred);
 }
 
-std::shared_ptr<normal::tuple::TupleSet2> Filter::evaluate(const normal::tuple::TupleSet2 &tupleSet) {
-  if (tupleSet.schema().has_value()) {
+std::shared_ptr<normal::tuple::TupleSet> Filter::evaluate(const normal::tuple::TupleSet &tupleSet) {
+  if (tupleSet.valid()) {
 
-	auto filteredTupleSet = normal::tuple::TupleSet2::make(tupleSet.schema().value());
-	auto arrowTable = tupleSet.getArrowTable().value();
+	auto filteredTupleSet = normal::tuple::TupleSet::make(tupleSet.schema());
+	auto arrowTable = tupleSet.table();
 
 	assert(arrowTable->ValidateFull().ok());
 
@@ -76,7 +76,7 @@ std::shared_ptr<normal::tuple::TupleSet2> Filter::evaluate(const normal::tuple::
 		batchArrowTable = ::arrow::Table::Make(batch->schema(), arrowArrays);
 	  }
 
-	  auto batchTupleSet = std::make_shared<normal::tuple::TupleSet2>(batchArrowTable);
+	  auto batchTupleSet = std::make_shared<normal::tuple::TupleSet>(batchArrowTable);
 
 	  SPDLOG_DEBUG("Filtered batch:\n{}",
 				   batchTupleSet->showString(normal::tuple::TupleSetShowOptions(normal::tuple::TupleSetShowOrientation::RowOriented)));

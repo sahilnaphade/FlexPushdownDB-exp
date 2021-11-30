@@ -10,8 +10,7 @@
 using namespace normal::expression::gandiva;
 
 Divide::Divide(std::shared_ptr<Expression> left, std::shared_ptr<Expression> right)
-	: BinaryExpression(std::move(left), std::move(right)) {
-}
+	: BinaryExpression(std::move(left), std::move(right), DIVIDE) {}
 
 void Divide::compile(std::shared_ptr<arrow::Schema> schema ) {
   left_->compile(schema);
@@ -27,6 +26,10 @@ void Divide::compile(std::shared_ptr<arrow::Schema> schema ) {
 
 std::string Divide::alias() {
   return "?column?";
+}
+
+std::string Divide::getTypeString() {
+  return "Divide";
 }
 
 std::shared_ptr<Expression> normal::expression::gandiva::divide(const std::shared_ptr<Expression>& left,

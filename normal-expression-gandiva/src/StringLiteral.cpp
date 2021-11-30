@@ -8,7 +8,9 @@
 
 using namespace normal::expression::gandiva;
 
-StringLiteral::StringLiteral(std::string value) : value_(std::move(value)) {}
+StringLiteral::StringLiteral(std::string value) :
+  Expression(STRING_LITERAL),
+  value_(std::move(value)) {}
 
 void StringLiteral::compile(std::shared_ptr<arrow::Schema>){
   auto literal = ::gandiva::TreeExprBuilder::MakeStringLiteral(value_);
@@ -21,12 +23,16 @@ std::string StringLiteral::alias(){
   return "\'" + value_ + "\'";
 }
 
-std::shared_ptr<std::vector<std::string> > StringLiteral::involvedColumnNames() {
-  return std::make_shared<std::vector<std::string>>();
+std::set<std::string> StringLiteral::involvedColumnNames() {
+  return std::set<std::string>();
 }
 
 const std::string &StringLiteral::value() const {
   return value_;
+}
+
+std::string StringLiteral::getTypeString() {
+  return "StringLiteral";
 }
 
 std::shared_ptr<Expression> normal::expression::gandiva::str_lit(std::string value){

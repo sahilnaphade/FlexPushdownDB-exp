@@ -10,8 +10,9 @@
 
 using namespace normal::expression::gandiva;
 
-Column::Column(std::string columnName): columnName_(std::move(columnName)) {
-}
+Column::Column(std::string columnName):
+  Expression(COLUMN),
+  columnName_(std::move(columnName)) {}
 
 void Column::compile(std::shared_ptr<arrow::Schema> schema) {
   auto field = schema->GetFieldByName(columnName_);
@@ -31,10 +32,14 @@ const std::string &Column::getColumnName() const {
   return columnName_;
 }
 
-std::shared_ptr<std::vector<std::string> > Column::involvedColumnNames() {
-  auto involvedColumnNames = std::make_shared<std::vector<std::string>>();
-  involvedColumnNames->emplace_back(columnName_);
+std::set<std::string> Column::involvedColumnNames() {
+  std::set<std::string> involvedColumnNames;
+  involvedColumnNames.insert(columnName_);
   return involvedColumnNames;
+}
+
+std::string Column::getTypeString() {
+  return "Column";
 }
 
 std::shared_ptr<Expression> normal::expression::gandiva::col(const std::string& columnName) {

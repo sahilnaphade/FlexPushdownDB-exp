@@ -3,6 +3,7 @@
 //
 
 #include <normal/util/Util.h>
+#include <fmt/format.h>
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
@@ -16,9 +17,12 @@
 
 using namespace normal::util;
 
-std::string normal::util::readFile(const std::string& filePath) {
-  std::ifstream inFile(filePath);
-  std::ostringstream buf;
+string normal::util::readFile(const string& filePath) {
+  ifstream inFile(filePath);
+  if (!inFile.good()) {
+    throw runtime_error(fmt::format("File not exists: {}", filePath));
+  }
+  ostringstream buf;
   char ch;
   while (buf && inFile.get(ch)) {
     buf.put(ch);
@@ -26,26 +30,30 @@ std::string normal::util::readFile(const std::string& filePath) {
   return buf.str();
 }
 
-std::vector<std::string> normal::util::readFileByLine(const std::string &filePath) {
-  std::ifstream inFile(filePath);
-  std::vector<std::string> lines;
-  std::string line;
-  while (std::getline(inFile, line)) {
+vector<string> normal::util::readFileByLine(const string &filePath) {
+  ifstream inFile(filePath);
+  if (!inFile.good()) {
+    throw runtime_error(fmt::format("File not exists: {}", filePath));
+  }
+  vector<string> lines;
+  string line;
+  while (getline(inFile, line)) {
     lines.emplace_back(line);
   }
   return lines;
 }
 
-std::unordered_map<std::string, std::string> normal::util::readConfig() {
-  std::unordered_map<std::string, std::string> configMap;
-  std::string configPath = std::filesystem::current_path()
+unordered_map<string, string> normal::util::readConfig(const string &fileName) {
+  unordered_map<string, string> configMap;
+  string configPath = filesystem::current_path()
           .parent_path()
-          .append("resources/config/exec.conf")
+          .append("resources/config")
+          .append(fileName)
           .string();
-  std::vector<std::string> lines = readFileByLine(configPath);
+  vector<string> lines = readFileByLine(configPath);
   for(auto const &line: lines) {
     auto pos = line.find('=');
-    if (pos == std::string::npos) {
+    if (pos == string::npos) {
       continue;
     }
     auto key = line.substr(0, pos);
@@ -55,23 +63,31 @@ std::unordered_map<std::string, std::string> normal::util::readConfig() {
   return configMap;
 }
 
-bool normal::util::isInteger(const std::string& str) {
+bool normal::util::parseBool(const string& stringToParse) {
+  if (stringToParse == "TRUE") {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+bool normal::util::isInteger(const string& str) {
   try {
-    int parsedInt = std::stoi(str);
-  } catch (const std::logic_error& err) {
+    int parsedInt = stoi(str);
+  } catch (const logic_error& err) {
     return false;
   }
   return true;
 }
 
-std::string normal::util::getLocalIp() {
+string normal::util::getLocalIp() {
   char hostBuffer[256];
   int hostName = gethostname(hostBuffer, sizeof(hostBuffer));
   struct hostent *host_entry = gethostbyname(hostBuffer);
-  if (host_entry == NULL) {
-    std::cerr << "Cannot get local ip" << std::endl;
+  if (host_entry == nullptr) {
+    cerr << "Cannot get local ip" << endl;
     return "";
   }
   char *IPBuffer = inet_ntoa(*((struct in_addr*)host_entry->h_addr_list[0]));
-  return std::string(IPBuffer);
+  return string(IPBuffer);
 }

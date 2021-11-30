@@ -144,10 +144,15 @@ std::shared_ptr<TupleSet> Projector::evaluate(const TupleSet &tupleSet) {
 	  auto batchResultTuples = TupleSet::make(getResultSchema(), outputs);
 
 	  // Concatenate the batch result to the full results
-	  if (resultTupleSet)
-		resultTupleSet = normal::tuple::TupleSet::concatenate(batchResultTuples, resultTupleSet);
+	  if (resultTupleSet) {
+      const auto &expResultTupleSet = normal::tuple::TupleSet::concatenate({batchResultTuples, resultTupleSet});
+      if (!expResultTupleSet.has_value()) {
+        throw std::runtime_error(expResultTupleSet.error());
+      }
+      resultTupleSet = expResultTupleSet.value();
+    }
 	  else
-		resultTupleSet = batchResultTuples;
+		  resultTupleSet = batchResultTuples;
 
 	  res = reader.ReadNext(&batch);
 

@@ -111,7 +111,7 @@ tl::expected<std::shared_ptr<::arrow::Buffer>, std::string> CSVParser::advanceTo
   return blockBuffer;
 }
 
-tl::expected<std::shared_ptr<TupleSet2>, std::string> CSVParser::parse() {
+tl::expected<std::shared_ptr<TupleSet>, std::string> CSVParser::parse() {
 
   ::arrow::Status status;
 
@@ -232,7 +232,7 @@ tl::expected<std::shared_ptr<TupleSet2>, std::string> CSVParser::parse() {
   if (!expectedArrays.has_value())
 	return tl::unexpected(expectedArrays.error());
 
-  auto tupleSet = TupleSet2::make(destinationSchema, expectedArrays.value());
+  auto tupleSet = TupleSet::make(destinationSchema, expectedArrays.value());
 
   status = this->inputStream_.value()->Close();
   if(!status.ok())

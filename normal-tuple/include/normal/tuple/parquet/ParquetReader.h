@@ -13,7 +13,7 @@
 #include <parquet/arrow/reader.h>
 
 #include <normal/tuple/FileReader.h>
-#include <normal/tuple/TupleSet2.h>
+#include <normal/tuple/TupleSet.h>
 
 namespace normal::tuple {
 
@@ -26,7 +26,7 @@ public:
   static tl::expected<std::shared_ptr<ParquetReader>, std::string> make(const std::string &Path);
 
   tl::expected<void, std::string> close();
-  [[nodiscard]] tl::expected<std::shared_ptr<TupleSet2>, std::string>
+  [[nodiscard]] tl::expected<std::shared_ptr<TupleSet>, std::string>
   read(const std::vector<std::string> &columnNames, unsigned long startPos, unsigned long finishPos) override;
 
 private:

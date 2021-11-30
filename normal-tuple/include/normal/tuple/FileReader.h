@@ -9,7 +9,7 @@
 
 #include <tl/expected.hpp>
 
-#include "TupleSet2.h"
+#include "TupleSet.h"
 
 namespace normal::tuple {
 
@@ -18,7 +18,7 @@ public:
 
   virtual ~FileReader() = default;
 
-  virtual tl::expected<std::shared_ptr<TupleSet2>, std::string>
+  virtual tl::expected<std::shared_ptr<TupleSet>, std::string>
   read(const std::vector<std::string> &columnNames, unsigned long startPos, unsigned long finishPos) = 0;
 
 };

@@ -6,7 +6,6 @@
 
 #include <normal/tuple/arrow/Arrays.h>
 #include <normal/tuple/TupleSet.h>
-#include <normal/tuple/TupleSet2.h>
 
 using namespace normal::tuple;
 

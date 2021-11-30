@@ -6,7 +6,7 @@
 #define NORMAL_NORMAL_SSB_EXPERIMENT_MATHMODELTEST_H
 
 #include <iostream>
-#include <normal/plan/mode/Mode.h>
+#include <normal/plan/Mode.h>
 #include <vector>
 #include <map>
 
