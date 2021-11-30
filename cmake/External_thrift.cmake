@@ -38,7 +38,7 @@ ExternalProject_Add(${THRIFT_BASE}
         -DCMAKE_INSTALL_MESSAGE=NEVER
         -DCMAKE_INSTALL_PREFIX=${THRIFT_INSTALL_DIR}
         )
-
+add_dependencies(${THRIFT_BASE} ${BOOST_BASE})
 
 file(MAKE_DIRECTORY ${THRIFT_INCLUDE_DIR}) # Include directory needs to exist to run configure step
 

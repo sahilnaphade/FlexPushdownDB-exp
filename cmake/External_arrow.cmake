@@ -1,6 +1,6 @@
 # Arrow
-set(ARROW_VERSION "release-4.0.0")
-set(ARROW_GIT_URL "https://github.com/Yifei-yang7/arrow.git")
+set(ARROW_VERSION "apache-arrow-5.0.0")
+set(ARROW_GIT_URL "https://github.com/apache/arrow.git")
 
 
 include(ExternalProject)
@@ -8,6 +8,9 @@ find_package(Git REQUIRED)
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
+if (${APPLE})
+  set(OPENSSL_ROOT_DIR /usr/local/opt/openssl)
+endif()
 find_package(OpenSSL REQUIRED)
 
 set(ARROW_BASE arrow_ep)
@@ -169,7 +172,7 @@ target_link_libraries(arrow_shared INTERFACE pthread)
 target_link_libraries(arrow_shared INTERFACE z)
 add_dependencies(arrow_shared ${ARROW_BASE})
 
-# Gandiva needs LLVM version 7 or 7.1
+# Gandiva needs LLVM
 find_package(LLVM)
 
 add_library(gandiva_static STATIC IMPORTED)

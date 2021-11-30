@@ -56,15 +56,6 @@ target_link_libraries(normal-tuple PUBLIC expected)
 target_link_libraries(normal-tuple PUBLIC arrow_static)
 target_link_libraries(normal-tuple PUBLIC parquet_static)
 target_link_libraries(normal-tuple PUBLIC deflate)
-
-
-## Ideally use cloudflare instead of z-ng, however don't have CMake working yet
-## Follow download instructions here: https://github.com/zlib-ng/zlib-ng to get linking working
-#target_link_libraries(normal-tuple PUBLIC z-ng)
-## need to include zlib-ng library on mac
-#if (${APPLE})
-#  target_include_directories(normal-tuple PUBLIC /usr/local/include)
-#endif()
 target_link_libraries(normal-tuple PUBLIC zlibstatic)
 
 
