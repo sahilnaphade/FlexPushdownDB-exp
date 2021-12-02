@@ -95,7 +95,11 @@ shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeExpression(const 
     } else if (type == "DECIMAL") {
       const double value = literalJObj["value"].get<double>();
       return num_lit<arrow::DoubleType>(value);
-    } else {
+    } else if (type == "DATE" || type == "INTERVAL_DAY_TIME") {
+      const long value = literalJObj["value"].get<long>();
+      return num_lit<arrow::Date64Type>(value);
+    }
+    else {
       throw runtime_error(fmt::format("Unsupported literal type, {}, from: {}", type, to_string(literalJObj)));
     }
   }
@@ -217,32 +221,42 @@ shared_ptr<PrePhysicalOp> CalcitePlanJsonDeserializer::deserializeAggregateOrGro
     AggregatePrePFunctionType aggFunctionType;
     if (aggFunctionStr == "SUM0" || aggFunctionStr == "SUM") {
       aggFunctionType = SUM;
+    } else if (aggFunctionStr == "MIN") {
+      aggFunctionType = MIN;
+    } else if (aggFunctionStr == "MAX") {
+      aggFunctionType = MAX;
+    } else if (aggFunctionStr == "AVG") {
+      aggFunctionType = AVG;
+    } else if (aggFunctionStr == "COUNT") {
+      aggFunctionType = COUNT;
     } else {
       throw runtime_error(fmt::format("Unsupported aggregation function type, {}, from: {}",
                                       aggFunctionStr, to_string(aggregationJObj)));
     }
 
-    // aggregate expr
+    // aggregate expr if any (count may not have)
     shared_ptr<Expression> aggFieldExpr;
-    const string &aggInputColumnName = ColumnName::canonicalize(aggregationJObj["aggInputField"].get<string>());
-    if (aggInputColumnName.substr(0, 2) == "$f") {
-      // it's not just a column, need to get it from the input Project op
-      auto inputProjectJObj = jObj["inputs"].get<vector<json>>()[0];
-      size_t aggInputProjectFieldId = stoul(aggInputColumnName.substr(2, aggInputColumnName.length() - 2));
-      auto aggFieldExprJObj = inputProjectJObj["fields"].get<vector<json>>()[aggInputProjectFieldId];
-      aggFieldExpr = deserializeExpression(aggFieldExprJObj);
+    if (aggregationJObj.contains("aggInputField")) {
+      const string &aggInputColumnName = ColumnName::canonicalize(aggregationJObj["aggInputField"].get<string>());
+      if (aggInputColumnName.substr(0, 2) == "$f") {
+        // it's not just a column, need to get it from the input Project op
+        auto inputProjectJObj = jObj["inputs"].get<vector<json>>()[0];
+        size_t aggInputProjectFieldId = stoul(aggInputColumnName.substr(2, aggInputColumnName.length() - 2));
+        auto aggFieldExprJObj = inputProjectJObj["fields"].get<vector<json>>()[aggInputProjectFieldId];
+        aggFieldExpr = deserializeExpression(aggFieldExprJObj);
 
-      // need to let the input Project op know the expr has been consumed
-      json consumedProjectFieldIdJArr;
-      if (inputProjectJObj.contains("consumedFieldsId")) {
-        consumedProjectFieldIdJArr = inputProjectJObj["consumedFieldsId"].get<vector<size_t>>();
+        // need to let the input Project op know the expr has been consumed
+        json consumedProjectFieldIdJArr;
+        if (inputProjectJObj.contains("consumedFieldsId")) {
+          consumedProjectFieldIdJArr = inputProjectJObj["consumedFieldsId"].get<vector<size_t>>();
+        }
+        consumedProjectFieldIdJArr.emplace_back(aggInputProjectFieldId);
+        inputProjectJObj["consumedFieldsId"] = consumedProjectFieldIdJArr;
+        jObj["inputs"] = vector<json>{inputProjectJObj};
+      } else {
+        // it's just a column
+        aggFieldExpr = col(aggInputColumnName);
       }
-      consumedProjectFieldIdJArr.emplace_back(aggInputProjectFieldId);
-      inputProjectJObj["consumedFieldsId"] = consumedProjectFieldIdJArr;
-      jObj["inputs"] = vector<json>{inputProjectJObj};
-    } else {
-      // it's just a column
-      aggFieldExpr = col(aggInputColumnName);
     }
 
     // make the aggregate function

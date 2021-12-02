@@ -30,4 +30,12 @@ string AggregatePrePFunction::getTypeString() const {
   }
 }
 
+set<string> AggregatePrePFunction::involvedColumnNames() const {
+  if (expression_) {
+    return expression_->involvedColumnNames();
+  } else {
+    return set<string>();
+  }
+}
+
 }

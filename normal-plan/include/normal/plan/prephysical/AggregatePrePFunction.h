@@ -25,6 +25,8 @@ public:
   AggregatePrePFunctionType getType() const;
   const shared_ptr<expression::gandiva::Expression> &getExpression() const;
   string getTypeString() const;
+  set<string> involvedColumnNames() const;
+
 
 private:
   AggregatePrePFunctionType type_;

@@ -6,30 +6,13 @@
 #define NORMAL_NORMAL_EXPRESSION_GANDIVA_INCLUDE_NORMAL_EXPRESSION_GANDIVA_EXPRESSION_H
 
 #include <normal/expression/Expression.h>
+#include <normal/expression/gandiva/ExpressionType.h>
 #include <arrow/type.h>
 #include <gandiva/node.h>
 #include <memory>
 #include <set>
 
 namespace normal::expression::gandiva {
-
-enum ExpressionType {
-  ADD,
-  MULTIPLY,
-  SUBTRACT,
-  DIVIDE,
-  AND,
-  OR,
-  CAST,
-  COLUMN,
-  EQUAL_TO,
-  GREATER_THAN,
-  GREATER_THAN_OR_EQUAL_TO,
-  LESS_THAN,
-  LESS_THAN_OR_EQUAL_TO,
-  NUMERIC_LITERAL,
-  STRING_LITERAL
-};
 
 class Expression : public normal::expression::Expression {
 

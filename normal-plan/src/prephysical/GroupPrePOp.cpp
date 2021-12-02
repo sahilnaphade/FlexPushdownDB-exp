@@ -21,7 +21,7 @@ string GroupPrePOp::getTypeString() {
 set<string> GroupPrePOp::getUsedColumnNames() {
   set<string> usedColumnNames(groupColumnNames_.begin(), groupColumnNames_.end());
   for (const auto &function: functions_) {
-    const auto involvedColumnNames = function->getExpression()->involvedColumnNames();
+    const auto involvedColumnNames = function->involvedColumnNames();
     usedColumnNames.insert(involvedColumnNames.begin(), involvedColumnNames.end());
   }
   return usedColumnNames;

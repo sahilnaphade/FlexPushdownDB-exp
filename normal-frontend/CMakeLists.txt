@@ -65,8 +65,10 @@ endif()
 
 add_executable(normal-frontend-test
         test/Globals.h
+        test/TestUtil.cpp test/TestUtil.h
         test/MainTest.cpp
-        test/SSBTest.cpp test/TestUtil.cpp test/TestUtil.h)
+        test/SSBTest.cpp
+        test/TPCHTest.cpp)
 
 target_link_libraries(normal-frontend-test PRIVATE normal-calcite)
 target_link_libraries(normal-frontend-test PRIVATE normal-plan)

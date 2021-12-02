@@ -27,7 +27,7 @@ string AggregatePrePOp::getTypeString() {
 set<string> AggregatePrePOp::getUsedColumnNames() {
   set<string> usedColumnNames;
   for (const auto &function: functions_) {
-    const auto involvedColumnNames = function->getExpression()->involvedColumnNames();
+    const auto involvedColumnNames = function->involvedColumnNames();
     usedColumnNames.insert(involvedColumnNames.begin(), involvedColumnNames.end());
   }
   return usedColumnNames;

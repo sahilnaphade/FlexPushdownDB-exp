@@ -75,10 +75,14 @@ public class SchemaReader {
         return SqlTypeName.INTEGER;
       case "int64":
         return SqlTypeName.BIGINT;
+      case "double":
+        return SqlTypeName.DOUBLE;
       case "string":
         return SqlTypeName.VARCHAR;
       case "boolean":
         return SqlTypeName.BOOLEAN;
+      case "date":
+        return SqlTypeName.DATE;
       default:
         throw new UnsupportedOperationException("Unsupported field type: " + typeString);
     }

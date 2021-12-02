@@ -27,7 +27,7 @@ add_library(normal-expression-gandiva STATIC
         src/StringLiteral.cpp include/normal/expression/gandiva/StringLiteral.h
         src/BinaryExpression.cpp include/normal/expression/gandiva/BinaryExpression.h
         src/Canonicalizer.cpp include/normal/expression/gandiva/Canonicalizer.h
-        src/Util.cpp include/normal/expression/gandiva/Util.h)
+        src/Util.cpp include/normal/expression/gandiva/Util.h include/normal/expression/gandiva/ExpressionType.h)
 
 target_include_directories(normal-expression-gandiva PUBLIC include)
 

@@ -227,6 +227,8 @@ shared_ptr<arrow::DataType> S3CatalogueEntryReader::strToDataType(const string &
     return arrow::utf8();
   } else if (str == "boolean" || str == "bool") {
     return arrow::boolean();
+  } else if (str == "date") {
+    return arrow::date64();
   } else {
     throw runtime_error(fmt::format("Unsupported data type: {}", str));
   }

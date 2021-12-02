@@ -5,7 +5,9 @@ import com.google.common.collect.Range;
 import jdk.nashorn.internal.runtime.regexp.joni.ast.StringNode;
 import org.apache.calcite.rex.*;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.util.DateString;
 import org.apache.calcite.util.NlsString;
 import org.apache.calcite.util.Sarg;
 import org.json.JSONArray;
@@ -75,23 +77,36 @@ public class RexJsonSerializer {
       public JSONObject visitLiteral(RexLiteral literal) {
         JSONObject literalJObj = new JSONObject();
         SqlTypeName basicTypeName = literal.getType().getSqlTypeName();
-        literalJObj.put("type", basicTypeName);
 
         switch (basicTypeName) {
           case VARCHAR: {
+            literalJObj.put("type", basicTypeName);
             literalJObj.put("value", literal.getValueAs(String.class));
             break;
           }
           case INTEGER: {
+            literalJObj.put("type", basicTypeName);
             literalJObj.put("value", literal.getValueAs(Integer.class));
             break;
           }
           case BIGINT: {
+            literalJObj.put("type", basicTypeName);
             literalJObj.put("value", literal.getValueAs(Long.class));
             break;
           }
           case DECIMAL: {
+            literalJObj.put("type", basicTypeName);
             literalJObj.put("value", literal.getValueAs(Double.class));
+            break;
+          }
+          case DATE: {
+            literalJObj.put("type", basicTypeName);
+            literalJObj.put("value", Objects.requireNonNull(literal.getValueAs(DateString.class)).getMillisSinceEpoch());
+            break;
+          }
+          case INTERVAL_DAY: {
+            literalJObj.put("type", SqlTypeFamily.INTERVAL_DAY_TIME);
+            literalJObj.put("value", literal.getValueAs(Long.class));
             break;
           }
           default:

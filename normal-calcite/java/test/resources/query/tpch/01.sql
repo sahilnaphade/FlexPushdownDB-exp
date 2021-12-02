@@ -1,5 +1,3 @@
--- using 1395599672 as a seed to the RNG
-
 select
   l_returnflag,
   l_linestatus,
@@ -12,13 +10,12 @@ select
   avg(l_discount) as avg_disc,
   count(*) as count_order
 from
-  cp."tpch/lineitem.parquet"
+  lineitem
 where
-  l_shipdate <= date '1998-12-01' - interval '120' day (3)
+  l_shipdate <= date '1998-12-01' - interval '1200' day (4)
 group by
   l_returnflag,
   l_linestatus
-
 order by
   l_returnflag,
-  l_linestatus;
+  l_linestatus
