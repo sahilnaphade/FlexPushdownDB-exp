@@ -6,7 +6,8 @@
 #define NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_GROUP_GROUPKERNEL2_H
 
 #include <normal/executor/physical/group/GroupKey2.h>
-#include <normal/executor/physical/aggregate/AggregationFunction.h>
+#include <normal/executor/physical/aggregate/function/AggregateFunction.h>
+#include <normal/executor/physical/aggregate/AggregateResult.h>
 #include <normal/tuple/TupleSet.h>
 #include <normal/tuple/ArrayAppender.h>
 #include <vector>
@@ -20,28 +21,37 @@ using namespace normal::expression;
 
 namespace normal::executor::physical::group {
 
-using ArrayAppenderVector = std::vector<std::shared_ptr<ArrayAppender>>;
+using ArrayAppenderVector = vector<shared_ptr<ArrayAppender>>;
 
-using GroupArrayAppenderVectorMap = std::unordered_map<std::shared_ptr<GroupKey2>,
+/**
+ * Appender map for one incoming tupleSet
+ */
+using GroupArrayAppenderVectorMap = unordered_map<shared_ptr<GroupKey2>,
 													   ArrayAppenderVector,
 													   GroupKey2PointerHash,
 													   GroupKey2PointerPredicate>;
 
-using GroupArrayVectorMap = std::unordered_map<std::shared_ptr<GroupKey2>,
+/**
+ * Array vector map for one incoming tupleSet
+ */
+using GroupArrayVectorMap = unordered_map<shared_ptr<GroupKey2>,
 											   ::arrow::ArrayVector,
 											   GroupKey2PointerHash,
 											   GroupKey2PointerPredicate>;
 
-using GroupAggregationResultVectorMap = std::unordered_map<std::shared_ptr<GroupKey2>,
-														   std::vector<std::shared_ptr<AggregationResult>>,
-														   GroupKey2PointerHash,
-														   GroupKey2PointerPredicate>;
+/**
+ * Aggregate result map for results accumulated by all incoming tupleSets
+ */
+using GroupAggregateResultVectorMap = unordered_map<shared_ptr<GroupKey2>,
+                                    vector<vector<shared_ptr<AggregateResult>>>,
+                                    GroupKey2PointerHash,
+                                    GroupKey2PointerPredicate>;
 
 class GroupKernel2 {
 
 public:
-  GroupKernel2(const std::vector<std::string>& groupColumnNames,
-               std::vector<std::shared_ptr<AggregationFunction>> aggregateFunctions);
+  GroupKernel2(const vector<string>& groupColumnNames,
+               vector<shared_ptr<AggregateFunction>> aggregateFunctions);
 
   /**
    * Groups the input tuple set and computes intermediate aggregates
@@ -49,39 +59,35 @@ public:
    * @param tupleSet
    * @return
    */
-  [[nodiscard]] tl::expected<void, std::string> group(TupleSet &tupleSet);
+  [[nodiscard]] tl::expected<void, string> group(const TupleSet &tupleSet);
 
   /**
    * Computes final aggregates and generates output tuple set
    *
    * @return
    */
-  [[nodiscard]] tl::expected<std::shared_ptr<TupleSet>, std::string> finalise();
+  [[nodiscard]] tl::expected<shared_ptr<TupleSet>, string> finalise();
 
-  bool hasInput();
+  bool hasResult();
 
 private:
-  std::vector<std::string> groupColumnNames_;
-  std::vector<std::shared_ptr<AggregationFunction>> aggregateFunctions_;
+  vector<string> groupColumnNames_;
+  vector<shared_ptr<AggregateFunction>> aggregateFunctions_;
 
-  std::vector<int> groupColumnIndices_;
-  std::vector<int> aggregateColumnIndices_;
-  std::optional<std::shared_ptr<arrow::Schema>> inputSchema_;
-  std::optional<std::shared_ptr<arrow::Schema>> outputSchema_;
-  std::optional<std::shared_ptr<arrow::Schema>> aggregateSchema_;
+  vector<int> groupColumnIndices_;
+  vector<int> aggregateColumnIndices_;
+  optional<shared_ptr<arrow::Schema>> inputSchema_;
+  optional<shared_ptr<arrow::Schema>> aggregateInputSchema_;
 
   GroupArrayAppenderVectorMap groupArrayAppenderVectorMap_;
   GroupArrayVectorMap groupArrayVectorMap_;
-  GroupAggregationResultVectorMap groupAggregationResultVectorMap_;
-
-  // FIXME: this is a workaround because we cannot append a single scalar to appender directly
-  GroupArrayVectorMap groupKeyBuffer_;
+  GroupAggregateResultVectorMap groupAggregateResultVectorMap_;
 
   /**
    * Collect aggregate column names from all aggregate functions
    * @return
    */
-  std::vector<std::string> getAggregateColumnNames();
+  vector<string> getAggregateColumnNames();
 
   /**
    * Caches input schema, indices to group columns, and makes output schema
@@ -89,14 +95,7 @@ private:
    * @param tupleSet
    * @return
    */
-  [[nodiscard]] tl::expected<void, std::string> cache(const TupleSet &tupleSet);
-
-  /**
-   * Builds the output schema
-   *
-   * @return
-   */
-  tl::expected<std::shared_ptr<arrow::Schema>, std::string> makeOutputSchema();
+  tl::expected<void, string> cache(const TupleSet &tupleSet);
 
   /**
    * Groups a single record batch
@@ -104,8 +103,7 @@ private:
    * @param recordBatch
    * @return
    */
-  [[nodiscard]] tl::expected<GroupArrayVectorMap, std::string>
-  groupRecordBatch(const ::arrow::RecordBatch &recordBatch);
+  tl::expected<GroupArrayVectorMap, string> groupRecordBatch(const ::arrow::RecordBatch &recordBatch);
 
   /**
    * Groups and computes intermediate aggregates for a single table
@@ -113,14 +111,14 @@ private:
    * @param recordBatch
    * @return
    */
-  [[nodiscard]] tl::expected<void, std::string> groupTable(const ::arrow::Table &table);
+  tl::expected<void, string> groupTable(const ::arrow::Table &table);
 
   /**
    * Computes intermediate aggregates for a table
    *
    * @param table
    */
-  void computeGroupAggregates();
+  tl::expected<void, string> computeGroupAggregates();
 };
 
 }

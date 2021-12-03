@@ -7,7 +7,7 @@
 
 #include <normal/executor/physical/group/GroupKernel2.h>
 #include <normal/executor/physical/PhysicalOp.h>
-#include <normal/executor/physical/aggregate/AggregationFunction.h>
+#include <normal/executor/physical/aggregate/function/AggregateFunction.h>
 #include <normal/executor/message/CompleteMessage.h>
 #include <normal/executor/message/TupleMessage.h>
 #include <string>
@@ -15,6 +15,7 @@
 #include <memory>
 
 using namespace normal::executor::message;
+using namespace std;
 
 namespace normal::executor::physical::group {
 
@@ -32,10 +33,10 @@ namespace normal::executor::physical::group {
 class GroupPOp : public PhysicalOp {
 
 public:
-  GroupPOp(const std::string &name,
-		const std::vector<std::string> &groupColumnNames,
-		const std::vector<std::shared_ptr<aggregate::AggregationFunction>> &aggregateFunctions,
-    const std::vector<std::string> &projectColumnNames);
+  GroupPOp(const string &name,
+           const vector<string> &groupColumnNames,
+           const vector<shared_ptr<aggregate::AggregateFunction>> &aggregateFunctions,
+           const vector<string> &projectColumnNames);
 
   void onReceive(const Envelope &msg) override;
 
@@ -44,7 +45,7 @@ private:
   void onTuple(const TupleMessage &msg);
   void onComplete(const CompleteMessage &msg);
 
-  std::unique_ptr<GroupKernel2> kernel2_;
+  unique_ptr<GroupKernel2> kernel2_;
 };
 
 }

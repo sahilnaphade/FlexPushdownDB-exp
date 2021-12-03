@@ -80,12 +80,20 @@ public final class RelJsonSerializer {
     JSONObject jo = new JSONObject();
     // operator name
     jo.put("operator", project.getClass().getSimpleName());
+
     // project fields
     List<String> inputFieldNames = project.getInput().getRowType().getFieldNames();
+    List<String> outputFieldNames = project.getRowType().getFieldNames();
     JSONArray fields = new JSONArray();
+    int projectId = 0;
     for (RexNode rexNode: project.getProjects()) {
-      fields.put(RexJsonSerializer.serialize(rexNode, inputFieldNames));
+      JSONObject fieldJObj = new JSONObject();
+      fieldJObj.put("name", outputFieldNames.get(projectId));
+      fieldJObj.put("expr", RexJsonSerializer.serialize(rexNode, inputFieldNames));
+      fields.put(fieldJObj);
+      ++projectId;
     }
+
     jo.put("fields", fields);
     // input operators
     jo.put("inputs", serializeRelInputs(project));

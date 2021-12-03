@@ -242,7 +242,7 @@ shared_ptr<PrePhysicalOp> CalcitePlanJsonDeserializer::deserializeAggregateOrGro
         // it's not just a column, need to get it from the input Project op
         auto inputProjectJObj = jObj["inputs"].get<vector<json>>()[0];
         size_t aggInputProjectFieldId = stoul(aggInputColumnName.substr(2, aggInputColumnName.length() - 2));
-        auto aggFieldExprJObj = inputProjectJObj["fields"].get<vector<json>>()[aggInputProjectFieldId];
+        auto aggFieldExprJObj = inputProjectJObj["fields"].get<vector<json>>()[aggInputProjectFieldId]["expr"];
         aggFieldExpr = deserializeExpression(aggFieldExprJObj);
 
         // need to let the input Project op know the expr has been consumed
@@ -285,57 +285,68 @@ shared_ptr<PrePhysicalOp> CalcitePlanJsonDeserializer::deserializeAggregateOrGro
 
 shared_ptr<prephysical::PrePhysicalOp> CalcitePlanJsonDeserializer::deserializeProject(const json &jObj) {
   // whether we can skip to deserialize the Project
+  // only when there is an expr unconsumed by the consumer, we need to keep the Project
   bool skipSelf = true;
 
-  // only when there is an expr, we need to keep the Project
+  // consumed field ids
+  set<size_t> consumedFieldsIdSet;
   if (jObj.contains("consumedFieldsId")) {
     const vector<size_t> &consumedFieldsIdVec = jObj["consumedFieldsId"].get<vector<size_t>>();
-    set<size_t> consumedFieldsIdSet(consumedFieldsIdVec.begin(), consumedFieldsIdVec.end());
-    // check each project field
-    const vector<json> &fieldsJArr = jObj["fields"].get<vector<json>>();
-    for (size_t i = 0; i < fieldsJArr.size(); ++i) {
-      if (consumedFieldsIdSet.find(i) != consumedFieldsIdSet.end()) {
-        // this field is consumed by the consumer
-        continue;
-      }
-      const auto &fieldJObj = fieldsJArr[i];
-      if (fieldJObj.contains("inputRef")) {
-        // the field is just a column, not an expr
-        continue;
-      }
-      // otherwise the Project is needed
-      skipSelf = false;
-      break;
-    }
+    consumedFieldsIdSet.insert(consumedFieldsIdVec.begin(), consumedFieldsIdVec.end());
   }
 
-  // project columns and exprs
-  set<string> projectColumnNames;
+  // project columns (may need rename) and exprs
+  set<string> usedColumnNames, projectColumnNames;
   vector<shared_ptr<Expression>> exprs;
+  vector<string> exprNames;
+  unordered_map<string, string> columnRenames;
   const auto &fieldsJArr = jObj["fields"].get<vector<json>>();
+  size_t fieldId = 0;
   for (const auto &fieldJObj: fieldsJArr) {
-    if (fieldJObj.contains("inputRef")) {
-      const string &projectColumnName = ColumnName::canonicalize(fieldJObj["inputRef"].get<string>());
-      projectColumnNames.emplace(projectColumnName);
-    } else if (fieldJObj.contains("op")) {
-      const auto &expr = deserializeExpression(fieldJObj);
+    // deserialize field
+    const auto &outputFieldName = ColumnName::canonicalize(fieldJObj["name"].get<string>());
+    const auto &fieldExprJObj = fieldJObj["expr"];
+    if (fieldExprJObj.contains("inputRef")) {
+      const string &projectColumnName = ColumnName::canonicalize(fieldExprJObj["inputRef"].get<string>());
+      usedColumnNames.emplace(projectColumnName);
+      if (projectColumnName == outputFieldName) {
+        projectColumnNames.emplace(projectColumnName);
+      } else {
+        projectColumnNames.emplace(outputFieldName);
+        columnRenames.emplace(projectColumnName, outputFieldName);
+      }
+    } else if (fieldExprJObj.contains("op")) {
+      const auto &expr = deserializeExpression(fieldExprJObj);
       exprs.emplace_back(expr);
+      exprNames.emplace_back(outputFieldName);
+      projectColumnNames.emplace(outputFieldName);
       const auto &exprUsedColumnNames = expr->involvedColumnNames();
-      projectColumnNames.insert(exprUsedColumnNames.begin(), exprUsedColumnNames.end());
+      usedColumnNames.insert(exprUsedColumnNames.begin(), exprUsedColumnNames.end());
+
+      // check consumed id
+      if (consumedFieldsIdSet.find(fieldId) == consumedFieldsIdSet.end()) {
+        // this field is unconsumed by the consumer, and it's an expr
+        skipSelf = false;
+      }
+    } else {
+      throw runtime_error(fmt::format("Invalid project field, only column or expr are valid, from: {}",
+                                      to_string(jObj)));
     }
+    ++fieldId;
   }
 
   if (skipSelf) {
     // skip the Project, continue to deserialize its producer
     const auto &producer = deserializeDfs(jObj["inputs"].get<vector<json>>()[0]);
     // set projectColumnNames for its producer
-    producer->setProjectColumnNames(projectColumnNames);
+    producer->setProjectColumnNames(usedColumnNames);
     return producer;
   }
 
   else {
     // not skip the Project
-    shared_ptr<ProjectPrePOp> projectPrePOp = make_shared<ProjectPrePOp>(exprs);
+    shared_ptr<ProjectPrePOp> projectPrePOp = make_shared<ProjectPrePOp>(exprs, exprNames, columnRenames);
+    projectPrePOp->setProjectColumnNames(projectColumnNames);
 
     // deserialize producers
     projectPrePOp->setProducers(deserializeProducers(jObj));

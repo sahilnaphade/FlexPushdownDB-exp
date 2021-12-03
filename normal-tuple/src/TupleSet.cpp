@@ -254,6 +254,36 @@ tl::expected<void, std::string> TupleSet::renameColumns(const std::vector<std::s
   return {};
 }
 
+tl::expected<void, std::string>
+TupleSet::renameColumns(const std::unordered_map<std::string, std::string> &columnRenames) {
+  if (valid() && !columnRenames.empty()) {
+    auto columnNames = table_->ColumnNames();
+
+    // collect ids
+    std::unordered_map<std::string, uint> columnNameIds;
+    for (uint i = 0; i < columnNames.size(); ++i) {
+      columnNameIds.emplace(columnNames[i], i);
+    }
+
+    // rename
+    for (const auto &renameIt: columnRenames) {
+      const auto &oldName = renameIt.first;
+      const auto &newName = renameIt.second;
+      const auto &columnIdIt = columnNameIds.find(oldName);
+      if (columnIdIt == columnNameIds.end()) {
+        return tl::make_unexpected("Column '" + oldName + "' does not exist");
+      }
+      columnNames[columnIdIt->second] = newName;
+    }
+    auto expectedTable = table_->RenameColumns(columnNames);
+    if(expectedTable.ok())
+      table_ = *expectedTable;
+    else
+      return tl::make_unexpected(expectedTable.status().message());
+  }
+  return {};
+}
+
 std::string TupleSet::showString() {
   return showString(TupleSetShowOptions(TupleSetShowOrientation::ColumnOriented));
 }

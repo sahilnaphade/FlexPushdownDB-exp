@@ -2,7 +2,7 @@
 // Created by matt on 7/3/20.
 //
 
-#include <normal/executor/physical/aggregate/Sum.h>
+#include <normal/executor/physical/aggregate/old-Sum.h>
 #include <normal/expression/gandiva/Projector.h>
 #include <normal/tuple/arrow/ScalarHelperBuilder.h>
 #include <arrow/scalar.h>

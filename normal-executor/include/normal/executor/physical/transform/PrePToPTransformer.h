@@ -6,7 +6,7 @@
 #define NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_PREPTOPTRANSFORMER_H
 
 #include <normal/executor/physical/PhysicalPlan.h>
-#include <normal/executor/physical/aggregate/AggregationFunction.h>
+#include <normal/executor/physical/aggregate/function/AggregateFunction.h>
 #include <normal/plan/prephysical/PrePhysicalPlan.h>
 #include <normal/plan/prephysical/SortPrePOp.h>
 #include <normal/plan/prephysical/AggregatePrePOp.h>
@@ -73,10 +73,10 @@ private:
    * @param prePFunction
    * @return
    */
-  shared_ptr<aggregate::AggregationFunction> transformAggFunction(const string &alias,
-                                                                  const shared_ptr<AggregatePrePFunction> &prePFunction);
-  shared_ptr<aggregate::AggregationFunction> transformAggReduceFunction(const string &alias,
-                                                                        const shared_ptr<AggregatePrePFunction> &prePFunction);
+  shared_ptr<aggregate::AggregateFunction> transformAggFunction(const string &outputColumnName,
+                                                                const shared_ptr<AggregatePrePFunction> &prePFunction);
+  shared_ptr<aggregate::AggregateFunction> transformAggReduceFunction(const string &outputColumnName,
+                                                                      const shared_ptr<AggregatePrePFunction> &prePFunction);
 
   /**
    * Connect producers and consumers

@@ -19,6 +19,7 @@ public:
   virtual ~GroupKeyElement() = default;
   virtual bool equals(const std::shared_ptr<GroupKeyElement> &other) = 0;
   virtual size_t hash() = 0;
+  virtual std::shared_ptr<arrow::Scalar> toScalar() = 0;
   virtual std::string toString() = 0;
 };
 
@@ -31,15 +32,19 @@ public:
   explicit GroupKeyElementWrapper(CType value) : value(std::move(value)) {}
 
   size_t hash() override {
-	return std::hash<CType>()(value);
+	  return std::hash<CType>()(value);
   };
 
   bool equals(const std::shared_ptr<GroupKeyElement> &other) override  {
-	return value == std::static_pointer_cast<GroupKeyElementWrapper<ArrowType>>(other)->value;
+	  return value == std::static_pointer_cast<GroupKeyElementWrapper<ArrowType>>(other)->value;
   };
 
+  std::shared_ptr<arrow::Scalar> toScalar() override {
+    return arrow::MakeScalar(value);
+  }
+
   std::string toString() override {
-	return std::to_string(value);
+	  return std::to_string(value);
   }
 
 private:
@@ -53,15 +58,19 @@ public:
   explicit GroupKeyElementWrapper(std::string value) : value(std::move(value)) {}
 
   size_t hash() override {
-	return std::hash<std::string>()(value);
+	  return std::hash<std::string>()(value);
   };
 
   bool equals(const std::shared_ptr<GroupKeyElement> &other) override  {
-	return value == std::static_pointer_cast<GroupKeyElementWrapper<arrow::StringType>>(other)->value;
+	  return value == std::static_pointer_cast<GroupKeyElementWrapper<arrow::StringType>>(other)->value;
   };
 
+  std::shared_ptr<arrow::Scalar> toScalar() override {
+    return arrow::MakeScalar(value);
+  }
+
   std::string toString() override {
-	return value;
+	  return value;
   }
 
 private:
@@ -102,25 +111,31 @@ public:
   explicit GroupKey2(std::vector<std::shared_ptr<GroupKeyElement>> Elements) : elements_(std::move(Elements)) {}
 
   size_t hash() {
-	size_t hash = 17;
-
-	for (const auto &element: elements_) {
-	  hash = hash * 31 + element->hash();
-	}
-
-	return hash;
+    size_t hash = 17;
+    for (const auto &element: elements_) {
+      hash = hash * 31 + element->hash();
+    }
+    return hash;
   };
 
   bool operator==(const GroupKey2 &other) {
-	for (size_t i = 0; i < elements_.size(); ++i) {
-	  if (!elements_[i]->equals(other.elements_[i]))
-		return false;
-	}
-	return true;
+    for (size_t i = 0; i < elements_.size(); ++i) {
+      if (!elements_[i]->equals(other.elements_[i]))
+      return false;
+    }
+    return true;
   };
 
-  [[nodiscard]] const std::vector<std::shared_ptr<GroupKeyElement>> &getElements() const {
-	return elements_;
+  const std::vector<std::shared_ptr<GroupKeyElement>> &getElements() const {
+	  return elements_;
+  }
+
+  std::vector<std::shared_ptr<arrow::Scalar>> getScalars() const {
+    std::vector<std::shared_ptr<arrow::Scalar>> scalars;
+    for (const auto &element: elements_) {
+      scalars.emplace_back(element->toScalar());
+    }
+    return scalars;
   }
 
 private:
@@ -130,13 +145,13 @@ private:
 
 struct GroupKey2PointerHash {
   inline size_t operator()(const std::shared_ptr<GroupKey2> &key) const {
-	return key->hash();
+	  return key->hash();
   }
 };
 
 struct GroupKey2PointerPredicate {
   inline bool operator()(const std::shared_ptr<GroupKey2> &lhs, const std::shared_ptr<GroupKey2> &rhs) const {
-	return *lhs == *rhs;
+	  return *lhs == *rhs;
   }
 };
 
@@ -145,16 +160,16 @@ public:
   static tl::expected<std::shared_ptr<GroupKey2>, std::string> make(int row,
 																	const std::vector<int> &columnIndices,
 																	const arrow::RecordBatch &recordBatch) {
-	std::vector<std::shared_ptr<GroupKeyElement>> elements;
-	for (const auto &columnIndex: columnIndices) {
-	  auto expectedGroupKeyElement = GroupKeyElementBuilder::make(row, recordBatch.column(columnIndex));
-	  if (!expectedGroupKeyElement)
-		return tl::make_unexpected(expectedGroupKeyElement.error());
-	  elements.push_back(expectedGroupKeyElement.value());
-	}
+    std::vector<std::shared_ptr<GroupKeyElement>> elements;
+    for (const auto &columnIndex: columnIndices) {
+      auto expectedGroupKeyElement = GroupKeyElementBuilder::make(row, recordBatch.column(columnIndex));
+      if (!expectedGroupKeyElement)
+      return tl::make_unexpected(expectedGroupKeyElement.error());
+      elements.push_back(expectedGroupKeyElement.value());
+    }
 
-	auto groupKey = std::make_shared<GroupKey2>(elements);
-	return groupKey;
+    auto groupKey = std::make_shared<GroupKey2>(elements);
+    return groupKey;
   }
 };
 

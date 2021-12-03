@@ -83,6 +83,7 @@ public:
    * Rename columns.
    */
   tl::expected<void, std::string> renameColumns(const std::vector<std::string>& columnNames);
+  tl::expected<void, std::string> renameColumns(const std::unordered_map<std::string, std::string> &columnRenames);
 
   /**
    * Returns the tuple set pretty printed as a string

@@ -14,16 +14,22 @@ namespace normal::plan::prephysical {
 
 class ProjectPrePOp: public PrePhysicalOp {
 public:
-  ProjectPrePOp(const vector<shared_ptr<Expression>> &exprs);
+  ProjectPrePOp(const vector<shared_ptr<Expression>> &exprs,
+                const vector<std::string> &exprNames,
+                const unordered_map<string, string> &columnRenames);
 
   string getTypeString() override;
 
   set<string> getUsedColumnNames() override;
 
   const vector<shared_ptr<Expression>> &getExprs() const;
+  const vector<std::string> &getExprNames() const;
+  const unordered_map<string, string> &getColumnRenames() const;
 
 private:
   vector<shared_ptr<Expression>> exprs_;
+  vector<string> exprNames_;
+  unordered_map<string, string> columnRenames_;
 };
 
 }

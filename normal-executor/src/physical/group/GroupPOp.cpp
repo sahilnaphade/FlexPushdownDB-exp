@@ -8,12 +8,12 @@ using namespace normal::tuple;
 
 namespace normal::executor::physical::group {
 
-GroupPOp::GroupPOp(const std::string &name,
-			 const std::vector<std::string> &groupColumnNames,
-			 const std::vector<std::shared_ptr<aggregate::AggregationFunction>> &aggregateFunctions,
-       const std::vector<std::string> &projectColumnNames) :
+GroupPOp::GroupPOp(const string &name,
+                   const vector<string> &groupColumnNames,
+                   const vector<shared_ptr<aggregate::AggregateFunction>> &aggregateFunctions,
+                   const vector<string> &projectColumnNames) :
 	PhysicalOp(name, "GroupPOp", projectColumnNames),
-  kernel2_(std::make_unique<GroupKernel2>(groupColumnNames, aggregateFunctions)) {
+  kernel2_(make_unique<GroupKernel2>(groupColumnNames, aggregateFunctions)) {
 }
 
 void GroupPOp::onReceive(const Envelope &msg) {
@@ -27,7 +27,7 @@ void GroupPOp::onReceive(const Envelope &msg) {
 	this->onComplete(completeMessage);
   } else {
 	// FIXME: Propagate error properly
-	throw std::runtime_error("Unrecognized message type " + msg.message().type());
+	throw runtime_error("Unrecognized message type " + msg.message().type());
   }
 }
 
@@ -39,24 +39,24 @@ void GroupPOp::onTuple(const TupleMessage &message) {
   const auto &tupleSet = message.tuples();
   auto expectedGroupResult = kernel2_->group(*tupleSet);
   if(!expectedGroupResult)
-    throw std::runtime_error(expectedGroupResult.error());
+    throw runtime_error(expectedGroupResult.error());
 }
 
 void GroupPOp::onComplete(const CompleteMessage &) {
   if (!ctx()->isComplete() && this->ctx()->operatorMap().allComplete(POpRelationshipType::Producer)) {
 
-    if (kernel2_->hasInput()) {
+    if (kernel2_->hasResult()) {
       auto expectedGroupedTupleSet = kernel2_->finalise();
       if (!expectedGroupedTupleSet)
-        throw std::runtime_error(expectedGroupedTupleSet.error());
+        throw runtime_error(expectedGroupedTupleSet.error());
 
       // Project using projectColumnNames
       auto expProjectTupleSet = expectedGroupedTupleSet.value()->projectExist(getProjectColumnNames());
       if (!expProjectTupleSet) {
-        throw std::runtime_error(expProjectTupleSet.error());
+        throw runtime_error(expProjectTupleSet.error());
       }
 
-      std::shared_ptr<Message> tupleMessage = std::make_shared<TupleMessage>(expProjectTupleSet.value(), this->name());
+      shared_ptr<Message> tupleMessage = make_shared<TupleMessage>(expProjectTupleSet.value(), this->name());
       ctx()->tell(tupleMessage);
     }
 

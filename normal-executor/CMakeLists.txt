@@ -37,11 +37,9 @@ add_library(normal-executor STATIC
         include/normal/executor/physical/Globals.h
         src/physical/sort/SortPOp.cpp include/normal/executor/physical/sort/SortPOp.h
         src/physical/aggregate/AggregatePOp.cpp include/normal/executor/physical/aggregate/AggregatePOp.h
-        src/physical/aggregate/AggregationFunction.cpp include/normal/executor/physical/aggregate/AggregationFunction.h
-        src/physical/aggregate/AggregationResult.cpp include/normal/executor/physical/aggregate/AggregationResult.h
-        src/physical/aggregate/Sum.cpp include/normal/executor/physical/aggregate/Sum.h
-        include/normal/executor/physical/aggregate/AggregateBuilder.h
-        include/normal/executor/physical/aggregate/AggregateBuilderWrapper.h
+        src/physical/aggregate/AggregateResult.cpp include/normal/executor/physical/aggregate/AggregateResult.h
+        src/physical/aggregate/function/AggregateFunction.cpp include/normal/executor/physical/aggregate/function/AggregateFunction.h
+        src/physical/aggregate/function/Sum.cpp include/normal/executor/physical/aggregate/function/Sum.h
         src/physical/cache/CacheLoadPOp.cpp include/normal/executor/physical/cache/CacheLoadPOp.h
         src/physical/cache/CacheHelper.cpp include/normal/executor/physical/cache/CacheHelper.h
         src/physical/collate/CollatePOp.cpp include/normal/executor/physical/collate/CollatePOp.h

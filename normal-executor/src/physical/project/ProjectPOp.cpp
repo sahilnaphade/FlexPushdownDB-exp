@@ -15,10 +15,12 @@ namespace normal::executor::physical::project {
 ProjectPOp::ProjectPOp(std::string name,
                  std::vector<std::shared_ptr<normal::expression::gandiva::Expression>> exprs,
                  std::vector<std::string> exprNames,
+                 std::unordered_map<std::string, std::string> columnRenames,
                  std::vector<std::string> projectColumnNames)
     : PhysicalOp(std::move(name), "ProjectPOp", std::move(projectColumnNames)),
       exprs_(std::move(exprs)),
-      exprNames_(std::move(exprNames)) {}
+      exprNames_(std::move(exprNames)),
+      columnRenames_(std::move(columnRenames)) {}
 
 void ProjectPOp::onStart() {
   SPDLOG_DEBUG("Starting operator  |  name: '{}'", this->name());
@@ -90,8 +92,11 @@ void ProjectPOp::projectAndSendTuples() {
     // Project expressions
     auto projExprTuples = projector_.value()->evaluate(*tuples_);
 
-    // Rename project columns
-    projExprTuples->renameColumns(exprNames_);
+    // Rename project expression columns
+    auto renameRes = projExprTuples->renameColumns(exprNames_);
+    if (!renameRes.has_value()) {
+      throw std::runtime_error(renameRes.error());
+    }
 
     // Combine with input columns
     std::vector<std::shared_ptr<Column>> columns;
@@ -110,6 +115,12 @@ void ProjectPOp::projectAndSendTuples() {
       columns.emplace_back(expColumn.value());
     }
     const auto &fullTupleSet = TupleSet::make(columns);
+
+    // Rename project columns
+    renameRes = projExprTuples->renameColumns(columnRenames_);
+    if (!renameRes.has_value()) {
+      throw std::runtime_error(renameRes.error());
+    }
 
     // Project using projectColumnNames
     auto expProjectTupleSet = fullTupleSet->projectExist(getProjectColumnNames());
