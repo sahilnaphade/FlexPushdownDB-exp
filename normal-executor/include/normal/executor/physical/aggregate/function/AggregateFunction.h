@@ -29,6 +29,7 @@ public:
   const string &getOutputColumnName() const;
   const shared_ptr<normal::expression::gandiva::Expression> &getExpression() const;
   shared_ptr<arrow::DataType> returnType();
+  set<string> involvedColumnNames();
 
   /**
    * Perform the aggregation given an input tupleSet.
@@ -45,9 +46,18 @@ public:
   finalize(const vector<shared_ptr<AggregateResult>> &aggregateResults) = 0;
 
 protected:
+  /**
+   * Used to evaluate input tupleSet using expression_
+   */
   shared_ptr<arrow::ChunkedArray> evaluateExpr(const shared_ptr<TupleSet> &tupleSet);
   void cacheInputSchema(const shared_ptr<TupleSet> &tupleSet);
   void buildAndCacheProjector();
+
+  /**
+   * Build input array for finalize()
+   */
+  tl::expected<shared_ptr<arrow::Array>, string>
+  buildFinalizeInputArray(const vector<shared_ptr<AggregateResult>> &aggregateResults, const string &key);
 
   /**
    * Field name of aggregate result

@@ -10,28 +10,34 @@
 
 #include "Expression.h"
 
+using namespace std;
+
 namespace normal::expression::gandiva {
 
 class BinaryExpression : public Expression {
 
 public:
-  BinaryExpression(std::shared_ptr<Expression> left,
-                   std::shared_ptr<Expression> right,
+  BinaryExpression(shared_ptr<Expression> left,
+                   shared_ptr<Expression> right,
                    ExpressionType type);
 
-  std::set<std::string> involvedColumnNames() override;
+  /**
+   * Deal with int32 vs int64, int64 vs double, int32 vs double
+   */
+  std::tuple<shared_ptr<arrow::DataType>, ::gandiva::NodePtr, ::gandiva::NodePtr> castGandivaExprToUpperType();
+  set<string> involvedColumnNames() override;
 
-  [[nodiscard]] const std::shared_ptr<Expression> &getLeft() const;
-  [[nodiscard]] const std::shared_ptr<Expression> &getRight() const;
+  [[nodiscard]] const shared_ptr<Expression> &getLeft() const;
+  [[nodiscard]] const shared_ptr<Expression> &getRight() const;
 
-  [[maybe_unused]] void setLeft(const std::shared_ptr<Expression> &left);
-  [[maybe_unused]] void setRight(const std::shared_ptr<Expression> &right);
+  [[maybe_unused]] void setLeft(const shared_ptr<Expression> &left);
+  [[maybe_unused]] void setRight(const shared_ptr<Expression> &right);
 
 protected:
-  std::shared_ptr<Expression> left_;
-  std::shared_ptr<Expression> right_;
+  shared_ptr<Expression> left_;
+  shared_ptr<Expression> right_;
 
-  std::string genAliasForComparison(const std::string& compOp);
+  string genAliasForComparison(const string& compOp);
 };
 
 }

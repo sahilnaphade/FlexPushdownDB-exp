@@ -15,20 +15,17 @@ LessThan::LessThan(std::shared_ptr<Expression> Left, std::shared_ptr<Expression>
 	: BinaryExpression(std::move(Left), std::move(Right), LESS_THAN) {}
 
 void LessThan::compile(std::shared_ptr<arrow::Schema> Schema) {
-
   left_->compile(Schema);
   right_->compile(Schema);
 
-  auto leftGandivaExpression = left_->getGandivaExpression();
-  auto rightGandivaExpression = right_->getGandivaExpression();
+  const auto &castRes = castGandivaExprToUpperType();
+  const auto &leftGandivaExpr = get<1>(castRes);
+  const auto &rightGandivaExpr = get<2>(castRes);
 
-  auto lessThanFunction = ::gandiva::TreeExprBuilder::MakeFunction(
-	  "less_than",
-	  {leftGandivaExpression, rightGandivaExpression},
-	  ::arrow::boolean());
-
-  gandivaExpression_ = lessThanFunction;
   returnType_ = ::arrow::boolean();
+  gandivaExpression_ = ::gandiva::TreeExprBuilder::MakeFunction("less_than",
+                                                                {leftGandivaExpr, rightGandivaExpr},
+                                                                returnType_);
 }
 
 std::string LessThan::alias() {

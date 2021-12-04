@@ -13,18 +13,15 @@ Or::Or(std::shared_ptr<Expression> left, std::shared_ptr<Expression> right)
         : BinaryExpression(std::move(left), std::move(right), OR) {}
 
 void Or::compile(std::shared_ptr<arrow::Schema> schema) {
-
   left_->compile(schema);
   right_->compile(schema);
 
-  auto leftGandivaExpression = left_->getGandivaExpression();
-  auto rightGandivaExpression = right_->getGandivaExpression();
+  const auto &castRes = castGandivaExprToUpperType();
+  const auto &leftGandivaExpr = get<1>(castRes);
+  const auto &rightGandivaExpr = get<2>(castRes);
 
-  auto orExpression = ::gandiva::TreeExprBuilder::MakeOr(
-          {leftGandivaExpression, rightGandivaExpression});
-
-  gandivaExpression_ = orExpression;
   returnType_ = ::arrow::boolean();
+  gandivaExpression_ = ::gandiva::TreeExprBuilder::MakeOr({leftGandivaExpr, rightGandivaExpr});
 }
 
 std::string Or::alias() {

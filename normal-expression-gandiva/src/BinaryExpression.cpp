@@ -5,6 +5,7 @@
 #include "normal/expression/gandiva/BinaryExpression.h"
 
 #include <utility>
+#include <gandiva/tree_expr_builder.h>
 
 using namespace normal::expression::gandiva;
 
@@ -14,6 +15,61 @@ BinaryExpression::BinaryExpression(std::shared_ptr<Expression> left,
   Expression(type),
   left_(std::move(left)),
   right_(std::move(right)) {}
+
+std::set<std::string> BinaryExpression::involvedColumnNames() {
+  auto leftInvolvedColumnNames = getLeft()->involvedColumnNames();
+  auto rightInvolvedColumnNames = getRight()->involvedColumnNames();
+  leftInvolvedColumnNames.insert(rightInvolvedColumnNames.begin(), rightInvolvedColumnNames.end());
+  return leftInvolvedColumnNames;
+}
+
+std::tuple<shared_ptr<arrow::DataType>, ::gandiva::NodePtr, ::gandiva::NodePtr>
+BinaryExpression::castGandivaExprToUpperType() {
+  // int32 vs int64
+  if (left_->getReturnType()->id() == arrow::Type::INT32 && right_->getReturnType()->id() == arrow::Type::INT64) {
+    auto upperType = arrow::int64();
+    return make_tuple(upperType,
+                      ::gandiva::TreeExprBuilder::MakeFunction("castBIGINT", {left_->getGandivaExpression()}, upperType),
+                      right_->getGandivaExpression());
+  } else if (right_->getReturnType()->id() == arrow::Type::INT32 && left_->getReturnType()->id() == arrow::Type::INT64) {
+    auto upperType = arrow::int64();
+    return make_tuple(upperType,
+                      left_->getGandivaExpression(),
+                      ::gandiva::TreeExprBuilder::MakeFunction("castBIGINT", {right_->getGandivaExpression()}, upperType));
+  }
+
+  // int64 vs double
+  else if (left_->getReturnType()->id() == arrow::Type::INT64 && right_->getReturnType()->id() == arrow::Type::DOUBLE) {
+    auto upperType = arrow::float64();
+    return make_tuple(upperType,
+                      ::gandiva::TreeExprBuilder::MakeFunction("castFLOAT8", {left_->getGandivaExpression()}, upperType),
+                      right_->getGandivaExpression());
+  } else if (right_->getReturnType()->id() == arrow::Type::INT64 && left_->getReturnType()->id() == arrow::Type::DOUBLE) {
+    auto upperType = arrow::float64();
+    return make_tuple(upperType,
+                      left_->getGandivaExpression(),
+                      ::gandiva::TreeExprBuilder::MakeFunction("castFLOAT8", {right_->getGandivaExpression()}, upperType));
+  }
+
+  // int32 vs double
+  else if (left_->getReturnType()->id() == arrow::Type::INT32 && right_->getReturnType()->id() == arrow::Type::DOUBLE) {
+    auto upperType = arrow::float64();
+    return make_tuple(upperType,
+                      ::gandiva::TreeExprBuilder::MakeFunction("castFLOAT8", {left_->getGandivaExpression()}, upperType),
+                      right_->getGandivaExpression());
+  } else if (right_->getReturnType()->id() == arrow::Type::INT32 && left_->getReturnType()->id() == arrow::Type::DOUBLE) {
+    auto upperType = arrow::float64();
+    return make_tuple(upperType,
+                      left_->getGandivaExpression(),
+                      ::gandiva::TreeExprBuilder::MakeFunction("castFLOAT8", {right_->getGandivaExpression()}, upperType));
+  }
+
+  // otherwise, nothing changed
+  return make_tuple(left_->getReturnType(),
+                    left_->getGandivaExpression(),
+                    right_->getGandivaExpression());
+}
+
 
 const std::shared_ptr<Expression> &BinaryExpression::getLeft() const {
   return left_;
@@ -43,13 +99,6 @@ std::string BinaryExpression::genAliasForComparison(const std::string& compOp) {
   } else {
     return *leftAlias_removePrefixFloat + " " + compOp + " cast(" + rightAlias + " as float)";
   }
-}
-
-std::set<std::string> BinaryExpression::involvedColumnNames() {
-  auto leftInvolvedColumnNames = getLeft()->involvedColumnNames();
-  auto rightInvolvedColumnNames = getRight()->involvedColumnNames();
-  leftInvolvedColumnNames.insert(rightInvolvedColumnNames.begin(), rightInvolvedColumnNames.end());
-  return leftInvolvedColumnNames;
 }
 
 [[maybe_unused]] void BinaryExpression::setLeft(const std::shared_ptr<Expression> &left) {

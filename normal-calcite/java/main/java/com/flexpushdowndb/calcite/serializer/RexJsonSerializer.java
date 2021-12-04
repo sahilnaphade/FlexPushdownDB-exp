@@ -100,13 +100,13 @@ public class RexJsonSerializer {
             break;
           }
           case DATE: {
-            literalJObj.put("type", basicTypeName);
+            literalJObj.put("type", "DATE_MS");
             literalJObj.put("value", Objects.requireNonNull(literal.getValueAs(DateString.class)).getMillisSinceEpoch());
             break;
           }
           case INTERVAL_DAY: {
-            literalJObj.put("type", SqlTypeFamily.INTERVAL_DAY_TIME);
-            literalJObj.put("value", literal.getValueAs(Long.class));
+            literalJObj.put("type", "INTERVAL_DAY");
+            literalJObj.put("value", literal.getValueAs(Long.class) / 86400_000);
             break;
           }
           default:

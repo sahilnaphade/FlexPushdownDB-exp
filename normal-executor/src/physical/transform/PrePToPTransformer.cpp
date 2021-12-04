@@ -7,6 +7,7 @@
 #include <normal/executor/physical/sort/SortPOp.h>
 #include <normal/executor/physical/aggregate/AggregatePOp.h>
 #include <normal/executor/physical/aggregate/function/Sum.h>
+#include <normal/executor/physical/aggregate/function/Count.h>
 #include <normal/executor/physical/group/GroupPOp.h>
 #include <normal/executor/physical/project/ProjectPOp.h>
 #include <normal/executor/physical/filter/FilterPOp.h>
@@ -390,7 +391,9 @@ PrePToPTransformer::transformAggFunction(const string &outputColumnName,
     case plan::prephysical::SUM: {
       return make_shared<aggregate::Sum>(outputColumnName, prePFunction->getExpression());
     }
-    case plan::prephysical::COUNT:
+    case plan::prephysical::COUNT: {
+      return make_shared<aggregate::Count>(outputColumnName, prePFunction->getExpression());
+    }
     case plan::prephysical::MIN:
     case plan::prephysical::MAX:
     case plan::prephysical::AVG:
@@ -407,7 +410,9 @@ PrePToPTransformer::transformAggReduceFunction(const string &outputColumnName,
     case plan::prephysical::SUM: {
       return make_shared<aggregate::Sum>(outputColumnName, normal::expression::gandiva::col(outputColumnName));
     }
-    case plan::prephysical::COUNT:
+    case plan::prephysical::COUNT: {
+      return make_shared<aggregate::Count>(outputColumnName, normal::expression::gandiva::col(outputColumnName));
+    }
     case plan::prephysical::MIN:
     case plan::prephysical::MAX:
     case plan::prephysical::AVG:

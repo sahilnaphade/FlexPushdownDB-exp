@@ -6,6 +6,7 @@
 
 #include "normal/tuple/arrow/CSVToArrowSIMDChunkParser.h"
 #include <spdlog/common.h>
+#include <arrow/util/value_parsing.h>
 #include <sstream>
 #include <cstdint>
 #include <cstdlib>
@@ -185,7 +186,7 @@ std::string CSVToArrowSIMDChunkParser::printSurroundingBufferUntilEnd(ParsedCSV 
 void CSVToArrowSIMDChunkParser::dumpToArrayBuilderColumnWise(ParsedCSV & pcsv) {
   size_t rows = pcsv.n_indexes / inputNumColumns_ - 2; // -2 as two dummy rows at start and end
 
-  for (int inputCol = 0; inputCol < inputNumColumns_; inputCol++) {
+  for (int inputCol = 0; inputCol < (int) inputNumColumns_; inputCol++) {
     auto field = inputSchema_->field(inputCol);
     int outputCol = outputSchema_->GetFieldIndex(field->name());
     // No need to convert unnecessary results
@@ -194,80 +195,122 @@ void CSVToArrowSIMDChunkParser::dumpToArrayBuilderColumnWise(ParsedCSV & pcsv) {
     }
     size_t pcsvStartingIndex = inputNumColumns_ - 1 + inputCol;
     size_t startEndOffset = startEndOffsets_[outputCol];
+
+    // Convert and append
     // TODO: Make this more generic, probably one for numerical types, boolean, and then string (utf8)
-    if (datatypes_[outputCol] == arrow::Type::INT32) {
-      std::shared_ptr<arrow::Int32Builder> builder = std::static_pointer_cast<arrow::Int32Builder>(arrayBuilders_[outputCol]);
-      for (size_t pcsvIndex = pcsvStartingIndex; pcsvIndex < rows * inputNumColumns_ - 1 + inputNumColumns_; pcsvIndex += inputNumColumns_) {
-        uint64_t startingIndex = pcsv.indexes[pcsvIndex] + startEndOffset;
-        uint64_t endingIndex = pcsv.indexes[pcsvIndex + 1] - startEndOffset;
-        assert(endingIndex >= startingIndex);
-        bool negative = buffer_[startingIndex] == '-';
-        startingIndex += negative;
-        int val = 0;
-        while (startingIndex <= endingIndex) {
-          char currentChar = buffer_[startingIndex++];
-          val = val * 10 + currentChar - '0';
-        }
-        // Bit trick to conditionally negate, though likely compiler already does this
-        // source: https://graphics.stanford.edu/~seander/bithacks.html#ConditionalNegate
-        val = (val ^ -negative) + negative;
-        builder->Append(val);
-      }
-    } else if (datatypes_[outputCol] == arrow::Type::INT64) {
-      std::shared_ptr<arrow::Int64Builder> builder = std::static_pointer_cast<arrow::Int64Builder>(arrayBuilders_[outputCol]);
-      for (size_t pcsvIndex = pcsvStartingIndex; pcsvIndex < rows * inputNumColumns_ - 1 + inputNumColumns_; pcsvIndex += inputNumColumns_) {
-        uint64_t startingIndex = pcsv.indexes[pcsvIndex] + startEndOffset;
-        uint64_t endingIndex = pcsv.indexes[pcsvIndex + 1] - startEndOffset;
-        assert(endingIndex >= startingIndex);
-        bool negative = buffer_[startingIndex] == '-';
-        startingIndex += negative;
-        int64_t val = 0;
-        while (startingIndex <= endingIndex) {
-          char currentChar = buffer_[startingIndex++];
-          val = val * 10 + currentChar - '0';
-        }
-        // Bit trick to conditionally negate
-        // source: https://graphics.stanford.edu/~seander/bithacks.html#ConditionalNegate
-        val = (val ^ -negative) + negative;
-        builder->Append(val);
-      }
-    } else if (datatypes_[outputCol] == arrow::Type::STRING) {
-      std::shared_ptr<arrow::StringBuilder> builder = std::static_pointer_cast<arrow::StringBuilder>(arrayBuilders_[outputCol]);
-      for (size_t pcsvIndex = pcsvStartingIndex; pcsvIndex < rows * inputNumColumns_ - 1 + inputNumColumns_; pcsvIndex += inputNumColumns_) {
-        uint64_t startingIndex = pcsv.indexes[pcsvIndex] + startEndOffset;
-        uint64_t endingIndex = pcsv.indexes[pcsvIndex + 1] - startEndOffset;
-        try {
+    //       Try to reduce the amount of copied code between this method and dumpToArrayBuilderRowwise
+    arrow::Status status;
+    switch (datatypes_[outputCol]) {
+      case arrow::Type::INT32: {
+        std::shared_ptr<arrow::Int32Builder> builder = std::static_pointer_cast<arrow::Int32Builder>(arrayBuilders_[outputCol]);
+        for (size_t pcsvIndex = pcsvStartingIndex; pcsvIndex < rows * inputNumColumns_ - 1 + inputNumColumns_; pcsvIndex += inputNumColumns_) {
+          uint64_t startingIndex = pcsv.indexes[pcsvIndex] + startEndOffset;
+          uint64_t endingIndex = pcsv.indexes[pcsvIndex + 1] - startEndOffset;
           assert(endingIndex >= startingIndex);
-          std::string val(buffer_ + startingIndex, endingIndex - startingIndex + 1);
-          builder->Append(val);
-        } catch (std::exception& e) {
-          std::string fullValue(buffer_ + pcsv.indexes[pcsvIndex], pcsv.indexes[pcsvIndex + 1] - pcsv.indexes[pcsvIndex] + 1);
-          std::string remainingBuffer = printSurroundingBufferUntilEnd(pcsv, pcsvIndex);
-          SPDLOG_ERROR("Got exception reading utf8\n"
-                       "pcsvStartingIndex: {}, pcsvEndingIndex: {}, pcsvIndices: {}\n"
-                       "startingIndex: {}, size was {}, full value is: {}\n"
-                       "nonDummyColumns: {}, nonDummyRows: {}\n"
-                       "error: {}\n"
-                       "remaining buffer:\n{}\nEnd of remaining buffer", pcsvIndex, pcsvIndex + 1, pcsv.n_indexes,
-                       startingIndex, endingIndex - startingIndex + 1, fullValue,
-                       inputNumColumns_, rows, e.what(), remainingBuffer);
+          std::string str(buffer_ + startingIndex, endingIndex - startingIndex + 1);
+
+          int val = std::stoi(str);
+          status = builder->Append(val);
+          if (!status.ok()) {
+            throw std::runtime_error(status.message());
+          }
         }
+        break;
       }
-    } else if (datatypes_[outputCol] == arrow::Type::BOOL) {
-      std::shared_ptr<arrow::BooleanBuilder> builder = std::static_pointer_cast<arrow::BooleanBuilder>(arrayBuilders_[outputCol]);
-      for (size_t pcsvIndex = pcsvStartingIndex; pcsvIndex < rows * inputNumColumns_ - 1 + inputNumColumns_; pcsvIndex += inputNumColumns_) {
-        uint64_t startingIndex = pcsv.indexes[pcsvIndex] + startEndOffset;
-        uint64_t endingIndex = pcsv.indexes[pcsvIndex + 1] - startEndOffset;
-        assert(endingIndex >= startingIndex);
-        std::string val(buffer_ + startingIndex, endingIndex - startingIndex + 1);
-        bool boolVal = false;
-        if (strcmp(val.c_str(), "true") || val == "1") {
-          boolVal = true;
+
+      case arrow::Type::INT64: {
+        std::shared_ptr<arrow::Int64Builder> builder = std::static_pointer_cast<arrow::Int64Builder>(arrayBuilders_[outputCol]);
+        for (size_t pcsvIndex = pcsvStartingIndex; pcsvIndex < rows * inputNumColumns_ - 1 + inputNumColumns_; pcsvIndex += inputNumColumns_) {
+          uint64_t startingIndex = pcsv.indexes[pcsvIndex] + startEndOffset;
+          uint64_t endingIndex = pcsv.indexes[pcsvIndex + 1] - startEndOffset;
+          assert(endingIndex >= startingIndex);
+          std::string str(buffer_ + startingIndex, endingIndex - startingIndex + 1);
+
+          long val = std::stol(str);
+          status = builder->Append(val);
+          if (!status.ok()) {
+            throw std::runtime_error(status.message());
+          }
         }
-        builder->Append(boolVal);
+        break;
       }
-    } else {
-      throw std::runtime_error(fmt::format("Error, arrow type not supported for SIMD processing yet: %s", inputSchema_->field(inputCol)->type()->name().c_str()));
+
+      case arrow::Type::DOUBLE: {
+        std::shared_ptr<arrow::DoubleBuilder> builder = std::static_pointer_cast<arrow::DoubleBuilder>(arrayBuilders_[outputCol]);
+        for (size_t pcsvIndex = pcsvStartingIndex; pcsvIndex < rows * inputNumColumns_ - 1 + inputNumColumns_; pcsvIndex += inputNumColumns_) {
+          uint64_t startingIndex = pcsv.indexes[pcsvIndex] + startEndOffset;
+          uint64_t endingIndex = pcsv.indexes[pcsvIndex + 1] - startEndOffset;
+          assert(endingIndex >= startingIndex);
+          std::string str(buffer_ + startingIndex, endingIndex - startingIndex + 1);
+
+          double val = std::stod(str);
+          status = builder->Append(val);
+          if (!status.ok()) {
+            throw std::runtime_error(status.message());
+          }
+        }
+        break;
+      }
+
+      case arrow::Type::STRING: {
+        std::shared_ptr<arrow::StringBuilder> builder = std::static_pointer_cast<arrow::StringBuilder>(arrayBuilders_[outputCol]);
+        for (size_t pcsvIndex = pcsvStartingIndex; pcsvIndex < rows * inputNumColumns_ - 1 + inputNumColumns_; pcsvIndex += inputNumColumns_) {
+          uint64_t startingIndex = pcsv.indexes[pcsvIndex] + startEndOffset;
+          uint64_t endingIndex = pcsv.indexes[pcsvIndex + 1] - startEndOffset;
+          assert(endingIndex >= startingIndex);
+          std::string str(buffer_ + startingIndex, endingIndex - startingIndex + 1);
+
+          status = builder->Append(str);
+          if (!status.ok()) {
+            throw std::runtime_error(status.message());
+          }
+        }
+        break;
+      }
+
+      case arrow::Type::BOOL: {
+        std::shared_ptr<arrow::BooleanBuilder> builder = std::static_pointer_cast<arrow::BooleanBuilder>(arrayBuilders_[outputCol]);
+        for (size_t pcsvIndex = pcsvStartingIndex; pcsvIndex < rows * inputNumColumns_ - 1 + inputNumColumns_; pcsvIndex += inputNumColumns_) {
+          uint64_t startingIndex = pcsv.indexes[pcsvIndex] + startEndOffset;
+          uint64_t endingIndex = pcsv.indexes[pcsvIndex + 1] - startEndOffset;
+          assert(endingIndex >= startingIndex);
+          std::string str(buffer_ + startingIndex, endingIndex - startingIndex + 1);
+
+          bool val = false;
+          if (str == "true" || str == "TRUE" || str == "1") {
+            val = true;
+          }
+          status = builder->Append(val);
+          if (!status.ok()) {
+            throw std::runtime_error(status.message());
+          }
+        }
+        break;
+      }
+
+      case arrow::Type::DATE64: {
+        const auto &parser = arrow::TimestampParser::MakeISO8601();
+        std::shared_ptr<arrow::Date64Builder> builder = std::static_pointer_cast<arrow::Date64Builder>(arrayBuilders_[outputCol]);
+        for (size_t pcsvIndex = pcsvStartingIndex; pcsvIndex < rows * inputNumColumns_ - 1 + inputNumColumns_; pcsvIndex += inputNumColumns_) {
+          uint64_t startingIndex = pcsv.indexes[pcsvIndex] + startEndOffset;
+          uint64_t endingIndex = pcsv.indexes[pcsvIndex + 1] - startEndOffset;
+          uint64_t length = endingIndex - startingIndex + 1;
+          assert(endingIndex >= startingIndex);
+          std::string str(buffer_ + startingIndex, length);
+
+          int64_t val;
+          (*parser)(str.c_str(), length, arrow::TimeUnit::MILLI, &val);
+          status = builder->Append(val);
+          if (!status.ok()) {
+            throw std::runtime_error(status.message());
+          }
+        }
+        break;
+      }
+
+      default:
+        throw std::runtime_error(fmt::format("Error, arrow type not supported for SIMD processing yet for col: {}, type: {}",
+                                             field->name().c_str(), field->type()->name()));
     }
   }
 }
@@ -324,8 +367,15 @@ void CSVToArrowSIMDChunkParser::initializeDataStructures(ParsedCSV & pcsv) {
       case arrow::Type::BOOL:
         arrayBuilders_.emplace_back(std::make_shared<arrow::BooleanBuilder>(pool));
         break;
+      case arrow::Type::DOUBLE:
+        arrayBuilders_.emplace_back(std::make_shared<arrow::DoubleBuilder>(pool));
+        break;
+      case arrow::Type::DATE64:
+        arrayBuilders_.emplace_back(std::make_shared<arrow::Date64Builder>(pool));
+        break;
       default:
-        throw std::runtime_error(fmt::format("Error, arrow type not supported for SIMD processing yet for col: %s", inputSchema_->field(inputCol)->name().c_str()));
+        throw std::runtime_error(fmt::format("Error, arrow type not supported for SIMD processing yet for col: {}, type: {}",
+                                             inputSchema_->field(inputCol)->name().c_str(), datatype->name()));
     }
     size_t firstRowColPcsvIndex = pcsvStartingIndex + inputCol;
     columnStartsWithQuote_.emplace_back(buffer_[pcsv.indexes[firstRowColPcsvIndex] + 1] == '"');
@@ -343,11 +393,7 @@ void CSVToArrowSIMDChunkParser::parseAndReadInData() {
     initialized_ = true;
   }
 
-  try {
-    dumpToArrayBuilderColumnWise(pcsv_);
-  } catch (std::exception &e) {
-    SPDLOG_ERROR("Got exception reading SIMD input: {}", e.what());
-  }
+  dumpToArrayBuilderColumnWise(pcsv_);
 }
 
 void CSVToArrowSIMDChunkParser::parseChunk(char* data, uint64_t size) {

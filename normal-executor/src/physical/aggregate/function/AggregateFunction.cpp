@@ -26,6 +26,14 @@ shared_ptr<arrow::DataType> AggregateFunction::returnType() {
   return returnType_;
 }
 
+set<string> AggregateFunction::involvedColumnNames() {
+  if (expression_) {
+    return expression_->involvedColumnNames();
+  } else {
+    return set<string>();
+  }
+}
+
 shared_ptr<arrow::ChunkedArray> AggregateFunction::evaluateExpr(const shared_ptr<TupleSet> &tupleSet) {
   // just column projection, no need to use gandiva projector
   if (expression_->getType() == expression::gandiva::COLUMN) {
@@ -59,6 +67,36 @@ void AggregateFunction::buildAndCacheProjector() {
     projector_.value()->compile(inputSchema_.value());
     returnType_ = expression_->getReturnType();
   }
+}
+
+tl::expected<shared_ptr<arrow::Array>, string>
+AggregateFunction::buildFinalizeInputArray(const vector<shared_ptr<AggregateResult>> &aggregateResults,
+                                           const string &key) {
+  // make arrayBuilder
+  unique_ptr<arrow::ArrayBuilder> arrayBuilder;
+  arrow::Status status = arrow::MakeBuilder(arrow::default_memory_pool(), returnType_, &arrayBuilder);
+  if (!status.ok()) {
+    return tl::make_unexpected(status.message());
+  }
+
+  // append
+  for (const auto &aggregateResult: aggregateResults) {
+    const auto &expResultScalar = aggregateResult->get(key);
+    if (!expResultScalar.has_value()) {
+      return tl::make_unexpected(fmt::format("Aggregate result key not found: {}", key));
+    }
+    status = arrayBuilder->AppendScalar(*expResultScalar.value());
+    if (!status.ok()) {
+      return tl::make_unexpected(status.message());
+    }
+  }
+
+  // finalize
+  const auto &expArray = arrayBuilder->Finish();
+  if (!expArray.ok()) {
+    return tl::make_unexpected(expArray.status().message());
+  }
+  return expArray.ValueOrDie();
 }
 
 }

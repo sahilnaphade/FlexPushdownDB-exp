@@ -4,6 +4,7 @@ import org.apache.calcite.adapter.enumerable.*;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.AggregateCall;
+import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rex.*;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -25,6 +26,8 @@ public final class RelJsonSerializer {
       jo = serializeEnumerableAggregate((EnumerableAggregate) relNode);
     } else if (relNode instanceof EnumerableSort) {
       jo = serializeEnumerableSort((EnumerableSort) relNode);
+    } else if (relNode instanceof EnumerableLimitSort) {
+      jo = serializeEnumerableLimitSort((EnumerableLimitSort) relNode);
     } else {
       throw new UnsupportedOperationException("Serialize unsupported RelNode: " + relNode.getClass().getSimpleName());
     }
@@ -136,11 +139,7 @@ public final class RelJsonSerializer {
     return jo;
   }
 
-  private static JSONObject serializeEnumerableSort(EnumerableSort sort) {
-    JSONObject jo = new JSONObject();
-    // operator name
-    jo.put("operator", sort.getClass().getSimpleName());
-    // sort fields
+  private static JSONArray serializeSortFields(Sort sort) {
     List<String> inputFieldNames = sort.getInput().getRowType().getFieldNames();
     JSONArray sortFieldsJArr = new JSONArray();
     for (RelFieldCollation collation: sort.getCollation().getFieldCollations()) {
@@ -149,9 +148,31 @@ public final class RelJsonSerializer {
       sortFieldJObj.put("direction", collation.getDirection());
       sortFieldsJArr.put(sortFieldJObj);
     }
-    jo.put("sortFields", sortFieldsJArr);
+    return sortFieldsJArr;
+  }
+
+  private static JSONObject serializeEnumerableSort(EnumerableSort sort) {
+    JSONObject jo = new JSONObject();
+    // operator name
+    jo.put("operator", sort.getClass().getSimpleName());
+    // sort fields
+    jo.put("sortFields", serializeSortFields(sort));
     // input operators
     jo.put("inputs", serializeRelInputs(sort));
+    return jo;
+  }
+
+  private static JSONObject serializeEnumerableLimitSort(EnumerableLimitSort limitSort) {
+    JSONObject jo = new JSONObject();
+    // operator name
+    jo.put("operator", limitSort.getClass().getSimpleName());
+    // sort fields
+    jo.put("sortFields", serializeSortFields(limitSort));
+    // limit
+    assert limitSort.fetch != null;
+    jo.put("limit", RexJsonSerializer.serialize(limitSort.fetch, null));
+    // input operators
+    jo.put("inputs", serializeRelInputs(limitSort));
     return jo;
   }
 }

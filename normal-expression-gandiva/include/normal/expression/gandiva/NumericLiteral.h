@@ -26,10 +26,15 @@ public:
     value_(value) {}
 
   void compile(std::shared_ptr<arrow::Schema>) override {
+    returnType_ = ::arrow::TypeTraits<ARROW_TYPE>::type_singleton();
+
     auto literal = ::gandiva::TreeExprBuilder::MakeLiteral(value_);
+    // if the type is date64, the initial literal made from value_ will be int64, so we need to cast
+    if (returnType_->id() == arrow::Type::DATE64) {
+      literal = ::gandiva::TreeExprBuilder::MakeFunction("castDate", {literal}, returnType_);
+    }
 
     gandivaExpression_ = literal;
-    returnType_ = ::arrow::TypeTraits<ARROW_TYPE>::type_singleton();
   }
 
   std::string alias() override {

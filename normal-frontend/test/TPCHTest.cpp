@@ -8,6 +8,10 @@
 #include <arrow/api.h>
 #include <iostream>
 #include <normal/expression/gandiva/NumericLiteral.h>
+#include <normal/tuple/TupleSet.h>
+#include <arrow/util/value_parsing.h>
+
+using namespace normal::tuple;
 
 namespace normal::frontend::test {
 
@@ -20,7 +24,12 @@ TEST_CASE ("tpch-original-01" * doctest::skip(false || SKIP_SUITE)) {
 }
 
 TEST_CASE ("temp" * doctest::skip(true)) {
-  auto a = normal::expression::gandiva::num_lit<arrow::Date64Type>(19981201);
+  string dateStr = "1998-12-01";
+  auto parser = arrow::TimestampParser::MakeISO8601();
+  int64_t val;
+  (*parser)(dateStr.c_str(), 10, arrow::TimeUnit::MILLI, &val);
+  auto scalar = arrow::MakeScalar(arrow::date64(), val).ValueOrDie();
+  std::cout << scalar->ToString() << std::endl;
 }
 
 }

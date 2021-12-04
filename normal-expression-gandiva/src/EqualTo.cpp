@@ -15,20 +15,17 @@ EqualTo::EqualTo(std::shared_ptr<Expression> Left, std::shared_ptr<Expression> R
 	: BinaryExpression(std::move(Left), std::move(Right), EQUAL_TO) {}
 
 void EqualTo::compile(std::shared_ptr<arrow::Schema> Schema) {
-
   left_->compile(Schema);
   right_->compile(Schema);
 
-  auto leftGandivaExpression = left_->getGandivaExpression();
-  auto rightGandivaExpression = right_->getGandivaExpression();
+  const auto &castRes = castGandivaExprToUpperType();
+  const auto &leftGandivaExpr = get<1>(castRes);
+  const auto &rightGandivaExpr = get<2>(castRes);
 
-  auto equalToExpression = ::gandiva::TreeExprBuilder::MakeFunction(
-	  "equal",
-	  {leftGandivaExpression, rightGandivaExpression},
-	  ::arrow::boolean());
-
-  gandivaExpression_ = equalToExpression;
   returnType_ = ::arrow::boolean();
+  gandivaExpression_ = ::gandiva::TreeExprBuilder::MakeFunction("equal",
+                                                                {leftGandivaExpr, rightGandivaExpr},
+                                                                returnType_);
 }
 
 std::string EqualTo::alias() {

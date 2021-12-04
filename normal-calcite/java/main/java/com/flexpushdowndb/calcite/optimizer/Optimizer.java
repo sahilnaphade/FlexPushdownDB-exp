@@ -107,9 +107,8 @@ public class Optimizer {
             .build();
     HepPlanner hepPlanner = new HepPlanner(hepProgram);
     hepPlanner.setRoot(trimmedPhysicalPlan);
-    RelNode hepConvertedPlan = hepPlanner.findBestExp();
 
-    return hepConvertedPlan;
+    return hepPlanner.findBestExp();
   }
 
   private static RuleSet getDefaultRuleSet() {
@@ -120,6 +119,7 @@ public class Optimizer {
         ruleList.add(rule);
       }
     }
+    ruleList.add(EnumerableRules.ENUMERABLE_LIMIT_SORT_RULE);
     return RuleSets.ofList(ruleList);
   }
 
@@ -132,6 +132,8 @@ public class Optimizer {
     ruleList.add(EnumerableRules.ENUMERABLE_JOIN_RULE);
     ruleList.add(EnumerableRules.ENUMERABLE_AGGREGATE_RULE);
     ruleList.add(EnumerableRules.ENUMERABLE_SORT_RULE);
+    ruleList.add(EnumerableRules.ENUMERABLE_LIMIT_SORT_RULE);
+    ruleList.add(EnumerableRules.ENUMERABLE_LIMIT_RULE);
     return RuleSets.ofList(ruleList);
   }
 

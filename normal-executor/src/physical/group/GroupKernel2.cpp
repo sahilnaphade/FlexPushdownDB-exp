@@ -89,8 +89,7 @@ tl::expected<void, string> GroupKernel2::computeGroupAggregates() {
 vector<string> GroupKernel2::getAggregateColumnNames() {
   vector<string> aggregateColumnNames;
   for (const auto &aggregateFunction: aggregateFunctions_) {
-    aggregateColumnNames = union_(aggregateColumnNames,
-                                  aggregateFunction->getExpression()->involvedColumnNames());
+    aggregateColumnNames = union_(aggregateColumnNames, aggregateFunction->involvedColumnNames());
   }
   return aggregateColumnNames;
 }

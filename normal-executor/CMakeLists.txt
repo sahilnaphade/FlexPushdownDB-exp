@@ -40,6 +40,7 @@ add_library(normal-executor STATIC
         src/physical/aggregate/AggregateResult.cpp include/normal/executor/physical/aggregate/AggregateResult.h
         src/physical/aggregate/function/AggregateFunction.cpp include/normal/executor/physical/aggregate/function/AggregateFunction.h
         src/physical/aggregate/function/Sum.cpp include/normal/executor/physical/aggregate/function/Sum.h
+        src/physical/aggregate/function/Count.cpp include/normal/executor/physical/aggregate/function/Count.h
         src/physical/cache/CacheLoadPOp.cpp include/normal/executor/physical/cache/CacheLoadPOp.h
         src/physical/cache/CacheHelper.cpp include/normal/executor/physical/cache/CacheHelper.h
         src/physical/collate/CollatePOp.cpp include/normal/executor/physical/collate/CollatePOp.h

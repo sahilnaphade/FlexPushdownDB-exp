@@ -15,20 +15,17 @@ LessThanOrEqualTo::LessThanOrEqualTo(std::shared_ptr<Expression> Left, std::shar
 	: BinaryExpression(std::move(Left), std::move(Right), LESS_THAN_OR_EQUAL_TO) {}
 
 void LessThanOrEqualTo::compile(std::shared_ptr<arrow::Schema> Schema) {
-
   left_->compile(Schema);
   right_->compile(Schema);
 
-  auto leftGandivaExpression = left_->getGandivaExpression();
-  auto rightGandivaExpression = right_->getGandivaExpression();
+  const auto &castRes = castGandivaExprToUpperType();
+  const auto &leftGandivaExpr = get<1>(castRes);
+  const auto &rightGandivaExpr = get<2>(castRes);
 
-  auto lessThanOrEqualToExpression = ::gandiva::TreeExprBuilder::MakeFunction(
-	  "less_than_or_equal_to",
-	  {leftGandivaExpression, rightGandivaExpression},
-	  ::arrow::boolean());
-
-  gandivaExpression_ = lessThanOrEqualToExpression;
   returnType_ = ::arrow::boolean();
+  gandivaExpression_ = ::gandiva::TreeExprBuilder::MakeFunction("less_than_or_equal_to",
+                                                                {leftGandivaExpr, rightGandivaExpr},
+                                                                returnType_);
 }
 
 std::string LessThanOrEqualTo::alias() {

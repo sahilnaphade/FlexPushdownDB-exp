@@ -15,20 +15,17 @@ GreaterThan::GreaterThan(std::shared_ptr<Expression> Left, std::shared_ptr<Expre
   : BinaryExpression(std::move(Left), std::move(Right), GREATER_THAN) {}
 
 void GreaterThan::compile(std::shared_ptr<arrow::Schema> schema) {
-
   left_->compile(schema);
   right_->compile(schema);
 
-  auto leftGandivaExpression = left_->getGandivaExpression();
-  auto rightGandivaExpression = right_->getGandivaExpression();
+  const auto &castRes = castGandivaExprToUpperType();
+  const auto &leftGandivaExpr = get<1>(castRes);
+  const auto &rightGandivaExpr = get<2>(castRes);
 
-  auto greaterThanFunction = ::gandiva::TreeExprBuilder::MakeFunction(
-          "greater_than",
-          {leftGandivaExpression, rightGandivaExpression},
-          ::arrow::boolean());
-
-  gandivaExpression_ = greaterThanFunction;
   returnType_ = ::arrow::boolean();
+  gandivaExpression_ = ::gandiva::TreeExprBuilder::MakeFunction("greater_than",
+                                                                {leftGandivaExpr, rightGandivaExpr},
+                                                                returnType_);
 }
 
 std::string normal::expression::gandiva::GreaterThan::alias() {

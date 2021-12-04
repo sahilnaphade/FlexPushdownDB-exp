@@ -43,7 +43,7 @@ shared_ptr<PrePhysicalPlan> CalcitePlanJsonDeserializer::deserialize() {
 
 shared_ptr<PrePhysicalOp> CalcitePlanJsonDeserializer::deserializeDfs(json &jObj) {
   string opName = jObj["operator"].get<string>();
-  if (opName == "EnumerableSort") {
+  if (opName == "EnumerableSort" || opName == "EnumerableLimitSort") {  // TODO: split
     return deserializeSort(jObj);
   } else if (opName == "EnumerableAggregate") {
     return deserializeAggregateOrGroup(jObj);
@@ -95,9 +95,12 @@ shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeExpression(const 
     } else if (type == "DECIMAL") {
       const double value = literalJObj["value"].get<double>();
       return num_lit<arrow::DoubleType>(value);
-    } else if (type == "DATE" || type == "INTERVAL_DAY_TIME") {
+    } else if (type == "DATE_MS") {
       const long value = literalJObj["value"].get<long>();
       return num_lit<arrow::Date64Type>(value);
+    } else if (type == "INTERVAL_DAY") {
+      const int value = literalJObj["value"].get<int>();
+      return num_lit<arrow::Int32Type>(value);
     }
     else {
       throw runtime_error(fmt::format("Unsupported literal type, {}, from: {}", type, to_string(literalJObj)));

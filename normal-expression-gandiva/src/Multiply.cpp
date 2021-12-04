@@ -17,11 +17,14 @@ void Multiply::compile(std::shared_ptr<arrow::Schema> schema) {
   left_->compile(schema);
   right_->compile(schema);
 
-  // FIXME: Verify both left and right are compatible types
-  returnType_ = left_->getReturnType();
+  const auto &castRes = castGandivaExprToUpperType();
+  const auto &leftGandivaExpr = get<1>(castRes);
+  const auto &rightGandivaExpr = get<2>(castRes);
 
-  auto function = "multiply";
-  gandivaExpression_ = ::gandiva::TreeExprBuilder::MakeFunction(function, {left_->getGandivaExpression(), right_->getGandivaExpression()}, returnType_);
+  returnType_ = get<0>(castRes);
+  gandivaExpression_ = ::gandiva::TreeExprBuilder::MakeFunction("multiply",
+                                                                {leftGandivaExpr, rightGandivaExpr},
+                                                                returnType_);
 }
 
 std::string Multiply::alias() {

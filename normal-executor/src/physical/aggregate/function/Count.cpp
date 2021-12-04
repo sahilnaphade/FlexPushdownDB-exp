@@ -1,22 +1,22 @@
 //
-// Created by Yifei Yang on 12/2/21.
+// Created by Yifei Yang on 12/3/21.
 //
 
-#include <normal/executor/physical/aggregate/function/Sum.h>
+#include <normal/executor/physical/aggregate/function/Count.h>
 #include <arrow/compute/api_aggregate.h>
 
 namespace normal::executor::physical::aggregate {
 
-Sum::Sum(const string &outputColumnName,
-         const shared_ptr<normal::expression::gandiva::Expression> &expression)
-  : AggregateFunction(outputColumnName, expression) {}
+Count::Count(const string &outputColumnName,
+             const shared_ptr<normal::expression::gandiva::Expression> &expression):
+  AggregateFunction(outputColumnName, expression) {}
 
-tl::expected<shared_ptr<AggregateResult>, string> Sum::compute(const shared_ptr<TupleSet> &tupleSet) {
+tl::expected<shared_ptr<AggregateResult>, string> Count::compute(const shared_ptr<TupleSet> &tupleSet) {
   // evaluate the expression to get input of aggregation
   const auto &aggChunkedArray = evaluateExpr(tupleSet);
 
   // compute the aggregation
-  const auto &expResultScalar = arrow::compute::Sum(aggChunkedArray);
+  const auto &expResultScalar = arrow::compute::Count(aggChunkedArray);
   if (!expResultScalar.ok()) {
     return tl::make_unexpected(expResultScalar.status().message());
   }
@@ -24,14 +24,14 @@ tl::expected<shared_ptr<AggregateResult>, string> Sum::compute(const shared_ptr<
 
   // make the aggregateResult
   auto aggregateResult = make_shared<AggregateResult>();
-  aggregateResult->put(SUM_RESULT_KEY, resultScalar.scalar());
+  aggregateResult->put(COUNT_RESULT_KEY, resultScalar.scalar());
   return aggregateResult;
 }
 
 tl::expected<shared_ptr<arrow::Scalar>, string>
-Sum::finalize(const vector<shared_ptr<AggregateResult>> &aggregateResults) {
+Count::finalize(const vector<shared_ptr<AggregateResult>> &aggregateResults) {
   // build aggregate input array
-  const auto expFinalizeInputArray = buildFinalizeInputArray(aggregateResults, SUM_RESULT_KEY);
+  const auto expFinalizeInputArray = buildFinalizeInputArray(aggregateResults, COUNT_RESULT_KEY);
   if (!expFinalizeInputArray) {
     return tl::make_unexpected(expFinalizeInputArray.error());
   }

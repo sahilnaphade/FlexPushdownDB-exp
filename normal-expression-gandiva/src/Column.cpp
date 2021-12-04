@@ -17,7 +17,6 @@ Column::Column(std::string columnName):
 void Column::compile(std::shared_ptr<arrow::Schema> schema) {
   auto field = schema->GetFieldByName(columnName_);
   if(field == nullptr){
-    // FIXME
     throw std::runtime_error("Column '" + columnName_ + "' does not exist");
   }
   gandivaExpression_ = ::gandiva::TreeExprBuilder::MakeField(field);
