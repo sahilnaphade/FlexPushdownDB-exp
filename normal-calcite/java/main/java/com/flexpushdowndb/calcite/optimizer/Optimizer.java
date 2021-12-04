@@ -17,13 +17,17 @@ import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.sql.SqlExplainFormat;
+import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
+import org.apache.calcite.sql2rel.RelDecorrelator;
 import org.apache.calcite.sql2rel.RelFieldTrimmer;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.sql2rel.StandardConvertletTable;
@@ -86,9 +90,12 @@ public class Optimizer {
             Collections.emptyList()
     );
 
+    // Decorrelate
+    RelNode decorrelatedPlan = RelDecorrelator.decorrelateQuery(volOptPlan, relBuilder);
+
     // Trim unused fields
     RelFieldTrimmer trimmer = new RelFieldTrimmer(sqlValidator, relBuilder);
-    RelNode trimmedPlan = trimmer.trim(volOptPlan);
+    RelNode trimmedPlan = trimmer.trim(decorrelatedPlan);
 
     // Convert trimmedPlan to physical
     program = Programs.of(getConvertToPhysicalRuleSet());
@@ -120,6 +127,7 @@ public class Optimizer {
       }
     }
     ruleList.add(EnumerableRules.ENUMERABLE_LIMIT_SORT_RULE);
+    ruleList.add(CoreRules.FILTER_CORRELATE);
     return RuleSets.ofList(ruleList);
   }
 
