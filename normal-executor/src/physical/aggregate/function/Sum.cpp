@@ -20,15 +20,15 @@ tl::expected<shared_ptr<AggregateResult>, string> Sum::compute(const shared_ptr<
   const auto &aggChunkedArray = evaluateExpr(tupleSet);
 
   // compute the aggregation
-  const auto &expResultScalar = arrow::compute::Sum(aggChunkedArray);
-  if (!expResultScalar.ok()) {
-    return tl::make_unexpected(expResultScalar.status().message());
+  const auto &expResultDatum = arrow::compute::Sum(aggChunkedArray);
+  if (!expResultDatum.ok()) {
+    return tl::make_unexpected(expResultDatum.status().message());
   }
-  const auto &resultScalar = *expResultScalar;
+  const auto &resultScalar = (*expResultDatum).scalar();
 
   // make the aggregateResult
   auto aggregateResult = make_shared<AggregateResult>();
-  aggregateResult->put(SUM_RESULT_KEY, resultScalar.scalar());
+  aggregateResult->put(SUM_RESULT_KEY, resultScalar);
   return aggregateResult;
 }
 
