@@ -28,7 +28,7 @@ public:
   
   const string &getOutputColumnName() const;
   const shared_ptr<normal::expression::gandiva::Expression> &getExpression() const;
-  shared_ptr<arrow::DataType> returnType();
+  virtual shared_ptr<arrow::DataType> returnType() = 0;
   set<string> involvedColumnNames();
 
   /**

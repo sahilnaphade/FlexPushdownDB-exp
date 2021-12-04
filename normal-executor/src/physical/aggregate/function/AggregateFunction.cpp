@@ -22,10 +22,6 @@ const shared_ptr<normal::expression::gandiva::Expression> &AggregateFunction::ge
   return expression_;
 }
 
-shared_ptr<arrow::DataType> AggregateFunction::returnType() {
-  return returnType_;
-}
-
 set<string> AggregateFunction::involvedColumnNames() {
   if (expression_) {
     return expression_->involvedColumnNames();
@@ -74,7 +70,7 @@ AggregateFunction::buildFinalizeInputArray(const vector<shared_ptr<AggregateResu
                                            const string &key) {
   // make arrayBuilder
   unique_ptr<arrow::ArrayBuilder> arrayBuilder;
-  arrow::Status status = arrow::MakeBuilder(arrow::default_memory_pool(), returnType_, &arrayBuilder);
+  arrow::Status status = arrow::MakeBuilder(arrow::default_memory_pool(), returnType(), &arrayBuilder);
   if (!status.ok()) {
     return tl::make_unexpected(status.message());
   }

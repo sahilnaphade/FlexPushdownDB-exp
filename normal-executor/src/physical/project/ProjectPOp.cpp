@@ -117,7 +117,7 @@ void ProjectPOp::projectAndSendTuples() {
     const auto &fullTupleSet = TupleSet::make(columns);
 
     // Rename project columns
-    renameRes = projExprTuples->renameColumns(columnRenames_);
+    renameRes = fullTupleSet->renameColumns(columnRenames_);
     if (!renameRes.has_value()) {
       throw std::runtime_error(renameRes.error());
     }

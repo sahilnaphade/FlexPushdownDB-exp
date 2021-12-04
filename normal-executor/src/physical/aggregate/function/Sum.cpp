@@ -11,6 +11,10 @@ Sum::Sum(const string &outputColumnName,
          const shared_ptr<normal::expression::gandiva::Expression> &expression)
   : AggregateFunction(outputColumnName, expression) {}
 
+shared_ptr<arrow::DataType> Sum::returnType() {
+  return returnType_;
+}
+
 tl::expected<shared_ptr<AggregateResult>, string> Sum::compute(const shared_ptr<TupleSet> &tupleSet) {
   // evaluate the expression to get input of aggregation
   const auto &aggChunkedArray = evaluateExpr(tupleSet);

@@ -14,6 +14,8 @@ public:
   Count(const string &outputColumnName,
         const shared_ptr<normal::expression::gandiva::Expression> &expression);
 
+  shared_ptr<arrow::DataType> returnType() override;
+
   tl::expected<shared_ptr<AggregateResult>, string> compute(const shared_ptr<TupleSet> &tupleSet) override;
 
   tl::expected<shared_ptr<arrow::Scalar>, string>

@@ -11,9 +11,20 @@ Count::Count(const string &outputColumnName,
              const shared_ptr<normal::expression::gandiva::Expression> &expression):
   AggregateFunction(outputColumnName, expression) {}
 
+shared_ptr<arrow::DataType> Count::returnType() {
+  return arrow::int64();
+}
+
 tl::expected<shared_ptr<AggregateResult>, string> Count::compute(const shared_ptr<TupleSet> &tupleSet) {
-  // evaluate the expression to get input of aggregation
-  const auto &aggChunkedArray = evaluateExpr(tupleSet);
+  // build aggregate input array
+  shared_ptr<arrow::ChunkedArray> aggChunkedArray;
+  if (expression_) {
+    // if has expr, then evaluate it
+    aggChunkedArray = evaluateExpr(tupleSet);
+  } else {
+    // otherwise, just use the first column
+    aggChunkedArray = tupleSet->table()->column(0);
+  }
 
   // compute the aggregation
   const auto &expResultScalar = arrow::compute::Count(aggChunkedArray);
