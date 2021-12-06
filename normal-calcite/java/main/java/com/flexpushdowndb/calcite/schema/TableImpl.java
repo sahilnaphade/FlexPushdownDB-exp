@@ -27,6 +27,7 @@ public final class TableImpl extends AbstractTable implements ScannableTable {
     return tableName;
   }
 
+  @Override
   public RelDataType getRowType(RelDataTypeFactory typeFactory) {
     RelDataTypeFactory.Builder typeBuilder = typeFactory.builder();
     for (String fieldName: fieldTypes.keySet()) {
