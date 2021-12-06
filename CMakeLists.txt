@@ -38,11 +38,13 @@ function(linkForMacExecutable target)
   set(path_to_libs libgvplugin_neato_layout.6.dylib
           libgvplugin_core.6.dylib
           @rpath/libaws-cpp-sdk-core.dylib
-          @rpath/libaws-cpp-sdk-s3.dylib)
+          @rpath/libaws-cpp-sdk-s3.dylib
+          @rpath/libaws-crt-cpp.dylib)
   set(change_libs ${CMAKE_BINARY_DIR}/_deps/graphviz_ep/install/lib/graphviz/libgvplugin_neato_layout.6.dylib
           ${CMAKE_BINARY_DIR}/_deps/graphviz_ep/install/lib/graphviz/libgvplugin_core.6.dylib
           ${CMAKE_BINARY_DIR}/_deps/aws-cpp-sdk_ep/install/lib/libaws-cpp-sdk-core.dylib
-          ${CMAKE_BINARY_DIR}/_deps/aws-cpp-sdk_ep/install/lib/libaws-cpp-sdk-s3.dylib)
+          ${CMAKE_BINARY_DIR}/_deps/aws-cpp-sdk_ep/install/lib/libaws-cpp-sdk-s3.dylib
+          ${CMAKE_BINARY_DIR}/_deps/aws-cpp-sdk_ep/install/lib/libaws-crt-cpp.dylib)
   foreach(path_to_lib change_lib IN ZIP_LISTS path_to_libs change_libs)
     add_custom_command(TARGET ${target} POST_BUILD
             COMMAND install_name_tool -change ${path_to_lib} ${change_lib} ${target})
