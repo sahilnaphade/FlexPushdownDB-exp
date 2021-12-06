@@ -17,7 +17,7 @@ TEST_SUITE ("array-appender-benchmark" * doctest::skip(false)) {
 
 TEST_CASE ("array-appender-benchmark-append-unsafe" * doctest::skip(false)) {
 
-  auto sourceArray = Sample::sampleCxRString(1, 1000)->getArrowTable().value()->column(0)->chunk(0);
+  auto sourceArray = Sample::sampleCxRString(1, 1000)->table()->column(0)->chunk(0);
 
   ankerl::nanobench::Config().minEpochIterations(1).run(
 	  getCurrentTestName(), [&] {

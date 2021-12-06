@@ -80,6 +80,7 @@ target_link_libraries(normal-tuple-test doctest::doctest)
 target_link_libraries(normal-tuple-test Backward::Backward)
 target_link_libraries(normal-tuple-test fmt::fmt)
 target_link_libraries(normal-tuple-test normal-tuple)
+target_link_libraries(normal-tuple-test normal-util)
 
 
 #-----------------------------------------------------------------------------------------------------------------------

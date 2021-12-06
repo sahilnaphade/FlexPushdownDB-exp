@@ -31,7 +31,7 @@ target_link_libraries(normal-ssb PRIVATE fmt::fmt)
 target_link_libraries(normal-ssb PRIVATE normal-plan)
 target_link_libraries(normal-ssb PRIVATE sqlite3_static)
 target_link_libraries(normal-ssb PRIVATE sqlite3_csv_static)
-target_link_libraries(normal-ssb PUBLIC normal-pushdown)
+#target_link_libraries(normal-ssb PUBLIC normal-pushdown)
 target_link_libraries(normal-ssb PUBLIC spdlog::spdlog)
 target_link_libraries(normal-ssb PRIVATE ssl crypto)
 
@@ -51,7 +51,7 @@ target_link_libraries(normal-ssb-benchmark doctest::doctest)
 target_link_libraries(normal-ssb-benchmark Backward::Backward)
 target_link_libraries(normal-ssb-benchmark nanobench::nanobench)
 target_link_libraries(normal-ssb-benchmark normal-ssb)
-target_link_libraries(normal-ssb-benchmark normal-sql)
+#target_link_libraries(normal-ssb-benchmark normal-sql)
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -74,7 +74,7 @@ add_executable(normal-ssb-test
 target_link_libraries(normal-ssb-test doctest::doctest)
 target_link_libraries(normal-ssb-test Backward::Backward)
 target_link_libraries(normal-ssb-test normal-ssb)
-target_link_libraries(normal-ssb-test normal-sql)
+#target_link_libraries(normal-ssb-test normal-sql)
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -171,7 +171,8 @@ add_executable(normal-ssb-experiment
 target_link_libraries(normal-ssb-experiment doctest::doctest)
 target_link_libraries(normal-ssb-experiment Backward::Backward)
 target_link_libraries(normal-ssb-experiment normal-ssb)
-target_link_libraries(normal-ssb-experiment normal-sql)
+#target_link_libraries(normal-ssb-experiment normal-sql)
+target_link_libraries(normal-ssb-experiment normal-plan)
 target_link_libraries(normal-ssb-experiment normal-ssb-query-generate)
 # need to add and link libraries on mac
 if (${APPLE})
