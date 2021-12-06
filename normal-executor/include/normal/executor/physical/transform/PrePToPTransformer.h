@@ -9,6 +9,7 @@
 #include <normal/executor/physical/aggregate/function/AggregateFunction.h>
 #include <normal/plan/prephysical/PrePhysicalPlan.h>
 #include <normal/plan/prephysical/SortPrePOp.h>
+#include <normal/plan/prephysical/LimitSortPrePOp.h>
 #include <normal/plan/prephysical/AggregatePrePOp.h>
 #include <normal/plan/prephysical/AggregatePrePFunction.h>
 #include <normal/plan/prephysical/GroupPrePOp.h>
@@ -48,6 +49,9 @@ private:
 
   pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
   transformSort(const shared_ptr<SortPrePOp> &sortPrePOp);
+
+  pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
+  transformLimitSort(const shared_ptr<LimitSortPrePOp> &limitSortPrePOp);
 
   pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
   transformAggregate(const shared_ptr<AggregatePrePOp> &aggregatePrePOp);

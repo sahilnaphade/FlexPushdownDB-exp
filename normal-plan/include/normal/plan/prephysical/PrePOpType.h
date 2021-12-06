@@ -14,6 +14,7 @@ enum PrePOpType {
   AGGREGATE,
   GROUP,
   SORT,
+  LIMIT_SORT,
   PROJECT
 };
 

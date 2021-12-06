@@ -36,6 +36,7 @@ add_library(normal-executor STATIC
 #        physical operators
         include/normal/executor/physical/Globals.h
         src/physical/sort/SortPOp.cpp include/normal/executor/physical/sort/SortPOp.h
+        src/physical/limitsort/LimitSortPOp.cpp include/normal/executor/physical/limitsort/LimitSortPOp.h
         src/physical/aggregate/AggregatePOp.cpp include/normal/executor/physical/aggregate/AggregatePOp.h
         src/physical/aggregate/AggregateResult.cpp include/normal/executor/physical/aggregate/AggregateResult.h
         src/physical/aggregate/function/AggregateFunction.cpp include/normal/executor/physical/aggregate/function/AggregateFunction.h

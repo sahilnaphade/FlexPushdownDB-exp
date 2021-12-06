@@ -43,8 +43,10 @@ shared_ptr<PrePhysicalPlan> CalcitePlanJsonDeserializer::deserialize() {
 
 shared_ptr<PrePhysicalOp> CalcitePlanJsonDeserializer::deserializeDfs(json &jObj) {
   string opName = jObj["operator"].get<string>();
-  if (opName == "EnumerableSort" || opName == "EnumerableLimitSort") {  // TODO: split
+  if (opName == "EnumerableSort") {
     return deserializeSort(jObj);
+  } else if (opName == "EnumerableLimitSort") {
+    return deserializeLimitSort(jObj);
   } else if (opName == "EnumerableAggregate") {
     return deserializeAggregateOrGroup(jObj);
   } else if (opName == "EnumerableProject") {
@@ -178,23 +180,52 @@ pair<vector<string>, vector<string>> CalcitePlanJsonDeserializer::deserializeHas
   }
 }
 
-shared_ptr<SortPrePOp> CalcitePlanJsonDeserializer::deserializeSort(const json &jObj) {
-  // deserialize sort fields
-  const auto &sortFieldsJArr = jObj["sortFields"].get<vector<json>>();
+vector<arrow::compute::SortKey> CalcitePlanJsonDeserializer::deserializeSortKeys(const json &jObj) {
   vector<arrow::compute::SortKey> sortKeys;
-  for (const auto &sortFieldJObj: sortFieldsJArr) {
+  for (const auto &sortFieldJObj: jObj) {
     const string &columnName = ColumnName::canonicalize(sortFieldJObj["field"].get<string>());
     const string &directionStr = sortFieldJObj["direction"].get<string>();
     auto direction = (directionStr == "ASCENDING") ?
-            arrow::compute::SortOrder::Ascending : arrow::compute::SortOrder::Descending;
+                     arrow::compute::SortOrder::Ascending : arrow::compute::SortOrder::Descending;
     sortKeys.emplace_back(arrow::compute::SortKey(columnName, direction));
   }
+  return sortKeys;
+}
+
+shared_ptr<SortPrePOp> CalcitePlanJsonDeserializer::deserializeSort(const json &jObj) {
+  // deserialize sort fields
+  const auto &sortFieldsJArr = jObj["sortFields"].get<vector<json>>();
+  const auto &sortKeys = deserializeSortKeys(sortFieldsJArr);
   arrow::compute::SortOptions sortOptions(sortKeys);
   shared_ptr<SortPrePOp> sortPrePOp = make_shared<SortPrePOp>(sortOptions);
 
   // deserialize producers
   sortPrePOp->setProducers(deserializeProducers(jObj));
   return sortPrePOp;
+}
+
+shared_ptr<LimitSortPrePOp> CalcitePlanJsonDeserializer::deserializeLimitSort(const json &jObj) {
+  // deserialize sort fields
+  const auto &sortFieldsJArr = jObj["sortFields"].get<vector<json>>();
+  const auto &sortKeys = deserializeSortKeys(sortFieldsJArr);
+
+  // deserialize limit
+  const auto &limitJObj = jObj["limit"];
+  if (!limitJObj.contains("literal")) {
+    throw runtime_error(fmt::format("Invalid sort limit, not an literal, from: {}",to_string(limitJObj)));
+  }
+  const auto &limitLiteralJObj = limitJObj["literal"];
+  if (limitLiteralJObj["type"].get<string>() != "INTEGER") {
+    throw runtime_error(fmt::format("Invalid sort limit literal, not an integer, from: {}",
+                                    to_string(limitLiteralJObj)));
+  }
+  int64_t limitVal = limitLiteralJObj["value"].get<int64_t>();
+  arrow::compute::SelectKOptions selectKOptions(limitVal, sortKeys);
+  shared_ptr<LimitSortPrePOp> limitSortPrePOp = make_shared<LimitSortPrePOp>(selectKOptions);
+
+  // deserialize producers
+  limitSortPrePOp->setProducers(deserializeProducers(jObj));
+  return limitSortPrePOp;
 }
 
 shared_ptr<PrePhysicalOp> CalcitePlanJsonDeserializer::deserializeAggregateOrGroup(json &jObj) {

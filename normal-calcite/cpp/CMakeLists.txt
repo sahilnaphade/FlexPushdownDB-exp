@@ -27,7 +27,8 @@ target_link_libraries(calciteserver_thrift_cpp PRIVATE boost)
 
 add_custom_target(
         calciteserver_thrift_java ALL
-        COMMAND thrift_executable --gen java -r -out ${CMAKE_CURRENT_SOURCE_DIR}/../java/main/java ${CMAKE_CURRENT_SOURCE_DIR}/../thrift/CalciteServer.thrift)
+        COMMAND thrift_executable --gen java -r -out ${CMAKE_CURRENT_SOURCE_DIR}/../java/main/java ${CMAKE_CURRENT_SOURCE_DIR}/../thrift/CalciteServer.thrift
+        COMMAND mvn install -f ${CMAKE_SOURCE_DIR}/normal-calcite/java/pom.xml -DskipTests)
 
 
 #-----------------------------------------------------------------------------------------------------------------------

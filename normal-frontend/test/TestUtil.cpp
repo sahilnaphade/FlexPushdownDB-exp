@@ -60,7 +60,7 @@ void TestUtil::e2eNoStartCalciteServer(const string &schemaName,
   const auto &mode = Mode::pullupMode();
   const auto &cachingPolicy = nullptr;
 
-  const auto &executor = make_shared<Executor>(mode, cachingPolicy, false, false);
+  const auto &executor = make_shared<Executor>(mode, cachingPolicy, true, false);
   executor->start();
 
   for (const auto &queryFileName: queryFileNames) {

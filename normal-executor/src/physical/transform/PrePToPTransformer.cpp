@@ -5,6 +5,7 @@
 #include <normal/executor/physical/transform/PrePToPTransformer.h>
 #include <normal/executor/physical/transform/PrePToS3PTransformer.h>
 #include <normal/executor/physical/sort/SortPOp.h>
+#include <normal/executor/physical/limitsort/LimitSortPOp.h>
 #include <normal/executor/physical/aggregate/AggregatePOp.h>
 #include <normal/executor/physical/aggregate/function/Sum.h>
 #include <normal/executor/physical/aggregate/function/Count.h>
@@ -49,6 +50,10 @@ PrePToPTransformer::transformDfs(const shared_ptr<PrePhysicalOp> &prePOp) {
     case SORT: {
       const auto &sortPrePOp = std::static_pointer_cast<SortPrePOp>(prePOp);
       return transformSort(sortPrePOp);
+    }
+    case LIMIT_SORT: {
+      const auto &limitSortPrePOp = std::static_pointer_cast<LimitSortPrePOp>(prePOp);
+      return transformLimitSort(limitSortPrePOp);
     }
     case AGGREGATE: {
       const auto &aggregatePrePOp = std::static_pointer_cast<AggregatePrePOp>(prePOp);
@@ -115,6 +120,34 @@ PrePToPTransformer::transformSort(const shared_ptr<SortPrePOp> &sortPrePOp) {
   connectManyToOne(upConnPOps, sortPOp);
 
   return make_pair(vector<shared_ptr<PhysicalOp>>{sortPOp}, allPOps);
+}
+
+pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
+PrePToPTransformer::transformLimitSort(const shared_ptr<LimitSortPrePOp> &limitSortPrePOp) {
+  // transform producers
+  const auto &producersTransRes = transformProducers(limitSortPrePOp);
+  if (producersTransRes.size() != 1) {
+    throw runtime_error(fmt::format("Unsupported number of producers for limitSort, should be {}, but get {}",
+                                    1, producersTransRes.size()));
+  }
+
+  // transform self
+  const auto &producerTransRes = producersTransRes[0];
+  auto upConnPOps = producerTransRes.first;
+  auto allPOps = producerTransRes.second;
+
+  vector<string> projectColumnNames{limitSortPrePOp->getProjectColumnNames().begin(),
+                                    limitSortPrePOp->getProjectColumnNames().end()};
+
+  shared_ptr<PhysicalOp> limitSortPOp = make_shared<limitsort::LimitSortPOp>(fmt::format("LimitSort"),
+                                                                             limitSortPrePOp->getSelectKOptions(),
+                                                                             projectColumnNames);
+  allPOps.emplace_back(limitSortPOp);
+
+  // connect to upstream
+  connectManyToOne(upConnPOps, limitSortPOp);
+
+  return make_pair(vector<shared_ptr<PhysicalOp>>{limitSortPOp}, allPOps);
 }
 
 pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>

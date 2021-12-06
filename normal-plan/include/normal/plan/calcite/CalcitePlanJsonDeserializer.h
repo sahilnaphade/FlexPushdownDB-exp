@@ -8,6 +8,7 @@
 #include <normal/plan/prephysical/PrePhysicalPlan.h>
 #include <normal/plan/prephysical/PrePhysicalOp.h>
 #include <normal/plan/prephysical/SortPrePOp.h>
+#include <normal/plan/prephysical/LimitSortPrePOp.h>
 #include <normal/plan/prephysical/AggregatePrePOp.h>
 #include <normal/plan/prephysical/GroupPrePOp.h>
 #include <normal/plan/prephysical/ProjectPrePOp.h>
@@ -37,8 +38,10 @@ private:
 
   shared_ptr<Expression> deserializeExpression(const json &jObj);
   pair<vector<string>, vector<string>> deserializeHashJoinCondition(const json &jObj);
+  vector<arrow::compute::SortKey> deserializeSortKeys(const json &jObj);
 
   shared_ptr<SortPrePOp> deserializeSort(const json &jObj);
+  shared_ptr<LimitSortPrePOp> deserializeLimitSort(const json &jObj);
   shared_ptr<PrePhysicalOp> deserializeAggregateOrGroup(json &jObj);
   shared_ptr<PrePhysicalOp> deserializeProject(const json &jObj);
   shared_ptr<HashJoinPrePOp> deserializeHashJoin(const json &jObj);
