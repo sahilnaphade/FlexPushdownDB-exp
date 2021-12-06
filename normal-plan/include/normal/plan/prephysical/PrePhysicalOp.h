@@ -9,6 +9,7 @@
 #include <vector>
 #include <set>
 #include <string>
+#include <memory>
 
 using namespace std;
 

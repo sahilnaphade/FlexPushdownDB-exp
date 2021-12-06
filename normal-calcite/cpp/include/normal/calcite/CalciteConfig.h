@@ -6,6 +6,7 @@
 #define NORMAL_NORMAL_CALCITE_CPP_INCLUDE_NORMAL_CALCITE_CALCITECONFIG_H
 
 #include <string>
+#include <memory>
 
 using namespace std;
 

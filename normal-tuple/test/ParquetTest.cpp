@@ -12,9 +12,10 @@
 #include <normal/tuple/Converter.h>
 #include <normal/tuple/Globals.h>
 #include <normal/tuple/parquet/ParquetReader.h>
-#include <normal/tuple/Util.h>
+#include <normal/util/Util.h>
 
 using namespace normal::tuple;
+using namespace normal::util;
 
 const char *getCurrentTestName();
 const char *getCurrentTestSuiteName();
@@ -55,7 +56,7 @@ TEST_CASE ("parquet-read-byte-range" * doctest::skip(false || SKIP_SUITE)) {
 	  CHECK_MESSAGE(result.has_value(), result.error());
 
   auto size = std::experimental::filesystem::file_size(outFile);
-  auto scanRanges = Util::ranges<int>(0, size, 3);
+  auto scanRanges = normal::util::ranges<int>(0, size, 3);
 
   auto expectedReader = ParquetReader::make(outFile);
   if(!expectedReader)
