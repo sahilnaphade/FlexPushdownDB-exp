@@ -1,4 +1,3 @@
--- tpch3 using 1395599672 as a seed to the RNG
 select
   l.l_orderkey,
   sum(l.l_extendedprice * (1 - l.l_discount)) as revenue,
@@ -6,9 +5,9 @@ select
   o.o_shippriority
 
 from
-  cp."tpch/customer.parquet" c,
-  cp."tpch/orders.parquet" o,
-  cp."tpch/lineitem.parquet" l
+  customer c,
+  orders o,
+  lineitem l
 
 where
   c.c_mktsegment = 'HOUSEHOLD'
@@ -24,4 +23,4 @@ group by
 order by
   revenue desc,
   o.o_orderdate
-limit 10;
+limit 10

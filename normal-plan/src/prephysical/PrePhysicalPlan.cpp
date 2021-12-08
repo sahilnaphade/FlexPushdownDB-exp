@@ -6,10 +6,17 @@
 
 namespace normal::plan::prephysical {
 
-PrePhysicalPlan::PrePhysicalPlan(const shared_ptr<PrePhysicalOp> &rootOp) : rootOp_(rootOp) {}
+PrePhysicalPlan::PrePhysicalPlan(const shared_ptr<PrePhysicalOp> &rootOp,
+                                 const vector<string> &outputColumnNames) :
+  rootOp_(rootOp),
+  outputColumnNames_(outputColumnNames) {}
 
 const shared_ptr<PrePhysicalOp> &PrePhysicalPlan::getRootOp() const {
   return rootOp_;
+}
+
+const vector<string> &PrePhysicalPlan::getOutputColumnNames() const {
+  return outputColumnNames_;
 }
 
 void PrePhysicalPlan::populateAndTrimProjectColumns() {

@@ -18,8 +18,9 @@ void CollatePOp::onStart() {
   this->tuples_.reset();
 }
 
-CollatePOp::CollatePOp(std::string name) :
-  PhysicalOp(std::move(name), "CollatePOp", {}) {
+CollatePOp::CollatePOp(std::string name,
+                       std::vector<std::string> projectColumnNames) :
+  PhysicalOp(std::move(name), "CollatePOp", std::move(projectColumnNames)) {
 }
 
 void CollatePOp::onReceive(const normal::executor::message::Envelope &message) {
@@ -42,24 +43,28 @@ void CollatePOp::onComplete(const normal::executor::message::CompleteMessage &) 
     if (!tables_.empty()) {
       tables_.push_back(tuples_->table());
       const arrow::Result<std::shared_ptr<arrow::Table>> &res = arrow::ConcatenateTables(tables_);
-      if (!res.ok())
-        abort();
+      if (!res.ok()) {
+        throw std::runtime_error(res.status().message());
+      }
       tuples_->table(*res);
       tables_.clear();
     }
-	ctx()->notifyComplete();
+
+    // make the order of output columns the same as the query specifies
+    if (tuples_ && tuples_->valid()) {
+      const auto &expTupleSet = tuples_->projectExist(getProjectColumnNames());
+      if (!expTupleSet.has_value()) {
+        throw std::runtime_error(expTupleSet.error());
+      }
+      tuples_ = expTupleSet.value();
+    } else {
+      tuples_ = TupleSet::makeWithEmptyTable();
+    }
+
+	  ctx()->notifyComplete();
   }
 }
 
-void CollatePOp::show() {
-  assert(tuples_);
-  SPDLOG_DEBUG("Collated  |  tupleSet:\n{}", this->name(), tuples_->toString());
-}
-
-std::shared_ptr<TupleSet> CollatePOp::tuples() {
-  assert(tuples_);
-  return tuples_;
-}
 void CollatePOp::onTuple(const normal::executor::message::TupleMessage &message) {
   if (!tuples_) {
     assert(message.tuples());
@@ -69,16 +74,18 @@ void CollatePOp::onTuple(const normal::executor::message::TupleMessage &message)
     if (tables_.size() > tablesCutoff_) {
       tables_.push_back(tuples_->table());
       const arrow::Result<std::shared_ptr<arrow::Table>> &res = arrow::ConcatenateTables(tables_);
-      if (!res.ok())
-        abort();
+      if (!res.ok()) {
+        throw std::runtime_error(res.status().message());
+      }
       tuples_->table(*res);
       tables_.clear();
     }
   }
 }
 
-[[maybe_unused]] void CollatePOp::setTuples(const std::shared_ptr<TupleSet> &Tuples) {
-  tuples_ = Tuples;
+std::shared_ptr<TupleSet> CollatePOp::tuples() {
+  assert(tuples_);
+  return tuples_;
 }
 
 }

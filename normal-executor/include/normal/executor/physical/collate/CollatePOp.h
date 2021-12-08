@@ -23,11 +23,12 @@ namespace normal::executor::physical::collate {
 class CollatePOp : public PhysicalOp {
 
 public:
-  explicit CollatePOp(std::string name);
+  explicit CollatePOp(std::string name,
+                      std::vector<std::string> projectColumnNames);
   ~CollatePOp() override = default;
-  void show();
+
   std::shared_ptr<TupleSet> tuples();
-  [[maybe_unused]] void setTuples(const std::shared_ptr<TupleSet> &Tuples);
+
   void onReceive(const normal::executor::message::Envelope &message) override;
 
 private:

@@ -37,7 +37,8 @@ shared_ptr<PhysicalPlan> PrePToPTransformer::transform() {
   auto allPOps = rootTransRes.second;
 
   // make a collate operator
-  shared_ptr<PhysicalOp> collatePOp = make_shared<collate::CollatePOp>("collate");
+  shared_ptr<PhysicalOp> collatePOp = make_shared<collate::CollatePOp>(
+          "collate", prePhysicalPlan_->getOutputColumnNames());
   allPOps.emplace_back(collatePOp);
   connectManyToOne(upConnPOps, collatePOp);
 

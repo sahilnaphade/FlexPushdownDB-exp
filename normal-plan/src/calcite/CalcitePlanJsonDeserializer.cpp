@@ -37,8 +37,12 @@ CalcitePlanJsonDeserializer::CalcitePlanJsonDeserializer(string planJsonString,
 
 shared_ptr<PrePhysicalPlan> CalcitePlanJsonDeserializer::deserialize() {
   auto jObj = json::parse(planJsonString_);
-  auto rootPrePOp = deserializeDfs(jObj);
-  return make_shared<PrePhysicalPlan>(rootPrePOp);
+  auto rootPrePOp = deserializeDfs(jObj["plan"]);
+  vector<string> outputColumnNames;
+  for (const auto &columnName: jObj["outputFields"].get<vector<string>>()) {
+    outputColumnNames.emplace_back(columnName);
+  }
+  return make_shared<PrePhysicalPlan>(rootPrePOp, outputColumnNames);
 }
 
 shared_ptr<PrePhysicalOp> CalcitePlanJsonDeserializer::deserializeDfs(json &jObj) {

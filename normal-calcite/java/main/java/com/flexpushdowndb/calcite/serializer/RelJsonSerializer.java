@@ -13,6 +13,16 @@ import java.util.List;
 
 public final class RelJsonSerializer {
   public static JSONObject serialize(RelNode relNode) {
+    JSONArray outputFieldsJArr = new JSONArray();
+    for (String fieldName: relNode.getRowType().getFieldNames()) {
+      outputFieldsJArr.put(fieldName);
+    }
+    return new JSONObject()
+            .put("plan", serializeRel(relNode))
+            .put("outputFields", outputFieldsJArr);
+  }
+
+  private static JSONObject serializeRel(RelNode relNode) {
     JSONObject jo;
     if (relNode instanceof EnumerableTableScan) {
       jo = serializeEnumerableTableScan((EnumerableTableScan) relNode);
@@ -37,7 +47,7 @@ public final class RelJsonSerializer {
   private static JSONArray serializeRelInputs(RelNode relNode) {
     JSONArray jArr = new JSONArray();
     for (RelNode input: relNode.getInputs()) {
-      jArr.put(serialize(input));
+      jArr.put(serializeRel(input));
     }
     return jArr;
   }

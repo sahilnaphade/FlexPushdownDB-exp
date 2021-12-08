@@ -11,9 +11,11 @@ namespace normal::plan::prephysical {
 
 class PrePhysicalPlan {
 public:
-  PrePhysicalPlan(const shared_ptr<PrePhysicalOp> &rootOp);
+  PrePhysicalPlan(const shared_ptr<PrePhysicalOp> &rootOp,
+                  const vector<string> &outputColumnNames);
 
   const shared_ptr<PrePhysicalOp> &getRootOp() const;
+  const vector<string> &getOutputColumnNames() const;
 
   void populateAndTrimProjectColumns();
 
@@ -31,6 +33,7 @@ private:
                              const optional<set<string>> &optDownUsedColumns);
 
   shared_ptr<PrePhysicalOp> rootOp_;
+  vector<string> outputColumnNames_;
 };
 
 }
