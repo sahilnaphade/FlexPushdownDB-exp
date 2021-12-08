@@ -48,7 +48,11 @@ public:
 	  auto typedScalar = std::static_pointer_cast<::arrow::DoubleScalar>(scalar_);
 	  auto typedValue = typedScalar->value;
 	  return typedValue;
-	} else if (scalar_->type->id() == ::arrow::BooleanType::type_id) {
+	} else if (scalar_->type->id() == ::arrow::Date64Type::type_id) {
+    auto typedScalar = std::static_pointer_cast<::arrow::Date64Scalar>(scalar_);
+    auto typedValue = typedScalar->value;
+    return typedValue;
+  } else if (scalar_->type->id() == ::arrow::BooleanType::type_id) {
 	  auto typedScalar = std::static_pointer_cast<::arrow::BooleanScalar>(scalar_);
 	  auto typedValue = typedScalar->value;
 	  return typedValue;

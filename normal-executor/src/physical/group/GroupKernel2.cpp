@@ -168,7 +168,11 @@ tl::expected<shared_ptr<TupleSet>, string> GroupKernel2::finalise() {
   // Append values
   for (const auto &groupAggregateResultIt: groupAggregateResultVectorMap_) {
     const auto &groupKey = groupAggregateResultIt.first;
-    const auto &groupKeyScalars = groupKey->getScalars();
+    const auto &expGroupKeyScalars = groupKey->getScalars();
+    if (!expGroupKeyScalars.has_value()) {
+      return tl::make_unexpected(expGroupKeyScalars.error());
+    }
+    const auto &groupKeyScalars = expGroupKeyScalars.value();
     const auto &aggregateResults = groupAggregateResultIt.second;
 
     // For group column

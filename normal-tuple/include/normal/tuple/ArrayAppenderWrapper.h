@@ -113,10 +113,12 @@ public:
 	  return ArrayAppenderWrapper<::arrow::Int64Type::c_type, ::arrow::Int64Type>::make(expectedSize);
 	} else if (type->id() == ::arrow::DoubleType::type_id) {
 	  return ArrayAppenderWrapper<::arrow::DoubleType::c_type, ::arrow::DoubleType>::make(expectedSize);
-	} else {
-	  return tl::make_unexpected(
-		  fmt::format("ArrayAppender not implemented for type '{}'", type->name()));
-	}
+	} else if (type->id() == ::arrow::Date64Type::type_id) {
+    return ArrayAppenderWrapper<::arrow::Date64Type::c_type, ::arrow::Date64Type>::make(expectedSize);
+  } else {
+	    return tl::make_unexpected(
+	            fmt::format("ArrayAppender not implemented for type '{}'", type->name()));
+	  }
   }
 };
 

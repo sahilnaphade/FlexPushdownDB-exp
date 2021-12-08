@@ -16,7 +16,7 @@ ArrayAppenderWrapper<std::string,
   assert(array->length() >= 0);
   assert(i < (size_t)array->length());
 
-  buffer_.emplace_back(std::static_pointer_cast<ArrowArrayType>(array)->GetString(i));
+  buffer_.emplace_back(std::static_pointer_cast<ArrowArrayType>(array)->GetString((int64_t) i));
 }
 
 template<>
@@ -60,6 +60,14 @@ template<>
 ArrayAppenderWrapper<::arrow::DoubleType::c_type,
 					 ::arrow::DoubleType>::appendValues(const std::shared_ptr<::arrow::DoubleBuilder> &builder,
 														  const std::vector<::arrow::DoubleType::c_type> &buffer) {
+  return builder->AppendValues(buffer);
+}
+
+template<>
+::arrow::Status
+ArrayAppenderWrapper<::arrow::Date64Type::c_type,
+        ::arrow::Date64Type>::appendValues(const std::shared_ptr<::arrow::Date64Builder> &builder,
+                                           const std::vector<::arrow::Date64Type::c_type> &buffer) {
   return builder->AppendValues(buffer);
 }
 

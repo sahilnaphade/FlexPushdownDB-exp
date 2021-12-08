@@ -19,7 +19,7 @@ public:
   virtual ~GroupKeyElement() = default;
   virtual bool equals(const std::shared_ptr<GroupKeyElement> &other) = 0;
   virtual size_t hash() = 0;
-  virtual std::shared_ptr<arrow::Scalar> toScalar() = 0;
+  virtual tl::expected<std::shared_ptr<arrow::Scalar>, std::string> toScalar() = 0;
   virtual std::string toString() = 0;
 };
 
@@ -39,8 +39,12 @@ public:
 	  return value == std::static_pointer_cast<GroupKeyElementWrapper<ArrowType>>(other)->value;
   };
 
-  std::shared_ptr<arrow::Scalar> toScalar() override {
-    return arrow::MakeScalar(value);
+  tl::expected<std::shared_ptr<arrow::Scalar>, std::string> toScalar() override {
+    const auto expScalar = arrow::MakeScalar(arrow::TypeTraits<ArrowType>::type_singleton(), value);
+    if (!expScalar.ok()) {
+      return tl::make_unexpected(expScalar.status().message());
+    }
+    return expScalar.ValueOrDie();
   }
 
   std::string toString() override {
@@ -65,7 +69,7 @@ public:
 	  return value == std::static_pointer_cast<GroupKeyElementWrapper<arrow::StringType>>(other)->value;
   };
 
-  std::shared_ptr<arrow::Scalar> toScalar() override {
+  tl::expected<std::shared_ptr<arrow::Scalar>, std::string> toScalar() override {
     return arrow::MakeScalar(value);
   }
 
@@ -97,7 +101,10 @@ public:
           std::static_pointer_cast<arrow::FloatArray>(array)->Value(r));
       case arrow::Type::DOUBLE:
         return std::make_shared<GroupKeyElementWrapper<arrow::DoubleType>>(
-          std::static_pointer_cast<arrow::DoubleArray>(array)->Value(r));
+                std::static_pointer_cast<arrow::DoubleArray>(array)->Value(r));
+      case arrow::Type::DATE64:
+        return std::make_shared<GroupKeyElementWrapper<arrow::Date64Type>>(
+                std::static_pointer_cast<arrow::Date64Array>(array)->Value(r));
       case arrow::Type::STRING:
         return std::make_shared<GroupKeyElementWrapper<arrow::StringType>>(
           std::static_pointer_cast<arrow::StringArray>(array)->GetString(r));
@@ -130,10 +137,14 @@ public:
 	  return elements_;
   }
 
-  std::vector<std::shared_ptr<arrow::Scalar>> getScalars() const {
+  tl::expected<std::vector<std::shared_ptr<arrow::Scalar>>, std::string> getScalars() const {
     std::vector<std::shared_ptr<arrow::Scalar>> scalars;
     for (const auto &element: elements_) {
-      scalars.emplace_back(element->toScalar());
+      const auto &expScalar = element->toScalar();
+      if (!expScalar.has_value()) {
+        return tl::make_unexpected(expScalar.error());
+      }
+      scalars.emplace_back(expScalar.value());
     }
     return scalars;
   }

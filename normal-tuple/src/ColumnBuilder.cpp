@@ -29,6 +29,10 @@ void ColumnBuilder::append(const std::shared_ptr<Scalar> &scalar) {
     auto typedArrowBuilder = dynamic_cast<::arrow::DoubleBuilder*>(rawBuilderPtr);
     auto status = typedArrowBuilder->Append(scalar->value<double>());
   }
+  else if (scalar->type()->id() == ::arrow::Date64Type::type_id) {
+    auto typedArrowBuilder = dynamic_cast<::arrow::Date64Builder*>(rawBuilderPtr);
+    auto status = typedArrowBuilder->Append(scalar->value<long>());
+  }
   else if (scalar->type()->id() == ::arrow::StringType::type_id) {
     auto typedArrowBuilder = dynamic_cast<::arrow::StringBuilder*>(rawBuilderPtr);
     auto status = typedArrowBuilder->Append(scalar->value<std::string>());
