@@ -9,12 +9,12 @@
 
 using namespace normal::executor::physical::shuffle;
 
-tl::expected<std::vector<std::shared_ptr<TupleSet>>, std::string>
-ShuffleKernel2::shuffle(const std::string &columnName,
-						size_t numSlots,
-						const TupleSet &tupleSet) {
+tl::expected<vector<shared_ptr<TupleSet>>, string>
+ShuffleKernel2::shuffle(const vector<string> &columnNames,
+                        size_t numSlots,
+                        const TupleSet &tupleSet) {
 
-  ::arrow::Result<std::shared_ptr<::arrow::RecordBatch>> recordBatchResult;
+  ::arrow::Result<shared_ptr<::arrow::RecordBatch>> recordBatchResult;
   ::arrow::Status status;
 
   // Get the arrow table, checking the tupleset is defined FIXME: This is dumb :(
@@ -23,14 +23,14 @@ ShuffleKernel2::shuffle(const std::string &columnName,
   auto table = tupleSet.table();
 
   // Create the shuffler
-  auto expectedShuffler = RecordBatchShuffler2::make(columnName, numSlots, table->schema(), table->num_rows());
+  auto expectedShuffler = RecordBatchShuffler2::make(columnNames, numSlots, table->schema(), table->num_rows());
   if (!expectedShuffler.has_value())
 	return tl::make_unexpected(expectedShuffler.error());
   auto shuffler = expectedShuffler.value();
 
   // Read the table a batch at a time
   ::arrow::TableBatchReader reader{*table};
-  reader.set_chunksize(DefaultChunkSize);
+  reader.set_chunksize((int64_t) DefaultChunkSize);
 
   // Read a batch
   recordBatchResult = reader.Next();

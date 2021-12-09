@@ -122,9 +122,9 @@ public class Optimizer {
     // Currently the merge join is unsupported
     List<RelOptRule> ruleList = new ArrayList<>();
     for (RelOptRule rule: Programs.RULE_SET) {
-      if (!rule.equals(EnumerableRules.ENUMERABLE_MERGE_JOIN_RULE)) {
+      if (!rule.equals(EnumerableRules.ENUMERABLE_MERGE_JOIN_RULE)  // engine currently does not support merge join
+        &&!rule.equals(CoreRules.JOIN_COMMUTE))                     // this will make planning of some queries infinitely long
         ruleList.add(rule);
-      }
     }
     ruleList.add(EnumerableRules.ENUMERABLE_LIMIT_SORT_RULE);
     ruleList.add(CoreRules.FILTER_CORRELATE);

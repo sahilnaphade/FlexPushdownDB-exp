@@ -5,23 +5,36 @@
 #ifndef NORMAL_NORMAL_TUPLE_INCLUDE_NORMAL_TUPLE_TUPLESETINDEXFINDER_H
 #define NORMAL_NORMAL_TUPLE_INCLUDE_NORMAL_TUPLE_TUPLESETINDEXFINDER_H
 
+#include <normal/tuple/TupleSetIndex.h>
+#include <normal/tuple/TupleKey.h>
 #include <vector>
 #include <cstdint>
 
+using namespace std;
+
 /**
- * A (type-erased) class holding an array and a tuple set index. Provides a find method allowing the caller
- * to look up a value in the array by row number and use that to look up the value in the index without the caller
- * needing to know the types involved.
+ * Provides a find method allowing the caller to look up tupleKeys in the tupleSetIndex.
  */
 namespace normal::tuple {
 
 class TupleSetIndexFinder {
-public:
 
-  TupleSetIndexFinder() = default;
+public:
+  TupleSetIndexFinder(shared_ptr<TupleSetIndex> tupleSetIndex,
+                      vector<int> probeColumnIndexes,
+                      shared_ptr<arrow::RecordBatch> recordBatch);
   virtual ~TupleSetIndexFinder() = default;
 
-  virtual std::vector<int64_t> find(int64_t rowIndex) = 0;
+  static tl::expected<shared_ptr<TupleSetIndexFinder>, string> make(const shared_ptr<TupleSetIndex> &tupleSetIndex,
+                                                                    const vector<string> &probeColumnNames,
+                                                                    const shared_ptr<arrow::RecordBatch> &recordBatch);
+
+  tl::expected<vector<int64_t>, string> find(int64_t rowIndex);
+
+private:
+  shared_ptr<TupleSetIndex> tupleSetIndex_;
+  vector<int> probeColumnIndexes_;
+  shared_ptr<arrow::RecordBatch> recordBatch_;
 
 };
 

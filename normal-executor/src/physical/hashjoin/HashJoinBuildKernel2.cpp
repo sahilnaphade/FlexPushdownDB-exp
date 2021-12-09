@@ -3,34 +3,33 @@
 //
 
 #include <normal/executor/physical/hashjoin/HashJoinBuildKernel2.h>
-#include <normal/tuple/TupleSetIndexWrapper.h>
 #include <normal/tuple/ColumnName.h>
 #include <utility>
 
 using namespace normal::executor::physical::hashjoin;
 
-HashJoinBuildKernel2::HashJoinBuildKernel2(std::string columnName) :
-	columnName_(std::move(columnName)) {}
+HashJoinBuildKernel2::HashJoinBuildKernel2(vector<string> columnNames) :
+	columnNames_(move(columnNames)) {}
 
-HashJoinBuildKernel2 HashJoinBuildKernel2::make(const std::string &columnName) {
+HashJoinBuildKernel2 HashJoinBuildKernel2::make(const vector<string> &columnNames) {
 
-  assert(!columnName.empty());
+  assert(!columnNames.empty());
 
-  auto canonicalColumnName = ColumnName::canonicalize(columnName);
-  return HashJoinBuildKernel2(canonicalColumnName);
+  auto canonicalColumnNames = ColumnName::canonicalize(columnNames);
+  return HashJoinBuildKernel2(canonicalColumnNames);
 }
 
-tl::expected<void, std::string> HashJoinBuildKernel2::put(const std::shared_ptr<TupleSet> &tupleSet) {
+tl::expected<void, string> HashJoinBuildKernel2::put(const shared_ptr<TupleSet> &tupleSet) {
 
   assert(tupleSet);
 
   if(!tupleSetIndex_.has_value()){
-	auto expectedTupleSetIndex = TupleSetIndexBuilder::make(tupleSet->table(), columnName_);
-	if(!expectedTupleSetIndex.has_value()){
-	  return tl::make_unexpected(expectedTupleSetIndex.error());
-	}
-	tupleSetIndex_ = expectedTupleSetIndex.value();
-	return {};
+    auto expectedTupleSetIndex = TupleSetIndex::make(columnNames_, tupleSet->table());
+    if(!expectedTupleSetIndex.has_value()){
+      return tl::make_unexpected(expectedTupleSetIndex.error());
+    }
+    tupleSetIndex_ = expectedTupleSetIndex.value();
+    return {};
   }
 
   auto result = tupleSetIndex_.value()->put(tupleSet->table());
@@ -45,9 +44,9 @@ size_t HashJoinBuildKernel2::size() {
 }
 
 void HashJoinBuildKernel2::clear() {
-  tupleSetIndex_ = std::nullopt;
+  tupleSetIndex_ = nullopt;
 }
 
-std::optional<std::shared_ptr<TupleSetIndex>> HashJoinBuildKernel2::getTupleSetIndex() {
+optional<shared_ptr<TupleSetIndex>> HashJoinBuildKernel2::getTupleSetIndex() {
   return tupleSetIndex_;
 }

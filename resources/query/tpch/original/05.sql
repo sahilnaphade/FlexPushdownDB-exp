@@ -1,15 +1,14 @@
--- tpch5 using 1395599672 as a seed to the RNG
 select
   n.n_name,
   sum(l.l_extendedprice * (1 - l.l_discount)) as revenue
 
 from
-  cp."tpch/customer.parquet" c,
-  cp."tpch/orders.parquet" o,
-  cp."tpch/lineitem.parquet" l,
-  cp."tpch/supplier.parquet" s,
-  cp."tpch/nation.parquet" n,
-  cp."tpch/region.parquet" r
+  customer c,
+  orders o,
+  lineitem l,
+  supplier s,
+  nation n,
+  region r
 
 where
   c.c_custkey = o.o_custkey
@@ -25,4 +24,4 @@ group by
   n.n_name
 
 order by
-  revenue desc;
+  revenue desc

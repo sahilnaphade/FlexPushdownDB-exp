@@ -13,22 +13,23 @@
 #include <normal/executor/message/TupleSetIndexMessage.h>
 
 using namespace normal::executor::message;
+using namespace std;
 
 namespace normal::executor::physical::hashjoin {
 
 /**
  * Operator implementing probe phase of a hash join
  *
- * Takes hashtable produced from build phase on one of the relations in the join (ideall the smaller) and uses it
+ * Takes hashtable produced from build phase on one of the relations in the join (ideally the smaller) and uses it
  * to select rows from the both relations to include in the join.
  *
  */
 class HashJoinProbePOp : public PhysicalOp {
 
 public:
-  HashJoinProbePOp(std::string name,
+  HashJoinProbePOp(string name,
                    HashJoinPredicate pred,
-                   std::vector<std::string> projectColumnNames);
+                   vector<string> projectColumnNames);
 
   void onReceive(const Envelope &msg) override;
 
@@ -37,6 +38,7 @@ private:
   void onTuple(const TupleMessage &msg);
   void onHashTable(const TupleSetIndexMessage &msg);
   void onComplete(const CompleteMessage &msg);
+
   void send(bool force);
 
   HashJoinProbeKernel2 kernel_;

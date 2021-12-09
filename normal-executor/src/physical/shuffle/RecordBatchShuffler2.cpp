@@ -3,82 +3,95 @@
 //
 
 #include <normal/executor/physical/shuffle/RecordBatchShuffler2.h>
-#include <normal/tuple/ArrayHasher.h>
 #include <normal/tuple/ArrayAppenderWrapper.h>
-#include <normal/tuple/ArrayAppender.h>
+#include <normal/util/Util.h>
 #include <utility>
 
 using namespace normal::executor::physical::shuffle;
 using namespace normal::tuple;
+using namespace normal::util;
 
-RecordBatchShuffler2::RecordBatchShuffler2(int shuffleColumnIndex,
-                                         size_t numSlots,
-                                         std::shared_ptr<::arrow::Schema> schema,
-                                         size_t numRows) :
-  shuffleColumnIndex_(shuffleColumnIndex),
+RecordBatchShuffler2::RecordBatchShuffler2(vector<int> shuffleColumnIndices,
+                                           size_t numSlots,
+                                           shared_ptr<::arrow::Schema> schema,
+                                           size_t numRows) :
+  shuffleColumnIndices_(move(shuffleColumnIndices)),
   numSlots_(numSlots),
-  schema_(std::move(schema)),
+  schema_(move(schema)),
   shuffledAppendersVector_{numSlots} {
 
   // Create appenders
   for (size_t s = 0; s < numSlots_; ++s) {
-    shuffledAppendersVector_[s] = std::vector<std::shared_ptr<ArrayAppender>>{static_cast<size_t>(schema_->num_fields())};
+    shuffledAppendersVector_[s] = vector<shared_ptr<ArrayAppender>>{static_cast<size_t>(schema_->num_fields())};
     for (int c = 0; c < schema_->num_fields(); ++c) {
       auto expectedAppender = ArrayAppenderBuilder::make(schema_->field(c)->type(), numRows);
       if (!expectedAppender.has_value()) {
-        throw std::runtime_error(fmt::format("{}, RecordBatchShuffler", expectedAppender.error()));
+        throw runtime_error(fmt::format("{}, RecordBatchShuffler", expectedAppender.error()));
       }
       shuffledAppendersVector_[s][c] = expectedAppender.value();
     }
   }
 }
 
-tl::expected<std::shared_ptr<RecordBatchShuffler2>, std::string>
-RecordBatchShuffler2::make(const std::string &columnName,
-                          size_t numSlots,
-                          const std::shared_ptr<::arrow::Schema> &schema,
-                          size_t numRows) {
+tl::expected<shared_ptr<RecordBatchShuffler2>, string>
+RecordBatchShuffler2::make(const vector<string> &columnNames,
+                           size_t numSlots,
+                           const shared_ptr<::arrow::Schema> &schema,
+                           size_t numRows) {
 
-  // Get the shuffle column index, checking the column exists
-  auto shuffleColumnIndex = schema->GetFieldIndex(ColumnName::canonicalize(columnName));
-  if (shuffleColumnIndex == -1) {
-    return tl::make_unexpected(fmt::format("Shuffle column '{}' does not exist", columnName));
+  // Get the shuffle column indexes, checking the column exists
+  vector<int> shuffleColumnIndices;
+  for (const auto &columnName: columnNames) {
+    auto shuffleColumnIndex = schema->GetFieldIndex(ColumnName::canonicalize(columnName));
+    if (shuffleColumnIndex == -1) {
+      return tl::make_unexpected(fmt::format("Shuffle column '{}' does not exist", columnName));
+    }
+    shuffleColumnIndices.emplace_back(shuffleColumnIndex);
   }
 
-  return std::make_shared<RecordBatchShuffler2>(shuffleColumnIndex, numSlots, schema, numRows);
+  return make_shared<RecordBatchShuffler2>(shuffleColumnIndices, numSlots, schema, numRows);
 }
 
-tl::expected<void, std::string> RecordBatchShuffler2::shuffle(const std::shared_ptr<::arrow::RecordBatch> &recordBatch) {
+tl::expected<void, string> RecordBatchShuffler2::shuffle(const shared_ptr<::arrow::RecordBatch> &recordBatch) {
 
-  // Get an reference to the array to shuffle on, and get numRows, numColumns
-  const auto &shuffleColumn = recordBatch->column(shuffleColumnIndex_);
-  size_t numRows = recordBatch->num_rows(), numColumns = recordBatch->num_columns();
+  // Get an reference to the arrays to shuffle on, and get numRows, numColumns
+  vector<shared_ptr<arrow::Array>> shuffleColumns;
+  for (const auto &shuffleColumnIndex: shuffleColumnIndices_) {
+    const auto &shuffleColumn = recordBatch->column(shuffleColumnIndex);
+    shuffleColumns.emplace_back(shuffleColumn);
+  }
+  int64_t numRows = recordBatch->num_rows();
+  int numColumns = recordBatch->num_columns();
 
-  // Create a hasher for the shuffle array
-  std::shared_ptr<ArrayHasher> shuffleColumnHasher;
-  auto expectedShuffleColumnHasher = ArrayHasher::make(shuffleColumn);
-  if (!expectedShuffleColumnHasher.has_value())
-    return tl::make_unexpected(expectedShuffleColumnHasher.error());
-  else
-    shuffleColumnHasher = expectedShuffleColumnHasher.value();
+  // Create hashers for the shuffle arrays
+  vector<shared_ptr<ArrayHasher>> shuffleColumnHashers;
+  for (const auto &shuffleColumn: shuffleColumns) {
+    shared_ptr<ArrayHasher> shuffleColumnHasher;
+    auto expectedShuffleColumnHasher = ArrayHasher::make(shuffleColumn);
+    if (!expectedShuffleColumnHasher.has_value())
+      return tl::make_unexpected(expectedShuffleColumnHasher.error());
+    else
+      shuffleColumnHasher = expectedShuffleColumnHasher.value();
+    shuffleColumnHashers.emplace_back(shuffleColumnHasher);
+  }
 
 
   // Generate partition indexes from the shuffle column
-  std::vector<std::vector<size_t>> partitionIndexes1;
+  vector<vector<int64_t>> partitionIndexes;
   for (size_t s = 0; s < numSlots_; ++s) {
-    partitionIndexes1.emplace_back(std::vector<size_t>());
+    partitionIndexes.emplace_back(vector<int64_t>());
   }
-  for (size_t r = 0; r < numRows; ++r) {
-    size_t partitionId = shuffleColumnHasher->hash(r) % numSlots_;
-    partitionIndexes1[partitionId].emplace_back(r);
+  for (int64_t r = 0; r < numRows; ++r) {
+    size_t partitionId = hash(shuffleColumnHashers, r) % numSlots_;
+    partitionIndexes[partitionId].emplace_back(r);
   }
 
   // Shuffle the record batch into appenders
-  for (size_t c = 0; c < numColumns; ++c) {
+  for (int c = 0; c < numColumns; ++c) {
     auto column = recordBatch->column(c);
     for (size_t s = 0; s < numSlots_; ++s) {
       auto appender = shuffledAppendersVector_[s][c];
-      for (auto r: partitionIndexes1[s]) {
+      for (auto r: partitionIndexes[s]) {
         appender->appendValue(column, r);
       }
     }
@@ -87,12 +100,12 @@ tl::expected<void, std::string> RecordBatchShuffler2::shuffle(const std::shared_
   return {};
 }
 
-tl::expected<std::vector<std::shared_ptr<TupleSet>>, std::string> RecordBatchShuffler2::toTupleSets() {
+tl::expected<vector<shared_ptr<TupleSet>>, string> RecordBatchShuffler2::toTupleSets() {
 
   // Finalize appenders into arrays
-  std::vector<std::vector<std::shared_ptr<::arrow::Array>>> shuffledArrays{numSlots_};
+  vector<vector<shared_ptr<::arrow::Array>>> shuffledArrays{numSlots_};
   for (size_t s = 0; s < numSlots_; ++s) {
-    shuffledArrays[s] = std::vector<std::shared_ptr<::arrow::Array>>{static_cast<size_t>(schema_->num_fields())};
+    shuffledArrays[s] = vector<shared_ptr<::arrow::Array>>{static_cast<size_t>(schema_->num_fields())};
   }
   for (size_t s = 0; s < numSlots_; ++s) {
     for (int c = 0; c < schema_->num_fields(); ++c) {
@@ -105,11 +118,19 @@ tl::expected<std::vector<std::shared_ptr<TupleSet>>, std::string> RecordBatchShu
   }
 
   // Create TupleSets from the destination vectors of arrays
-  std::vector<std::shared_ptr<TupleSet>> shuffledTupleSetVector{numSlots_};
+  vector<shared_ptr<TupleSet>> shuffledTupleSetVector{numSlots_};
   for (size_t s = 0; s < numSlots_; ++s) {
     auto shuffledTable = ::arrow::Table::Make(schema_, shuffledArrays[s]);
     shuffledTupleSetVector[s] = TupleSet::make(shuffledTable);
   }
 
   return shuffledTupleSetVector;
+}
+
+size_t RecordBatchShuffler2::hash(const vector<shared_ptr<ArrayHasher>> &hashers, int64_t row) {
+  vector<size_t> hashes;
+  for (const auto &hasher: hashers) {
+    hashes.emplace_back(hasher->hash(row));
+  }
+  return hashCombine(hashes);
 }

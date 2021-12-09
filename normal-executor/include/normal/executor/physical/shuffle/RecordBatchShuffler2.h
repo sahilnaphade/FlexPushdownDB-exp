@@ -7,10 +7,12 @@
 
 #include <normal/tuple/TupleSet.h>
 #include <normal/tuple/ArrayAppender.h>
+#include <normal/tuple/ArrayHasher.h>
 #include <arrow/api.h>
 #include <tl/expected.hpp>
 
 using namespace normal::tuple;
+using namespace std;
 
 namespace normal::executor::physical::shuffle {
 
@@ -20,20 +22,27 @@ namespace normal::executor::physical::shuffle {
 class RecordBatchShuffler2 {
 
 public:
-  RecordBatchShuffler2(int shuffleColumnIndex, size_t numSlots, std::shared_ptr<::arrow::Schema> schema, size_t numRows);
+  RecordBatchShuffler2(vector<int> shuffleColumnIndices,
+                       size_t numSlots,
+                       shared_ptr<::arrow::Schema> schema,
+                       size_t numRows);
 
-  static tl::expected<std::shared_ptr<RecordBatchShuffler2>, std::string>
-  make(const std::string &columnName, size_t numSlots, const std::shared_ptr<::arrow::Schema> &schema, size_t numRows);
+  static tl::expected<shared_ptr<RecordBatchShuffler2>, string> make(const vector<string> &columnNames,
+                                                                     size_t numSlots,
+                                                                     const shared_ptr<::arrow::Schema> &schema,
+                                                                     size_t numRows);
 
-  [[nodiscard]] tl::expected<void, std::string> shuffle(const std::shared_ptr<::arrow::RecordBatch> &recordBatch);
+  tl::expected<void, string> shuffle(const shared_ptr<::arrow::RecordBatch> &recordBatch);
 
-  tl::expected<std::vector<std::shared_ptr<TupleSet>>, std::string> toTupleSets();
+  tl::expected<vector<shared_ptr<TupleSet>>, string> toTupleSets();
 
-protected:
-  int shuffleColumnIndex_;
+private:
+  size_t hash(const vector<shared_ptr<ArrayHasher>> &hashers, int64_t row);
+
+  vector<int> shuffleColumnIndices_;
   size_t numSlots_;
-  std::shared_ptr<::arrow::Schema> schema_;
-  std::vector<std::vector<std::shared_ptr<ArrayAppender>>> shuffledAppendersVector_;
+  shared_ptr<::arrow::Schema> schema_;
+  vector<vector<shared_ptr<ArrayAppender>>> shuffledAppendersVector_;
 };
 
 }

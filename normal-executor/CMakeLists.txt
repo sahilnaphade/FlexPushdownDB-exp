@@ -51,7 +51,6 @@ add_library(normal-executor STATIC
         src/physical/file/FileScanKernel.cpp include/normal/executor/physical/file/FileScanKernel.h
         src/physical/filter/FilterPOp.cpp include/normal/executor/physical/filter/FilterPOp.h
         src/physical/group/GroupPOp.cpp include/normal/executor/physical/group/GroupPOp.h
-        include/normal/executor/physical/group/GroupKey2.h
         src/physical/group/GroupKernel2.cpp include/normal/executor/physical/group/GroupKernel2.h
         src/physical/hashjoin/HashJoinBuildPOp.cpp include/normal/executor/physical/hashjoin/HashJoinBuildPOp.h
         src/physical/hashjoin/HashJoinProbePOp.cpp include/normal/executor/physical/hashjoin/HashJoinProbePOp.h

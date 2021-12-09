@@ -109,6 +109,11 @@ public class RexJsonSerializer {
             literalJObj.put("value", literal.getValueAs(Long.class) / 86400_000);
             break;
           }
+          case INTERVAL_YEAR: {
+            literalJObj.put("type", "INTERVAL_DAY");
+            literalJObj.put("value", literal.getValueAs(Long.class) / 12 * 365);
+            break;
+          }
           default:
             throw new UnsupportedOperationException("Serialize unsupported RexLiteral with basicTypeName: "
                     + basicTypeName);

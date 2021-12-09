@@ -71,6 +71,14 @@ bool normal::util::parseBool(const string& stringToParse) {
   }
 }
 
+size_t normal::util::hashCombine(const vector<size_t> &hashes) {
+  size_t hash = 17;
+  for (const auto &singleHash: hashes) {
+    hash = hash * 31 + singleHash;
+  }
+  return hash;
+}
+
 bool normal::util::isInteger(const string& str) {
   try {
     int parsedInt = stoi(str);

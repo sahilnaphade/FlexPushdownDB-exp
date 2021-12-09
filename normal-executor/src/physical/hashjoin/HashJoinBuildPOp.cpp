@@ -11,12 +11,11 @@
 using namespace normal::executor::physical::hashjoin;
 using namespace normal::tuple;
 
-HashJoinBuildPOp::HashJoinBuildPOp(const std::string &name,
-                                   std::string columnName,
-                                   const std::vector<std::string> &projectColumnNames) :
+HashJoinBuildPOp::HashJoinBuildPOp(const string &name,
+                                   const vector<string> &columnNames,
+                                   const vector<string> &projectColumnNames) :
 	PhysicalOp(name, "HashJoinBuildPOp", projectColumnNames),
-	columnName_(std::move(columnName)),
-	kernel_(HashJoinBuildKernel2::make(columnName_)){
+	kernel_(HashJoinBuildKernel2::make(columnNames)){
 }
 
 void HashJoinBuildPOp::onReceive(const Envelope &msg) {
@@ -30,7 +29,7 @@ void HashJoinBuildPOp::onReceive(const Envelope &msg) {
 	this->onComplete(completeMessage);
   } else {
 	// FIXME: Propagate error properly
-	throw std::runtime_error(fmt::format("Unrecognized message type: {}, {}", msg.message().type(), name()));
+	throw runtime_error(fmt::format("Unrecognized message type: {}, {}", msg.message().type(), name()));
   }
 }
 
@@ -45,7 +44,7 @@ void HashJoinBuildPOp::onTuple(const TupleMessage &msg) {
 
   auto result = buffer(tupleSet);
   if(!result)
-    throw std::runtime_error(fmt::format("{}, {}", result.error(), name()));
+    throw runtime_error(fmt::format("{}, {}", result.error(), name()));
   send(false);
 }
 
@@ -56,14 +55,14 @@ void HashJoinBuildPOp::onComplete(const CompleteMessage &) {
   }
 }
 
-tl::expected<void, std::string> HashJoinBuildPOp::buffer(const std::shared_ptr<TupleSet> &tupleSet) {
+tl::expected<void, string> HashJoinBuildPOp::buffer(const shared_ptr<TupleSet> &tupleSet) {
   return kernel_.put(tupleSet);
 }
 
 void HashJoinBuildPOp::send(bool force) {
   if (kernel_.getTupleSetIndex().has_value() && (force || kernel_.getTupleSetIndex().value()->size() >= DefaultBufferSize)) {
-    std::shared_ptr<Message> message =
-            std::make_shared<TupleSetIndexMessage>(kernel_.getTupleSetIndex().value(), name());
+    shared_ptr<Message> message =
+            make_shared<TupleSetIndexMessage>(kernel_.getTupleSetIndex().value(), name());
     ctx()->tell(message);
     kernel_.clear();
   }

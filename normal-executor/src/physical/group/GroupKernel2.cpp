@@ -3,7 +3,6 @@
 //
 
 #include <normal/executor/physical/group/GroupKernel2.h>
-#include <normal/executor/physical/group/GroupKey2.h>
 #include <normal/tuple/ArrayAppenderWrapper.h>
 #include <normal/tuple/ColumnBuilder.h>
 #include <normal/util/Util.h>
@@ -224,7 +223,7 @@ GroupKernel2::groupRecordBatch(const ::arrow::RecordBatch &recordBatch) {
   for (int r = 0; r < recordBatch.num_rows(); ++r) {
 
     // Make a group key for the row
-    auto expectedGroupKey = GroupKeyBuilder::make(r, groupColumnIndices_, recordBatch);
+    auto expectedGroupKey = TupleKeyBuilder::make(r, groupColumnIndices_, recordBatch);
     if (!expectedGroupKey)
       return tl::make_unexpected(expectedGroupKey.error());
     auto groupKey = expectedGroupKey.value();

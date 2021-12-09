@@ -52,6 +52,8 @@ namespace normal::util {
     return vector<T>{unionSet.begin(), unionSet.end()};
   }
 
+  size_t hashCombine(const vector<size_t> &hashes);
+
   /**
    * Given a start and finish number, will create pairs of numbers from start to finish (inclusive)
    * evenly split across the number of ranges given.

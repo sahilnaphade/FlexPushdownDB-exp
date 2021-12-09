@@ -12,6 +12,7 @@
 
 using namespace normal::executor::message;
 using namespace normal::tuple;
+using namespace std;
 
 namespace normal::executor::physical::shuffle {
 
@@ -21,9 +22,9 @@ namespace normal::executor::physical::shuffle {
 class ShufflePOp : public PhysicalOp {
 
 public:
-  ShufflePOp(std::string name,
-             std::string columnName,
-             std::vector<std::string> projectColumnNames);
+  ShufflePOp(string name,
+             vector<string> columnNames,
+             vector<string> projectColumnNames);
 
   /**
    * Operators message handler
@@ -52,7 +53,7 @@ private:
    * Set the producer operator
    * @param operator_
    */
-  void produce(const std::shared_ptr<PhysicalOp> &operator_) override;
+  void produce(const shared_ptr<PhysicalOp> &operator_) override;
 
   /**
    * Adds the tuple set to the outbound buffer for the given slot
@@ -60,7 +61,7 @@ private:
    * @param partitionIndex
    * @return
    */
-  [[nodiscard]] tl::expected<void, std::string> buffer(const std::shared_ptr<TupleSet>& tupleSet, int partitionIndex);
+  [[nodiscard]] tl::expected<void, string> buffer(const shared_ptr<TupleSet>& tupleSet, int partitionIndex);
 
   /**
    * Sends the buffered tupleset if its big enough or force is true
@@ -68,11 +69,11 @@ private:
    * @param force
    * @return
    */
-  [[nodiscard]] tl::expected<void, std::string> send(int partitionIndex, bool force);
+  [[nodiscard]] tl::expected<void, string> send(int partitionIndex, bool force);
 
-  std::string columnName_;
-  std::vector<std::string> consumers_;
-  std::vector<std::optional<std::shared_ptr<TupleSet>>> buffers_;
+  vector<string> columnNames_;
+  vector<string> consumers_;
+  vector<optional<shared_ptr<TupleSet>>> buffers_;
 };
 
 }

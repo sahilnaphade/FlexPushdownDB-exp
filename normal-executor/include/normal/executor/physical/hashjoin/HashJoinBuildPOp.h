@@ -13,6 +13,7 @@
 #include <unordered_map>
 
 using namespace normal::executor::message;
+using namespace std;
 
 namespace normal::executor::physical::hashjoin {
 
@@ -26,9 +27,9 @@ namespace normal::executor::physical::hashjoin {
 class HashJoinBuildPOp : public PhysicalOp {
 
 public:
-  explicit HashJoinBuildPOp(const std::string &name,
-                            std::string columnName,
-                            const std::vector<std::string> &projectColumnNames);
+  explicit HashJoinBuildPOp(const string &name,
+                            const vector<string> &columnNames,
+                            const vector<string> &projectColumnNames);
 
   void onReceive(const Envelope &msg) override;
 
@@ -37,13 +38,8 @@ private:
   void onTuple(const TupleMessage &msg);
   void onComplete(const CompleteMessage &msg);
 
-  [[nodiscard]] tl::expected<void, std::string> buffer(const std::shared_ptr<TupleSet>& tupleSet);
+  tl::expected<void, string> buffer(const shared_ptr<TupleSet>& tupleSet);
   void send(bool force);
-
-  /**
-   * The column to hash on
-   */
-  std::string columnName_;
 
   HashJoinBuildKernel2 kernel_;
 

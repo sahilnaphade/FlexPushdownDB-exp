@@ -6,6 +6,9 @@
 #define NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_HASHJOIN_JOINPREDICATE_H
 
 #include <string>
+#include <vector>
+
+using namespace std;
 
 namespace normal::executor::physical::hashjoin {
 
@@ -17,14 +20,17 @@ namespace normal::executor::physical::hashjoin {
 class HashJoinPredicate {
   
 public:
-  HashJoinPredicate(std::string leftColumnName, std::string rightColumnName);
-  const std::string &getLeftColumnName() const;
-  const std::string &getRightColumnName() const;
-  static HashJoinPredicate create(const std::string &leftColumnName, const std::string &rightColumnName);
+  HashJoinPredicate(vector<string> leftColumnNames,
+                    vector<string> rightColumnNames);
+
+  const vector<string> &getLeftColumnNames() const;
+  const vector<string> &getRightColumnNames() const;
+
+  string toString() const;
 
 private:
-  std::string leftColumnName_;
-  std::string rightColumnName_;
+  vector<string> leftColumnNames_;
+  vector<string> rightColumnNames_;
 
 };
 

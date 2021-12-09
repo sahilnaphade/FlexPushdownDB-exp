@@ -5,18 +5,17 @@
 #include <normal/executor/physical/hashjoin/HashJoinProbePOp.h>
 #include <normal/executor/physical/Globals.h>
 #include <normal/executor/message/TupleSetIndexMessage.h>
-#include <normal/tuple/TupleSetIndexWrapper.h>
 #include <normal/tuple/arrow/SchemaHelper.h>
 #include <utility>
 
 using namespace normal::executor::physical::hashjoin;
 
-HashJoinProbePOp::HashJoinProbePOp(std::string name,
+HashJoinProbePOp::HashJoinProbePOp(string name,
                                    HashJoinPredicate pred,
-                                   std::vector<std::string> projectColumnNames) :
-	PhysicalOp(std::move(name), "HashJoinProbePOp", std::move(projectColumnNames)),
-	kernel_(HashJoinProbeKernel2::make(std::move(pred),
-                                     std::set<std::string>(getProjectColumnNames().begin(), getProjectColumnNames().end()))){
+                                   vector<string> projectColumnNames) :
+	PhysicalOp(move(name), "HashJoinProbePOp", move(projectColumnNames)),
+	kernel_(HashJoinProbeKernel2::make(move(pred),
+                                     set<string>(getProjectColumnNames().begin(), getProjectColumnNames().end()))){
 }
 
 void HashJoinProbePOp::onReceive(const Envelope &msg) {
@@ -33,7 +32,7 @@ void HashJoinProbePOp::onReceive(const Envelope &msg) {
 	this->onComplete(completeMessage);
   } else {
 	// FIXME: Propagate error properly
-	throw std::runtime_error(fmt::format("Unrecognized message type: {}, {}", msg.message().type(), name()));
+	throw runtime_error(fmt::format("Unrecognized message type: {}, {}", msg.message().type(), name()));
   }
 }
 
@@ -46,7 +45,7 @@ void HashJoinProbePOp::onTuple(const TupleMessage &msg) {
   const auto& tupleSet = msg.tuples();
   auto result = kernel_.joinProbeTupleSet(tupleSet);
   if(!result)
-    throw std::runtime_error(fmt::format("{}, {}", result.error(), name()));
+    throw runtime_error(fmt::format("{}, {}", result.error(), name()));
 
   // Send
   send(false);
@@ -63,7 +62,7 @@ void HashJoinProbePOp::onHashTable(const TupleSetIndexMessage &msg) {
   // Incremental join immediately
   auto result = kernel_.joinBuildTupleSetIndex(msg.getTupleSetIndex());
   if(!result)
-    throw std::runtime_error(fmt::format("{}, {}", result.error(), name()));
+    throw runtime_error(fmt::format("{}, {}", result.error(), name()));
 
   // Send
   send(false);
@@ -77,10 +76,10 @@ void HashJoinProbePOp::send(bool force) {
       // Project using projectColumnNames
       auto expProjectTupleSet = TupleSet::make(buffer.value()->table())->projectExist(getProjectColumnNames());
       if (!expProjectTupleSet) {
-        throw std::runtime_error(expProjectTupleSet.error());
+        throw runtime_error(expProjectTupleSet.error());
       }
 
-      std::shared_ptr<Message> tupleMessage = std::make_shared<TupleMessage>(expProjectTupleSet.value(), name());
+      shared_ptr<Message> tupleMessage = make_shared<TupleMessage>(expProjectTupleSet.value(), name());
       ctx()->tell(tupleMessage);
       kernel_.clear();
     }

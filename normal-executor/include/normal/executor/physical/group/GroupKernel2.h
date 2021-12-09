@@ -5,9 +5,9 @@
 #ifndef NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_GROUP_GROUPKERNEL2_H
 #define NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_GROUP_GROUPKERNEL2_H
 
-#include <normal/executor/physical/group/GroupKey2.h>
 #include <normal/executor/physical/aggregate/function/AggregateFunction.h>
 #include <normal/executor/physical/aggregate/AggregateResult.h>
+#include <normal/tuple/TupleKey.h>
 #include <normal/tuple/TupleSet.h>
 #include <normal/tuple/ArrayAppender.h>
 #include <vector>
@@ -26,26 +26,26 @@ using ArrayAppenderVector = vector<shared_ptr<ArrayAppender>>;
 /**
  * Appender map for one incoming tupleSet
  */
-using GroupArrayAppenderVectorMap = unordered_map<shared_ptr<GroupKey2>,
+using GroupArrayAppenderVectorMap = unordered_map<shared_ptr<TupleKey>,
 													   ArrayAppenderVector,
-													   GroupKey2PointerHash,
-													   GroupKey2PointerPredicate>;
+													   TupleKeyPointerHash,
+													   TupleKeyPointerPredicate>;
 
 /**
  * Array vector map for one incoming tupleSet
  */
-using GroupArrayVectorMap = unordered_map<shared_ptr<GroupKey2>,
+using GroupArrayVectorMap = unordered_map<shared_ptr<TupleKey>,
 											   ::arrow::ArrayVector,
-											   GroupKey2PointerHash,
-											   GroupKey2PointerPredicate>;
+											   TupleKeyPointerHash,
+											   TupleKeyPointerPredicate>;
 
 /**
  * Aggregate result map for results accumulated by all incoming tupleSets
  */
-using GroupAggregateResultVectorMap = unordered_map<shared_ptr<GroupKey2>,
+using GroupAggregateResultVectorMap = unordered_map<shared_ptr<TupleKey>,
                                     vector<vector<shared_ptr<AggregateResult>>>,
-                                    GroupKey2PointerHash,
-                                    GroupKey2PointerPredicate>;
+                                    TupleKeyPointerHash,
+                                    TupleKeyPointerPredicate>;
 
 class GroupKernel2 {
 

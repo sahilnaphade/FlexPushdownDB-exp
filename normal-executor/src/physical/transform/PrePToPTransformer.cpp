@@ -361,19 +361,20 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
   // transform self
   vector<string> projectColumnNames{hashJoinPrePOp->getProjectColumnNames().begin(),
                                     hashJoinPrePOp->getProjectColumnNames().end()};
-  // TODO: support multiple pairs of join columns
-  const auto leftColumnName = hashJoinPrePOp->getLeftColumnNames()[0];
-  const auto rightColumnName = hashJoinPrePOp->getRightColumnNames()[0];
+  const auto &leftColumnNames = hashJoinPrePOp->getLeftColumnNames();
+  const auto &rightColumnNames = hashJoinPrePOp->getRightColumnNames();
+  hashjoin::HashJoinPredicate hashJoinPredicate(leftColumnNames, rightColumnNames);
+  const auto &hashJoinPredicateStr = hashJoinPredicate.toString();
 
   vector<shared_ptr<PhysicalOp>> hashJoinBuildPOps, hashJoinProbePOps;
   for (int i = 0; i < parallelDegree_; ++i) {
     hashJoinBuildPOps.emplace_back(make_shared<hashjoin::HashJoinBuildPOp>(
-            fmt::format("HashJoinBuild-{}-{}-{}", leftColumnName, rightColumnName, i),
-            leftColumnName,
+            fmt::format("HashJoinBuild-{}-{}", hashJoinPredicateStr, i),
+            leftColumnNames,
             projectColumnNames));
     hashJoinProbePOps.emplace_back(make_shared<hashjoin::HashJoinProbePOp>(
-            fmt::format("HashJoinProbe-{}-{}-{}", leftColumnName, rightColumnName, i),
-            hashjoin::HashJoinPredicate::create(leftColumnName, rightColumnName),
+            fmt::format("HashJoinProbe-{}-{}", hashJoinPredicateStr, i),
+            hashJoinPredicate,
             projectColumnNames));
   }
   allPOps.insert(allPOps.end(), hashJoinBuildPOps.begin(), hashJoinBuildPOps.end());
@@ -390,13 +391,13 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
     for (const auto &upLeftConnPOp: leftTransRes.first) {
       shuffleLeftPOps.emplace_back(make_shared<shuffle::ShufflePOp>(
               fmt::format("Shuffle-{}", upLeftConnPOp->name()),
-              leftColumnName,
+              leftColumnNames,
               upLeftConnPOp->getProjectColumnNames()));
     }
     for (const auto &upRightConnPOp: rightTransRes.first) {
       shuffleRightPOps.emplace_back(make_shared<shuffle::ShufflePOp>(
               fmt::format("Shuffle-{}", upRightConnPOp->name()),
-              rightColumnName,
+              rightColumnNames,
               upRightConnPOp->getProjectColumnNames()));
     }
     allPOps.insert(allPOps.end(), shuffleLeftPOps.begin(), shuffleLeftPOps.end());

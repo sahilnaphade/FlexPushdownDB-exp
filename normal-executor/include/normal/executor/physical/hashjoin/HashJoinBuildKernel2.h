@@ -11,6 +11,7 @@
 #include <memory>
 
 using namespace normal::tuple;
+using namespace std;
 
 namespace normal::executor::physical::hashjoin {
 
@@ -20,25 +21,25 @@ namespace normal::executor::physical::hashjoin {
 class HashJoinBuildKernel2 {
 
 public:
-  explicit HashJoinBuildKernel2(std::string columnName);
-  static HashJoinBuildKernel2 make(const std::string &columnName);
+  explicit HashJoinBuildKernel2(vector<string> columnNames);
+  static HashJoinBuildKernel2 make(const vector<string> &columnNames);
 
-  [[nodiscard]] tl::expected<void,std::string> put(const std::shared_ptr<TupleSet> &tupleSet);
+  tl::expected<void, string> put(const shared_ptr<TupleSet> &tupleSet);
   size_t size();
   void clear();
-  std::optional<std::shared_ptr<TupleSetIndex>> getTupleSetIndex();
+  optional<shared_ptr<TupleSetIndex>> getTupleSetIndex();
 
 private:
 
   /**
-   * The column to hash on
+   * The columns to hash on
    */
-  std::string columnName_;
+  vector<string> columnNames_;
 
   /**
    * The hashtable as an indexed tupleset
    */
-  std::optional<std::shared_ptr<TupleSetIndex>> tupleSetIndex_;
+  optional<shared_ptr<TupleSetIndex>> tupleSetIndex_;
 
 };
 

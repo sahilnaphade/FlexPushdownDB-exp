@@ -27,11 +27,9 @@ add_library(normal-tuple STATIC
         src/csv/CSVParser.cpp include/normal/tuple/csv/CSVParser.h
         src/ArrayAppender.cpp include/normal/tuple/ArrayAppender.h
         src/ArrayHasher.cpp include/normal/tuple/ArrayHasher.h
+        include/normal/tuple/TupleKey.h
         src/TupleSetIndex.cpp include/normal/tuple/TupleSetIndex.h
-        src/TupleSetIndexWrapper.cpp include/normal/tuple/TupleSetIndexWrapper.h
         src/TupleSetIndexFinder.cpp include/normal/tuple/TupleSetIndexFinder.h
-        src/TupleSetIndexFinderWrapper.cpp include/normal/tuple/TupleSetIndexFinderWrapper.h
-        src/TupleSetIndexFinderWrapper.cpp include/normal/tuple/TupleSetIndexFinderWrapper.h
         src/Converter.cpp include/normal/tuple/Converter.h
         src/parquet/ParquetReader.cpp include/normal/tuple/parquet/ParquetReader.h
         src/FileReader.cpp include/normal/tuple/FileReader.h
@@ -57,6 +55,7 @@ target_link_libraries(normal-tuple PUBLIC arrow_static)
 target_link_libraries(normal-tuple PUBLIC parquet_static)
 target_link_libraries(normal-tuple PUBLIC deflate)
 target_link_libraries(normal-tuple PUBLIC zlibstatic)
+target_link_libraries(normal-tuple PUBLIC normal-util)
 
 
 #-----------------------------------------------------------------------------------------------------------------------

@@ -3,30 +3,36 @@
 //
 
 #include <normal/executor/physical/hashjoin/HashJoinPredicate.h>
-#include <algorithm>
 #include <utility>
+#include <sstream>
+#include <cassert>
 
 using namespace normal::executor::physical::hashjoin;
 
-HashJoinPredicate::HashJoinPredicate(std::string leftColumnName,
-							 std::string rightColumnName) :
-	leftColumnName_(std::move(leftColumnName)),
-	rightColumnName_(std::move(rightColumnName)) {}
-
-HashJoinPredicate HashJoinPredicate::create(const std::string &leftColumnName, const std::string &rightColumnName) {
-
-  std::string l(leftColumnName);
-  std::string r(rightColumnName);
-
-  std::transform(l.begin(), l.end(), l.begin(), ::tolower);
-  std::transform(r.begin(), r.end(), r.begin(), ::tolower);
-  return HashJoinPredicate(l, r);
+HashJoinPredicate::HashJoinPredicate(vector<string> leftColumnNames,
+                                     vector<string> rightColumnNames) :
+	leftColumnNames_(move(leftColumnNames)),
+	rightColumnNames_(move(rightColumnNames)) {
+  assert(leftColumnNames_.size() == rightColumnNames_.size());
 }
 
-const std::string &HashJoinPredicate::getLeftColumnName() const {
-  return leftColumnName_;
+const vector<string> &HashJoinPredicate::getLeftColumnNames() const {
+  return leftColumnNames_;
 }
 
-const std::string &HashJoinPredicate::getRightColumnName() const {
-  return rightColumnName_;
+const vector<string> &HashJoinPredicate::getRightColumnNames() const {
+  return rightColumnNames_;
+}
+
+string HashJoinPredicate::toString() const {
+  stringstream ss;
+  for (uint i = 0; i < leftColumnNames_.size(); ++i) {
+    ss << leftColumnNames_[i];
+    ss << "-";
+    ss << rightColumnNames_[i];
+    if (i < leftColumnNames_.size() - 1) {
+      ss << "-";
+    }
+  }
+  return ss.str();
 }

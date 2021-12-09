@@ -3,16 +3,18 @@
 //
 
 #include <normal/executor/physical/hashjoin/RecordBatchHashJoiner.h>
+#include <normal/tuple/TupleSetIndexFinder.h>
 #include <normal/tuple/ArrayAppenderWrapper.h>
+#include <normal/tuple/TupleKey.h>
 
 using namespace normal::executor::physical::hashjoin;
 
 RecordBatchHashJoiner::RecordBatchHashJoiner(std::shared_ptr<TupleSetIndex> buildTupleSetIndex,
-									 std::string probeJoinColumnName,
+                   std::vector<std::string> probeJoinColumnNames,
 									 std::shared_ptr<::arrow::Schema> outputSchema,
                    std::vector<std::shared_ptr<std::pair<bool, int>>> neededColumnIndice) :
 	buildTupleSetIndex_(std::move(buildTupleSetIndex)),
-	probeJoinColumnName_(std::move(probeJoinColumnName)),
+	probeJoinColumnNames_(std::move(probeJoinColumnNames)),
 	outputSchema_(std::move(outputSchema)),
 	neededColumnIndice_(std::move(neededColumnIndice)),
 	joinedArrayVectors_{static_cast<size_t>(outputSchema_->num_fields())} {
@@ -20,11 +22,11 @@ RecordBatchHashJoiner::RecordBatchHashJoiner(std::shared_ptr<TupleSetIndex> buil
 
 tl::expected<std::shared_ptr<RecordBatchHashJoiner>, std::string>
 RecordBatchHashJoiner::make(const std::shared_ptr<TupleSetIndex> &buildTupleSetIndex,
-						const std::string &probeJoinColumnName,
+						const std::vector<std::string> &probeJoinColumnNames,
 						const std::shared_ptr<::arrow::Schema> &outputSchema,
             const std::vector<std::shared_ptr<std::pair<bool, int>>> &neededColumnIndice) {
-  auto canonicalColumnName = ColumnName::canonicalize(probeJoinColumnName);
-  return std::make_shared<RecordBatchHashJoiner>(buildTupleSetIndex, canonicalColumnName, outputSchema, neededColumnIndice);
+  const auto &canonicalColumnNames = ColumnName::canonicalize(probeJoinColumnNames);
+  return std::make_shared<RecordBatchHashJoiner>(buildTupleSetIndex, canonicalColumnNames, outputSchema, neededColumnIndice);
 }
 
 tl::expected<void, std::string>
@@ -41,13 +43,10 @@ RecordBatchHashJoiner::join(const std::shared_ptr<::arrow::RecordBatch> &recordB
 
   auto buildTable = buildTupleSetIndex_->getTable();
 
-  // Get an reference to the probe array to join on
-  const auto &probeJoinColumn = recordBatch->GetColumnByName(probeJoinColumnName_);
-
-  // Create a finder for the array index
-  auto expectedIndexFinder = ArraySetIndexFinderBuilder::make(buildTupleSetIndex_, probeJoinColumn);
+  // Create a tupleSetIndexFinder
+  const auto &expectedIndexFinder = TupleSetIndexFinder::make(buildTupleSetIndex_, probeJoinColumnNames_, recordBatch);
   if (!expectedIndexFinder.has_value())
-	return tl::make_unexpected(expectedIndexFinder.error());
+	  return tl::make_unexpected(expectedIndexFinder.error());
   auto indexFinder = expectedIndexFinder.value();
 
   // Create references to each array in the index
@@ -73,10 +72,14 @@ RecordBatchHashJoiner::join(const std::shared_ptr<::arrow::RecordBatch> &recordB
   }
 
   // Iterate through the probe join column
-  for (int64_t pr = 0; pr < probeJoinColumn->length(); ++pr) {
+  for (int64_t pr = 0; pr < recordBatch->num_rows(); ++pr) {
 
     // Find matched rows in the build column
-    std::vector<int64_t> buildRows = indexFinder->find(pr);
+    const auto expBuildRows = indexFinder->find(pr);
+    if (!expBuildRows.has_value()) {
+      return tl::make_unexpected(expBuildRows.error());
+    }
+    auto buildRows = expBuildRows.value();
 
     // Iterate the matched rows in the build column
     for (const auto br: buildRows) {

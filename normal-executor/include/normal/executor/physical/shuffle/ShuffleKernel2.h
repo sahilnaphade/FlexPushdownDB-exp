@@ -12,6 +12,7 @@
 #include <string>
 
 using namespace normal::tuple;
+using namespace std;
 
 namespace normal::executor::physical::shuffle {
 
@@ -21,8 +22,8 @@ namespace normal::executor::physical::shuffle {
 class ShuffleKernel2 {
 
 public:
-  static tl::expected<std::vector<std::shared_ptr<TupleSet>>, std::string>
-  shuffle(const std::string &columnName, size_t numSlots, const TupleSet &tupleSet);
+  static tl::expected<vector<shared_ptr<TupleSet>>, string>
+  shuffle(const vector<string> &columnName, size_t numSlots, const TupleSet &tupleSet);
 
 };
 
