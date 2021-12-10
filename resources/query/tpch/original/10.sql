@@ -1,4 +1,3 @@
--- tpch10 using 1395599672 as a seed to the RNG
 select
   c.c_custkey,
   c.c_name,
@@ -9,10 +8,10 @@ select
   c.c_phone,
   c.c_comment
 from
-  cp."tpch/customer.parquet" c,
-  cp."tpch/orders.parquet" o,
-  cp."tpch/lineitem.parquet" l,
-  cp."tpch/nation.parquet" n
+  customer c,
+  orders o,
+  lineitem l,
+  nation n
 where
   c.c_custkey = o.o_custkey
   and l.l_orderkey = o.o_orderkey
@@ -30,4 +29,4 @@ group by
   c.c_comment
 order by
   revenue desc
-limit 20;
+limit 20

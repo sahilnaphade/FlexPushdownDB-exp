@@ -9,6 +9,7 @@ namespace normal::expression::gandiva {
 
 enum ExpressionType {
   ADD,
+  DATE_ADD,
   MULTIPLY,
   SUBTRACT,
   DIVIDE,

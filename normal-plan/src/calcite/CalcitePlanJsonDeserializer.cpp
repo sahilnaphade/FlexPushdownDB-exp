@@ -10,6 +10,7 @@
 #include <normal/expression/gandiva/And.h>
 #include <normal/expression/gandiva/Or.h>
 #include <normal/expression/gandiva/Add.h>
+#include <normal/expression/gandiva/DateAdd.h>
 #include <normal/expression/gandiva/Subtract.h>
 #include <normal/expression/gandiva/Multiply.h>
 #include <normal/expression/gandiva/Divide.h>
@@ -106,7 +107,10 @@ shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeExpression(const 
       return num_lit<arrow::Date64Type>(value);
     } else if (type == "INTERVAL_DAY") {
       const int value = literalJObj["value"].get<int>();
-      return num_lit<arrow::Int32Type>(value);
+      return num_lit<arrow::Int32Type>(value, DAY);
+    } else if (type == "INTERVAL_MONTH") {
+      const int value = literalJObj["value"].get<int>();
+      return num_lit<arrow::Int32Type>(value, MONTH);
     }
     else {
       throw runtime_error(fmt::format("Unsupported literal type, {}, from: {}", type, to_string(literalJObj)));
@@ -137,11 +141,46 @@ shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeExpression(const 
       || opName == "LESS_THAN" || opName == "GREATER_THAN" || opName == "LESS_THAN_OR_EQUAL" || opName == "GREATER_THAN_OR_EQUAL") {
       const auto &leftExpr = deserializeExpression(jObj["operands"].get<vector<json>>()[0]);
       const auto &rightExpr = deserializeExpression(jObj["operands"].get<vector<json>>()[1]);
-      if (opName == "PLUS") {
-        return normal::expression::gandiva::plus(leftExpr, rightExpr);
-      } else if (opName == "MINUS") {
-        return normal::expression::gandiva::minus(leftExpr, rightExpr);
-      } else if (opName == "TIMES") {
+
+      // plus, minus
+      if (opName == "PLUS" || opName == "MINUS") {
+        // handle date plus, minus
+        if (leftExpr->getTypeString() == "NumericLiteral<Date64>" || rightExpr->getTypeString() == "NumericLiteral<Date64>") {
+          // check interval type
+          optional<DateIntervalType> intervalType;
+          if (leftExpr->getTypeString() == "NumericLiteral<Int32>") {
+            intervalType = static_pointer_cast<NumericLiteral<arrow::Int32Type>>(leftExpr)->getIntervalType();
+          } else {
+            intervalType = static_pointer_cast<NumericLiteral<arrow::Int32Type>>(rightExpr)->getIntervalType();
+          }
+          if (!intervalType.has_value()) {
+            throw runtime_error("Invalid date plus/minus operation, interval not found");
+          }
+
+          // make expression, currently gandiva does not support date minus,
+          // so we need to make subtrahend opposite and use plus
+          if (opName == "MINUS") {
+            if (rightExpr->getTypeString() != "NumericLiteral<Int32>") {
+              throw runtime_error(fmt::format("Invalid date minus operation, subtrahend is not an interval, but: {}",
+                                              rightExpr->getTypeString()));
+            }
+            static_pointer_cast<NumericLiteral<arrow::Int32Type>>(rightExpr)->makeOpposite();
+          }
+          return datePlus(leftExpr, rightExpr, intervalType.value());
+        }
+
+        // regular plus, minus
+        else {
+          if (opName == "PLUS") {
+            return normal::expression::gandiva::plus(leftExpr, rightExpr);
+          } else {
+            return normal::expression::gandiva::minus(leftExpr, rightExpr);
+          }
+        }
+      }
+
+      // other binary operations
+      else if (opName == "TIMES") {
         return times(leftExpr, rightExpr);
       } else if (opName == "DIVIDE") {
         return divide(leftExpr, rightExpr);

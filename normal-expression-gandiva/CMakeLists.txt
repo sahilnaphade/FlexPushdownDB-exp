@@ -23,6 +23,8 @@ add_library(normal-expression-gandiva STATIC
         src/GreaterThanOrEqualTo.cpp include/normal/expression/gandiva/GreaterThanOrEqualTo.h
         src/GreaterThan.cpp include/normal/expression/gandiva/GreaterThan.h
         src/And.cpp include/normal/expression/gandiva/And.h
+        include/normal/expression/gandiva/DateIntervalType.h
+        src/DateAdd.cpp include/normal/expression/gandiva/DateAdd.h
         src/Or.cpp include/normal/expression/gandiva/Or.h
         src/StringLiteral.cpp include/normal/expression/gandiva/StringLiteral.h
         src/BinaryExpression.cpp include/normal/expression/gandiva/BinaryExpression.h

@@ -106,12 +106,13 @@ public class RexJsonSerializer {
           }
           case INTERVAL_DAY: {
             literalJObj.put("type", "INTERVAL_DAY");
-            literalJObj.put("value", literal.getValueAs(Long.class) / 86400_000);
+            literalJObj.put("value", literal.getValueAs(Long.class) / 86400_000);   // number of days
             break;
           }
-          case INTERVAL_YEAR: {
-            literalJObj.put("type", "INTERVAL_DAY");
-            literalJObj.put("value", literal.getValueAs(Long.class) / 12 * 365);
+          case INTERVAL_YEAR:
+          case INTERVAL_MONTH:{
+            literalJObj.put("type", "INTERVAL_MONTH");
+            literalJObj.put("value", literal.getValueAs(Integer.class));            // number of months
             break;
           }
           default:

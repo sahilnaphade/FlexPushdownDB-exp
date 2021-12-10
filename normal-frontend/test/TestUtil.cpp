@@ -92,7 +92,7 @@ void TestUtil::e2eNoStartCalciteServer(const string &schemaName,
     // show output
     stringstream ss;
     ss << fmt::format("Result |\n{}", execRes.first->showString(
-            TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
+            TupleSetShowOptions(TupleSetShowOrientation::RowOriented, 10000)));
     ss << fmt::format("\nTime: {} secs", (double) (execRes.second) / 1000000000.0);
     ss << endl;
     cout << ss.str() << endl;
