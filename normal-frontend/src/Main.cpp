@@ -49,7 +49,7 @@ bool execute(const std::string& command, const std::shared_ptr<Client>& client) 
         RESULT(content)
         return false;
       } else if (word1 == "sql") {
-        auto content = client->executeQuery(word2 + ";");
+        auto content = client->executeQuery(word2);
         RESULT(content)
         return false;
       } else if (word1 == "set") {

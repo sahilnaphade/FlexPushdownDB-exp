@@ -6,6 +6,7 @@
 #include <thrift/transport/TSocket.h>
 #include <thrift/transport/TBufferTransports.h>
 #include <thrift/protocol/TBinaryProtocol.h>
+#include <fmt/format.h>
 #include <string>
 #include <filesystem>
 #include <thread>
@@ -47,7 +48,11 @@ void CalciteClient::shutdownServer() {
 
 string CalciteClient::planQuery(const string &query, const string &schemaName) {
   TPlanResult planResult;
-  calciteServerClient_->sql2Plan(planResult, query, schemaName);
+  try {
+    calciteServerClient_->sql2Plan(planResult, query, schemaName);
+  } catch (const ::apache::thrift::TException &e) {
+    throw runtime_error(fmt::format("Calcite planning error: {}", e.what()));
+  }
   return planResult.plan_result;
 }
 }
