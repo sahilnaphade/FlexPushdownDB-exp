@@ -113,19 +113,31 @@ shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeExpression(const 
     }
   }
 
-  // binary operation
+  // operation
   else if (jObj.contains("op")) {
     const string &opName = jObj["op"].get<string>();
-    if (opName == "AND" || opName == "OR" || opName == "PLUS" || opName == "MINUS" || opName == "TIMES"
-        || opName == "DIVIDE" || opName == "EQUALS" || opName == "LESS_THAN" || opName == "GREATER_THAN"
-        || opName == "LESS_THAN_OR_EQUAL" || opName == "GREATER_THAN_OR_EQUAL") {
+
+    // and, or
+    if (opName == "AND" || opName == "OR") {
+      const auto &exprsJArr = jObj["operands"].get<vector<json>>();
+      vector<shared_ptr<Expression>> operands;
+      operands.reserve(exprsJArr.size());
+      for (const auto &exprJObj: exprsJArr) {
+        operands.emplace_back(deserializeExpression(exprJObj));
+      }
+      if (opName == "AND") {
+        return and_(operands);
+      } else {
+        return or_(operands);
+      }
+    }
+
+    // binary operation
+    else if (opName == "PLUS" || opName == "MINUS" || opName == "TIMES" || opName == "DIVIDE" || opName == "EQUALS"
+      || opName == "LESS_THAN" || opName == "GREATER_THAN" || opName == "LESS_THAN_OR_EQUAL" || opName == "GREATER_THAN_OR_EQUAL") {
       const auto &leftExpr = deserializeExpression(jObj["operands"].get<vector<json>>()[0]);
       const auto &rightExpr = deserializeExpression(jObj["operands"].get<vector<json>>()[1]);
-      if (opName == "AND") {
-        return and_(leftExpr, rightExpr);
-      } else if (opName == "OR") {
-        return or_(leftExpr, rightExpr);
-      } else if (opName == "PLUS") {
+      if (opName == "PLUS") {
         return normal::expression::gandiva::plus(leftExpr, rightExpr);
       } else if (opName == "MINUS") {
         return normal::expression::gandiva::minus(leftExpr, rightExpr);

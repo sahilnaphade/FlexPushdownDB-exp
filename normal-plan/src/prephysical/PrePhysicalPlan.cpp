@@ -46,17 +46,22 @@ void PrePhysicalPlan::trimProjectColumnsDfs(const shared_ptr<PrePhysicalOp>& op,
                                             const optional<set<string>> &optDownUsedColumns) {
   // process used columns of downstream ops
   auto projectColumns = op->getProjectColumnNames();
+
   if (optDownUsedColumns.has_value()) {
     const auto &downUsedColumns = optDownUsedColumns.value();
-    for (auto it = projectColumns.begin(); it != projectColumns.end();) {
-      if (downUsedColumns.find(*it) == downUsedColumns.end()) {
-        it = projectColumns.erase(it);
-      } else {
-        ++it;
+
+    // check whether all current projectColumnNames are needed, e.g. count(*)
+    if (downUsedColumns.find("*") == downUsedColumns.end()) {
+      for (auto it = projectColumns.begin(); it != projectColumns.end();) {
+        if (downUsedColumns.find(*it) == downUsedColumns.end()) {
+          it = projectColumns.erase(it);
+        } else {
+          ++it;
+        }
       }
+      op->setProjectColumnNames(projectColumns);
     }
   }
-  op->setProjectColumnNames(projectColumns);
 
   // populate self's used columns to upstream ops
   const auto &usedColumns = op->getUsedColumnNames();

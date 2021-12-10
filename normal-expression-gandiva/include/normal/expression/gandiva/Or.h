@@ -28,6 +28,7 @@ public:
 };
 
 std::shared_ptr<Expression> or_(const std::shared_ptr<Expression>& left, const std::shared_ptr<Expression>& right);
+std::shared_ptr<Expression> or_(const std::vector<std::shared_ptr<Expression>> &operands);
 
 }
 

@@ -83,7 +83,6 @@ target_include_directories(normal-executor PUBLIC include)
 
 target_link_libraries(normal-executor PUBLIC normal-plan)
 target_link_libraries(normal-executor PUBLIC normal-cache)
-target_link_libraries(normal-executor PUBLIC normal-expression-gandiva)
 target_link_libraries(normal-executor PUBLIC caf::libcaf_core_static)
 target_link_libraries(normal-executor PUBLIC caf::libcaf_io_static)
 target_link_libraries(normal-executor PUBLIC graphviz_gvc_shared)

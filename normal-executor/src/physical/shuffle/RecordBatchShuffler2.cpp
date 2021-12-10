@@ -129,6 +129,7 @@ tl::expected<vector<shared_ptr<TupleSet>>, string> RecordBatchShuffler2::toTuple
 
 size_t RecordBatchShuffler2::hash(const vector<shared_ptr<ArrayHasher>> &hashers, int64_t row) {
   vector<size_t> hashes;
+  hashes.reserve(hashers.size());
   for (const auto &hasher: hashers) {
     hashes.emplace_back(hasher->hash(row));
   }

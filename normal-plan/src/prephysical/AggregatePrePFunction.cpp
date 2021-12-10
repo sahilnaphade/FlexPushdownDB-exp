@@ -34,7 +34,12 @@ set<string> AggregatePrePFunction::involvedColumnNames() const {
   if (expression_) {
     return expression_->involvedColumnNames();
   } else {
-    return set<string>();
+    if (type_ == COUNT) {
+      // count(*)
+      return set<string>({"*"});
+    } else {
+      return set<string>();
+    }
   }
 }
 

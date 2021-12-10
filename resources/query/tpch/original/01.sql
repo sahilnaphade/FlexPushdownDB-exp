@@ -12,7 +12,7 @@ select
 from
     lineitem
 where
-        l_shipdate <= date '1998-12-01' - interval '1200' day (4)
+    l_shipdate <= date '1998-12-01' - interval '1200' day (4)
 group by
     l_returnflag,
     l_linestatus

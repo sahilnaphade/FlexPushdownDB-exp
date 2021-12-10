@@ -12,7 +12,6 @@ add_library(normal-frontend
 
 target_include_directories(normal-frontend PUBLIC include)
 
-target_link_libraries(normal-frontend PUBLIC normal-plan)
 target_link_libraries(normal-frontend PUBLIC normal-executor)
 target_link_libraries(normal-frontend PUBLIC normal-util)
 target_link_libraries(normal-frontend PUBLIC ssl crypto)

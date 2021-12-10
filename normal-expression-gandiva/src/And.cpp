@@ -35,3 +35,19 @@ std::shared_ptr<Expression> normal::expression::gandiva::and_(const std::shared_
 															  const std::shared_ptr<Expression>& right) {
   return std::make_shared<And>(left, right);
 }
+
+std::shared_ptr<Expression>
+normal::expression::gandiva::and_(const std::vector<std::shared_ptr<Expression>> &operands) {
+  if (operands.empty()) {
+    return nullptr;
+  } else if (operands.size() == 1) {
+    return operands[0];
+  } else {
+    auto left = operands[0];
+    for (uint i = 1; i < operands.size(); ++i) {
+      const auto &right = operands[i];
+      left = std::make_shared<And>(left, right);
+    }
+    return left;
+  }
+}
