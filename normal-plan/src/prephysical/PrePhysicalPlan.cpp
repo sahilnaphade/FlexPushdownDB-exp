@@ -3,6 +3,7 @@
 //
 
 #include <normal/plan/prephysical/PrePhysicalPlan.h>
+#include <normal/plan/prephysical/AggregatePrePFunction.h>
 
 namespace normal::plan::prephysical {
 
@@ -51,7 +52,7 @@ void PrePhysicalPlan::trimProjectColumnsDfs(const shared_ptr<PrePhysicalOp>& op,
     const auto &downUsedColumns = optDownUsedColumns.value();
 
     // check whether all current projectColumnNames are needed, e.g. count(*)
-    if (downUsedColumns.find("*") == downUsedColumns.end()) {
+    if (downUsedColumns.find(AggregatePrePFunction::COUNT_STAR_COLUMN) == downUsedColumns.end()) {
       for (auto it = projectColumns.begin(); it != projectColumns.end();) {
         if (downUsedColumns.find(*it) == downUsedColumns.end()) {
           it = projectColumns.erase(it);

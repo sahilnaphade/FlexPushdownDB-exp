@@ -36,7 +36,7 @@ set<string> AggregatePrePFunction::involvedColumnNames() const {
   } else {
     if (type_ == COUNT) {
       // count(*)
-      return set<string>({"*"});
+      return set<string>({COUNT_STAR_COLUMN});
     } else {
       return set<string>();
     }

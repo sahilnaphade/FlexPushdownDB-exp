@@ -6,6 +6,7 @@
 #include <normal/expression/gandiva/Canonicalizer.h>
 #include <normal/expression/gandiva/And.h>
 #include <normal/expression/gandiva/Or.h>
+#include <normal/expression/gandiva/BinaryExpression.h>
 #include <normal/expression/gandiva/Column.h>
 #include <normal/expression/gandiva/StringLiteral.h>
 #include <normal/expression/gandiva/NumericLiteral.h>
@@ -54,25 +55,32 @@ shared_ptr<Expression> PartitionPruner::prunePredicate(const shared_ptr<Expressi
   switch (type) {
     case AND: {
       const auto &andExpr = static_pointer_cast<And>(predicate);
-      const auto &leftPruned = prunePredicate(andExpr->getLeft(), columnName, statsMin, statsMax);
-      const auto &rightPruned = prunePredicate(andExpr->getRight(), columnName, statsMin, statsMax);
-      if (leftPruned && rightPruned) {
-        return and_(leftPruned, rightPruned);
-      } else {
-        return nullptr;
+      vector<shared_ptr<Expression>> prunedChildExprs;
+      for (const auto &childExpr: andExpr->getExprs()) {
+        const auto &prunedChildExpr = prunePredicate(childExpr, columnName, statsMin, statsMax);
+        if (!prunedChildExpr) {
+          return nullptr;
+        }
+        prunedChildExprs.emplace_back(prunedChildExpr);
       }
+      return and_(prunedChildExprs);
     }
 
     case OR: {
       const auto &orExpr = static_pointer_cast<Or>(predicate);
-      const auto &leftPruned = prunePredicate(orExpr->getLeft(), columnName, statsMin, statsMax);
-      const auto &rightPruned = prunePredicate(orExpr->getRight(), columnName, statsMin, statsMax);
-      if (leftPruned && rightPruned) {
-        return or_(leftPruned, rightPruned);
-      } else if (leftPruned) {
-        return leftPruned;
+      vector<shared_ptr<Expression>> prunedChildExprs;
+      for (const auto &childExpr: orExpr->getExprs()) {
+        const auto &prunedChildExpr = prunePredicate(childExpr, columnName, statsMin, statsMax);
+        if (prunedChildExpr) {
+          prunedChildExprs.emplace_back(prunedChildExpr);
+        }
+      }
+      if (prunedChildExprs.empty()) {
+        return nullptr;
+      } else if (prunedChildExprs.size() == 1) {
+        return prunedChildExprs[0];
       } else {
-        return rightPruned;
+        return or_(prunedChildExprs);
       }
     }
 

@@ -12,23 +12,30 @@
 #include <gandiva/node.h>
 
 #include "Expression.h"
-#include "BinaryExpression.h"
+
+using namespace std;
 
 namespace normal::expression::gandiva {
 
-class And : public BinaryExpression {
+class And : public Expression {
 
 public:
-  And(const std::shared_ptr<Expression>& left, const std::shared_ptr<Expression>& right);
+  And(const vector<shared_ptr<Expression>>& exprs);
 
-  void compile(const std::shared_ptr<arrow::Schema> &schema) override;
-  std::string alias() override;
-  std::string getTypeString() override;
+  void compile(const shared_ptr<arrow::Schema> &schema) override;
+  string alias() override;
+  string getTypeString() override;
+  set<string> involvedColumnNames() override;
+
+  const vector<shared_ptr<Expression>> &getExprs() const;
+
+private:
+  vector<shared_ptr<Expression>> exprs_;
 
 };
 
-std::shared_ptr<Expression> and_(const std::shared_ptr<Expression>& left, const std::shared_ptr<Expression>& right);
-std::shared_ptr<Expression> and_(const std::vector<std::shared_ptr<Expression>> &operands);
+shared_ptr<Expression> and_(const shared_ptr<Expression>& left, const shared_ptr<Expression>& right);
+shared_ptr<Expression> and_(const vector<shared_ptr<Expression>> &exprs);
 
 }
 

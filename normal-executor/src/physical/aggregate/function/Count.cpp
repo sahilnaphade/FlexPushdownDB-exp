@@ -4,6 +4,9 @@
 
 #include <normal/executor/physical/aggregate/function/Count.h>
 #include <arrow/compute/api_aggregate.h>
+#include <normal/plan/prephysical/AggregatePrePFunction.h>
+
+using namespace normal::plan::prephysical;
 
 namespace normal::executor::physical::aggregate {
 
@@ -13,6 +16,14 @@ Count::Count(const string &outputColumnName,
 
 shared_ptr<arrow::DataType> Count::returnType() {
   return arrow::int64();
+}
+
+set<string> Count::involvedColumnNames() {
+  if (expression_) {
+    return expression_->involvedColumnNames();
+  } else {
+    return set<string>{AggregatePrePFunction::COUNT_STAR_COLUMN};
+  }
 }
 
 tl::expected<shared_ptr<AggregateResult>, string> Count::compute(const shared_ptr<TupleSet> &tupleSet) {

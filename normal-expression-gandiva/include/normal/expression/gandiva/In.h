@@ -44,7 +44,7 @@ private:
 };
 
 template<typename ARROW_TYPE, typename C_TYPE>
-shared_ptr<Expression> in_(const shared_ptr<Expression> &left, const unordered_set<C_TYPE> &values) {
+shared_ptr<Expression> in(const shared_ptr<Expression> &left, const unordered_set<C_TYPE> &values) {
   return make_shared<In<ARROW_TYPE, C_TYPE>>(left, values);
 }
 

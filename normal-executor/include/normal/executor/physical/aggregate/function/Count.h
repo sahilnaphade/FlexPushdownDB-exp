@@ -16,6 +16,8 @@ public:
 
   shared_ptr<arrow::DataType> returnType() override;
 
+  set<string> involvedColumnNames() override;
+
   tl::expected<shared_ptr<AggregateResult>, string> compute(const shared_ptr<TupleSet> &tupleSet) override;
 
   tl::expected<shared_ptr<arrow::Scalar>, string>

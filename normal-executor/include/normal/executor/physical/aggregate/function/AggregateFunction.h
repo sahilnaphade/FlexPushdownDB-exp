@@ -29,7 +29,7 @@ public:
   const string &getOutputColumnName() const;
   const shared_ptr<normal::expression::gandiva::Expression> &getExpression() const;
   virtual shared_ptr<arrow::DataType> returnType() = 0;
-  set<string> involvedColumnNames();
+  virtual set<string> involvedColumnNames() = 0;
 
   /**
    * Perform the aggregation given an input tupleSet.

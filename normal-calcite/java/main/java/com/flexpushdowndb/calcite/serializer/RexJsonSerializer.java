@@ -43,7 +43,8 @@ public class RexJsonSerializer {
           case PLUS:
           case MINUS:
           case TIMES:
-          case DIVIDE: {
+          case DIVIDE:
+          case LIKE: {
             JSONObject jo = new JSONObject();
             // op
             jo.put("op", call.getKind());
@@ -86,6 +87,7 @@ public class RexJsonSerializer {
         SqlTypeName basicTypeName = literal.getType().getSqlTypeName();
 
         switch (basicTypeName) {
+          case CHAR:
           case VARCHAR: {
             literalJObj.put("type", basicTypeName);
             literalJObj.put("value", literal.getValueAs(String.class));
@@ -101,6 +103,7 @@ public class RexJsonSerializer {
             literalJObj.put("value", literal.getValueAs(Long.class));
             break;
           }
+          case DOUBLE:
           case DECIMAL: {
             literalJObj.put("type", basicTypeName);
             literalJObj.put("value", literal.getValueAs(Double.class));
@@ -208,14 +211,17 @@ public class RexJsonSerializer {
 
     // check if it's "not in"
     if (sarg.isComplementedPoints()) {
-      return new JSONObject()
-              .put("op", SqlKind.NOT_IN)
+      JSONObject inJObj = new JSONObject()
+              .put("op", SqlKind.IN)
               .put("operands", new JSONArray()
                       .put(inputRefOperand)
                       .put(new JSONObject()
                               .put("literals", new JSONObject()
                                       .put("type", basicTypeName)
                                       .put("values", serializeSargComplementedPoints(basicTypeName, sarg.rangeSet.asRanges())))));
+      return new JSONObject()
+              .put("op", SqlKind.NOT)
+              .put("operand", inJObj);
     }
 
     // otherwise

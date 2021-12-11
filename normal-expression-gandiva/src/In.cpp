@@ -38,62 +38,69 @@ void In<arrow::Date64Type, int64_t>::makeGandivaExpression() {
 // alias()
 template<>
 string In<arrow::Int32Type, int32_t>::alias() {
-  stringstream ss;
   const auto &leftAlias = fmt::format("cast({} as int)",left_->alias());
+  stringstream ss;
+  ss << "(";
   uint i = 0;
   for (const auto &value: values_) {
-    ss << fmt::format("({} = {})", leftAlias, value);
+    ss << value;
     if (i < values_.size() - 1) {
-      ss << " or ";
+      ss << ", ";
     }
     ++i;
   }
-  return ss.str();
+  ss << ")";
+  return leftAlias + " in " + ss.str();
 }
 
 template<>
 string In<arrow::Int64Type, int64_t>::alias() {
-  stringstream ss;
   const auto &leftAlias = fmt::format("cast({} as int)",left_->alias());
+  stringstream ss;
+  ss << "(";
   uint i = 0;
   for (const auto &value: values_) {
-    ss << fmt::format("({} = {})", leftAlias, value);
+    ss << value;
     if (i < values_.size() - 1) {
-      ss << " or ";
+      ss << ", ";
     }
     ++i;
   }
-  return ss.str();
+  ss << ")";
+  return leftAlias + " in " + ss.str();
 }
 
 template<>
 string In<arrow::DoubleType, double>::alias() {
-  stringstream ss;
   const auto &leftAlias = fmt::format("cast({} as float)",left_->alias());
+  stringstream ss;
+  ss << "(";
   uint i = 0;
   for (const auto &value: values_) {
-    ss << fmt::format("({} = {})", leftAlias, value);
+    ss << value;
     if (i < values_.size() - 1) {
-      ss << " or ";
+      ss << ", ";
     }
     ++i;
   }
-  return ss.str();
+  ss << ")";
+  return leftAlias + " in " + ss.str();
 }
 
 template<>
 string In<arrow::StringType, string>::alias() {
   stringstream ss;
-  const auto &leftAlias = left_->alias();
+  ss << "(";
   uint i = 0;
   for (const auto &value: values_) {
-    ss << fmt::format("({} = \'{}\')", leftAlias, value);
+    ss << "\'" + value + "\'";
     if (i < values_.size() - 1) {
-      ss << " or ";
+      ss << ", ";
     }
     ++i;
   }
-  return ss.str();
+  ss << ")";
+  return left_->alias() + " in " + ss.str();
 }
 
 template<>

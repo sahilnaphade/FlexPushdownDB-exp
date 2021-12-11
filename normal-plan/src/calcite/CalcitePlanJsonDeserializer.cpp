@@ -9,6 +9,7 @@
 #include <normal/expression/gandiva/Column.h>
 #include <normal/expression/gandiva/And.h>
 #include <normal/expression/gandiva/Or.h>
+#include <normal/expression/gandiva/Not.h>
 #include <normal/expression/gandiva/Add.h>
 #include <normal/expression/gandiva/DateAdd.h>
 #include <normal/expression/gandiva/Subtract.h>
@@ -22,10 +23,8 @@
 #include <normal/expression/gandiva/StringLiteral.h>
 #include <normal/expression/gandiva/NumericLiteral.h>
 #include <normal/expression/gandiva/In.h>
-//#include <normal/expression/gandiva/InInt64.h>
-//#include <normal/expression/gandiva/InDouble.h>
-//#include <normal/expression/gandiva/InString.h>
-//#include <normal/expression/gandiva/InDate64.h>
+#include <normal/expression/gandiva/If.h>
+#include <normal/expression/gandiva/Like.h>
 #include <normal/tuple/ColumnName.h>
 
 #include <fmt/format.h>
@@ -46,7 +45,7 @@ shared_ptr<PrePhysicalPlan> CalcitePlanJsonDeserializer::deserialize() {
   auto rootPrePOp = deserializeDfs(jObj["plan"]);
   vector<string> outputColumnNames;
   for (const auto &columnName: jObj["outputFields"].get<vector<string>>()) {
-    outputColumnNames.emplace_back(columnName);
+    outputColumnNames.emplace_back(ColumnName::canonicalize(columnName));
   }
   return make_shared<PrePhysicalPlan>(rootPrePOp, outputColumnNames);
 }
@@ -101,7 +100,7 @@ shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeLiteral(const jso
   } else if (type == "BIGINT") {
     const long value = literalJObj["value"].get<long>();
     return num_lit<arrow::Int64Type>(value);
-  } else if (type == "DECIMAL") {
+  } else if (type == "DOUBLE" || type == "DECIMAL") {
     const double value = literalJObj["value"].get<double>();
     return num_lit<arrow::DoubleType>(value);
   } else if (type == "DATE_MS") {
@@ -119,17 +118,22 @@ shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeLiteral(const jso
   }
 }
 
-shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeAndOrOperation(const string &opName, const json &jObj) {
-  const auto &exprsJArr = jObj["operands"].get<vector<json>>();
-  vector<shared_ptr<Expression>> operands;
-  operands.reserve(exprsJArr.size());
-  for (const auto &exprJObj: exprsJArr) {
-    operands.emplace_back(deserializeExpression(exprJObj));
-  }
-  if (opName == "AND") {
-    return and_(operands);
+shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeAndOrNotOperation(const string &opName, const json &jObj) {
+  if (opName == "AND" || opName == "OR") {
+    const auto &exprsJArr = jObj["operands"].get<vector<json>>();
+    vector<shared_ptr<Expression>> operands;
+    operands.reserve(exprsJArr.size());
+    for (const auto &exprJObj: exprsJArr) {
+      operands.emplace_back(deserializeExpression(exprJObj));
+    }
+    if (opName == "AND") {
+      return and_(operands);
+    } else {
+      return or_(operands);
+    }
   } else {
-    return or_(operands);
+    const auto expr = deserializeExpression(jObj["operand"]);
+    return not_(expr);
   }
 }
 
@@ -187,8 +191,10 @@ shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeBinaryOperation(c
     return gt(leftExpr, rightExpr);
   } else if (opName == "LESS_THAN_OR_EQUAL") {
     return lte(leftExpr, rightExpr);
-  } else {
+  } else if (opName == "GREATER_THAN_OR_EQUAL") {
     return gte(leftExpr, rightExpr);
+  } else {
+    return like(leftExpr, rightExpr);
   }
 }
 
@@ -200,46 +206,55 @@ shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeInOperation(const
 
   if (type == "CHAR" || type == "VARCHAR") {
     const unordered_set<string> &values = literalsJObj["values"].get<unordered_set<string>>();
-    return in_<arrow::StringType, string>(leftExpr, values);
-//    return inString_(leftExpr, values);
-  } else if (type == "INTEGER" || type == "BIGINT") {
+    return in<arrow::StringType, string>(leftExpr, values);
+  }
+  else if (type == "INTEGER" || type == "BIGINT") {
     // gandiva only supports binary expressions with same left, right and return type,
     // so to avoid casting we make all integer fields as int64, as well as scalars.
     const unordered_set<int64_t> &values = literalsJObj["values"].get<unordered_set<int64_t>>();
-    return in_<arrow::Int64Type, int64_t>(leftExpr, values);
-//    return inInt64_(leftExpr, values);
-  } else if (type == "DECIMAL") {
+    return in<arrow::Int64Type, int64_t>(leftExpr, values);
+  }
+  else if (type == "DECIMAL") {
     const unordered_set<double> &values = literalsJObj["values"].get<unordered_set<double>>();
-    return in_<arrow::DoubleType, double>(leftExpr, values);
-//    return inDouble_(leftExpr, values);
-  } else if (type == "DATE_MS") {
+    return in<arrow::DoubleType, double>(leftExpr, values);
+  }
+  else if (type == "DATE_MS") {
     const unordered_set<int64_t> &values = literalsJObj["values"].get<unordered_set<int64_t>>();
-    return in_<arrow::Date64Type, int64_t>(leftExpr, values);
-//    return inDate64_(leftExpr, values);
-  } else {
+    return in<arrow::Date64Type, int64_t>(leftExpr, values);
+  }
+  else {
     throw runtime_error(fmt::format("Unsupported literal type, {}, from: {}", type, to_string(literalsJObj)));
   }
+}
+
+shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeCaseOperation(const json &jObj) {
+  const auto &condJObj = jObj["condition"];
+  const auto &ifExpr = deserializeExpression(condJObj["if"]);
+  const auto &thenExpr = deserializeExpression(condJObj["then"]);
+  const auto &elseExpr = deserializeExpression(condJObj["else"]);
+  return if_(ifExpr, thenExpr, elseExpr);
 }
 
 shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeOperation(const json &jObj) {
   const string &opName = jObj["op"].get<string>();
   // and, or
-  if (opName == "AND" || opName == "OR") {
-    return deserializeAndOrOperation(opName, jObj);
+  if (opName == "AND" || opName == "OR" || opName == "NOT") {
+    return deserializeAndOrNotOperation(opName, jObj);
   }
   // binary operation
   else if (opName == "PLUS" || opName == "MINUS" || opName == "TIMES" || opName == "DIVIDE" || opName == "EQUALS"
-    || opName == "LESS_THAN" || opName == "GREATER_THAN" || opName == "LESS_THAN_OR_EQUAL" || opName == "GREATER_THAN_OR_EQUAL") {
+    || opName == "LESS_THAN" || opName == "GREATER_THAN" || opName == "LESS_THAN_OR_EQUAL" || opName == "GREATER_THAN_OR_EQUAL"
+    || opName == "LIKE") {
     return deserializeBinaryOperation(opName, jObj);
   }
   // in
   else if (opName == "IN") {
     return deserializeInOperation(jObj);
   }
-//  // case
-//  else if (opName == "CASE") {
-//
-//  }
+  // case
+  else if (opName == "CASE") {
+    return deserializeCaseOperation(jObj);
+  }
   // invalid
   else {
     throw runtime_error(fmt::format("Unsupported expression type, {}, from: {}", opName, to_string(jObj)));

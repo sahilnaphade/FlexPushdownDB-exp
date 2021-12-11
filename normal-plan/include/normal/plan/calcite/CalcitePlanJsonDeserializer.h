@@ -39,9 +39,10 @@ private:
   shared_ptr<Expression> deserializeInputRef(const json &jObj);
   shared_ptr<Expression> deserializeLiteral(const json &jObj);
   shared_ptr<Expression> deserializeOperation(const json &jObj);
-  shared_ptr<Expression> deserializeAndOrOperation(const string &opName, const json &jObj);
+  shared_ptr<Expression> deserializeAndOrNotOperation(const string &opName, const json &jObj);
   shared_ptr<Expression> deserializeBinaryOperation(const string &opName, const json &jObj);
   shared_ptr<Expression> deserializeInOperation(const json &jObj);
+  shared_ptr<Expression> deserializeCaseOperation(const json &jObj);
   shared_ptr<Expression> deserializeExpression(const json &jObj);
 
   pair<vector<string>, vector<string>> deserializeHashJoinCondition(const json &jObj);

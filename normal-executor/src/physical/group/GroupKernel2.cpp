@@ -3,11 +3,13 @@
 //
 
 #include <normal/executor/physical/group/GroupKernel2.h>
+#include <normal/plan/prephysical/AggregatePrePFunction.h>
 #include <normal/tuple/ArrayAppenderWrapper.h>
 #include <normal/tuple/ColumnBuilder.h>
 #include <normal/util/Util.h>
 #include <utility>
 
+using namespace normal::plan::prephysical;
 using namespace normal::util;
 
 namespace normal::executor::physical::group {
@@ -116,6 +118,13 @@ tl::expected<void, string> GroupKernel2::cache(const TupleSet &tupleSet) {
     }
 
     for (const auto &columnName: getAggregateColumnNames()) {
+      // Check if it's the case of count(*)
+      if (columnName == AggregatePrePFunction::COUNT_STAR_COLUMN) {
+        // If so, we just need a single column
+        aggregateColumnIndices_ = vector<int>{0};
+        break;
+      }
+
       auto fieldIndex = inputSchema_.value()->GetFieldIndex(columnName);
       if (fieldIndex == -1)
         return tl::make_unexpected(fmt::format("Aggregate column '{}' not found in input schema", columnName));

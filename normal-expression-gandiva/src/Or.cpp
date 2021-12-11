@@ -2,53 +2,64 @@
 // Created by Yifei Yang on 7/15/20.
 //
 
+#include <normal/expression/gandiva/Or.h>
 #include <gandiva/tree_expr_builder.h>
-
-#include <utility>
-#include "normal/expression/gandiva/Or.h"
+#include <sstream>
 
 using namespace normal::expression::gandiva;
 
-Or::Or(std::shared_ptr<Expression> left, std::shared_ptr<Expression> right)
-        : BinaryExpression(std::move(left), std::move(right), OR) {}
+Or::Or(const vector<shared_ptr<Expression>>& exprs):
+  Expression(OR),
+  exprs_(exprs) {}
 
-void Or::compile(const std::shared_ptr<arrow::Schema> &schema) {
-  left_->compile(schema);
-  right_->compile(schema);
-
-  const auto &castRes = castGandivaExprToUpperType();
-  const auto &leftGandivaExpr = get<1>(castRes);
-  const auto &rightGandivaExpr = get<2>(castRes);
+void Or::compile(const shared_ptr<arrow::Schema> &schema) {
+  ::gandiva::NodeVector gandivaExprs;
+  for (const auto &expr: exprs_) {
+    expr->compile(schema);
+    gandivaExprs.emplace_back(expr->getGandivaExpression());
+  }
 
   returnType_ = ::arrow::boolean();
-  gandivaExpression_ = ::gandiva::TreeExprBuilder::MakeOr({leftGandivaExpr, rightGandivaExpr});
+  gandivaExpression_ = ::gandiva::TreeExprBuilder::MakeOr(gandivaExprs);
 }
 
-std::string Or::alias() {
-  return "(" + left_->alias() + " or " + right_->alias() + ")";
+string Or::alias() {
+  stringstream ss;
+  ss << "(";
+  for (uint i = 0; i < exprs_.size(); ++i) {
+    ss << exprs_[i]->alias();
+    if (i < exprs_.size() - 1) {
+      ss << " or ";
+    }
+  }
+  ss << ")";
+  return ss.str();
 }
 
-std::string Or::getTypeString() {
+string Or::getTypeString() {
   return "Or";
 }
 
-std::shared_ptr<Expression> normal::expression::gandiva::or_(const std::shared_ptr<Expression>& left,
-                                                              const std::shared_ptr<Expression>& right) {
-  return std::make_shared<Or>(left, right);
+set<string> Or::involvedColumnNames() {
+  set<string> allInvolvedColumnNames;
+  for (const auto &expr: exprs_) {
+    const auto &involvedColumnNames = expr->involvedColumnNames();
+    allInvolvedColumnNames.insert(involvedColumnNames.begin(), involvedColumnNames.end());
+  }
+  return allInvolvedColumnNames;
 }
 
-std::shared_ptr<Expression>
-normal::expression::gandiva::or_(const std::vector<std::shared_ptr<Expression>> &operands) {
-  if (operands.empty()) {
-    return nullptr;
-  } else if (operands.size() == 1) {
-    return operands[0];
-  } else {
-    auto left = operands[0];
-    for (uint i = 1; i < operands.size(); ++i) {
-      const auto &right = operands[i];
-      left = std::make_shared<Or>(left, right);
-    }
-    return left;
-  }
+const vector<shared_ptr<Expression>> &Or::getExprs() const {
+  return exprs_;
+}
+
+shared_ptr<Expression> normal::expression::gandiva::or_(const shared_ptr<Expression>& left,
+                                                              const shared_ptr<Expression>& right) {
+  const vector<shared_ptr<Expression>> exprs{left, right};
+  return make_shared<Or>(exprs);
+}
+
+shared_ptr<Expression>
+normal::expression::gandiva::or_(const vector<shared_ptr<Expression>> &exprs) {
+  return make_shared<Or>(exprs);
 }

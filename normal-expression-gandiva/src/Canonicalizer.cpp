@@ -19,12 +19,20 @@ shared_ptr<Expression> Canonicalizer::canonicalize(const shared_ptr<Expression> 
   switch (type) {
     case AND: {
       const auto &andExpr = static_pointer_cast<And>(expr);
-      return and_(canonicalize(andExpr->getLeft()), andExpr->getRight());
+      vector<shared_ptr<Expression>> canonicalizedChildExprs;
+      for (const auto &childExpr: andExpr->getExprs()) {
+        canonicalizedChildExprs.emplace_back(canonicalize(childExpr));
+      }
+      return and_(canonicalizedChildExprs);
     }
 
     case OR: {
       const auto &orExpr = static_pointer_cast<Or>(expr);
-      return or_(canonicalize(orExpr->getLeft()), orExpr->getRight());
+      vector<shared_ptr<Expression>> canonicalizedChildExprs;
+      for (const auto &childExpr: orExpr->getExprs()) {
+        canonicalizedChildExprs.emplace_back(canonicalize(childExpr));
+      }
+      return or_(canonicalizedChildExprs);
     }
 
     case EQUAL_TO:

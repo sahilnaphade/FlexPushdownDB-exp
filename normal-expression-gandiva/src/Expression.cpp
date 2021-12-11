@@ -11,7 +11,6 @@
 #include <normal/expression/gandiva/GreaterThanOrEqualTo.h>
 #include <normal/expression/gandiva/LessThan.h>
 #include <normal/expression/gandiva/LessThanOrEqualTo.h>
-#include <normal/expression/gandiva/NumericLiteral.h>
 #include <normal/util/Util.h>
 
 using namespace normal::expression::gandiva;
@@ -64,12 +63,20 @@ std::shared_ptr<normal::expression::gandiva::Expression>
 normal::expression::gandiva::cascadeCast(std::shared_ptr<normal::expression::gandiva::Expression> expr) {
   if (expr->getType() == AND) {
     auto andExpr = std::static_pointer_cast<normal::expression::gandiva::And>(expr);
-    return and_(cascadeCast(andExpr->getLeft()), cascadeCast(andExpr->getRight()));
+    vector<std::shared_ptr<Expression>> castChildExprs;
+    for (const auto &childExpr: andExpr->getExprs()) {
+      castChildExprs.emplace_back(cascadeCast(childExpr));
+    }
+    return and_(castChildExprs);
   }
 
   else if (expr->getType() == OR) {
     auto orExpr = std::static_pointer_cast<normal::expression::gandiva::Or>(expr);
-    return or_(cascadeCast(orExpr->getLeft()), cascadeCast(orExpr->getRight()));
+    vector<std::shared_ptr<Expression>> castChildExprs;
+    for (const auto &childExpr: orExpr->getExprs()) {
+      castChildExprs.emplace_back(cascadeCast(childExpr));
+    }
+    return or_(castChildExprs);
   }
 
   else if (expr->getType() == EQUAL_TO) {

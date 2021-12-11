@@ -15,6 +15,14 @@ shared_ptr<arrow::DataType> Sum::returnType() {
   return returnType_;
 }
 
+set<string> Sum::involvedColumnNames() {
+  if (expression_) {
+    return expression_->involvedColumnNames();
+  } else {
+    return set<string>();
+  }
+}
+
 tl::expected<shared_ptr<AggregateResult>, string> Sum::compute(const shared_ptr<TupleSet> &tupleSet) {
   // evaluate the expression to get input of aggregation
   const auto &aggChunkedArray = evaluateExpr(tupleSet);

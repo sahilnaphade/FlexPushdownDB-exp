@@ -22,14 +22,6 @@ const shared_ptr<normal::expression::gandiva::Expression> &AggregateFunction::ge
   return expression_;
 }
 
-set<string> AggregateFunction::involvedColumnNames() {
-  if (expression_) {
-    return expression_->involvedColumnNames();
-  } else {
-    return set<string>();
-  }
-}
-
 shared_ptr<arrow::ChunkedArray> AggregateFunction::evaluateExpr(const shared_ptr<TupleSet> &tupleSet) {
   // just column projection, no need to use gandiva projector
   if (expression_->getType() == expression::gandiva::COLUMN) {

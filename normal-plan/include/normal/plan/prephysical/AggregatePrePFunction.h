@@ -17,7 +17,10 @@ using namespace std;
 namespace normal::plan::prephysical {
 
 class AggregatePrePFunction {
+
 public:
+  constexpr static const char *const COUNT_STAR_COLUMN = "COUNT_*";
+
   AggregatePrePFunction(AggregatePrePFunctionType type,
                         const shared_ptr<expression::gandiva::Expression> &expression);
   virtual ~AggregatePrePFunction() = default;

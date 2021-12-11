@@ -15,6 +15,7 @@ enum ExpressionType {
   DIVIDE,
   AND,
   OR,
+  NOT,
   CAST,
   COLUMN,
   EQUAL_TO,
@@ -24,7 +25,9 @@ enum ExpressionType {
   LESS_THAN_OR_EQUAL_TO,
   NUMERIC_LITERAL,
   STRING_LITERAL,
-  IN
+  IN,
+  IF,
+  LIKE
 };
 
 }

@@ -4,7 +4,6 @@ select
     when o.o_orderpriority = '1-URGENT'
       or o.o_orderpriority = '2-HIGH'
       then 1
-    when o.o_orderpriority = '11-URGENT' then 2
     else 0
   end) as high_line_count,
   sum(case
