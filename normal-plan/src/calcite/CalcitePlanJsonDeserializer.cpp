@@ -21,10 +21,11 @@
 #include <normal/expression/gandiva/GreaterThanOrEqualTo.h>
 #include <normal/expression/gandiva/StringLiteral.h>
 #include <normal/expression/gandiva/NumericLiteral.h>
-#include <normal/expression/gandiva/InInt64.h>
-#include <normal/expression/gandiva/InDouble.h>
-#include <normal/expression/gandiva/InString.h>
-#include <normal/expression/gandiva/InDate64.h>
+#include <normal/expression/gandiva/In.h>
+//#include <normal/expression/gandiva/InInt64.h>
+//#include <normal/expression/gandiva/InDouble.h>
+//#include <normal/expression/gandiva/InString.h>
+//#include <normal/expression/gandiva/InDate64.h>
 #include <normal/tuple/ColumnName.h>
 
 #include <fmt/format.h>
@@ -163,7 +164,7 @@ shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeBinaryOperation(c
       return datePlus(leftExpr, rightExpr, intervalType.value());
     }
 
-      // regular plus, minus
+    // regular plus, minus
     else {
       if (opName == "PLUS") {
         return normal::expression::gandiva::plus(leftExpr, rightExpr);
@@ -173,7 +174,7 @@ shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeBinaryOperation(c
     }
   }
 
-    // other binary operations
+  // other binary operations
   else if (opName == "TIMES") {
     return times(leftExpr, rightExpr);
   } else if (opName == "DIVIDE") {
@@ -199,18 +200,22 @@ shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeInOperation(const
 
   if (type == "CHAR" || type == "VARCHAR") {
     const unordered_set<string> &values = literalsJObj["values"].get<unordered_set<string>>();
-    return inString_(leftExpr, values);
+    return in_<arrow::StringType, string>(leftExpr, values);
+//    return inString_(leftExpr, values);
   } else if (type == "INTEGER" || type == "BIGINT") {
     // gandiva only supports binary expressions with same left, right and return type,
     // so to avoid casting we make all integer fields as int64, as well as scalars.
     const unordered_set<int64_t> &values = literalsJObj["values"].get<unordered_set<int64_t>>();
-    return inInt64_(leftExpr, values);
+    return in_<arrow::Int64Type, int64_t>(leftExpr, values);
+//    return inInt64_(leftExpr, values);
   } else if (type == "DECIMAL") {
     const unordered_set<double> &values = literalsJObj["values"].get<unordered_set<double>>();
-    return inDouble_(leftExpr, values);
+    return in_<arrow::DoubleType, double>(leftExpr, values);
+//    return inDouble_(leftExpr, values);
   } else if (type == "DATE_MS") {
     const unordered_set<int64_t> &values = literalsJObj["values"].get<unordered_set<int64_t>>();
-    return inDate64_(leftExpr, values);
+    return in_<arrow::Date64Type, int64_t>(leftExpr, values);
+//    return inDate64_(leftExpr, values);
   } else {
     throw runtime_error(fmt::format("Unsupported literal type, {}, from: {}", type, to_string(literalsJObj)));
   }
@@ -231,6 +236,10 @@ shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeOperation(const j
   else if (opName == "IN") {
     return deserializeInOperation(jObj);
   }
+//  // case
+//  else if (opName == "CASE") {
+//
+//  }
   // invalid
   else {
     throw runtime_error(fmt::format("Unsupported expression type, {}, from: {}", opName, to_string(jObj)));

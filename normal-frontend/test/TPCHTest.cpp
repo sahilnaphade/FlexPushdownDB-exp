@@ -39,6 +39,10 @@ TEST_CASE ("tpch-original-10" * doctest::skip(false || SKIP_SUITE)) {
   TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/", {"tpch/original/10.sql"});
 }
 
+TEST_CASE ("tpch-original-12" * doctest::skip(false || SKIP_SUITE)) {
+  TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/", {"tpch/original/12.sql"});
+}
+
 TEST_CASE ("temp" * doctest::skip(true)) {
   string dateStr = "1998-12-01";
   auto parser = arrow::TimestampParser::MakeISO8601();

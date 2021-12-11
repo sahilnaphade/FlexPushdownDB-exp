@@ -28,11 +28,6 @@ add_library(normal-expression-gandiva STATIC
         src/Or.cpp include/normal/expression/gandiva/Or.h
         src/StringLiteral.cpp include/normal/expression/gandiva/StringLiteral.h
         src/In.cpp include/normal/expression/gandiva/In.h
-        src/InInt32.cpp include/normal/expression/gandiva/InInt32.h
-        src/InInt64.cpp include/normal/expression/gandiva/InInt64.h
-        src/InDouble.cpp include/normal/expression/gandiva/InDouble.h
-        src/InString.cpp include/normal/expression/gandiva/InString.h
-        src/InDate64.cpp include/normal/expression/gandiva/InDate64.h
         src/Not.cpp include/normal/expression/gandiva/Not.h
         src/BinaryExpression.cpp include/normal/expression/gandiva/BinaryExpression.h
         src/Canonicalizer.cpp include/normal/expression/gandiva/Canonicalizer.h
