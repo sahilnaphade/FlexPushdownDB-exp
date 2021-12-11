@@ -14,7 +14,7 @@ Column::Column(std::string columnName):
   Expression(COLUMN),
   columnName_(std::move(columnName)) {}
 
-void Column::compile(std::shared_ptr<arrow::Schema> schema) {
+void Column::compile(const std::shared_ptr<arrow::Schema> &schema) {
   auto field = schema->GetFieldByName(columnName_);
   if(field == nullptr){
     throw std::runtime_error("Column '" + columnName_ + "' does not exist");

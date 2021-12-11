@@ -10,6 +10,7 @@
 #include <arrow/api.h>
 #include <gandiva/node.h>
 #include <gandiva/tree_expr_builder.h>
+#include <fmt/format.h>
 #include <string>
 #include <memory>
 #include <sstream>
@@ -26,7 +27,7 @@ public:
     value_(value),
     intervalType_(intervalType) {}
 
-  void compile(std::shared_ptr<arrow::Schema>) override {
+  void compile(const std::shared_ptr<arrow::Schema> &) override {
     returnType_ = ::arrow::TypeTraits<ARROW_TYPE>::type_singleton();
 
     auto literal = ::gandiva::TreeExprBuilder::MakeLiteral(value_);
@@ -39,27 +40,29 @@ public:
   }
 
   std::string alias() override {
-    if (typeid(ARROW_TYPE) == typeid(arrow::Int32Type) || typeid(ARROW_TYPE) == typeid(arrow::Int64Type)) {
+    const shared_ptr<arrow::DataType> &arrowType = ::arrow::TypeTraits<ARROW_TYPE>::type_singleton();
+    if (arrowType->id() == arrow::Type::INT32 || arrowType->id() == arrow::Type::INT64) {
       return prefixInt_ + std::to_string(value_);
-    } else if (typeid(ARROW_TYPE) == typeid(arrow::DoubleType)) {
+    } else if (arrowType->id() == arrow::Type::DOUBLE) {
       return prefixFloat_ + std::to_string(value_);
     }
-    throw std::runtime_error("Unsupported numeric literal type");
+    throw std::runtime_error(fmt::format("Unsupported numeric literal type: {}", arrowType->name()));
   }
 
   std::string getTypeString() override {
     std::stringstream ss;
     ss << "NumericLiteral";
-    if (typeid(ARROW_TYPE) == typeid(arrow::Int32Type)) {
+    const shared_ptr<arrow::DataType> &arrowType = ::arrow::TypeTraits<ARROW_TYPE>::type_singleton();
+    if (arrowType->id() == arrow::Type::INT32) {
       ss << "<Int32>";
-    } else if (typeid(ARROW_TYPE) == typeid(arrow::Int64Type)) {
+    } else if (arrowType->id() == arrow::Type::INT64) {
       ss << "<Int64>";
-    } else if (typeid(ARROW_TYPE) == typeid(arrow::DoubleType)) {
+    } else if (arrowType->id() == arrow::Type::DOUBLE) {
       ss << "<Double>";
-    } else if (typeid(ARROW_TYPE) == typeid(arrow::Date64Type)) {
+    } else if (arrowType->id() == arrow::Type::DATE64) {
       ss << "<Date64>";
     } else {
-      throw std::runtime_error("Unsupported numeric literal type");
+      throw std::runtime_error(fmt::format("Unsupported numeric literal type: {}", arrowType->name()));
     }
     return ss.str();
   }

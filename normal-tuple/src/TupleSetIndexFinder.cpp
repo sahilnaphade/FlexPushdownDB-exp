@@ -6,14 +6,16 @@
 #include <normal/tuple/ColumnName.h>
 #include <fmt/format.h>
 
+#include <utility>
+
 namespace normal::tuple {
 
 TupleSetIndexFinder::TupleSetIndexFinder(shared_ptr<TupleSetIndex> tupleSetIndex,
                                          vector<int> probeColumnIndexes,
                                          shared_ptr<arrow::RecordBatch> recordBatch) :
   tupleSetIndex_(move(tupleSetIndex)),
-  probeColumnIndexes_(probeColumnIndexes),
-  recordBatch_(recordBatch) {}
+  probeColumnIndexes_(move(probeColumnIndexes)),
+  recordBatch_(move(recordBatch)) {}
 
 tl::expected<shared_ptr<TupleSetIndexFinder>, string>
 TupleSetIndexFinder::make(const shared_ptr<TupleSetIndex> &tupleSetIndex,

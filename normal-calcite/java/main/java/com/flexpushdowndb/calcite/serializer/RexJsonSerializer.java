@@ -2,6 +2,7 @@ package com.flexpushdowndb.calcite.serializer;
 
 import com.google.common.collect.BoundType;
 import com.google.common.collect.Range;
+import com.sun.org.apache.xpath.internal.operations.Bool;
 import jdk.nashorn.internal.runtime.regexp.joni.ast.StringNode;
 import org.apache.calcite.rex.*;
 import org.apache.calcite.sql.SqlKind;
@@ -14,9 +15,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.math.BigDecimal;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 @SuppressWarnings({"BetaApi", "type.argument.type.incompatible", "UnstableApiUsage"})
 public class RexJsonSerializer {
@@ -61,6 +60,14 @@ public class RexJsonSerializer {
             String searchFieldName = fieldNames.get(searchRef.getIndex());
             RexLiteral literal = (RexLiteral) call.getOperands().get(1);
             return serializeSearch(searchFieldName, literal);
+          }
+          case CASE: {
+            JSONObject jo = new JSONObject();
+            // op
+            jo.put("op", call.getKind());
+            // condition
+            jo.put("condition", visitCaseOperands(call.getOperands(), 0, fieldNames));
+            return jo;
           }
           default: {
             throw new UnsupportedOperationException("Serialize unsupported RexCall: " + call.getKind());
@@ -162,6 +169,18 @@ public class RexJsonSerializer {
       public JSONObject visitPatternFieldRef(RexPatternFieldRef fieldRef) {
         throw new UnsupportedOperationException("Serialize unsupported RexNode: " + fieldRef.getClass().getSimpleName());
       }
+
+      private JSONObject visitCaseOperands(List<RexNode> rexNodes, int startIndex, List<String> fieldNames) {
+        JSONObject jo = new JSONObject();
+        jo.put("if", serialize(rexNodes.get(startIndex), fieldNames));
+        jo.put("then", serialize(rexNodes.get(startIndex + 1), fieldNames));
+        if (startIndex + 2 == rexNodes.size() - 1) {
+          jo.put("else", serialize(rexNodes.get(startIndex + 2), fieldNames));
+        } else {
+          jo.put("else", visitCaseOperands(rexNodes, startIndex + 2, fieldNames));
+        }
+        return jo;
+      }
     });
   }
 
@@ -171,17 +190,44 @@ public class RexJsonSerializer {
       throw new NullPointerException("Invalid Sarg: null");
     }
     SqlTypeName basicTypeName = literal.getType().getSqlTypeName();
+    JSONObject inputRefOperand = new JSONObject()
+            .put("inputRef", fieldName);
     JSONObject rangeSetJObj = null;
 
+    // check if it's "in"
+    if (sarg.isPoints()) {
+      return new JSONObject()
+              .put("op", SqlKind.IN)
+              .put("operands", new JSONArray()
+                      .put(inputRefOperand)
+                      .put(new JSONObject()
+                              .put("literals", new JSONObject()
+                                      .put("type", basicTypeName)
+                                      .put("values", serializeSargPoints(basicTypeName, sarg.rangeSet.asRanges())))));
+    }
+
+    // check if it's "not in"
+    if (sarg.isComplementedPoints()) {
+      return new JSONObject()
+              .put("op", SqlKind.NOT_IN)
+              .put("operands", new JSONArray()
+                      .put(inputRefOperand)
+                      .put(new JSONObject()
+                              .put("literals", new JSONObject()
+                                      .put("type", basicTypeName)
+                                      .put("values", serializeSargComplementedPoints(basicTypeName, sarg.rangeSet.asRanges())))));
+    }
+
+    // otherwise
     for (Object rangeObj: sarg.rangeSet.asRanges()) {
       Range<?> range = (Range<?>) rangeObj;
-      Comparable<?> lowerValue = serializeSargEndPoint(basicTypeName, range.lowerEndpoint());
-      Comparable<?> upperValue = serializeSargEndPoint(basicTypeName, range.upperEndpoint());
       JSONObject rangeJObj = new JSONObject();
-      JSONObject inputRefOperand = new JSONObject()
-              .put("inputRef", fieldName);
+      Comparable<?> lowerValue = range.hasLowerBound() ?
+              serializeSargEndPoint(basicTypeName, range.lowerEndpoint()) : null;
+      Comparable<?> upperValue = range.hasUpperBound() ?
+              serializeSargEndPoint(basicTypeName, range.upperEndpoint()) : null;
 
-      if (lowerValue.equals(upperValue)) {
+      if (lowerValue != null && lowerValue.equals(upperValue)) {
         // lower value = upper value
         JSONObject literalOperand = new JSONObject()
                 .put("literal", new JSONObject()
@@ -239,6 +285,24 @@ public class RexJsonSerializer {
     }
 
     return rangeSetJObj;
+  }
+
+  private static JSONArray serializeSargPoints(SqlTypeName basicTypeName, Set<? extends Range<?>> ranges) {
+    JSONArray jArr = new JSONArray();
+    for (Range<?> range: ranges) {
+      jArr.put(serializeSargEndPoint(basicTypeName, range.lowerEndpoint()));
+    }
+    return jArr;
+  }
+
+  private static JSONArray serializeSargComplementedPoints(SqlTypeName basicTypeName, Set<? extends Range<?>> ranges) {
+    JSONArray jArr = new JSONArray();
+    for (Range<?> range: ranges) {
+      if (range.hasLowerBound()) {
+        jArr.put(serializeSargEndPoint(basicTypeName, range.lowerEndpoint()));
+      }
+    }
+    return jArr;
   }
 
   private static Comparable<?> serializeSargEndPoint(SqlTypeName basicTypeName, Comparable<?> endpoint) {

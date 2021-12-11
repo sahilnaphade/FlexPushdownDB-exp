@@ -21,8 +21,6 @@ public:
 
   virtual ~Expression() = default;
 
-  virtual std::string alias() = 0;
-
   virtual std::set<std::string> involvedColumnNames() = 0;
 
   virtual std::string getTypeString() = 0;

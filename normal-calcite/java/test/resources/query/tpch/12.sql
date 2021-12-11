@@ -1,10 +1,10 @@
--- tpch12 using 1395599672 as a seed to the RNG
 select
   l.l_shipmode,
   sum(case
     when o.o_orderpriority = '1-URGENT'
       or o.o_orderpriority = '2-HIGH'
       then 1
+    when o.o_orderpriority = '11-URGENT' then 2
     else 0
   end) as high_line_count,
   sum(case
@@ -14,8 +14,8 @@ select
     else 0
   end) as low_line_count
 from
-  cp."tpch/orders.parquet" o,
-  cp."tpch/lineitem.parquet" l
+  orders o,
+  lineitem l
 where
   o.o_orderkey = l.l_orderkey
   and l.l_shipmode in ('TRUCK', 'REG AIR')
@@ -26,4 +26,4 @@ where
 group by
   l.l_shipmode
 order by
-  l.l_shipmode;
+  l.l_shipmode

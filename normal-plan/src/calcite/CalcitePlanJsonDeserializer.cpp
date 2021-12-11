@@ -21,6 +21,10 @@
 #include <normal/expression/gandiva/GreaterThanOrEqualTo.h>
 #include <normal/expression/gandiva/StringLiteral.h>
 #include <normal/expression/gandiva/NumericLiteral.h>
+#include <normal/expression/gandiva/InInt64.h>
+#include <normal/expression/gandiva/InDouble.h>
+#include <normal/expression/gandiva/InString.h>
+#include <normal/expression/gandiva/InDate64.h>
 #include <normal/tuple/ColumnName.h>
 
 #include <fmt/format.h>
@@ -77,129 +81,176 @@ vector<shared_ptr<PrePhysicalOp>> CalcitePlanJsonDeserializer::deserializeProduc
   return producers;
 }
 
+shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeInputRef(const json &jObj) {
+  const auto &columnName = ColumnName::canonicalize(jObj["inputRef"].get<string>());
+  return col(columnName);
+}
+
+shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeLiteral(const json &jObj) {
+  const auto &literalJObj = jObj["literal"];
+  const auto &type = literalJObj["type"].get<string>();
+  if (type == "CHAR" || type == "VARCHAR") {
+    const string &value = literalJObj["value"].get<string>();
+    return str_lit(value);
+  } else if (type == "INTEGER") {
+    const int value = literalJObj["value"].get<int>();
+    // gandiva only supports binary expressions with same left, right and return type,
+    // so to avoid casting we make all integer fields as int64, as well as scalars.
+    return num_lit<arrow::Int64Type>(value);
+  } else if (type == "BIGINT") {
+    const long value = literalJObj["value"].get<long>();
+    return num_lit<arrow::Int64Type>(value);
+  } else if (type == "DECIMAL") {
+    const double value = literalJObj["value"].get<double>();
+    return num_lit<arrow::DoubleType>(value);
+  } else if (type == "DATE_MS") {
+    const long value = literalJObj["value"].get<long>();
+    return num_lit<arrow::Date64Type>(value);
+  } else if (type == "INTERVAL_DAY") {
+    const int value = literalJObj["value"].get<int>();
+    return num_lit<arrow::Int32Type>(value, DAY);
+  } else if (type == "INTERVAL_MONTH") {
+    const int value = literalJObj["value"].get<int>();
+    return num_lit<arrow::Int32Type>(value, MONTH);
+  }
+  else {
+    throw runtime_error(fmt::format("Unsupported literal type, {}, from: {}", type, to_string(literalJObj)));
+  }
+}
+
+shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeAndOrOperation(const string &opName, const json &jObj) {
+  const auto &exprsJArr = jObj["operands"].get<vector<json>>();
+  vector<shared_ptr<Expression>> operands;
+  operands.reserve(exprsJArr.size());
+  for (const auto &exprJObj: exprsJArr) {
+    operands.emplace_back(deserializeExpression(exprJObj));
+  }
+  if (opName == "AND") {
+    return and_(operands);
+  } else {
+    return or_(operands);
+  }
+}
+
+shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeBinaryOperation(const string &opName, const json &jObj) {
+  const auto &leftExpr = deserializeExpression(jObj["operands"].get<vector<json>>()[0]);
+  const auto &rightExpr = deserializeExpression(jObj["operands"].get<vector<json>>()[1]);
+
+  // plus, minus
+  if (opName == "PLUS" || opName == "MINUS") {
+    // handle date plus, minus
+    if (leftExpr->getTypeString() == "NumericLiteral<Date64>" || rightExpr->getTypeString() == "NumericLiteral<Date64>") {
+      // check interval type
+      optional<DateIntervalType> intervalType;
+      if (leftExpr->getTypeString() == "NumericLiteral<Int32>") {
+        intervalType = static_pointer_cast<NumericLiteral<arrow::Int32Type>>(leftExpr)->getIntervalType();
+      } else {
+        intervalType = static_pointer_cast<NumericLiteral<arrow::Int32Type>>(rightExpr)->getIntervalType();
+      }
+      if (!intervalType.has_value()) {
+        throw runtime_error("Invalid date plus/minus operation, interval not found");
+      }
+
+      // make expression, currently gandiva does not support date minus,
+      // so we need to make subtrahend opposite and use plus
+      if (opName == "MINUS") {
+        if (rightExpr->getTypeString() != "NumericLiteral<Int32>") {
+          throw runtime_error(fmt::format("Invalid date minus operation, subtrahend is not an interval, but: {}",
+                                          rightExpr->getTypeString()));
+        }
+        static_pointer_cast<NumericLiteral<arrow::Int32Type>>(rightExpr)->makeOpposite();
+      }
+      return datePlus(leftExpr, rightExpr, intervalType.value());
+    }
+
+      // regular plus, minus
+    else {
+      if (opName == "PLUS") {
+        return normal::expression::gandiva::plus(leftExpr, rightExpr);
+      } else {
+        return normal::expression::gandiva::minus(leftExpr, rightExpr);
+      }
+    }
+  }
+
+    // other binary operations
+  else if (opName == "TIMES") {
+    return times(leftExpr, rightExpr);
+  } else if (opName == "DIVIDE") {
+    return divide(leftExpr, rightExpr);
+  } else if (opName == "EQUALS") {
+    return eq(leftExpr, rightExpr);
+  } else if (opName == "LESS_THAN") {
+    return lt(leftExpr, rightExpr);
+  } else if (opName == "GREATER_THAN") {
+    return gt(leftExpr, rightExpr);
+  } else if (opName == "LESS_THAN_OR_EQUAL") {
+    return lte(leftExpr, rightExpr);
+  } else {
+    return gte(leftExpr, rightExpr);
+  }
+}
+
+shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeInOperation(const json &jObj) {
+  const auto &operandsJArr = jObj["operands"].get<vector<json>>();
+  const auto &leftExpr = deserializeExpression(operandsJArr[0]);
+  const auto &literalsJObj = operandsJArr[1]["literals"];
+  const auto &type = literalsJObj["type"].get<string>();
+
+  if (type == "CHAR" || type == "VARCHAR") {
+    const unordered_set<string> &values = literalsJObj["values"].get<unordered_set<string>>();
+    return inString_(leftExpr, values);
+  } else if (type == "INTEGER" || type == "BIGINT") {
+    // gandiva only supports binary expressions with same left, right and return type,
+    // so to avoid casting we make all integer fields as int64, as well as scalars.
+    const unordered_set<int64_t> &values = literalsJObj["values"].get<unordered_set<int64_t>>();
+    return inInt64_(leftExpr, values);
+  } else if (type == "DECIMAL") {
+    const unordered_set<double> &values = literalsJObj["values"].get<unordered_set<double>>();
+    return inDouble_(leftExpr, values);
+  } else if (type == "DATE_MS") {
+    const unordered_set<int64_t> &values = literalsJObj["values"].get<unordered_set<int64_t>>();
+    return inDate64_(leftExpr, values);
+  } else {
+    throw runtime_error(fmt::format("Unsupported literal type, {}, from: {}", type, to_string(literalsJObj)));
+  }
+}
+
+shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeOperation(const json &jObj) {
+  const string &opName = jObj["op"].get<string>();
+  // and, or
+  if (opName == "AND" || opName == "OR") {
+    return deserializeAndOrOperation(opName, jObj);
+  }
+  // binary operation
+  else if (opName == "PLUS" || opName == "MINUS" || opName == "TIMES" || opName == "DIVIDE" || opName == "EQUALS"
+    || opName == "LESS_THAN" || opName == "GREATER_THAN" || opName == "LESS_THAN_OR_EQUAL" || opName == "GREATER_THAN_OR_EQUAL") {
+    return deserializeBinaryOperation(opName, jObj);
+  }
+  // in
+  else if (opName == "IN") {
+    return deserializeInOperation(jObj);
+  }
+  // invalid
+  else {
+    throw runtime_error(fmt::format("Unsupported expression type, {}, from: {}", opName, to_string(jObj)));
+  }
+}
+
 shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeExpression(const json &jObj) {
   // single column
   if (jObj.contains("inputRef")) {
-    const auto &columnName = ColumnName::canonicalize(jObj["inputRef"].get<string>());
-    return col(columnName);
+    return deserializeInputRef(jObj);
   }
-
   // literal
   else if (jObj.contains("literal")) {
-    const auto &literalJObj = jObj["literal"];
-    const auto &type = literalJObj["type"].get<string>();
-    if (type == "CHAR" || type == "VARCHAR") {
-      const string &value = literalJObj["value"].get<string>();
-      return str_lit(value);
-    } else if (type == "INTEGER") {
-      const int value = literalJObj["value"].get<int>();
-      // gandiva only supports binary expressions with same left, right and return type,
-      // so to avoid casting we make all integer fields as int64, as well as scalars.
-      return num_lit<arrow::Int64Type>(value);
-    } else if (type == "BIGINT") {
-      const long value = literalJObj["value"].get<long>();
-      return num_lit<arrow::Int64Type>(value);
-    } else if (type == "DECIMAL") {
-      const double value = literalJObj["value"].get<double>();
-      return num_lit<arrow::DoubleType>(value);
-    } else if (type == "DATE_MS") {
-      const long value = literalJObj["value"].get<long>();
-      return num_lit<arrow::Date64Type>(value);
-    } else if (type == "INTERVAL_DAY") {
-      const int value = literalJObj["value"].get<int>();
-      return num_lit<arrow::Int32Type>(value, DAY);
-    } else if (type == "INTERVAL_MONTH") {
-      const int value = literalJObj["value"].get<int>();
-      return num_lit<arrow::Int32Type>(value, MONTH);
-    }
-    else {
-      throw runtime_error(fmt::format("Unsupported literal type, {}, from: {}", type, to_string(literalJObj)));
-    }
+    return deserializeLiteral(jObj);
   }
-
   // operation
   else if (jObj.contains("op")) {
-    const string &opName = jObj["op"].get<string>();
-
-    // and, or
-    if (opName == "AND" || opName == "OR") {
-      const auto &exprsJArr = jObj["operands"].get<vector<json>>();
-      vector<shared_ptr<Expression>> operands;
-      operands.reserve(exprsJArr.size());
-      for (const auto &exprJObj: exprsJArr) {
-        operands.emplace_back(deserializeExpression(exprJObj));
-      }
-      if (opName == "AND") {
-        return and_(operands);
-      } else {
-        return or_(operands);
-      }
-    }
-
-    // binary operation
-    else if (opName == "PLUS" || opName == "MINUS" || opName == "TIMES" || opName == "DIVIDE" || opName == "EQUALS"
-      || opName == "LESS_THAN" || opName == "GREATER_THAN" || opName == "LESS_THAN_OR_EQUAL" || opName == "GREATER_THAN_OR_EQUAL") {
-      const auto &leftExpr = deserializeExpression(jObj["operands"].get<vector<json>>()[0]);
-      const auto &rightExpr = deserializeExpression(jObj["operands"].get<vector<json>>()[1]);
-
-      // plus, minus
-      if (opName == "PLUS" || opName == "MINUS") {
-        // handle date plus, minus
-        if (leftExpr->getTypeString() == "NumericLiteral<Date64>" || rightExpr->getTypeString() == "NumericLiteral<Date64>") {
-          // check interval type
-          optional<DateIntervalType> intervalType;
-          if (leftExpr->getTypeString() == "NumericLiteral<Int32>") {
-            intervalType = static_pointer_cast<NumericLiteral<arrow::Int32Type>>(leftExpr)->getIntervalType();
-          } else {
-            intervalType = static_pointer_cast<NumericLiteral<arrow::Int32Type>>(rightExpr)->getIntervalType();
-          }
-          if (!intervalType.has_value()) {
-            throw runtime_error("Invalid date plus/minus operation, interval not found");
-          }
-
-          // make expression, currently gandiva does not support date minus,
-          // so we need to make subtrahend opposite and use plus
-          if (opName == "MINUS") {
-            if (rightExpr->getTypeString() != "NumericLiteral<Int32>") {
-              throw runtime_error(fmt::format("Invalid date minus operation, subtrahend is not an interval, but: {}",
-                                              rightExpr->getTypeString()));
-            }
-            static_pointer_cast<NumericLiteral<arrow::Int32Type>>(rightExpr)->makeOpposite();
-          }
-          return datePlus(leftExpr, rightExpr, intervalType.value());
-        }
-
-        // regular plus, minus
-        else {
-          if (opName == "PLUS") {
-            return normal::expression::gandiva::plus(leftExpr, rightExpr);
-          } else {
-            return normal::expression::gandiva::minus(leftExpr, rightExpr);
-          }
-        }
-      }
-
-      // other binary operations
-      else if (opName == "TIMES") {
-        return times(leftExpr, rightExpr);
-      } else if (opName == "DIVIDE") {
-        return divide(leftExpr, rightExpr);
-      } else if (opName == "EQUALS") {
-        return eq(leftExpr, rightExpr);
-      } else if (opName == "LESS_THAN") {
-        return lt(leftExpr, rightExpr);
-      } else if (opName == "GREATER_THAN") {
-        return gt(leftExpr, rightExpr);
-      } else if (opName == "LESS_THAN_OR_EQUAL") {
-        return lte(leftExpr, rightExpr);
-      } else {
-        return gte(leftExpr, rightExpr);
-      }
-    } else {
-      throw runtime_error(fmt::format("Unsupported expression type, {}, from: {}", opName, to_string(jObj)));
-    }
+    return deserializeOperation(jObj);
   }
-
+  // invalid
   else {
     throw runtime_error(fmt::format("Unsupported expression type, only column, literal and operation are "
                                     "supported, from: {}", to_string(jObj)));

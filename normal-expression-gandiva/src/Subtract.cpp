@@ -12,7 +12,7 @@ using namespace normal::expression::gandiva;
 Subtract::Subtract(std::shared_ptr<Expression> left, std::shared_ptr<Expression> right) :
 	BinaryExpression(std::move(left), std::move(right), SUBTRACT) {}
 
-void Subtract::compile(std::shared_ptr<arrow::Schema> schema) {
+void Subtract::compile(const std::shared_ptr<arrow::Schema> &schema) {
   left_->compile(schema);
   right_->compile(schema);
 

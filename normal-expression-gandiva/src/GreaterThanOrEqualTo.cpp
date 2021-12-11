@@ -14,7 +14,7 @@ using namespace normal::expression::gandiva;
 GreaterThanOrEqualTo::GreaterThanOrEqualTo(std::shared_ptr<Expression> Left, std::shared_ptr<Expression> Right)
 	: BinaryExpression(std::move(Left), std::move(Right), GREATER_THAN_OR_EQUAL_TO) {}
 
-void GreaterThanOrEqualTo::compile(std::shared_ptr<arrow::Schema> Schema) {
+void GreaterThanOrEqualTo::compile(const std::shared_ptr<arrow::Schema> &Schema) {
   left_->compile(Schema);
   right_->compile(Schema);
 

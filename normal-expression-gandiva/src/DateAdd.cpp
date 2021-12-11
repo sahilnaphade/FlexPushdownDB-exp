@@ -15,7 +15,7 @@ DateAdd::DateAdd(const shared_ptr<Expression>& left,
   intervalType_(intervalType) {
 }
 
-void DateAdd::compile(shared_ptr<arrow::Schema> schema) {
+void DateAdd::compile(const shared_ptr<arrow::Schema> &schema) {
   left_->compile(schema);
   right_->compile(schema);
 

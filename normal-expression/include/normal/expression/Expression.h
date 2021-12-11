@@ -24,14 +24,14 @@ public:
    *
    * @param schema
    */
-  virtual void compile(std::shared_ptr<arrow::Schema> schema) = 0;
+  virtual void compile(const std::shared_ptr<arrow::Schema> &schema) = 0;
 
   /**
    * The alias of the evaluated expression (e.g. "select COL from TBL" should assign the alias "COL" to the
    * column expression COL)
    * @return
    */
-  [[nodiscard]] virtual std::string alias() = 0;
+  virtual std::string alias() = 0;
 
 protected:
 

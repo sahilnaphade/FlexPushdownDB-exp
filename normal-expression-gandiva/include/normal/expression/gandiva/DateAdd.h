@@ -23,7 +23,7 @@ public:
           const shared_ptr<Expression>& right,
           DateIntervalType intervalType);
 
-  void compile(shared_ptr<arrow::Schema> schema) override;
+  void compile(const shared_ptr<arrow::Schema> &schema) override;
   string alias() override;
   string getTypeString() override;
 

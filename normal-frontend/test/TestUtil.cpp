@@ -57,7 +57,7 @@ void TestUtil::e2eNoStartCalciteServer(const string &schemaName,
   calciteClient.startClient();
 
   // mode, caching policy, executor
-  const auto &mode = Mode::pullupMode();
+  const auto &mode = Mode::pushdownOnlyMode();
   const auto &cachingPolicy = nullptr;
 
   const auto &executor = make_shared<Executor>(mode, cachingPolicy, true, false);

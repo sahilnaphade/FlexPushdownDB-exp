@@ -23,7 +23,8 @@ enum ExpressionType {
   LESS_THAN,
   LESS_THAN_OR_EQUAL_TO,
   NUMERIC_LITERAL,
-  STRING_LITERAL
+  STRING_LITERAL,
+  IN
 };
 
 }

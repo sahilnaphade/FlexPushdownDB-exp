@@ -31,7 +31,7 @@ std::shared_ptr<normal::tuple::TupleSet> Filter::evaluate(const normal::tuple::T
 	std::shared_ptr<arrow::RecordBatch> batch;
 	arrow::TableBatchReader reader(*arrowTable);
   // Maximum chunk size Gandiva filter evaluates at a time
-	reader.set_chunksize(normal::tuple::DefaultChunkSize);
+	reader.set_chunksize((int64_t) normal::tuple::DefaultChunkSize);
 	arrowStatus = reader.ReadNext(&batch);
 	if (!arrowStatus.ok()) {
 	  throw std::runtime_error(arrowStatus.message());

@@ -12,7 +12,7 @@ StringLiteral::StringLiteral(std::string value) :
   Expression(STRING_LITERAL),
   value_(std::move(value)) {}
 
-void StringLiteral::compile(std::shared_ptr<arrow::Schema>){
+void StringLiteral::compile(const std::shared_ptr<arrow::Schema> &){
   auto literal = ::gandiva::TreeExprBuilder::MakeStringLiteral(value_);
 
   gandivaExpression_ = literal;

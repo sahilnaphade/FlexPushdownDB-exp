@@ -87,7 +87,7 @@ Cast::Cast(std::shared_ptr<Expression> expr, std::shared_ptr<arrow::DataType> ty
   }
 }
 
-void Cast::compile(std::shared_ptr<arrow::Schema> schema) {
+void Cast::compile(const std::shared_ptr<arrow::Schema> &schema) {
   expr_->compile(schema);
 
   gandivaExpression_ = buildGandivaExpression();

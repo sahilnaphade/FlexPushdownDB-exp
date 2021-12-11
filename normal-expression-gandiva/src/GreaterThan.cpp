@@ -14,7 +14,7 @@ using namespace normal::expression::gandiva;
 GreaterThan::GreaterThan(std::shared_ptr<Expression> Left, std::shared_ptr<Expression> Right)
   : BinaryExpression(std::move(Left), std::move(Right), GREATER_THAN) {}
 
-void GreaterThan::compile(std::shared_ptr<arrow::Schema> schema) {
+void GreaterThan::compile(const std::shared_ptr<arrow::Schema> &schema) {
   left_->compile(schema);
   right_->compile(schema);
 
