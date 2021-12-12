@@ -117,18 +117,23 @@ tl::expected<void, string> GroupKernel2::cache(const TupleSet &tupleSet) {
       groupColumnIndices_.push_back(fieldIndex);
     }
 
+    bool hasCountStar = false;
     for (const auto &columnName: getAggregateColumnNames()) {
       // Check if it's the case of count(*)
       if (columnName == AggregatePrePFunction::COUNT_STAR_COLUMN) {
-        // If so, we just need a single column
-        aggregateColumnIndices_ = vector<int>{0};
-        break;
+        hasCountStar = true;
+        continue;
       }
 
       auto fieldIndex = inputSchema_.value()->GetFieldIndex(columnName);
       if (fieldIndex == -1)
         return tl::make_unexpected(fmt::format("Aggregate column '{}' not found in input schema", columnName));
       aggregateColumnIndices_.push_back(fieldIndex);
+    }
+    // In case there is only one count(*) which can cause aggregateColumnIndices_ to be empty,
+    // we just add any single column to aggregateColumnIndices_.
+    if (aggregateColumnIndices_.empty() && hasCountStar) {
+      aggregateColumnIndices_.emplace_back(0);
     }
 
     // Create aggregate input schema

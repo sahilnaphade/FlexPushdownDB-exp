@@ -1,9 +1,8 @@
--- tpch19 using 1395599672 as a seed to the RNG
 select
   sum(l.l_extendedprice* (1 - l.l_discount)) as revenue
 from
-  cp."tpch/lineitem.parquet" l,
-  cp."tpch/part.parquet" p
+  lineitem l,
+  part p
 where
   (
     p.p_partkey = l.l_partkey
@@ -33,4 +32,4 @@ where
     and p.p_size between 1 and 15
     and l.l_shipmode in ('AIR', 'AIR REG')
     and l.l_shipinstruct = 'DELIVER IN PERSON'
-  );
+  )

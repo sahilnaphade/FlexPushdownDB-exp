@@ -1,5 +1,6 @@
 package com.flexpushdowndb.calcite.optimizer;
 
+import com.flexpushdowndb.calcite.rule.EnhancedFilterJoinRule;
 import com.flexpushdowndb.calcite.rule.HashJoinLeftRightPosRule;
 import com.flexpushdowndb.calcite.schema.SchemaImpl;
 import com.flexpushdowndb.calcite.schema.SchemaReader;
@@ -80,12 +81,21 @@ public class Optimizer {
             SqlToRelConverter.config());
     RelNode logicalPlan = sqlToRelConverter.convertQuery(validAst, false, true).rel;
 
+    // Enhanced filter join pushdown
+    HepProgram hepProgram = new HepProgramBuilder()
+            .addRuleInstance(EnhancedFilterJoinRule.WITH_FILTER)
+            .addRuleInstance(EnhancedFilterJoinRule.NO_FILTER)
+            .build();
+    HepPlanner hepPlanner = new HepPlanner(hepProgram);
+    hepPlanner.setRoot(logicalPlan);
+    RelNode filterPushdownPlan = hepPlanner.findBestExp();
+
     // Volcano cost-based optimization
     Program program = Programs.of(getDefaultRuleSet());
     RelNode volOptPlan = program.run(
             planner,
-            logicalPlan,
-            logicalPlan.getTraitSet().plus(EnumerableConvention.INSTANCE),
+            filterPushdownPlan,
+            filterPushdownPlan.getTraitSet().plus(EnumerableConvention.INSTANCE),
             Collections.emptyList(),
             Collections.emptyList()
     );
@@ -108,11 +118,11 @@ public class Optimizer {
     );
 
     // Heuristics to apply
-    HepProgram hepProgram = new HepProgramBuilder()
+    hepProgram = new HepProgramBuilder()
             .addRuleInstance(HashJoinLeftRightPosRule.INSTANCE)
             .addRuleInstance(EnumerableRules.ENUMERABLE_PROJECT_RULE)
             .build();
-    HepPlanner hepPlanner = new HepPlanner(hepProgram);
+    hepPlanner = new HepPlanner(hepProgram);
     hepPlanner.setRoot(trimmedPhysicalPlan);
 
     return hepPlanner.findBestExp();
@@ -123,14 +133,14 @@ public class Optimizer {
     List<RelOptRule> ruleList = new ArrayList<>();
     for (RelOptRule rule: Programs.RULE_SET) {
       if (!rule.equals(EnumerableRules.ENUMERABLE_MERGE_JOIN_RULE)  // engine currently does not support merge join
-        &&!rule.equals(CoreRules.JOIN_COMMUTE))                     // this will make planning of some queries infinitely long
+        &&!rule.equals(CoreRules.JOIN_COMMUTE)                      // this will make planning of some queries infinitely long
+        &&!rule.equals(CoreRules.FILTER_INTO_JOIN))
         ruleList.add(rule);
     }
     ruleList.add(EnumerableRules.ENUMERABLE_LIMIT_SORT_RULE);
     ruleList.add(CoreRules.FILTER_CORRELATE);
     return RuleSets.ofList(ruleList);
   }
-
 
   private static RuleSet getConvertToPhysicalRuleSet() {
     List<RelOptRule> ruleList = new ArrayList<>();

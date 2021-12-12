@@ -1,5 +1,6 @@
 package com.flexpushdowndb.calcite.rule;
 
+import com.flexpushdowndb.calcite.rule.util.SimpleExpressionCanonicalizer;
 import org.apache.calcite.adapter.enumerable.EnumerableHashJoin;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
