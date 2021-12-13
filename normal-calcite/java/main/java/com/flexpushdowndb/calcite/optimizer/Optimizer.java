@@ -81,13 +81,16 @@ public class Optimizer {
             SqlToRelConverter.config());
     RelNode logicalPlan = sqlToRelConverter.convertQuery(validAst, false, true).rel;
 
+    // Decorrelate
+    RelNode decorrelatedPlan = RelDecorrelator.decorrelateQuery(logicalPlan, relBuilder);
+
     // Enhanced filter join pushdown
     HepProgram hepProgram = new HepProgramBuilder()
             .addRuleInstance(EnhancedFilterJoinRule.WITH_FILTER)
             .addRuleInstance(EnhancedFilterJoinRule.NO_FILTER)
             .build();
     HepPlanner hepPlanner = new HepPlanner(hepProgram);
-    hepPlanner.setRoot(logicalPlan);
+    hepPlanner.setRoot(decorrelatedPlan);
     RelNode filterPushdownPlan = hepPlanner.findBestExp();
 
     // Volcano cost-based optimization
@@ -100,12 +103,9 @@ public class Optimizer {
             Collections.emptyList()
     );
 
-    // Decorrelate
-    RelNode decorrelatedPlan = RelDecorrelator.decorrelateQuery(volOptPlan, relBuilder);
-
     // Trim unused fields
     RelFieldTrimmer trimmer = new RelFieldTrimmer(sqlValidator, relBuilder);
-    RelNode trimmedPlan = trimmer.trim(decorrelatedPlan);
+    RelNode trimmedPlan = trimmer.trim(volOptPlan);
 
     // Convert trimmedPlan to physical
     program = Programs.of(getConvertToPhysicalRuleSet());
@@ -134,11 +134,10 @@ public class Optimizer {
     for (RelOptRule rule: Programs.RULE_SET) {
       if (!rule.equals(EnumerableRules.ENUMERABLE_MERGE_JOIN_RULE)  // engine currently does not support merge join
         &&!rule.equals(CoreRules.JOIN_COMMUTE)                      // this will make planning of some queries infinitely long
-        &&!rule.equals(CoreRules.FILTER_INTO_JOIN))
+        &&!rule.equals(CoreRules.FILTER_INTO_JOIN))                 // filters are already pushed by EnhancedFilterJoinRule
         ruleList.add(rule);
     }
     ruleList.add(EnumerableRules.ENUMERABLE_LIMIT_SORT_RULE);
-    ruleList.add(CoreRules.FILTER_CORRELATE);
     return RuleSets.ofList(ruleList);
   }
 

@@ -1,4 +1,3 @@
--- tpch9 using 1395599672 as a seed to the RNG
 select
   nation,
   o_year,
@@ -10,12 +9,12 @@ from
       extract(year from o.o_orderdate) as o_year,
       l.l_extendedprice * (1 - l.l_discount) - ps.ps_supplycost * l.l_quantity as amount
     from
-      cp."tpch/part.parquet" p,
-      cp."tpch/supplier.parquet" s,
-      cp."tpch/lineitem.parquet" l,
-      cp."tpch/partsupp.parquet" ps,
-      cp."tpch/orders.parquet" o,
-      cp."tpch/nation.parquet" n
+      part p,
+      supplier s,
+      lineitem l,
+      partsupp ps,
+      orders o,
+      nation n
     where
       s.s_suppkey = l.l_suppkey
       and ps.ps_suppkey = l.l_suppkey
@@ -30,4 +29,4 @@ group by
   o_year
 order by
   nation,
-  o_year desc;
+  o_year desc

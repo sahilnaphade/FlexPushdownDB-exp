@@ -12,14 +12,14 @@ from
       l.l_extendedprice * (1 - l.l_discount) as volume,
       n2.n_name as nation
     from
-      cp."tpch/part.parquet" p,
-      cp."tpch/supplier.parquet" s,
-      cp."tpch/lineitem.parquet" l,
-      cp."tpch/orders.parquet" o,
-      cp."tpch/customer.parquet" c,
-      cp."tpch/nation.parquet" n1,
-      cp."tpch/nation.parquet" n2,
-      cp."tpch/region.parquet" r
+      part p,
+      supplier s,
+      lineitem l,
+      orders o,
+      customer c,
+      nation n1,
+      nation n2,
+      region r
     where
       p.p_partkey = l.l_partkey
       and s.s_suppkey = l.l_suppkey
@@ -35,4 +35,4 @@ from
 group by
   o_year
 order by
-  o_year;
+  o_year

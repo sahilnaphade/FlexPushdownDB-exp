@@ -127,6 +127,16 @@ public final class EnhancedFilterJoinPruner {
           pushed = true;
           break;
         }
+
+        // If it's a search, we also need to check its expanded version
+        if (pushedFilter.getKind() == SqlKind.SEARCH) {
+          RexNode searchExpandedFilter = RexUtil.expandSearch(rexBuilder, null, pushedFilter);
+          extractedFromBitSet = extractFromBitSet(searchExpandedFilter, targetBitSet, rexBuilder);
+          if (extractedFromBitSet.equals(conjunct)) {
+            pushed = true;
+            break;
+          }
+        }
       }
       if (!pushed) {
         prunedPredicates.add(conjunct);
