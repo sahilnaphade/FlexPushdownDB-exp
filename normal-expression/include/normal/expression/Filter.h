@@ -18,6 +18,7 @@ public:
   virtual ~Filter() = default;
 
   virtual std::shared_ptr<normal::tuple::TupleSet> evaluate(const normal::tuple::TupleSet &TupleSet) = 0;
+  virtual arrow::ArrayVector evaluate(const arrow::RecordBatch &recordBatch) = 0;
 
   virtual void compile(const std::shared_ptr<normal::tuple::Schema> &Schema) = 0;
 

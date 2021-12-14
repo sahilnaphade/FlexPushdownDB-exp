@@ -1,6 +1,6 @@
 package com.flexpushdowndb.calcite;
 
-import com.flexpushdowndb.calcite.rule.HashJoinLeftRightPosRule;
+import com.flexpushdowndb.calcite.rule.JoinSmallLeftRule;
 import com.flexpushdowndb.calcite.schema.SchemaImpl;
 import com.flexpushdowndb.calcite.schema.TableImpl;
 import com.google.common.collect.ImmutableMap;
@@ -163,7 +163,7 @@ public class TestCalcite {
             SqlExplainLevel.ALL_ATTRIBUTES));
 
     HepProgram hepProgram = new HepProgramBuilder()
-            .addRuleInstance(HashJoinLeftRightPosRule.INSTANCE)
+            .addRuleInstance(JoinSmallLeftRule.INSTANCE)
             .addRuleInstance(EnumerableRules.ENUMERABLE_PROJECT_RULE)
             .build();
     HepPlanner hepPlanner = new HepPlanner(hepProgram);

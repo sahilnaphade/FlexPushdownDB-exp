@@ -2,11 +2,8 @@ package com.flexpushdowndb.calcite.serializer;
 
 import com.google.common.collect.BoundType;
 import com.google.common.collect.Range;
-import com.sun.org.apache.xpath.internal.operations.Bool;
-import jdk.nashorn.internal.runtime.regexp.joni.ast.StringNode;
 import org.apache.calcite.rex.*;
 import org.apache.calcite.sql.SqlKind;
-import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.DateString;
 import org.apache.calcite.util.NlsString;
@@ -15,7 +12,9 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 
 @SuppressWarnings({"BetaApi", "type.argument.type.incompatible", "UnstableApiUsage"})
 public class RexJsonSerializer {

@@ -4,6 +4,7 @@ import org.apache.calcite.adapter.enumerable.*;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.AggregateCall;
+import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rex.*;
 import org.json.JSONArray;
@@ -28,8 +29,8 @@ public final class RelJsonSerializer {
       jo = serializeEnumerableTableScan((EnumerableTableScan) relNode);
     } else if (relNode instanceof EnumerableFilter) {
       jo = serializeEnumerableFilter((EnumerableFilter) relNode);
-    } else if (relNode instanceof EnumerableHashJoin) {
-      jo = serializeEnumerableHashJoin((EnumerableHashJoin) relNode);
+    } else if (relNode instanceof EnumerableHashJoin || relNode instanceof EnumerableNestedLoopJoin) {
+      jo = serializeJoin((Join) relNode);
     } else if (relNode instanceof EnumerableProject) {
       jo = serializeEnumerableProject((EnumerableProject) relNode);
     } else if (relNode instanceof EnumerableAggregate) {
@@ -76,12 +77,14 @@ public final class RelJsonSerializer {
     return jo;
   }
 
-  private static JSONObject serializeEnumerableHashJoin(EnumerableHashJoin join) {
+  private static JSONObject serializeJoin(Join join) {
     JSONObject jo = new JSONObject();
     // operator name
     jo.put("operator", join.getClass().getSimpleName());
     // join condition
-    jo.put("condition", RexJsonSerializer.serialize(join.getCondition(), join.getRowType().getFieldNames()));
+    if (!join.getCondition().isAlwaysTrue()) {
+      jo.put("condition", RexJsonSerializer.serialize(join.getCondition(), join.getRowType().getFieldNames()));
+    }
     // join type
     jo.put("joinType", join.getJoinType());
     // input operators

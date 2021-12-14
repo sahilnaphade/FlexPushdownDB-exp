@@ -18,6 +18,47 @@ std::shared_ptr<Filter> Filter::make(const std::shared_ptr<Expression> &Pred) {
   return std::make_shared<Filter>(Pred);
 }
 
+arrow::ArrayVector Filter::evaluate(const arrow::RecordBatch &recordBatch) {
+  assert(recordBatch.ValidateFull().ok());
+
+  // Create a bit vector
+  std::shared_ptr<::gandiva::SelectionVector> selection_vector;
+  auto status = ::gandiva::SelectionVector::MakeInt32(recordBatch.num_rows(), ::arrow::default_memory_pool(), &selection_vector);
+  if (!status.ok()) {
+    throw std::runtime_error(status.message());
+  }
+
+  // Compute the bit vector
+  status = gandivaFilter_->Evaluate(recordBatch, selection_vector);
+  if (!status.ok()) {
+    throw std::runtime_error(status.message());
+  }
+
+  SPDLOG_DEBUG("Evaluated SelectionVector  |  vector: {}", selection_vector->ToArray()->ToString());
+
+  // Evaluate the expressions
+  std::shared_ptr<::arrow::Table> batchArrowTable;
+
+  /**
+   * NOTE: Gandiva fails if the projector is evaluated using an empty selection vector, so need to test for it
+   */
+  arrow::ArrayVector outputs;
+  if(selection_vector->GetNumSlots() > 0) {
+    status = gandivaProjector_->Evaluate(recordBatch, selection_vector.get(), arrow::default_memory_pool(), &outputs);
+    if (!status.ok()) {
+      throw std::runtime_error(status.message());
+    }
+  }
+  else{
+    auto columns = Schema::make(recordBatch.schema())->makeColumns();
+    auto outputChunkedArrays = Column::columnVectorToArrowChunkedArrayVector(columns);
+    for (const auto &chunkedArray: outputChunkedArrays) {
+      outputs.emplace_back(chunkedArray->chunk(0));
+    }
+  }
+  return outputs;
+}
+
 std::shared_ptr<normal::tuple::TupleSet> Filter::evaluate(const normal::tuple::TupleSet &tupleSet) {
   if (tupleSet.valid()) {
 

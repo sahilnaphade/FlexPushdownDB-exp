@@ -1,7 +1,6 @@
 package com.flexpushdowndb.calcite.rule;
 
 import com.flexpushdowndb.calcite.rule.util.SimpleExpressionCanonicalizer;
-import org.apache.calcite.adapter.enumerable.EnumerableHashJoin;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.RelNode;
@@ -14,14 +13,13 @@ import org.apache.calcite.rel.rules.TransformationRule;
 import org.apache.calcite.rex.RexBuilder;
 
 /**
- * Rule that makes left input the smaller relation, which is to build the hash table;
- * right input the larger relation, which is to probe the hash table
+ * Rule that makes the smaller relation as the left input of a join
  */
-public class HashJoinLeftRightPosRule extends RelRule<HashJoinLeftRightPosRule.Config>
+public class JoinSmallLeftRule extends RelRule<JoinSmallLeftRule.Config>
         implements TransformationRule {
-  public static HashJoinLeftRightPosRule INSTANCE = Config.DEFAULT.toRule();
+  public static JoinSmallLeftRule INSTANCE = Config.DEFAULT.toRule();
 
-  protected HashJoinLeftRightPosRule(Config config) {
+  protected JoinSmallLeftRule(Config config) {
     super(config);
   }
 
@@ -64,12 +62,12 @@ public class HashJoinLeftRightPosRule extends RelRule<HashJoinLeftRightPosRule.C
 
   public interface Config extends RelRule.Config {
     Config DEFAULT = EMPTY
-            .withOperandSupplier(b -> b.operand(EnumerableHashJoin.class).anyInputs())
+            .withOperandSupplier(b -> b.operand(Join.class).anyInputs())
             .as(Config.class);
 
     @Override
-    default HashJoinLeftRightPosRule toRule() {
-      return new HashJoinLeftRightPosRule(this);
+    default JoinSmallLeftRule toRule() {
+      return new JoinSmallLeftRule(this);
     }
   }
 }

@@ -20,7 +20,7 @@ add_library(normal-executor STATIC
         src/message/cache/LoadResponseMessage.cpp include/normal/executor/message/cache/LoadResponseMessage.h
         src/message/cache/StoreRequestMessage.cpp include/normal/executor/message/cache/StoreRequestMessage.h
         src/message/cache/WeightRequestMessage.cpp include/normal/executor/message/cache/WeightRequestMessage.h
-#        base physical operator, operator and segment cache actors and required sources
+#        base physical operators, operator actors, segment cache actors and required sources
         src/cache/SegmentCacheActor.cpp include/normal/executor/cache/SegmentCacheActor.h
         include/normal/executor/physical/Forward.h
         include/normal/executor/physical/POpRelationshipType.h
@@ -58,6 +58,9 @@ add_library(normal-executor STATIC
         src/physical/hashjoin/HashJoinProbeKernel2.cpp include/normal/executor/physical/hashjoin/HashJoinProbeKernel2.h
         src/physical/hashjoin/HashJoinPredicate.cpp include/normal/executor/physical/hashjoin/HashJoinPredicate.h
         src/physical/hashjoin/RecordBatchHashJoiner.cpp include/normal/executor/physical/hashjoin/RecordBatchHashJoiner.h
+        src/physical/nestedloopjoin/NestedLoopJoinPOp.cpp include/normal/executor/physical/nestedloopjoin/NestedLoopJoinPOp.h
+        src/physical/nestedloopjoin/NestedLoopJoinKernel.cpp include/normal/executor/physical/nestedloopjoin/NestedLoopJoinKernel.h
+        src/physical/nestedloopjoin/RecordBatchNestedLoopJoiner.cpp include/normal/executor/physical/nestedloopjoin/RecordBatchNestedLoopJoiner.h
         src/physical/merge/MergePOp.cpp include/normal/executor/physical/merge/MergePOp.h
         src/physical/merge/MergeKernel.cpp include/normal/executor/physical/merge/MergeKernel.h
         src/physical/project/ProjectPOp.cpp include/normal/executor/physical/project/ProjectPOp.h

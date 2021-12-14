@@ -1,14 +1,13 @@
 package com.flexpushdowndb.calcite.optimizer;
 
 import com.flexpushdowndb.calcite.rule.EnhancedFilterJoinRule;
-import com.flexpushdowndb.calcite.rule.HashJoinLeftRightPosRule;
+import com.flexpushdowndb.calcite.rule.JoinSmallLeftRule;
 import com.flexpushdowndb.calcite.schema.SchemaImpl;
 import com.flexpushdowndb.calcite.schema.SchemaReader;
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
 import org.apache.calcite.adapter.enumerable.EnumerableRules;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.config.CalciteConnectionProperty;
-import org.apache.calcite.jdbc.CalcitePrepare;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.plan.*;
@@ -21,8 +20,6 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
-import org.apache.calcite.sql.SqlExplainFormat;
-import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParser;
@@ -86,6 +83,7 @@ public class Optimizer {
 
     // Enhanced filter join pushdown
     HepProgram hepProgram = new HepProgramBuilder()
+            .addRuleInstance(CoreRules.FILTER_PROJECT_TRANSPOSE)
             .addRuleInstance(EnhancedFilterJoinRule.WITH_FILTER)
             .addRuleInstance(EnhancedFilterJoinRule.NO_FILTER)
             .build();
@@ -119,7 +117,7 @@ public class Optimizer {
 
     // Heuristics to apply
     hepProgram = new HepProgramBuilder()
-            .addRuleInstance(HashJoinLeftRightPosRule.INSTANCE)
+            .addRuleInstance(JoinSmallLeftRule.INSTANCE)
             .addRuleInstance(EnumerableRules.ENUMERABLE_PROJECT_RULE)
             .build();
     hepPlanner = new HepPlanner(hepProgram);
