@@ -58,6 +58,7 @@ add_library(normal-executor STATIC
         src/physical/hashjoin/HashJoinBuildKernel.cpp include/normal/executor/physical/hashjoin/HashJoinBuildKernel.h
         src/physical/hashjoin/HashJoinProbeAbstractKernel.cpp include/normal/executor/physical/hashjoin/HashJoinProbeAbstractKernel.h
         src/physical/hashjoin/HashJoinProbeKernel.cpp include/normal/executor/physical/hashjoin/HashJoinProbeKernel.h
+        src/physical/hashjoin/HashJoinSemiProbeKernel.cpp include/normal/executor/physical/hashjoin/HashJoinSemiProbeKernel.h
         src/physical/hashjoin/HashJoinPredicate.cpp include/normal/executor/physical/hashjoin/HashJoinPredicate.h
         src/physical/hashjoin/RecordBatchHashJoiner.cpp include/normal/executor/physical/hashjoin/RecordBatchHashJoiner.h
         src/physical/nestedloopjoin/NestedLoopJoinPOp.cpp include/normal/executor/physical/nestedloopjoin/NestedLoopJoinPOp.h

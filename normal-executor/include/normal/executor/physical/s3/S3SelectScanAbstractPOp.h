@@ -52,6 +52,7 @@ public:
 			   std::shared_ptr<AWSClient> awsClient,
 			   bool scanOnStart,
 			   bool toCache);
+  virtual ~S3SelectScanAbstractPOp() = default;
 
   void onReceive(const Envelope &message) override;
 

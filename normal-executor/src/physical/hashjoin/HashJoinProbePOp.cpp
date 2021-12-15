@@ -4,6 +4,7 @@
 
 #include <normal/executor/physical/hashjoin/HashJoinProbePOp.h>
 #include <normal/executor/physical/hashjoin/HashJoinProbeKernel.h>
+#include <normal/executor/physical/hashjoin/HashJoinSemiProbeKernel.h>
 #include <normal/executor/physical/Globals.h>
 #include <normal/executor/message/TupleSetIndexMessage.h>
 #include <normal/tuple/arrow/SchemaHelper.h>
@@ -15,9 +16,21 @@ HashJoinProbePOp::HashJoinProbePOp(string name,
                                    HashJoinPredicate pred,
                                    JoinType joinType,
                                    vector<string> projectColumnNames) :
-	PhysicalOp(move(name), "HashJoinProbePOp", move(projectColumnNames)),
-	kernel_(HashJoinProbeKernel::make(move(pred),
-                                    set<string>(getProjectColumnNames().begin(), getProjectColumnNames().end()))){
+	PhysicalOp(move(name), "HashJoinProbePOp", move(projectColumnNames)) {
+
+  set<string> neededColumnNames(getProjectColumnNames().begin(), getProjectColumnNames().end());
+  switch (joinType) {
+    case INNER: {
+      kernel_ = HashJoinProbeKernel::make(move(pred), move(neededColumnNames));
+      break;
+    }
+    case SEMI: {
+      kernel_ = HashJoinSemiProbeKernel::make(move(pred), move(neededColumnNames));
+      break;
+    }
+    default:
+      throw runtime_error(fmt::format("Unsupported hash join type, {}", joinType));
+  }
 }
 
 void HashJoinProbePOp::onReceive(const Envelope &msg) {
