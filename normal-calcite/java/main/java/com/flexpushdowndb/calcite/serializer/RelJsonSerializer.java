@@ -10,6 +10,7 @@ import org.apache.calcite.rex.*;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public final class RelJsonSerializer {
@@ -83,7 +84,9 @@ public final class RelJsonSerializer {
     jo.put("operator", join.getClass().getSimpleName());
     // join condition
     if (!join.getCondition().isAlwaysTrue()) {
-      jo.put("condition", RexJsonSerializer.serialize(join.getCondition(), join.getRowType().getFieldNames()));
+      List<String> fieldNames = new ArrayList<>(join.getInput(0).getRowType().getFieldNames());
+      fieldNames.addAll(join.getInput(1).getRowType().getFieldNames());
+      jo.put("condition", RexJsonSerializer.serialize(join.getCondition(), fieldNames));
     }
     // join type
     jo.put("joinType", join.getJoinType());

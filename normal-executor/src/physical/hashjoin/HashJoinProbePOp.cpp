@@ -3,6 +3,7 @@
 //
 
 #include <normal/executor/physical/hashjoin/HashJoinProbePOp.h>
+#include <normal/executor/physical/hashjoin/HashJoinProbeKernel.h>
 #include <normal/executor/physical/Globals.h>
 #include <normal/executor/message/TupleSetIndexMessage.h>
 #include <normal/tuple/arrow/SchemaHelper.h>
@@ -12,10 +13,11 @@ using namespace normal::executor::physical::hashjoin;
 
 HashJoinProbePOp::HashJoinProbePOp(string name,
                                    HashJoinPredicate pred,
+                                   JoinType joinType,
                                    vector<string> projectColumnNames) :
 	PhysicalOp(move(name), "HashJoinProbePOp", move(projectColumnNames)),
-	kernel_(HashJoinProbeKernel2::make(move(pred),
-                                     set<string>(getProjectColumnNames().begin(), getProjectColumnNames().end()))){
+	kernel_(HashJoinProbeKernel::make(move(pred),
+                                    set<string>(getProjectColumnNames().begin(), getProjectColumnNames().end()))){
 }
 
 void HashJoinProbePOp::onReceive(const Envelope &msg) {
@@ -43,7 +45,7 @@ void HashJoinProbePOp::onStart() {
 void HashJoinProbePOp::onTuple(const TupleMessage &msg) {
   // Incremental join immediately
   const auto& tupleSet = msg.tuples();
-  auto result = kernel_.joinProbeTupleSet(tupleSet);
+  auto result = kernel_->joinProbeTupleSet(tupleSet);
   if(!result)
     throw runtime_error(fmt::format("{}, {}", result.error(), name()));
 
@@ -60,7 +62,7 @@ void HashJoinProbePOp::onComplete(const CompleteMessage &) {
 
 void HashJoinProbePOp::onHashTable(const TupleSetIndexMessage &msg) {
   // Incremental join immediately
-  auto result = kernel_.joinBuildTupleSetIndex(msg.getTupleSetIndex());
+  auto result = kernel_->joinBuildTupleSetIndex(msg.getTupleSetIndex());
   if(!result)
     throw runtime_error(fmt::format("{}, {}", result.error(), name()));
 
@@ -69,7 +71,7 @@ void HashJoinProbePOp::onHashTable(const TupleSetIndexMessage &msg) {
 }
 
 void HashJoinProbePOp::send(bool force) {
-  auto buffer = kernel_.getBuffer();
+  auto buffer = kernel_->getBuffer();
   if (buffer.has_value()) {
     auto numRows = buffer.value()->numRows();
     if (numRows >= DefaultBufferSize || (force && numRows > 0)) {
@@ -81,7 +83,7 @@ void HashJoinProbePOp::send(bool force) {
 
       shared_ptr<Message> tupleMessage = make_shared<TupleMessage>(expProjectTupleSet.value(), name());
       ctx()->tell(tupleMessage);
-      kernel_.clear();
+      kernel_->clear();
     }
   }
 }

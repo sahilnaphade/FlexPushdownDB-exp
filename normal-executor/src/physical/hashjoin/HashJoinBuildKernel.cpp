@@ -2,24 +2,24 @@
 // Created by matt on 1/8/20.
 //
 
-#include <normal/executor/physical/hashjoin/HashJoinBuildKernel2.h>
+#include <normal/executor/physical/hashjoin/HashJoinBuildKernel.h>
 #include <normal/tuple/ColumnName.h>
 #include <utility>
 
 using namespace normal::executor::physical::hashjoin;
 
-HashJoinBuildKernel2::HashJoinBuildKernel2(vector<string> columnNames) :
+HashJoinBuildKernel::HashJoinBuildKernel(vector<string> columnNames) :
 	columnNames_(move(columnNames)) {}
 
-HashJoinBuildKernel2 HashJoinBuildKernel2::make(const vector<string> &columnNames) {
+HashJoinBuildKernel HashJoinBuildKernel::make(const vector<string> &columnNames) {
 
   assert(!columnNames.empty());
 
   auto canonicalColumnNames = ColumnName::canonicalize(columnNames);
-  return HashJoinBuildKernel2(canonicalColumnNames);
+  return HashJoinBuildKernel(canonicalColumnNames);
 }
 
-tl::expected<void, string> HashJoinBuildKernel2::put(const shared_ptr<TupleSet> &tupleSet) {
+tl::expected<void, string> HashJoinBuildKernel::put(const shared_ptr<TupleSet> &tupleSet) {
 
   assert(tupleSet);
 
@@ -36,17 +36,17 @@ tl::expected<void, string> HashJoinBuildKernel2::put(const shared_ptr<TupleSet> 
   return result;
 }
 
-size_t HashJoinBuildKernel2::size() {
+size_t HashJoinBuildKernel::size() {
   if(!tupleSetIndex_.has_value()){
     return 0;
   }
   return tupleSetIndex_.value()->size();
 }
 
-void HashJoinBuildKernel2::clear() {
+void HashJoinBuildKernel::clear() {
   tupleSetIndex_ = nullopt;
 }
 
-optional<shared_ptr<TupleSetIndex>> HashJoinBuildKernel2::getTupleSetIndex() {
+optional<shared_ptr<TupleSetIndex>> HashJoinBuildKernel::getTupleSetIndex() {
   return tupleSetIndex_;
 }

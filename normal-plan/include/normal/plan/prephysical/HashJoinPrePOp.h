@@ -21,6 +21,7 @@ public:
 
   set<string> getUsedColumnNames() override;
 
+  JoinType getJoinType() const;
   const vector<string> &getLeftColumnNames() const;
   const vector<string> &getRightColumnNames() const;
 

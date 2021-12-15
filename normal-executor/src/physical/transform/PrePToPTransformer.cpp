@@ -392,6 +392,7 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
   // transform self
   vector<string> projectColumnNames{hashJoinPrePOp->getProjectColumnNames().begin(),
                                     hashJoinPrePOp->getProjectColumnNames().end()};
+  auto joinType = hashJoinPrePOp->getJoinType();
   const auto &leftColumnNames = hashJoinPrePOp->getLeftColumnNames();
   const auto &rightColumnNames = hashJoinPrePOp->getRightColumnNames();
   hashjoin::HashJoinPredicate hashJoinPredicate(leftColumnNames, rightColumnNames);
@@ -406,6 +407,7 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
     hashJoinProbePOps.emplace_back(make_shared<hashjoin::HashJoinProbePOp>(
             fmt::format("HashJoinProbe[{}]-{}-{}", prePOpId, hashJoinPredicateStr, i),
             hashJoinPredicate,
+            joinType,
             projectColumnNames));
   }
   allPOps.insert(allPOps.end(), hashJoinBuildPOps.begin(), hashJoinBuildPOps.end());

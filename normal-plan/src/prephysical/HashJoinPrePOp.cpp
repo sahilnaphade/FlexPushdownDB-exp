@@ -26,6 +26,10 @@ set<string> HashJoinPrePOp::getUsedColumnNames() {
   return usedColumnNames;
 }
 
+JoinType HashJoinPrePOp::getJoinType() const {
+  return joinType_;
+}
+
 const vector<string> &HashJoinPrePOp::getLeftColumnNames() const {
   return leftColumnNames_;
 }

@@ -537,8 +537,10 @@ shared_ptr<prephysical::HashJoinPrePOp> CalcitePlanJsonDeserializer::deserialize
   JoinType joinType;
   if (joinTypeStr == "INNER") {
     joinType = INNER;
+  } else if (joinTypeStr == "SEMI") {
+    joinType = SEMI;
   } else {
-    throw runtime_error(fmt::format("Unsupported join type, {}, from: {}", joinTypeStr, to_string(jObj)));
+    throw runtime_error(fmt::format("Unsupported hash join type, {}, from: {}", joinTypeStr, to_string(jObj)));
   }
 
   // deserialize hash join condition
@@ -565,7 +567,7 @@ shared_ptr<prephysical::NestedLoopJoinPrePOp> CalcitePlanJsonDeserializer::deser
   if (joinTypeStr == "INNER") {
     joinType = INNER;
   } else {
-    throw runtime_error(fmt::format("Unsupported join type, {}, from: {}", joinTypeStr, to_string(jObj)));
+    throw runtime_error(fmt::format("Unsupported nested loop join type, {}, from: {}", joinTypeStr, to_string(jObj)));
   }
 
   // deserialize join condition, if has

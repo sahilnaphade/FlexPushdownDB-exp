@@ -2,8 +2,8 @@
 // Created by matt on 1/8/20.
 //
 
-#ifndef NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_HASHJOIN_HASHJOINBUILDKERNEL2_H
-#define NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_HASHJOIN_HASHJOINBUILDKERNEL2_H
+#ifndef NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_HASHJOIN_HASHJOINBUILDKERNEL_H
+#define NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_HASHJOIN_HASHJOINBUILDKERNEL_H
 
 #include <normal/tuple/TupleSet.h>
 #include <normal/tuple/TupleSetIndex.h>
@@ -18,11 +18,11 @@ namespace normal::executor::physical::hashjoin {
 /**
  * Kernel for creating the hash table on the build relation in a hash join
  */
-class HashJoinBuildKernel2 {
+class HashJoinBuildKernel {
 
 public:
-  explicit HashJoinBuildKernel2(vector<string> columnNames);
-  static HashJoinBuildKernel2 make(const vector<string> &columnNames);
+  explicit HashJoinBuildKernel(vector<string> columnNames);
+  static HashJoinBuildKernel make(const vector<string> &columnNames);
 
   tl::expected<void, string> put(const shared_ptr<TupleSet> &tupleSet);
   size_t size();
@@ -45,4 +45,4 @@ private:
 
 }
 
-#endif //NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_HASHJOIN_HASHJOINBUILDKERNEL2_H
+#endif //NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_HASHJOIN_HASHJOINBUILDKERNEL_H

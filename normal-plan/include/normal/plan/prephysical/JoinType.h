@@ -11,7 +11,8 @@ enum JoinType {
   INNER,
   LEFT,
   RIGHT,
-  FULL
+  FULL,
+  SEMI
 };
 
 }

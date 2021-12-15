@@ -55,8 +55,9 @@ add_library(normal-executor STATIC
         src/physical/group/GroupKernel2.cpp include/normal/executor/physical/group/GroupKernel2.h
         src/physical/hashjoin/HashJoinBuildPOp.cpp include/normal/executor/physical/hashjoin/HashJoinBuildPOp.h
         src/physical/hashjoin/HashJoinProbePOp.cpp include/normal/executor/physical/hashjoin/HashJoinProbePOp.h
-        src/physical/hashjoin/HashJoinBuildKernel2.cpp include/normal/executor/physical/hashjoin/HashJoinBuildKernel2.h
-        src/physical/hashjoin/HashJoinProbeKernel2.cpp include/normal/executor/physical/hashjoin/HashJoinProbeKernel2.h
+        src/physical/hashjoin/HashJoinBuildKernel.cpp include/normal/executor/physical/hashjoin/HashJoinBuildKernel.h
+        src/physical/hashjoin/HashJoinProbeAbstractKernel.cpp include/normal/executor/physical/hashjoin/HashJoinProbeAbstractKernel.h
+        src/physical/hashjoin/HashJoinProbeKernel.cpp include/normal/executor/physical/hashjoin/HashJoinProbeKernel.h
         src/physical/hashjoin/HashJoinPredicate.cpp include/normal/executor/physical/hashjoin/HashJoinPredicate.h
         src/physical/hashjoin/RecordBatchHashJoiner.cpp include/normal/executor/physical/hashjoin/RecordBatchHashJoiner.h
         src/physical/nestedloopjoin/NestedLoopJoinPOp.cpp include/normal/executor/physical/nestedloopjoin/NestedLoopJoinPOp.h

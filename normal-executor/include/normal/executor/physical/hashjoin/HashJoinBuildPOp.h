@@ -5,7 +5,7 @@
 #ifndef NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_HASHJOIN_HASHJOINBUILDPOP_H
 #define NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_HASHJOIN_HASHJOINBUILDPOP_H
 
-#include <normal/executor/physical/hashjoin/HashJoinBuildKernel2.h>
+#include <normal/executor/physical/hashjoin/HashJoinBuildKernel.h>
 #include <normal/executor/physical/PhysicalOp.h>
 #include <normal/executor/message/TupleMessage.h>
 #include <normal/executor/message/CompleteMessage.h>
@@ -41,7 +41,7 @@ private:
   tl::expected<void, string> buffer(const shared_ptr<TupleSet>& tupleSet);
   void send(bool force);
 
-  HashJoinBuildKernel2 kernel_;
+  HashJoinBuildKernel kernel_;
 
 };
 

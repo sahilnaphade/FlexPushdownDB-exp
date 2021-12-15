@@ -15,7 +15,7 @@ HashJoinBuildPOp::HashJoinBuildPOp(const string &name,
                                    const vector<string> &columnNames,
                                    const vector<string> &projectColumnNames) :
 	PhysicalOp(name, "HashJoinBuildPOp", projectColumnNames),
-	kernel_(HashJoinBuildKernel2::make(columnNames)){
+	kernel_(HashJoinBuildKernel::make(columnNames)){
 }
 
 void HashJoinBuildPOp::onReceive(const Envelope &msg) {
