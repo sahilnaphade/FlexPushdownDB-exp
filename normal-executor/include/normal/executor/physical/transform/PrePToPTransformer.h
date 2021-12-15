@@ -16,6 +16,7 @@
 #include <normal/plan/prephysical/ProjectPrePOp.h>
 #include <normal/plan/prephysical/FilterPrePOp.h>
 #include <normal/plan/prephysical/HashJoinPrePOp.h>
+#include <normal/plan/prephysical/NestedLoopJoinPrePOp.h>
 #include <normal/plan/prephysical/FilterableScanPrePOp.h>
 #include <normal/plan/Mode.h>
 #include <normal/aws/AWSClient.h>
@@ -67,6 +68,9 @@ private:
 
   pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
   transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoinPrePOp);
+
+  pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
+  transformNestedLoopJoin(const shared_ptr<NestedLoopJoinPrePOp> &nestedLoopJoinPrePOp);
 
   pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
   transformFilterableScan(const shared_ptr<FilterableScanPrePOp> &filterableScanPrePOp);

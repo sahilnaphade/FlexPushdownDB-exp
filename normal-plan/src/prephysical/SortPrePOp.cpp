@@ -9,8 +9,8 @@ using namespace std;
 
 namespace normal::plan::prephysical {
 
-SortPrePOp::SortPrePOp(const arrow::compute::SortOptions &sortOptions) :
-  PrePhysicalOp(SORT),
+SortPrePOp::SortPrePOp(uint id, const arrow::compute::SortOptions &sortOptions) :
+  PrePhysicalOp(id, SORT),
   sortOptions_(sortOptions) {}
 
 string SortPrePOp::getTypeString() {

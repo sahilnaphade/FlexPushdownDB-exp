@@ -12,7 +12,8 @@ namespace normal::plan::prephysical {
 
 class HashJoinPrePOp: public PrePhysicalOp {
 public:
-  HashJoinPrePOp(JoinType joinType,
+  HashJoinPrePOp(uint id,
+                 JoinType joinType,
                  const vector<string> &leftColumnNames,
                  const vector<string> &rightColumnNames);
 

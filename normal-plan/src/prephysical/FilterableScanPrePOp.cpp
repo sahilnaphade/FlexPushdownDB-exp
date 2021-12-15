@@ -6,8 +6,8 @@
 
 namespace normal::plan::prephysical {
 
-FilterableScanPrePOp::FilterableScanPrePOp(const shared_ptr<Table> &table) :
-  PrePhysicalOp(FILTERABLE_SCAN),
+FilterableScanPrePOp::FilterableScanPrePOp(uint id, const shared_ptr<Table> &table) :
+  PrePhysicalOp(id, FILTERABLE_SCAN),
   table_(table) {}
 
 string FilterableScanPrePOp::getTypeString() {
@@ -15,7 +15,12 @@ string FilterableScanPrePOp::getTypeString() {
 }
 
 set<string> FilterableScanPrePOp::getUsedColumnNames() {
-  return getProjectColumnNames();
+  set<string> usedColumnNames = getProjectColumnNames();
+  if (predicate_) {
+    const auto &predicateColumnNames = predicate_->involvedColumnNames();
+    usedColumnNames.insert(predicateColumnNames.begin(), predicateColumnNames.end());
+  }
+  return usedColumnNames;
 }
 
 const shared_ptr<Expression> &FilterableScanPrePOp::getPredicate() const {

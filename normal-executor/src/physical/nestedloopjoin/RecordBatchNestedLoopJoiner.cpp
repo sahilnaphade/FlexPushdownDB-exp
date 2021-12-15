@@ -8,7 +8,7 @@
 
 namespace normal::executor::physical::nestedloopjoin {
 
-RecordBatchNestedLoopJoiner::RecordBatchNestedLoopJoiner(const optional<shared_ptr<Expression>> &predicate,
+RecordBatchNestedLoopJoiner::RecordBatchNestedLoopJoiner(const optional<shared_ptr<expression::gandiva::Expression>> &predicate,
                                                          const shared_ptr<::arrow::Schema> &outputSchema,
                                                          const vector<shared_ptr<pair<bool, int>>> &neededColumnIndice):
   predicate_(predicate),
@@ -78,7 +78,7 @@ RecordBatchNestedLoopJoiner::cartesian(const shared_ptr<::arrow::RecordBatch> &l
   /*
    * left part: add whole left array [#rows of right array] times
    */
-  vector<arrow::ArrayVector> leftOutputArrayVectors;
+  vector<arrow::ArrayVector> leftOutputArrayVectors{neededLeftColumnIndexes_.size()};
   for (int64_t rr = 0; rr < rightRecordBatch->num_rows(); ++rr) {
     for (uint c = 0; c < neededLeftColumnIndexes_.size(); ++c) {
       const auto &leftColumn = leftColumns[neededLeftColumnIndexes_[c]];

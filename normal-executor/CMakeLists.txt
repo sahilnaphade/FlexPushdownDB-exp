@@ -42,6 +42,7 @@ add_library(normal-executor STATIC
         src/physical/aggregate/function/AggregateFunction.cpp include/normal/executor/physical/aggregate/function/AggregateFunction.h
         src/physical/aggregate/function/Sum.cpp include/normal/executor/physical/aggregate/function/Sum.h
         src/physical/aggregate/function/Count.cpp include/normal/executor/physical/aggregate/function/Count.h
+        src/physical/aggregate/function/MinMax.cpp include/normal/executor/physical/aggregate/function/MinMax.h
         src/physical/cache/CacheLoadPOp.cpp include/normal/executor/physical/cache/CacheLoadPOp.h
         src/physical/cache/CacheHelper.cpp include/normal/executor/physical/cache/CacheHelper.h
         src/physical/collate/CollatePOp.cpp include/normal/executor/physical/collate/CollatePOp.h
@@ -67,6 +68,7 @@ add_library(normal-executor STATIC
         src/physical/shuffle/ShufflePOp.cpp include/normal/executor/physical/shuffle/ShufflePOp.h
         src/physical/shuffle/ShuffleKernel2.cpp include/normal/executor/physical/shuffle/ShuffleKernel2.h
         src/physical/shuffle/RecordBatchShuffler2.cpp include/normal/executor/physical/shuffle/RecordBatchShuffler2.h
+        src/physical/split/SplitPOp.cpp include/normal/executor/physical/split/SplitPOp.h
         src/physical/s3/S3GetPOp.cpp include/normal/executor/physical/s3/S3GetPOp.h
         src/physical/s3/S3SelectPOp.cpp include/normal/executor/physical/s3/S3SelectPOp.h
         src/physical/s3/S3SelectScanAbstractPOp.cpp include/normal/executor/physical/s3/S3SelectScanAbstractPOp.h

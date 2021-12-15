@@ -12,7 +12,8 @@ namespace normal::plan::prephysical {
 
 class AggregatePrePOp: public PrePhysicalOp {
 public:
-  AggregatePrePOp(const vector<string> &aggOutputColumnNames,
+  AggregatePrePOp(uint id,
+                  const vector<string> &aggOutputColumnNames,
                   const vector<shared_ptr<AggregatePrePFunction>> &functions);
 
   const vector<string> &getAggOutputColumnNames() const;

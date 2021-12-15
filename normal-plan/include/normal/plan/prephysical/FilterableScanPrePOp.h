@@ -16,7 +16,7 @@ namespace normal::plan::prephysical {
 
 class FilterableScanPrePOp: public PrePhysicalOp {
 public:
-  FilterableScanPrePOp(const shared_ptr<Table> &table);
+  FilterableScanPrePOp(uint id, const shared_ptr<Table> &table);
 
   string getTypeString() override;
 

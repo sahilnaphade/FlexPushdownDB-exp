@@ -7,8 +7,8 @@
 
 namespace normal::plan::prephysical {
 
-LimitSortPrePOp::LimitSortPrePOp(const arrow::compute::SelectKOptions &selectKOptions):
-  PrePhysicalOp(LIMIT_SORT),
+LimitSortPrePOp::LimitSortPrePOp(uint id, const arrow::compute::SelectKOptions &selectKOptions):
+  PrePhysicalOp(id, LIMIT_SORT),
   selectKOptions_(selectKOptions) {}
 
 string LimitSortPrePOp::getTypeString() {

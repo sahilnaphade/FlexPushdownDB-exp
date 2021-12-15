@@ -5,10 +5,11 @@
 #include <normal/plan/prephysical/ProjectPrePOp.h>
 
 namespace normal::plan::prephysical {
-ProjectPrePOp::ProjectPrePOp(const vector<shared_ptr<Expression>> &exprs,
+ProjectPrePOp::ProjectPrePOp(uint id,
+                             const vector<shared_ptr<Expression>> &exprs,
                              const vector<std::string> &exprNames,
                              const unordered_map<string, string> &columnRenames) :
-  PrePhysicalOp(PROJECT),
+  PrePhysicalOp(id, PROJECT),
   exprs_(exprs),
   exprNames_(exprNames),
   columnRenames_(columnRenames) {}

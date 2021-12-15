@@ -14,7 +14,7 @@ namespace normal::plan::prephysical {
 
 class LimitSortPrePOp: public PrePhysicalOp {
 public:
-  LimitSortPrePOp(const arrow::compute::SelectKOptions &selectKOptions);
+  LimitSortPrePOp(uint id, const arrow::compute::SelectKOptions &selectKOptions);
 
   string getTypeString() override;
 

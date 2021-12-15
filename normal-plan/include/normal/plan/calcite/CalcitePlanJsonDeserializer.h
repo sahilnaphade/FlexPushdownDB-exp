@@ -13,6 +13,7 @@
 #include <normal/plan/prephysical/GroupPrePOp.h>
 #include <normal/plan/prephysical/ProjectPrePOp.h>
 #include <normal/plan/prephysical/HashJoinPrePOp.h>
+#include <normal/plan/prephysical/NestedLoopJoinPrePOp.h>
 #include <normal/plan/prephysical/FilterPrePOp.h>
 #include <normal/plan/prephysical/FilterableScanPrePOp.h>
 #include <normal/catalogue/CatalogueEntry.h>
@@ -53,11 +54,15 @@ private:
   shared_ptr<PrePhysicalOp> deserializeAggregateOrGroup(json &jObj);
   shared_ptr<PrePhysicalOp> deserializeProject(const json &jObj);
   shared_ptr<HashJoinPrePOp> deserializeHashJoin(const json &jObj);
+  shared_ptr<NestedLoopJoinPrePOp> deserializeNestedLoopJoin(const json &jObj);
   shared_ptr<PrePhysicalOp> deserializeFilterOrFilterableScan(const json &jObj);
   shared_ptr<FilterableScanPrePOp> deserializeTableScan(const json &jObj);
 
   string planJsonString_;
   shared_ptr<CatalogueEntry> catalogueEntry_;
+
+  std::atomic<uint> pOpIdGenerator_;    // used to give each prePOp a unique id, in case there are different but identical
+                                        // prePOps (e.g. two scans on the same table)
 };
 
 

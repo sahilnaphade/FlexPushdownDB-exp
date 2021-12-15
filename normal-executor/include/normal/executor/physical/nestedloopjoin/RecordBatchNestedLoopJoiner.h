@@ -19,11 +19,11 @@ namespace normal::executor::physical::nestedloopjoin {
 class RecordBatchNestedLoopJoiner {
 
 public:
-  RecordBatchNestedLoopJoiner(const optional<shared_ptr<Expression>> &predicate,
+  RecordBatchNestedLoopJoiner(const optional<shared_ptr<expression::gandiva::Expression>> &predicate,
                               const shared_ptr<::arrow::Schema> &outputSchema,
                               const vector<shared_ptr<pair<bool, int>>> &neededColumnIndice);
   
-  static shared_ptr<RecordBatchNestedLoopJoiner> make(const optional<shared_ptr<Expression>> &predicate,
+  static shared_ptr<RecordBatchNestedLoopJoiner> make(const optional<shared_ptr<expression::gandiva::Expression>> &predicate,
                                                       const shared_ptr<::arrow::Schema> &outputSchema,
                                                       const vector<shared_ptr<pair<bool, int>>> &neededColumnIndice);
 
@@ -38,7 +38,7 @@ private:
             const shared_ptr<::arrow::RecordBatch> &rightRecordBatch);
   arrow::ArrayVector filter(const shared_ptr<arrow::RecordBatch> &recordBatch);
 
-  optional<shared_ptr<Expression>> predicate_;
+  optional<shared_ptr<expression::gandiva::Expression>> predicate_;
   optional<std::shared_ptr<normal::expression::Filter>> filter_;
 
   shared_ptr<::arrow::Schema> outputSchema_;

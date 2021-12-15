@@ -10,6 +10,7 @@
 #include <set>
 #include <string>
 #include <memory>
+#include <sys/types.h>
 
 using namespace std;
 
@@ -17,9 +18,10 @@ namespace normal::plan::prephysical {
 
 class PrePhysicalOp {
 public:
-  PrePhysicalOp(PrePOpType type);
+  PrePhysicalOp(uint id, PrePOpType type);
   virtual ~PrePhysicalOp() = default;
 
+  uint getId() const;
   PrePOpType getType() const;
   virtual string getTypeString() = 0;
   const vector<shared_ptr<PrePhysicalOp>> &getProducers() const;
@@ -30,6 +32,7 @@ public:
   void setProjectColumnNames(const set<string> &projectColumnNames);
 
 private:
+  uint id_;
   PrePOpType type_;
   vector<shared_ptr<PrePhysicalOp>> producers_;
   set<string> projectColumnNames_;

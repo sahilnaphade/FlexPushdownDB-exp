@@ -6,10 +6,11 @@
 
 namespace normal::plan::prephysical {
 
-GroupPrePOp::GroupPrePOp(const vector<string> &groupColumnNames,
+GroupPrePOp::GroupPrePOp(uint id,
+                         const vector<string> &groupColumnNames,
                          const vector<string> &aggOutputColumnNames,
                          const vector<shared_ptr<AggregatePrePFunction>> &functions) :
-   PrePhysicalOp(GROUP),
+   PrePhysicalOp(id, GROUP),
    groupColumnNames_(groupColumnNames),
    aggOutputColumnNames_(aggOutputColumnNames),
    functions_(functions) {}

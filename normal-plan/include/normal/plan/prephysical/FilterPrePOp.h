@@ -14,7 +14,7 @@ namespace normal::plan::prephysical {
 
 class FilterPrePOp: public PrePhysicalOp {
 public:
-  FilterPrePOp(const shared_ptr<Expression> &predicate);
+  FilterPrePOp(uint id, const shared_ptr<Expression> &predicate);
 
   string getTypeString() override;
 

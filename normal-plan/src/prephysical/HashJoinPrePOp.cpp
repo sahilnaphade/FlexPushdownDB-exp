@@ -6,10 +6,11 @@
 
 namespace normal::plan::prephysical {
 
-HashJoinPrePOp::HashJoinPrePOp(JoinType joinType,
+HashJoinPrePOp::HashJoinPrePOp(uint id,
+                               JoinType joinType,
                                const vector<string> &leftColumnNames,
                                const vector<string> &rightColumnNames) :
-  PrePhysicalOp(HASH_JOIN),
+  PrePhysicalOp(id, HASH_JOIN),
   joinType_(joinType),
   leftColumnNames_(leftColumnNames),
   rightColumnNames_(rightColumnNames) {}

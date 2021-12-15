@@ -10,7 +10,6 @@
 #include <tl/expected.hpp>
 #include <set>
 
-using namespace normal::expression::gandiva;
 using namespace normal::tuple;
 using namespace std;
 
@@ -19,10 +18,10 @@ namespace normal::executor::physical::nestedloopjoin {
 class NestedLoopJoinKernel {
 
 public:
-  NestedLoopJoinKernel(const optional<shared_ptr<Expression>> &predicate,
+  NestedLoopJoinKernel(const optional<shared_ptr<expression::gandiva::Expression>> &predicate,
                        const set<string> &neededColumnNames);
 
-  static NestedLoopJoinKernel make(const optional<shared_ptr<Expression>> &predicate,
+  static NestedLoopJoinKernel make(const optional<shared_ptr<expression::gandiva::Expression>> &predicate,
                                    const set<string> &neededColumnNames);
 
   tl::expected<void, string> joinIncomingLeft(const shared_ptr<TupleSet> &incomingLeft);
@@ -37,7 +36,7 @@ private:
   tl::expected<void, string> buffer(const shared_ptr<TupleSet>& tupleSet);
   void bufferOutputSchema(const shared_ptr<TupleSet> &leftTupleSet, const shared_ptr<TupleSet> &rightTupleSet);
   
-  optional<shared_ptr<Expression>> predicate_;
+  optional<shared_ptr<expression::gandiva::Expression>> predicate_;
   optional<shared_ptr<TupleSet>> leftTupleSet_;
   optional<shared_ptr<TupleSet>> rightTupleSet_;
   set<string> neededColumnNames_;

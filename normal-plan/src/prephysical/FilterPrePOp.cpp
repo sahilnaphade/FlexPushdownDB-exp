@@ -6,8 +6,8 @@
 
 namespace normal::plan::prephysical {
 
-FilterPrePOp::FilterPrePOp(const shared_ptr<Expression> &predicate) :
-  PrePhysicalOp(FILTER),
+FilterPrePOp::FilterPrePOp(uint id, const shared_ptr<Expression> &predicate) :
+  PrePhysicalOp(id, FILTER),
   predicate_(predicate) {}
 
 string FilterPrePOp::getTypeString() {

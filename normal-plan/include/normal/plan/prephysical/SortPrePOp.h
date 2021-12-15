@@ -14,7 +14,7 @@ namespace normal::plan::prephysical {
 
 class SortPrePOp: public PrePhysicalOp {
 public:
-  SortPrePOp(const arrow::compute::SortOptions &sortOptions);
+  SortPrePOp(uint id, const arrow::compute::SortOptions &sortOptions);
 
   string getTypeString() override;
 

@@ -13,7 +13,8 @@ namespace normal::plan::prephysical {
 
 class GroupPrePOp: public PrePhysicalOp {
 public:
-  GroupPrePOp(const vector<string> &groupColumnNames,
+  GroupPrePOp(uint id,
+              const vector<string> &groupColumnNames,
               const vector<string> &aggOutputColumnNames,
               const vector<shared_ptr<AggregatePrePFunction>> &functions);
 

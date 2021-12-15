@@ -14,7 +14,8 @@ namespace normal::plan::prephysical {
 
 class ProjectPrePOp: public PrePhysicalOp {
 public:
-  ProjectPrePOp(const vector<shared_ptr<Expression>> &exprs,
+  ProjectPrePOp(uint id,
+                const vector<shared_ptr<Expression>> &exprs,
                 const vector<std::string> &exprNames,
                 const unordered_map<string, string> &columnRenames);
 

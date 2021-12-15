@@ -7,12 +7,12 @@
 
 namespace normal::executor::physical::nestedloopjoin {
 
-NestedLoopJoinKernel::NestedLoopJoinKernel(const optional<shared_ptr<Expression>> &predicate,
+NestedLoopJoinKernel::NestedLoopJoinKernel(const optional<shared_ptr<expression::gandiva::Expression>> &predicate,
                                            const set<string> &neededColumnNames):
   predicate_(predicate),
   neededColumnNames_(neededColumnNames) {}
 
-NestedLoopJoinKernel NestedLoopJoinKernel::make(const optional<shared_ptr<Expression>> &predicate,
+NestedLoopJoinKernel NestedLoopJoinKernel::make(const optional<shared_ptr<expression::gandiva::Expression>> &predicate,
                                                 const set<string> &neededColumnNames) {
   return NestedLoopJoinKernel(predicate, neededColumnNames);
 }

@@ -37,8 +37,10 @@ using namespace normal::tuple;
 namespace normal::plan::calcite {
 
 CalcitePlanJsonDeserializer::CalcitePlanJsonDeserializer(string planJsonString,
-                                                         const shared_ptr<CatalogueEntry> &catalogueEntry)
-        : planJsonString_(std::move(planJsonString)), catalogueEntry_(catalogueEntry) {}
+                                                         const shared_ptr<CatalogueEntry> &catalogueEntry):
+  planJsonString_(std::move(planJsonString)),
+  catalogueEntry_(catalogueEntry),
+  pOpIdGenerator_(0) {}
 
 shared_ptr<PrePhysicalPlan> CalcitePlanJsonDeserializer::deserialize() {
   auto jObj = json::parse(planJsonString_);
@@ -62,6 +64,8 @@ shared_ptr<PrePhysicalOp> CalcitePlanJsonDeserializer::deserializeDfs(json &jObj
     return deserializeProject(jObj);
   } else if (opName == "EnumerableHashJoin") {
     return deserializeHashJoin(jObj);
+  } else if (opName == "EnumerableNestedLoopJoin") {
+    return deserializeNestedLoopJoin(jObj);
   } else if (opName == "EnumerableFilter") {
     return deserializeFilterOrFilterableScan(jObj);
   } else if (opName == "EnumerableTableScan") {
@@ -299,8 +303,8 @@ pair<vector<string>, vector<string>> CalcitePlanJsonDeserializer::deserializeHas
   else if (opName == "EQUALS") {
     auto leftJObj = jObj["operands"].get<vector<json>>()[0];
     auto rightJObj = jObj["operands"].get<vector<json>>()[1];
-    auto leftColumnName = leftJObj["inputRef"].get<string>();
-    auto rightColumnName = rightJObj["inputRef"].get<string>();
+    auto leftColumnName = ColumnName::canonicalize(leftJObj["inputRef"].get<string>());
+    auto rightColumnName = ColumnName::canonicalize(rightJObj["inputRef"].get<string>());
     return make_pair(vector<string>{leftColumnName}, vector<string>{rightColumnName});
   }
 
@@ -327,7 +331,7 @@ shared_ptr<SortPrePOp> CalcitePlanJsonDeserializer::deserializeSort(const json &
   const auto &sortFieldsJArr = jObj["sortFields"].get<vector<json>>();
   const auto &sortKeys = deserializeSortKeys(sortFieldsJArr);
   arrow::compute::SortOptions sortOptions(sortKeys);
-  shared_ptr<SortPrePOp> sortPrePOp = make_shared<SortPrePOp>(sortOptions);
+  shared_ptr<SortPrePOp> sortPrePOp = make_shared<SortPrePOp>(pOpIdGenerator_.fetch_add(1), sortOptions);
 
   // deserialize producers
   sortPrePOp->setProducers(deserializeProducers(jObj));
@@ -351,7 +355,8 @@ shared_ptr<LimitSortPrePOp> CalcitePlanJsonDeserializer::deserializeLimitSort(co
   }
   int64_t limitVal = limitLiteralJObj["value"].get<int64_t>();
   arrow::compute::SelectKOptions selectKOptions(limitVal, sortKeys);
-  shared_ptr<LimitSortPrePOp> limitSortPrePOp = make_shared<LimitSortPrePOp>(selectKOptions);
+  shared_ptr<LimitSortPrePOp> limitSortPrePOp = make_shared<LimitSortPrePOp>(pOpIdGenerator_.fetch_add(1),
+                                                                             selectKOptions);
 
   // deserialize producers
   limitSortPrePOp->setProducers(deserializeProducers(jObj));
@@ -435,10 +440,15 @@ shared_ptr<PrePhysicalOp> CalcitePlanJsonDeserializer::deserializeAggregateOrGro
   // decide if it's an Aggregate op or a Group op
   shared_ptr<PrePhysicalOp> prePOp;
   if (groupColumnNames.empty()) {
-    prePOp = make_shared<AggregatePrePOp>(aggOutputColumnNames, aggFunctions);
+    prePOp = make_shared<AggregatePrePOp>(pOpIdGenerator_.fetch_add(1),
+                                          aggOutputColumnNames,
+                                          aggFunctions);
   } else {
     projectColumnNames.insert(groupColumnNames.begin(), groupColumnNames.end());
-    prePOp = make_shared<GroupPrePOp>(groupColumnNames, aggOutputColumnNames, aggFunctions);
+    prePOp = make_shared<GroupPrePOp>(pOpIdGenerator_.fetch_add(1),
+                                      groupColumnNames,
+                                      aggOutputColumnNames,
+                                      aggFunctions);
   }
   prePOp->setProjectColumnNames(projectColumnNames);
 
@@ -509,7 +519,10 @@ shared_ptr<prephysical::PrePhysicalOp> CalcitePlanJsonDeserializer::deserializeP
 
   else {
     // not skip the Project
-    shared_ptr<ProjectPrePOp> projectPrePOp = make_shared<ProjectPrePOp>(exprs, exprNames, columnRenames);
+    shared_ptr<ProjectPrePOp> projectPrePOp = make_shared<ProjectPrePOp>(pOpIdGenerator_.fetch_add(1),
+                                                                         exprs,
+                                                                         exprNames,
+                                                                         columnRenames);
     projectPrePOp->setProjectColumnNames(projectColumnNames);
 
     // deserialize producers
@@ -529,16 +542,45 @@ shared_ptr<prephysical::HashJoinPrePOp> CalcitePlanJsonDeserializer::deserialize
   }
 
   // deserialize hash join condition
+  if (!jObj.contains("condition")) {
+    throw runtime_error("Invalid hash join, no join condition");
+  }
   const auto &joinCondJObj = jObj["condition"];
   const pair<vector<string>, vector<string>> &joinColumnNames = deserializeHashJoinCondition(joinCondJObj);
 
-  shared_ptr<HashJoinPrePOp> hashJoinPrePOp = make_shared<HashJoinPrePOp>(joinType,
-                                                                         joinColumnNames.first,
-                                                                         joinColumnNames.second);
+  shared_ptr<HashJoinPrePOp> hashJoinPrePOp = make_shared<HashJoinPrePOp>(pOpIdGenerator_.fetch_add(1),
+                                                                          joinType,
+                                                                          joinColumnNames.first,
+                                                                          joinColumnNames.second);
 
   // deserialize producers
   hashJoinPrePOp->setProducers(deserializeProducers(jObj));
   return hashJoinPrePOp;
+}
+
+shared_ptr<prephysical::NestedLoopJoinPrePOp> CalcitePlanJsonDeserializer::deserializeNestedLoopJoin(const json &jObj) {
+  // deserialize join type
+  const auto &joinTypeStr = jObj["joinType"].get<string>();
+  JoinType joinType;
+  if (joinTypeStr == "INNER") {
+    joinType = INNER;
+  } else {
+    throw runtime_error(fmt::format("Unsupported join type, {}, from: {}", joinTypeStr, to_string(jObj)));
+  }
+
+  // deserialize join condition, if has
+  shared_ptr<Expression> predicate = nullptr;
+  if (jObj.contains("condition")) {
+    predicate = deserializeExpression(jObj["condition"]);
+  }
+
+  shared_ptr<NestedLoopJoinPrePOp> nestedLoopJoinPrePOp = make_shared<NestedLoopJoinPrePOp>(pOpIdGenerator_.fetch_add(1),
+                                                                                            joinType,
+                                                                                            predicate);
+
+  // deserialize producers
+  nestedLoopJoinPrePOp->setProducers(deserializeProducers(jObj));
+  return nestedLoopJoinPrePOp;
 }
 
 shared_ptr<prephysical::PrePhysicalOp> CalcitePlanJsonDeserializer::deserializeFilterOrFilterableScan(const json &jObj) {
@@ -556,7 +598,8 @@ shared_ptr<prephysical::PrePhysicalOp> CalcitePlanJsonDeserializer::deserializeF
 
   else {
     // else do regularly, make a filter op
-    shared_ptr<FilterPrePOp> filterPrePOp = make_shared<FilterPrePOp>(predicate);
+    shared_ptr<FilterPrePOp> filterPrePOp = make_shared<FilterPrePOp>(pOpIdGenerator_.fetch_add(1),
+                                                                      predicate);
     filterPrePOp->setProducers(deserializeProducers(jObj));
     return filterPrePOp;
   }
@@ -578,7 +621,7 @@ shared_ptr<prephysical::FilterableScanPrePOp> CalcitePlanJsonDeserializer::deser
                                     catalogueEntry_->getType(), catalogueEntry_->getName()));
   }
 
-  auto filterableScanPrePOp = make_shared<prephysical::FilterableScanPrePOp>(table);
+  auto filterableScanPrePOp = make_shared<prephysical::FilterableScanPrePOp>(pOpIdGenerator_.fetch_add(1), table);
   filterableScanPrePOp->setProjectColumnNames(columnNameSet);
   return filterableScanPrePOp;
 }

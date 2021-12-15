@@ -66,7 +66,6 @@ tl::expected<void, string> ShufflePOp::buffer(const shared_ptr<TupleSet> &tupleS
 	  return tl::make_unexpected(concatenateResult.error());
 	buffers_[partitionIndex] = concatenateResult.value();
 
-	shared_ptr<arrow::Table> combinedTable;
 	auto expectedTable = buffers_[partitionIndex].value()->table()
 		->CombineChunks(arrow::default_memory_pool());
 	if (expectedTable.ok())

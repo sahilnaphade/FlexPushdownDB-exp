@@ -6,7 +6,13 @@
 
 namespace normal::plan::prephysical {
 
-PrePhysicalOp::PrePhysicalOp(PrePOpType type) : type_(type) {}
+PrePhysicalOp::PrePhysicalOp(uint id, PrePOpType type) :
+  id_(id),
+  type_(type) {}
+
+uint PrePhysicalOp::getId() const {
+  return id_;
+}
 
 PrePOpType PrePhysicalOp::getType() const {
   return type_;

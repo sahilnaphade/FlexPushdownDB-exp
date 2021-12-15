@@ -21,7 +21,8 @@ namespace normal::executor::physical {
 
 class PrePToS3PTransformer {
 public:
-  PrePToS3PTransformer(const shared_ptr<AWSClient> &awsClient,
+  PrePToS3PTransformer(uint prePOpId,
+                       const shared_ptr<AWSClient> &awsClient,
                        const shared_ptr<Mode> &mode);
 
   /**
@@ -60,6 +61,7 @@ private:
    */
   string genFilterSql(const std::shared_ptr<Expression>& predicate);
 
+  uint prePOpId_;
   shared_ptr<AWSClient> awsClient_;
   shared_ptr<Mode> mode_;
 };

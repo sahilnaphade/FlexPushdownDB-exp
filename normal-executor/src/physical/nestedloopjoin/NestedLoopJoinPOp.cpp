@@ -8,7 +8,7 @@
 namespace normal::executor::physical::nestedloopjoin {
 
 NestedLoopJoinPOp::NestedLoopJoinPOp(const string &name,
-                                     const optional<shared_ptr<Expression>> &predicate,
+                                     const optional<shared_ptr<expression::gandiva::Expression>> &predicate,
                                      const vector<string> &projectColumnNames) :
   PhysicalOp(name, "NestedLoopJoinPOp", projectColumnNames),
   kernel_(NestedLoopJoinKernel::make(predicate,
@@ -46,9 +46,9 @@ void NestedLoopJoinPOp::onTuple(const TupleMessage &message) {
 
   // incremental join immediately
   tl::expected<void, string> result;
-  if (sender == leftProducer_.lock()->name()) {
+  if (leftProducerNames_.find(sender) != leftProducerNames_.end()) {
     result = kernel_.joinIncomingLeft(tupleSet);
-  } else if (sender == rightProducer_.lock()->name()) {
+  } else if (rightProducerName_.find(sender) != rightProducerName_.end()) {
     result = kernel_.joinIncomingRight(tupleSet);
   } else {
     throw runtime_error(fmt::format("Unknown sender '{}', neither left nor right producer", sender));
@@ -61,13 +61,13 @@ void NestedLoopJoinPOp::onTuple(const TupleMessage &message) {
   send(false);
 }
 
-void NestedLoopJoinPOp::setLeftProducer(const shared_ptr<PhysicalOp> &leftProducer) {
-  leftProducer_ = leftProducer;
+void NestedLoopJoinPOp::addLeftProducer(const shared_ptr<PhysicalOp> &leftProducer) {
+  leftProducerNames_.emplace(leftProducer->name());
   consume(leftProducer);
 }
 
-void NestedLoopJoinPOp::setRightProducer(const shared_ptr<PhysicalOp> &rightProducer) {
-  rightProducer_ = rightProducer;
+void NestedLoopJoinPOp::addRightProducer(const shared_ptr<PhysicalOp> &rightProducer) {
+  rightProducerName_.emplace(rightProducer->name());
   consume(rightProducer);
 }
 
