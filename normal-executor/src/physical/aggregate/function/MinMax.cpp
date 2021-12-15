@@ -35,13 +35,14 @@ tl::expected<shared_ptr<AggregateResult>, string> MinMax::compute(const shared_p
   if (!expResultDatum.ok()) {
     return tl::make_unexpected(expResultDatum.status().message());
   }
-  // TODO
   const auto &resultScalar = (*expResultDatum).scalar();
 
   // make the aggregateResult
   auto aggregateResult = make_shared<AggregateResult>();
   auto key = isMin_ ? MIN_RESULT_KEY : MAX_RESULT_KEY;
-  aggregateResult->put(key, resultScalar);
+  const auto &structScalar = static_pointer_cast<arrow::StructScalar>(resultScalar);
+  const shared_ptr<arrow::Scalar> minMaxScalar = isMin_ ? structScalar->value[0] : structScalar->value[1];
+  aggregateResult->put(key, minMaxScalar);
   return aggregateResult;
 }
 
@@ -55,12 +56,14 @@ MinMax::finalize(const vector<shared_ptr<AggregateResult>> &aggregateResults) {
   }
 
   // compute the final aggregation
-  // TODO
   const auto &expFinalResultScalar = arrow::compute::MinMax(expFinalizeInputArray.value());
   if (!expFinalResultScalar.ok()) {
     return tl::make_unexpected(expFinalResultScalar.status().message());
   }
-  return (*expFinalResultScalar).scalar();
+  const auto &resultScalar = (*expFinalResultScalar).scalar();
+  const auto &structScalar = static_pointer_cast<arrow::StructScalar>(resultScalar);
+  const shared_ptr<arrow::Scalar> minMaxScalar = isMin_ ? structScalar->value[0] : structScalar->value[1];
+  return minMaxScalar;
 }
 
 }
