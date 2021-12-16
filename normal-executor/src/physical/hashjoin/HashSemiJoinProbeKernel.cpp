@@ -55,6 +55,16 @@ join(const shared_ptr<RecordBatchHashSemiJoiner> &joiner, const shared_ptr<Tuple
 
 tl::expected<void, string> HashSemiJoinProbeKernel::joinBuildTupleSetIndex(const shared_ptr<TupleSetIndex> &tupleSetIndex) {
 
+  // Get rowIndexOffset
+  int64_t rowIndexOffset = buildTupleSetIndex_.has_value() ? buildTupleSetIndex_.value()->getTable()->num_rows() : 0;
+
+  // Buffer tupleSetIndex if having tuples
+  if(tupleSetIndex->size() > 0) {
+    auto result = putBuildTupleSetIndex(tupleSetIndex);
+    if (!result)
+      return tl::make_unexpected(result.error());
+  }
+
   // Check empty
   if (!probeTupleSet_.has_value() || probeTupleSet_.value()->numRows() == 0 || tupleSetIndex->size() == 0) {
     return {};
@@ -64,7 +74,6 @@ tl::expected<void, string> HashSemiJoinProbeKernel::joinBuildTupleSetIndex(const
   bufferOutputSchema(tupleSetIndex, probeTupleSet_.value());
 
   // Create joiner
-  int64_t rowIndexOffset = buildTupleSetIndex_.has_value() ? buildTupleSetIndex_.value()->getTable()->num_rows() : 0;
   const auto &joiner = RecordBatchHashSemiJoiner::make(tupleSetIndex,
                                                        pred_.getRightColumnNames(),
                                                        rowIndexOffset);
@@ -79,16 +88,17 @@ tl::expected<void, string> HashSemiJoinProbeKernel::joinBuildTupleSetIndex(const
   // Buffer join result
   rowMatchIndexes_.insert(joinResult.begin(), joinResult.end());
 
-  // Buffer tupleSetIndex
-  auto result = putBuildTupleSetIndex(tupleSetIndex);
-  if (!result) {
-    return tl::make_unexpected(result.error());
-  }
-
   return {};
 }
 
 tl::expected<void, string> HashSemiJoinProbeKernel::joinProbeTupleSet(const shared_ptr<TupleSet> &tupleSet) {
+
+  // Buffer tupleSet if having tuples
+  if (tupleSet->numRows() > 0) {
+    auto result = putProbeTupleSet(tupleSet);
+    if (!result)
+      return tl::make_unexpected(result.error());
+  }
 
   // Check empty
   if (!buildTupleSetIndex_.has_value() || buildTupleSetIndex_.value()->size() == 0 || tupleSet->numRows() == 0) {
@@ -113,12 +123,6 @@ tl::expected<void, string> HashSemiJoinProbeKernel::joinProbeTupleSet(const shar
   // Buffer join result
   rowMatchIndexes_.insert(joinResult.begin(), joinResult.end());
 
-  // Buffer tupleSet if having tuples
-  auto result = putProbeTupleSet(tupleSet);
-  if (!result) {
-    return tl::make_unexpected(result.error());
-  }
-
   return {};
 }
 
@@ -128,16 +132,22 @@ tl::expected<void, string> HashSemiJoinProbeKernel::finalize() {
     return {};
   }
 
-  // Make input as a record batch
+  // Make input as a record batch, project only neededColumns of tupleSetIndex
   buildTupleSetIndex_.value()->combine();
   const auto &inputTable = buildTupleSetIndex_.value()->getTable();
-  arrow::ArrayVector inputArrayVector;
-  for (const auto &column: inputTable->columns()) {
-    inputArrayVector.emplace_back(column->chunk(0));
+  arrow::ArrayVector arrayVector;
+  for (const auto &index: neededColumnIndice_) {
+    if (index->first) {
+      arrayVector.emplace_back(inputTable->column(index->second)->chunk(0));
+    }
   }
-  const auto &inputBatch = arrow::RecordBatch::Make(inputTable->schema(),
-                                                    inputTable->num_rows(),
-                                                    inputArrayVector);
+
+  if (!outputSchema_.value()) {
+    return tl::make_unexpected("Output schema not set yet during finalize");
+  }
+  const auto &recordBatch = arrow::RecordBatch::Make(outputSchema_.value(),
+                                                     inputTable->num_rows(),
+                                                     arrayVector);
 
   // Filter to get matched rows
   const auto &expSelectionVector = makeSelectionVector(rowMatchIndexes_);
@@ -145,15 +155,11 @@ tl::expected<void, string> HashSemiJoinProbeKernel::finalize() {
     return tl::make_unexpected(expSelectionVector.error());
   }
   const auto &selectionVector = expSelectionVector.value();
-  const auto &inputTupleSet = buildTupleSetIndex_.value()->getTable();
-  if (!outputSchema_.value()) {
-    return tl::make_unexpected("Output schema not set yet during finalize");
-  }
-  const auto &outputArrayVector = normal::expression::gandiva::Filter::evaluateBySelectionVector(
-          *inputBatch, selectionVector,outputSchema_.value());
+  const auto &filteredArrayVector = normal::expression::gandiva::Filter::evaluateBySelectionVector(
+          *recordBatch, selectionVector,outputSchema_.value());
 
   // Buffer
-  buffer(TupleSet::make(outputSchema_.value(), outputArrayVector));
+  buffer(TupleSet::make(outputSchema_.value(), filteredArrayVector));
 
   clearInput();
   return {};

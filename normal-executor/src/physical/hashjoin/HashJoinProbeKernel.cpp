@@ -66,7 +66,7 @@ join(const shared_ptr<RecordBatchHashJoiner> &joiner, const shared_ptr<TupleSet>
 
 tl::expected<void, string> HashJoinProbeKernel::joinBuildTupleSetIndex(const shared_ptr<TupleSetIndex> &tupleSetIndex) {
 
-  // Buffer tupleSet if having tuples
+  // Buffer tupleSetIndex if having tuples
   if(tupleSetIndex->size() > 0) {
     auto result = putBuildTupleSetIndex(tupleSetIndex);
     if (!result)

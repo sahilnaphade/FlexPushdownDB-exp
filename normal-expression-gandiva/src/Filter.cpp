@@ -20,16 +20,16 @@ std::shared_ptr<Filter> Filter::make(const std::shared_ptr<Expression> &Pred) {
 
 arrow::ArrayVector Filter::evaluateBySelectionVector(const arrow::RecordBatch &recordBatch,
                                                      const std::shared_ptr<::gandiva::SelectionVector> &selectionVector,
-                                                     const ::gandiva::SchemaPtr &outputSchema) {
+                                                     const ::gandiva::SchemaPtr &schema) {
   // Build a projector for the pass through expression
   std::shared_ptr<::gandiva::Projector> gandivaProjector;
   std::vector<std::shared_ptr<::gandiva::Expression>> fieldExpressions;
-  for (const auto &field: outputSchema->fields()) {
+  for (const auto &field: schema->fields()) {
     auto gandivaField = ::gandiva::TreeExprBuilder::MakeField(field);
     auto fieldExpression = ::gandiva::TreeExprBuilder::MakeExpression(gandivaField, field);
     fieldExpressions.push_back(fieldExpression);
   }
-  auto status = ::gandiva::Projector::Make(outputSchema,
+  auto status = ::gandiva::Projector::Make(schema,
                                            fieldExpressions,
                                            selectionVector->GetMode(),
                                            ::gandiva::ConfigurationBuilder::DefaultConfiguration(),
