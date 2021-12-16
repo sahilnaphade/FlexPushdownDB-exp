@@ -17,6 +17,7 @@ public:
 
   tl::expected<void, string> joinBuildTupleSetIndex(const shared_ptr<TupleSetIndex>& tupleSetIndex) override;
   tl::expected<void, string> joinProbeTupleSet(const shared_ptr<TupleSet>& tupleSet) override;
+  tl::expected<void, string> finalize() override;
 
 };
 

@@ -18,6 +18,47 @@ std::shared_ptr<Filter> Filter::make(const std::shared_ptr<Expression> &Pred) {
   return std::make_shared<Filter>(Pred);
 }
 
+arrow::ArrayVector Filter::evaluateBySelectionVector(const arrow::RecordBatch &recordBatch,
+                                                     const std::shared_ptr<::gandiva::SelectionVector> &selectionVector,
+                                                     const ::gandiva::SchemaPtr &outputSchema) {
+  // Build a projector for the pass through expression
+  std::shared_ptr<::gandiva::Projector> gandivaProjector;
+  std::vector<std::shared_ptr<::gandiva::Expression>> fieldExpressions;
+  for (const auto &field: outputSchema->fields()) {
+    auto gandivaField = ::gandiva::TreeExprBuilder::MakeField(field);
+    auto fieldExpression = ::gandiva::TreeExprBuilder::MakeExpression(gandivaField, field);
+    fieldExpressions.push_back(fieldExpression);
+  }
+  auto status = ::gandiva::Projector::Make(outputSchema,
+                                           fieldExpressions,
+                                           selectionVector->GetMode(),
+                                           ::gandiva::ConfigurationBuilder::DefaultConfiguration(),
+                                           &gandivaProjector);
+  if (!status.ok()) {
+    throw std::runtime_error(status.message());
+  }
+
+  // Evaluate the expressions
+  /**
+   * NOTE: Gandiva fails if the projector is evaluated using an empty selection vector, so need to test for it
+   */
+  arrow::ArrayVector outputs;
+  if (selectionVector->GetNumSlots() > 0) {
+    status = gandivaProjector->Evaluate(recordBatch, selectionVector.get(), arrow::default_memory_pool(), &outputs);
+    if (!status.ok()) {
+      throw std::runtime_error(status.message());
+    }
+  }
+  else{
+    auto columns = Schema::make(recordBatch.schema())->makeColumns();
+    auto outputChunkedArrays = Column::columnVectorToArrowChunkedArrayVector(columns);
+    for (const auto &chunkedArray: outputChunkedArrays) {
+      outputs.emplace_back(chunkedArray->chunk(0));
+    }
+  }
+  return outputs;
+}
+
 arrow::ArrayVector Filter::evaluate(const arrow::RecordBatch &recordBatch) {
   assert(recordBatch.ValidateFull().ok());
 
@@ -37,8 +78,6 @@ arrow::ArrayVector Filter::evaluate(const arrow::RecordBatch &recordBatch) {
   SPDLOG_DEBUG("Evaluated SelectionVector  |  vector: {}", selection_vector->ToArray()->ToString());
 
   // Evaluate the expressions
-  std::shared_ptr<::arrow::Table> batchArrowTable;
-
   /**
    * NOTE: Gandiva fails if the projector is evaluated using an empty selection vector, so need to test for it
    */

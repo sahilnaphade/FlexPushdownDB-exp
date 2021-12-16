@@ -17,7 +17,7 @@ using namespace std;
 namespace normal::executor::physical::hashjoin {
 
 /**
- * Abstract class for kernel of hash join, derived class includes HashJoinProbeKernel, HashJoinSemiProbeKernel
+ * Abstract class for kernel of hash join, derived class includes HashJoinProbeKernel, HashSemiJoinProbeKernel
  */
 class HashJoinProbeAbstractKernel {
   
@@ -27,15 +27,17 @@ public:
 
   virtual tl::expected<void, string> joinBuildTupleSetIndex(const shared_ptr<TupleSetIndex>& tupleSetIndex) = 0;
   virtual tl::expected<void, string> joinProbeTupleSet(const shared_ptr<TupleSet>& tupleSet) = 0;
+  virtual tl::expected<void, string> finalize() = 0;
 
   const optional<shared_ptr<normal::tuple::TupleSet>> &getBuffer() const;
-  void clear();
+  void clearBuffer();
 
 protected:
   tl::expected<void, string> putBuildTupleSetIndex(const shared_ptr<TupleSetIndex>& tupleSetIndex);
   tl::expected<void, string> putProbeTupleSet(const shared_ptr<TupleSet>& tupleSet);
   tl::expected<void, string> buffer(const shared_ptr<TupleSet>& tupleSet);
   void bufferOutputSchema(const shared_ptr<TupleSetIndex> &tupleSetIndex, const shared_ptr<TupleSet> &tupleSet);
+  void clearInput();
 
   HashJoinPredicate pred_;
   vector<shared_ptr<pair<bool, int>>> neededColumnIndice_;   // <true/false, i> -> ith column in build/probe table

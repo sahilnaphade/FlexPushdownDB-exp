@@ -4,7 +4,7 @@
 
 #include <normal/executor/physical/hashjoin/HashJoinProbePOp.h>
 #include <normal/executor/physical/hashjoin/HashJoinProbeKernel.h>
-#include <normal/executor/physical/hashjoin/HashJoinSemiProbeKernel.h>
+#include <normal/executor/physical/hashjoin/HashSemiJoinProbeKernel.h>
 #include <normal/executor/physical/Globals.h>
 #include <normal/executor/message/TupleSetIndexMessage.h>
 #include <normal/tuple/arrow/SchemaHelper.h>
@@ -25,7 +25,7 @@ HashJoinProbePOp::HashJoinProbePOp(string name,
       break;
     }
     case SEMI: {
-      kernel_ = HashJoinSemiProbeKernel::make(move(pred), move(neededColumnNames));
+      kernel_ = HashSemiJoinProbeKernel::make(move(pred), move(neededColumnNames));
       break;
     }
     default:
@@ -68,7 +68,16 @@ void HashJoinProbePOp::onTuple(const TupleMessage &msg) {
 
 void HashJoinProbePOp::onComplete(const CompleteMessage &) {
   if (!ctx()->isComplete() && ctx()->operatorMap().allComplete(POpRelationshipType::Producer)) {
+    // Finalize
+    auto result = kernel_->finalize();
+    if (!result) {
+      throw runtime_error(result.error());
+    }
+
+    // Send final tupleSet
     send(true);
+
+    // Complete
   	ctx()->notifyComplete();
   }
 }
@@ -96,7 +105,7 @@ void HashJoinProbePOp::send(bool force) {
 
       shared_ptr<Message> tupleMessage = make_shared<TupleMessage>(expProjectTupleSet.value(), name());
       ctx()->tell(tupleMessage);
-      kernel_->clear();
+      kernel_->clearBuffer();
     }
   }
 }

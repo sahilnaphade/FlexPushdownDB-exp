@@ -34,8 +34,7 @@ join(const shared_ptr<RecordBatchHashJoiner> &joiner, const shared_ptr<TupleSet>
   auto recordBatch = *recordBatchResult;
 
   while (recordBatch) {
-
-    // join
+    // Join
     auto result = joiner->join(recordBatch);
     if (!result.has_value()) {
       return tl::make_unexpected(result.error());
@@ -140,5 +139,10 @@ tl::expected<void, string> HashJoinProbeKernel::joinProbeTupleSet(const shared_p
   if (!bufferResult.has_value())
     return tl::make_unexpected(bufferResult.error());
 
+  return {};
+}
+
+tl::expected<void, string> HashJoinProbeKernel::finalize() {
+  clearInput();
   return {};
 }

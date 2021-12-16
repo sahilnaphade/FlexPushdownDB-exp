@@ -80,8 +80,13 @@ const optional<shared_ptr<normal::tuple::TupleSet>> &HashJoinProbeAbstractKernel
   return buffer_;
 }
 
-void HashJoinProbeAbstractKernel::clear() {
+void HashJoinProbeAbstractKernel::clearBuffer() {
   buffer_ = nullopt;
+}
+
+void HashJoinProbeAbstractKernel::clearInput() {
+  buildTupleSetIndex_ = nullopt;
+  probeTupleSet_ = nullopt;
 }
 
 tl::expected<void, string> HashJoinProbeAbstractKernel::validateColumnNames(const shared_ptr<arrow::Schema> &schema,

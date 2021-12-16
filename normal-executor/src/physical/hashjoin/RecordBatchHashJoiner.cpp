@@ -75,11 +75,11 @@ RecordBatchHashJoiner::join(const std::shared_ptr<::arrow::RecordBatch> &recordB
   for (int64_t pr = 0; pr < recordBatch->num_rows(); ++pr) {
 
     // Find matched rows in the build column
-    const auto expBuildRows = indexFinder->find(pr);
+    const auto &expBuildRows = indexFinder->find(pr);
     if (!expBuildRows.has_value()) {
       return tl::make_unexpected(expBuildRows.error());
     }
-    auto buildRows = expBuildRows.value();
+    const auto &buildRows = expBuildRows.value();
 
     // Iterate the matched rows in the build column
     for (const auto br: buildRows) {
