@@ -552,7 +552,7 @@ shared_ptr<PrePhysicalOp> CalcitePlanJsonDeserializer::deserializeAggregateOrGro
 
 shared_ptr<prephysical::PrePhysicalOp> CalcitePlanJsonDeserializer::deserializeProject(const json &jObj) {
   // whether we can skip to deserialize the Project
-  // only when there is an expr unconsumed by the consumer, we need to keep the Project
+  // we need to keep the Project when there is an expr unconsumed by the consumer or there is a rename
   bool skipSelf = true;
 
   // consumed field ids
@@ -568,8 +568,9 @@ shared_ptr<prephysical::PrePhysicalOp> CalcitePlanJsonDeserializer::deserializeP
   vector<string> exprNames;
   unordered_map<string, string> columnRenames;
   const auto &fieldsJArr = jObj["fields"].get<vector<json>>();
-  size_t fieldId = 0;
-  for (const auto &fieldJObj: fieldsJArr) {
+
+  for (uint fieldId = 0; fieldId < fieldsJArr.size(); ++fieldId) {
+    const auto &fieldJObj = fieldsJArr[fieldId];
     // deserialize field
     const auto &outputFieldName = ColumnName::canonicalize(fieldJObj["name"].get<string>());
     const auto &fieldExprJObj = fieldJObj["expr"];
@@ -586,22 +587,24 @@ shared_ptr<prephysical::PrePhysicalOp> CalcitePlanJsonDeserializer::deserializeP
       }
     } else if (fieldExprJObj.contains("op")) {
       const auto &expr = deserializeExpression(fieldExprJObj);
-      exprs.emplace_back(expr);
-      exprNames.emplace_back(outputFieldName);
-      projectColumnNames.emplace(outputFieldName);
       const auto &exprUsedColumnNames = expr->involvedColumnNames();
       usedColumnNames.insert(exprUsedColumnNames.begin(), exprUsedColumnNames.end());
 
       // check consumed id
-      if (consumedFieldsIdSet.find(fieldId) == consumedFieldsIdSet.end()) {
-        // this field is unconsumed by the consumer, and it's an expr
-        skipSelf = false;
+      if (consumedFieldsIdSet.find(fieldId) != consumedFieldsIdSet.end()) {
+        // this field is consumed by the consumer, here we add its involvedColumnNames instead of itself
+        projectColumnNames.insert(exprUsedColumnNames.begin(), exprUsedColumnNames.end());
+        continue;
       }
+      // this field is unconsumed by the consumer, and it's an expr
+      exprs.emplace_back(expr);
+      exprNames.emplace_back(outputFieldName);
+      projectColumnNames.emplace(outputFieldName);
+      skipSelf = false;
     } else {
       throw runtime_error(fmt::format("Invalid project field, only column or expr are valid, from: {}",
                                       to_string(jObj)));
     }
-    ++fieldId;
   }
 
   if (skipSelf) {

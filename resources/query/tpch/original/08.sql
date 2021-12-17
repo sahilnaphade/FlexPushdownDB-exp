@@ -1,4 +1,3 @@
--- tpch8 using 1395599672 as a seed to the RNG
 select
   o_year,
   sum(case
@@ -12,9 +11,9 @@ from
       l.l_extendedprice * (1 - l.l_discount) as volume,
       n2.n_name as nation
     from
+      lineitem l,
       part p,
       supplier s,
-      lineitem l,
       orders o,
       customer c,
       nation n1,
