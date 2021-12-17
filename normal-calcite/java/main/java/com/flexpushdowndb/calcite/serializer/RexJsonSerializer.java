@@ -2,6 +2,7 @@ package com.flexpushdowndb.calcite.serializer;
 
 import com.google.common.collect.BoundType;
 import com.google.common.collect.Range;
+import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.apache.calcite.rex.*;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.type.SqlTypeName;
@@ -12,6 +13,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.math.BigDecimal;
+import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -43,7 +45,8 @@ public class RexJsonSerializer {
           case MINUS:
           case TIMES:
           case DIVIDE:
-          case LIKE: {
+          case LIKE:
+          case EXTRACT: {
             JSONObject jo = new JSONObject();
             // op
             jo.put("op", call.getKind());
@@ -124,6 +127,11 @@ public class RexJsonSerializer {
             literalJObj.put("value", literal.getValueAs(Integer.class));            // number of months
             break;
           }
+          case SYMBOL: {
+            literalJObj.put("type", basicTypeName);
+            literalJObj.put("value", literal.getValueAs(TimeUnitRange.class));
+            break;
+          }
           default:
             throw new UnsupportedOperationException("Serialize unsupported RexLiteral with basicTypeName: "
                     + basicTypeName);
@@ -191,7 +199,15 @@ public class RexJsonSerializer {
     if (sarg == null) {
       throw new NullPointerException("Invalid Sarg: null");
     }
+
+    // calibrate basicTypeName for Date
     SqlTypeName basicTypeName = literal.getType().getSqlTypeName();
+    String basicTypeNameStr = basicTypeName.getName();
+    if (basicTypeName == SqlTypeName.DATE) {
+      basicTypeNameStr = "DATE_MS";
+    }
+
+    // inputRef
     JSONObject inputRefOperand = new JSONObject()
             .put("inputRef", fieldName);
     JSONObject rangeSetJObj = null;
@@ -204,7 +220,7 @@ public class RexJsonSerializer {
                       .put(inputRefOperand)
                       .put(new JSONObject()
                               .put("literals", new JSONObject()
-                                      .put("type", basicTypeName)
+                                      .put("type", basicTypeNameStr)
                                       .put("values", serializeSargPoints(basicTypeName, sarg.rangeSet.asRanges())))));
     }
 
@@ -216,7 +232,7 @@ public class RexJsonSerializer {
                       .put(inputRefOperand)
                       .put(new JSONObject()
                               .put("literals", new JSONObject()
-                                      .put("type", basicTypeName)
+                                      .put("type", basicTypeNameStr)
                                       .put("values", serializeSargComplementedPoints(basicTypeName, sarg.rangeSet.asRanges())))));
       return new JSONObject()
               .put("op", SqlKind.NOT)
@@ -236,7 +252,7 @@ public class RexJsonSerializer {
         // lower value = upper value
         JSONObject literalOperand = new JSONObject()
                 .put("literal", new JSONObject()
-                        .put("type", basicTypeName)
+                        .put("type", basicTypeNameStr)
                         .put("value", lowerValue));
         rangeJObj.put("op", SqlKind.EQUALS)
                 .put("operands", new JSONArray()
@@ -249,7 +265,7 @@ public class RexJsonSerializer {
                 SqlKind.GREATER_THAN : SqlKind.GREATER_THAN_OR_EQUAL;
         JSONObject lowerLiteralOperand = new JSONObject()
                 .put("literal", new JSONObject()
-                        .put("type", basicTypeName)
+                        .put("type", basicTypeNameStr)
                         .put("value", lowerValue));
         JSONObject rangeLowerJObj = new JSONObject()
                 .put("op", lowerOp)
@@ -262,7 +278,7 @@ public class RexJsonSerializer {
                 SqlKind.LESS_THAN : SqlKind.LESS_THAN_OR_EQUAL;
         JSONObject upperLiteralOperand = new JSONObject()
                 .put("literal", new JSONObject()
-                        .put("type", basicTypeName)
+                        .put("type", basicTypeNameStr)
                         .put("value", upperValue));
         JSONObject rangeUpperJObj = new JSONObject()
                 .put("op", upperOp)
@@ -322,8 +338,12 @@ public class RexJsonSerializer {
       case BIGINT: {
         return ((BigDecimal) endpoint).longValue();
       }
+      case DOUBLE:
       case DECIMAL: {
         return ((BigDecimal) endpoint).doubleValue();
+      }
+      case DATE: {
+        return ((DateString) endpoint).getMillisSinceEpoch();
       }
       default: {
         throw new UnsupportedOperationException("Serialize unsupported RexLiteral with basicTypeName: "

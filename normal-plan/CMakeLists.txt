@@ -22,7 +22,8 @@ add_library(normal-plan STATIC
         src/prephysical/ProjectPrePOp.cpp include/normal/plan/prephysical/ProjectPrePOp.h
         src/prephysical/FilterPrePOp.cpp include/normal/plan/prephysical/FilterPrePOp.h
         src/prephysical/FilterableScanPrePOp.cpp include/normal/plan/prephysical/FilterableScanPrePOp.h
-        src/Mode.cpp include/normal/plan/Mode.h)
+        src/Mode.cpp include/normal/plan/Mode.h
+        src/Util.cpp include/normal/plan/Util.h)
 
 target_include_directories(normal-plan PUBLIC include)
 

@@ -44,9 +44,14 @@ private:
   shared_ptr<Expression> deserializeBinaryOperation(const string &opName, const json &jObj);
   shared_ptr<Expression> deserializeInOperation(const json &jObj);
   shared_ptr<Expression> deserializeCaseOperation(const json &jObj);
+  shared_ptr<Expression> deserializeExtractOperation(const json &jObj);
   shared_ptr<Expression> deserializeExpression(const json &jObj);
 
+  unordered_map<string, string> deserializeColumnRenames(const vector<json> &jArr);
   pair<vector<string>, vector<string>> deserializeHashJoinCondition(const json &jObj);
+  void addProjectForJoinColumnRenames(shared_ptr<PrePhysicalOp> &op,
+                                      const vector<shared_ptr<PrePhysicalOp>> &producers,
+                                      const json &jObj);
   vector<arrow::compute::SortKey> deserializeSortKeys(const json &jObj);
 
   shared_ptr<SortPrePOp> deserializeSort(const json &jObj);

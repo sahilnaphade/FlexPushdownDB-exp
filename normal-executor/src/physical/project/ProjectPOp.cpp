@@ -63,7 +63,7 @@ void ProjectPOp::onComplete(const CompleteMessage &) {
 }
 
 void ProjectPOp::buildProjector(const TupleMessage &message) {
-  if(!projector_.has_value()){
+  if(!projector_.has_value() && !exprs_.empty()){
     const auto &inputSchema = message.tuples()->table()->schema();
     projector_ = std::make_shared<normal::expression::gandiva::Projector>(exprs_);
     projector_.value()->compile(inputSchema);
@@ -81,7 +81,6 @@ void ProjectPOp::bufferTuples(const TupleMessage &message) {
     if (!res.ok()) {
       tuples_->table(*res);
     } else {
-      // FIXME: Propagate error properly
       throw std::runtime_error(res.status().message());
     }
   }
@@ -89,35 +88,41 @@ void ProjectPOp::bufferTuples(const TupleMessage &message) {
 
 void ProjectPOp::projectAndSendTuples() {
   if(tuples_ && tuples_->numRows() > 0) {
-    // Project expressions
-    auto projExprTuples = projector_.value()->evaluate(*tuples_);
+    std::shared_ptr<TupleSet> fullTupleSet;
 
-    // Rename project expression columns
-    auto renameRes = projExprTuples->renameColumns(exprNames_);
-    if (!renameRes.has_value()) {
-      throw std::runtime_error(renameRes.error());
-    }
+    if (exprs_.empty()) {
+      fullTupleSet = tuples_;
+    } else {
+      // Project expressions if any
+      auto projExprTuples = projector_.value()->evaluate(*tuples_);
 
-    // Combine with input columns
-    std::vector<std::shared_ptr<Column>> columns;
-    for (int c = 0; c < tuples_->numColumns(); ++c) {
-      const auto &expColumn = tuples_->getColumnByIndex(c);
-      if (!expColumn.has_value()) {
-        throw std::runtime_error(expColumn.error());
+      // Rename project expression columns
+      auto renameRes = projExprTuples->renameColumns(exprNames_);
+      if (!renameRes.has_value()) {
+        throw std::runtime_error(renameRes.error());
       }
-      columns.emplace_back(expColumn.value());
-    }
-    for (int c = 0; c < projExprTuples->numColumns(); ++c) {
-      const auto &expColumn = projExprTuples->getColumnByIndex(c);
-      if (!expColumn.has_value()) {
-        throw std::runtime_error(expColumn.error());
+
+      // Combine with input columns
+      std::vector<std::shared_ptr<Column>> columns;
+      for (int c = 0; c < tuples_->numColumns(); ++c) {
+        const auto &expColumn = tuples_->getColumnByIndex(c);
+        if (!expColumn.has_value()) {
+          throw std::runtime_error(expColumn.error());
+        }
+        columns.emplace_back(expColumn.value());
       }
-      columns.emplace_back(expColumn.value());
+      for (int c = 0; c < projExprTuples->numColumns(); ++c) {
+        const auto &expColumn = projExprTuples->getColumnByIndex(c);
+        if (!expColumn.has_value()) {
+          throw std::runtime_error(expColumn.error());
+        }
+        columns.emplace_back(expColumn.value());
+      }
+      fullTupleSet = TupleSet::make(columns);
     }
-    const auto &fullTupleSet = TupleSet::make(columns);
 
     // Rename project columns
-    renameRes = fullTupleSet->renameColumns(columnRenames_);
+    auto renameRes = fullTupleSet->renameColumns(columnRenames_);
     if (!renameRes.has_value()) {
       throw std::runtime_error(renameRes.error());
     }

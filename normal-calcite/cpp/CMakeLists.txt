@@ -25,10 +25,11 @@ target_link_libraries(calciteserver_thrift_cpp PRIVATE boost)
 # Calcite server thrift - java
 #-----------------------------------------------------------------------------------------------------------------------
 
-add_custom_target(
-        calciteserver_thrift_java ALL
-        COMMAND thrift_executable --gen java -r -out ${CMAKE_CURRENT_SOURCE_DIR}/../java/main/java ${CMAKE_CURRENT_SOURCE_DIR}/../thrift/CalciteServer.thrift
-        COMMAND mvn install -f ${CMAKE_SOURCE_DIR}/normal-calcite/java/pom.xml -DskipTests)
+# Enable this when staring calcite server at cpp side
+#add_custom_target(
+#        calciteserver_thrift_java ALL
+#        COMMAND thrift_executable --gen java -r -out ${CMAKE_CURRENT_SOURCE_DIR}/../java/main/java ${CMAKE_CURRENT_SOURCE_DIR}/../thrift/CalciteServer.thrift
+#        COMMAND mvn install -f ${CMAKE_SOURCE_DIR}/normal-calcite/java/pom.xml -DskipTests)
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -46,4 +47,5 @@ target_link_libraries(normal-calcite PUBLIC thrift_static)
 target_link_libraries(normal-calcite PUBLIC boost)
 target_link_libraries(normal-calcite PRIVATE normal-util)
 
-add_dependencies(normal-calcite calciteserver_thrift_java)
+# Enable this when staring calcite server at cpp side
+#add_dependencies(normal-calcite calciteserver_thrift_java)

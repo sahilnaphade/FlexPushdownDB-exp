@@ -31,6 +31,7 @@ add_library(normal-expression-gandiva STATIC
         src/Not.cpp include/normal/expression/gandiva/Not.h
         src/If.cpp include/normal/expression/gandiva/If.h
         src/Like.cpp include/normal/expression/gandiva/Like.h
+        src/DateExtract.cpp include/normal/expression/gandiva/DateExtract.h
         src/BinaryExpression.cpp include/normal/expression/gandiva/BinaryExpression.h
         src/Canonicalizer.cpp include/normal/expression/gandiva/Canonicalizer.h
         src/Util.cpp include/normal/expression/gandiva/Util.h include/normal/expression/gandiva/ExpressionType.h)

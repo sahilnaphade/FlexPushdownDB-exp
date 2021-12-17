@@ -3,6 +3,9 @@
 //
 
 #include <normal/plan/prephysical/ProjectPrePOp.h>
+#include <normal/plan/Util.h>
+
+using namespace normal::plan;
 
 namespace normal::plan::prephysical {
 ProjectPrePOp::ProjectPrePOp(uint id,
@@ -20,6 +23,8 @@ string ProjectPrePOp::getTypeString() {
 
 set<string> ProjectPrePOp::getUsedColumnNames() {
   set<string> usedColumnNames = getProjectColumnNames();
+  Util::deRenameColumns(usedColumnNames, columnRenames_);
+
   for (const auto &expr: exprs_) {
     const auto involvedColumnNames = expr->involvedColumnNames();
     usedColumnNames.insert(involvedColumnNames.begin(), involvedColumnNames.end());

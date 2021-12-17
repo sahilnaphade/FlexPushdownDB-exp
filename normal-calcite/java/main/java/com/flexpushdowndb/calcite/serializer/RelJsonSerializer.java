@@ -82,14 +82,53 @@ public final class RelJsonSerializer {
     JSONObject jo = new JSONObject();
     // operator name
     jo.put("operator", join.getClass().getSimpleName());
+
     // join condition
+    List<String> leftFieldNames = join.getInput(0).getRowType().getFieldNames();
+    List<String> rightFieldNames = join.getInput(1).getRowType().getFieldNames();
+    List<String> inputFieldNames = new ArrayList<>();
+    inputFieldNames.addAll(leftFieldNames);
+    inputFieldNames.addAll(rightFieldNames);
     if (!join.getCondition().isAlwaysTrue()) {
-      List<String> fieldNames = new ArrayList<>(join.getInput(0).getRowType().getFieldNames());
-      fieldNames.addAll(join.getInput(1).getRowType().getFieldNames());
-      jo.put("condition", RexJsonSerializer.serialize(join.getCondition(), fieldNames));
+      jo.put("condition", RexJsonSerializer.serialize(join.getCondition(), inputFieldNames));
     }
+
+    // join may incur field renames, if left and right inputs have overlapping field names
+    List<String> outputFieldNames = join.getRowType().getFieldNames();
+
+    // left
+    JSONArray leftFieldRenamesJArr = new JSONArray();
+    for (int i = 0; i < leftFieldNames.size(); ++i) {
+      String inputFieldName = leftFieldNames.get(i);
+      String outputFieldName = outputFieldNames.get(i);
+      if (!inputFieldName.equals(outputFieldName)) {
+        leftFieldRenamesJArr.put(new JSONObject()
+                .put("old", inputFieldName)
+                .put("new", outputFieldName));
+      }
+    }
+    if (!leftFieldRenamesJArr.isEmpty()) {
+      jo.put("leftFieldRenames", leftFieldRenamesJArr);
+    }
+
+    // right
+    JSONArray rightFieldRenamesJArr = new JSONArray();
+    for (int i = leftFieldNames.size(); i < outputFieldNames.size(); ++i) {
+      String inputFieldName = rightFieldNames.get(i - leftFieldNames.size());
+      String outputFieldName = outputFieldNames.get(i);
+      if (!inputFieldName.equals(outputFieldName)) {
+        rightFieldRenamesJArr.put(new JSONObject()
+                .put("old", inputFieldName)
+                .put("new", outputFieldName));
+      }
+    }
+    if (!rightFieldRenamesJArr.isEmpty()) {
+      jo.put("rightFieldRenames", rightFieldRenamesJArr);
+    }
+
     // join type
     jo.put("joinType", join.getJoinType());
+
     // input operators
     jo.put("inputs", serializeRelInputs(join));
     return jo;

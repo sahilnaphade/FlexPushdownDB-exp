@@ -23,28 +23,10 @@ void DateAdd::compile(const shared_ptr<arrow::Schema> &schema) {
   const auto &rightGandivaExpr = right_->getGandivaExpression();
   returnType_ = arrow::date64();
 
-  switch (intervalType_) {
-    case DAY: {
-      gandivaExpression_ = ::gandiva::TreeExprBuilder::MakeFunction("timestampaddDay",
-                                                                    {leftGandivaExpr, rightGandivaExpr},
-                                                                    returnType_);
-      break;
-    }
-    case MONTH: {
-      gandivaExpression_ = ::gandiva::TreeExprBuilder::MakeFunction("timestampaddMonth",
-                                                                    {leftGandivaExpr, rightGandivaExpr},
-                                                                    returnType_);
-      break;
-    }
-    case YEAR: {
-      gandivaExpression_ = ::gandiva::TreeExprBuilder::MakeFunction("timestampaddYear",
-                                                                    {leftGandivaExpr, rightGandivaExpr},
-                                                                    returnType_);
-      break;
-    }
-    default:
-      throw runtime_error("Unsupported date interval type");
-  }
+  string funcName = "timestampadd" + intervalTypeToString(intervalType_);
+  gandivaExpression_ = ::gandiva::TreeExprBuilder::MakeFunction(funcName,
+                                                                {leftGandivaExpr, rightGandivaExpr},
+                                                                returnType_);
 }
 
 string DateAdd::alias() {
@@ -52,25 +34,7 @@ string DateAdd::alias() {
 }
 
 string DateAdd::getTypeString() {
-  stringstream ss;
-  ss << "DateAdd-";
-  switch (intervalType_) {
-    case DAY: {
-      ss << "Day";
-      break;
-    }
-    case MONTH: {
-      ss << "Month";
-      break;
-    }
-    case YEAR: {
-      ss << "Year";
-      break;
-    }
-    default:
-      throw runtime_error("Unsupported date interval type");
-  }
-  return ss.str();
+  return "DateAdd-" + intervalTypeToString(intervalType_);
 }
 
 shared_ptr<Expression> datePlus(const shared_ptr<Expression>& left,

@@ -4,6 +4,7 @@
 
 #include <normal/plan/calcite/CalcitePlanJsonDeserializer.h>
 #include <normal/plan/prephysical/JoinType.h>
+#include <normal/plan/Util.h>
 #include <normal/catalogue/s3/S3CatalogueEntry.h>
 #include <normal/expression/gandiva/Expression.h>
 #include <normal/expression/gandiva/Column.h>
@@ -25,12 +26,14 @@
 #include <normal/expression/gandiva/In.h>
 #include <normal/expression/gandiva/If.h>
 #include <normal/expression/gandiva/Like.h>
+#include <normal/expression/gandiva/DateExtract.h>
 #include <normal/tuple/ColumnName.h>
 
 #include <fmt/format.h>
 #include <set>
 #include <utility>
 
+using namespace normal::plan;
 using namespace normal::catalogue;
 using namespace normal::tuple;
 
@@ -93,6 +96,7 @@ shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeInputRef(const js
 shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeLiteral(const json &jObj) {
   const auto &literalJObj = jObj["literal"];
   const auto &type = literalJObj["type"].get<string>();
+
   if (type == "CHAR" || type == "VARCHAR") {
     const string &value = literalJObj["value"].get<string>();
     return str_lit(value);
@@ -197,9 +201,12 @@ shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeBinaryOperation(c
     return lte(leftExpr, rightExpr);
   } else if (opName == "GREATER_THAN_OR_EQUAL") {
     return gte(leftExpr, rightExpr);
-  } else {
+  } else if (opName == "LIKE")  {
     return like(leftExpr, rightExpr);
   }
+
+  // invalid
+  throw runtime_error(fmt::format("Unsupported binary expression type, {}, from: {}", opName, to_string(jObj)));
 }
 
 shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeInOperation(const json &jObj) {
@@ -239,6 +246,34 @@ shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeCaseOperation(con
   return if_(ifExpr, thenExpr, elseExpr);
 }
 
+shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeExtractOperation(const json &jObj) {
+  const auto &operands = jObj["operands"].get<vector<json>>();
+  // date expression
+  const auto &dateExpr = deserializeExpression(operands[1]);
+
+  // extract symbol
+  if (!operands[0].contains("literal")) {
+    throw runtime_error("Unsupported extract, no literal to extract");
+  }
+  const auto &literalObj = operands[0]["literal"];
+  if (!literalObj.contains("type") || literalObj["type"].get<string>() != "SYMBOL") {
+    throw runtime_error("Unsupported extract, extract literal type is not symbol");
+  }
+  const auto &symbol = literalObj["value"].get<string>();
+  DateIntervalType intervalType;
+  if (symbol == "DAY") {
+    intervalType = DAY;
+  } else if (symbol == "MONTH") {
+    intervalType = MONTH;
+  } else if (symbol == "YEAR") {
+    intervalType = YEAR;
+  } else {
+    throw runtime_error(fmt::format("Unsupported extract literal symbol: {}", symbol));
+  }
+
+  return dateExtract(dateExpr, intervalType);
+}
+
 shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeOperation(const json &jObj) {
   const string &opName = jObj["op"].get<string>();
   // and, or
@@ -258,6 +293,10 @@ shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeOperation(const j
   // case
   else if (opName == "CASE") {
     return deserializeCaseOperation(jObj);
+  }
+  // extract
+  else if (opName == "EXTRACT") {
+    return deserializeExtractOperation(jObj);
   }
   // invalid
   else {
@@ -283,6 +322,16 @@ shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeExpression(const 
     throw runtime_error(fmt::format("Unsupported expression type, only column, literal and operation are "
                                     "supported, from: {}", to_string(jObj)));
   }
+}
+
+unordered_map<string, string> CalcitePlanJsonDeserializer::deserializeColumnRenames(const vector<json> &jArr) {
+  unordered_map<string, string> renames;
+  for (const auto &renameJObj: jArr) {
+    const auto &oldName = ColumnName::canonicalize(renameJObj["old"].get<string>());
+    const auto &newName = ColumnName::canonicalize(renameJObj["new"].get<string>());
+    renames.emplace(oldName, newName);
+  }
+  return renames;
 }
 
 pair<vector<string>, vector<string>> CalcitePlanJsonDeserializer::deserializeHashJoinCondition(const json &jObj) {
@@ -312,6 +361,50 @@ pair<vector<string>, vector<string>> CalcitePlanJsonDeserializer::deserializeHas
     throw runtime_error(fmt::format("Invalid hash join condition operation type, {}, from: {}",
                                     opName, to_string(jObj)));
   }
+}
+
+void CalcitePlanJsonDeserializer::addProjectForJoinColumnRenames(shared_ptr<PrePhysicalOp> &op,
+                                                                 const vector<shared_ptr<PrePhysicalOp>> &producers,
+                                                                 const json &jObj) {
+  const auto &leftProducer = producers[0];
+  const auto &rightProducer = producers[1];
+
+  // deserialize input column renames and create a project below, if any
+  vector<shared_ptr<PrePhysicalOp>> calibratedProducers;
+
+  // left
+  if (jObj.contains("leftFieldRenames")) {
+    const auto &leftFieldRenames = deserializeColumnRenames(jObj["leftFieldRenames"]);
+    shared_ptr<ProjectPrePOp> projectPrePOp = make_shared<ProjectPrePOp>(pOpIdGenerator_.fetch_add(1),
+                                                                         vector<shared_ptr<Expression>>(),
+                                                                         vector<string>(),
+                                                                         leftFieldRenames);
+    auto leftProjectColumnNames = leftProducer->getProjectColumnNames();
+    Util::renameColumns(leftProjectColumnNames, leftFieldRenames);
+    projectPrePOp->setProjectColumnNames(leftProjectColumnNames);
+    projectPrePOp->setProducers({leftProducer});
+    calibratedProducers.emplace_back(projectPrePOp);
+  } else {
+    calibratedProducers.emplace_back(leftProducer);
+  }
+
+  // right
+  if (jObj.contains("rightFieldRenames")) {
+    const auto &rightFieldRenames = deserializeColumnRenames(jObj["rightFieldRenames"]);
+    shared_ptr<ProjectPrePOp> projectPrePOp = make_shared<ProjectPrePOp>(pOpIdGenerator_.fetch_add(1),
+                                                                         vector<shared_ptr<Expression>>(),
+                                                                         vector<string>(),
+                                                                         rightFieldRenames);
+    auto rightProjectColumnNames = rightProducer->getProjectColumnNames();
+    Util::renameColumns(rightProjectColumnNames, rightFieldRenames);
+    projectPrePOp->setProjectColumnNames(rightProjectColumnNames);
+    projectPrePOp->setProducers({rightProducer});
+    calibratedProducers.emplace_back(projectPrePOp);
+  } else {
+    calibratedProducers.emplace_back(rightProducer);
+  }
+
+  op->setProducers(calibratedProducers);
 }
 
 vector<arrow::compute::SortKey> CalcitePlanJsonDeserializer::deserializeSortKeys(const json &jObj) {
@@ -488,6 +581,8 @@ shared_ptr<prephysical::PrePhysicalOp> CalcitePlanJsonDeserializer::deserializeP
       } else {
         projectColumnNames.emplace(outputFieldName);
         columnRenames.emplace(projectColumnName, outputFieldName);
+        // we need to keep the project to do the rename
+        skipSelf = false;
       }
     } else if (fieldExprJObj.contains("op")) {
       const auto &expr = deserializeExpression(fieldExprJObj);
@@ -550,14 +645,16 @@ shared_ptr<prephysical::HashJoinPrePOp> CalcitePlanJsonDeserializer::deserialize
   const auto &joinCondJObj = jObj["condition"];
   const pair<vector<string>, vector<string>> &joinColumnNames = deserializeHashJoinCondition(joinCondJObj);
 
-  shared_ptr<HashJoinPrePOp> hashJoinPrePOp = make_shared<HashJoinPrePOp>(pOpIdGenerator_.fetch_add(1),
-                                                                          joinType,
-                                                                          joinColumnNames.first,
-                                                                          joinColumnNames.second);
+  shared_ptr<PrePhysicalOp> hashJoinPrePOp = make_shared<HashJoinPrePOp>(pOpIdGenerator_.fetch_add(1),
+                                                                         joinType,
+                                                                         joinColumnNames.first,
+                                                                         joinColumnNames.second);
 
   // deserialize producers
-  hashJoinPrePOp->setProducers(deserializeProducers(jObj));
-  return hashJoinPrePOp;
+  const auto &producers = deserializeProducers(jObj);
+  addProjectForJoinColumnRenames(hashJoinPrePOp, producers, jObj);
+
+  return static_pointer_cast<HashJoinPrePOp>(hashJoinPrePOp);
 }
 
 shared_ptr<prephysical::NestedLoopJoinPrePOp> CalcitePlanJsonDeserializer::deserializeNestedLoopJoin(const json &jObj) {
@@ -576,13 +673,15 @@ shared_ptr<prephysical::NestedLoopJoinPrePOp> CalcitePlanJsonDeserializer::deser
     predicate = deserializeExpression(jObj["condition"]);
   }
 
-  shared_ptr<NestedLoopJoinPrePOp> nestedLoopJoinPrePOp = make_shared<NestedLoopJoinPrePOp>(pOpIdGenerator_.fetch_add(1),
-                                                                                            joinType,
-                                                                                            predicate);
+  shared_ptr<PrePhysicalOp> nestedLoopJoinPrePOp = make_shared<NestedLoopJoinPrePOp>(pOpIdGenerator_.fetch_add(1),
+                                                                                     joinType,
+                                                                                     predicate);
 
   // deserialize producers
-  nestedLoopJoinPrePOp->setProducers(deserializeProducers(jObj));
-  return nestedLoopJoinPrePOp;
+  const auto &producers = deserializeProducers(jObj);
+  addProjectForJoinColumnRenames(nestedLoopJoinPrePOp, producers, jObj);
+
+  return static_pointer_cast<NestedLoopJoinPrePOp>(nestedLoopJoinPrePOp);
 }
 
 shared_ptr<prephysical::PrePhysicalOp> CalcitePlanJsonDeserializer::deserializeFilterOrFilterableScan(const json &jObj) {

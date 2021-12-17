@@ -27,7 +27,8 @@ enum ExpressionType {
   STRING_LITERAL,
   IN,
   IF,
-  LIKE
+  LIKE,
+  DATE_EXTRACT
 };
 
 }
