@@ -80,10 +80,24 @@ public:
   tl::expected<std::shared_ptr<TupleSet>, std::string> projectExist(const std::vector<std::string> &columnNames) const;
 
   /**
+   * Project specified columns
+   * @param columnIds
+   * @return
+   */
+  tl::expected<std::shared_ptr<TupleSet>, std::string> project(const std::vector<int> &columnIds) const;
+
+  /**
    * Rename columns.
    */
   tl::expected<void, std::string> renameColumns(const std::vector<std::string>& columnNames);
   tl::expected<void, std::string> renameColumns(const std::unordered_map<std::string, std::string> &columnRenames);
+
+  /**
+   * Invokes combineChunks on the underlying table
+   *
+   * @return
+   */
+  tl::expected<void, std::string> combine();
 
   /**
    * Returns the tuple set pretty printed as a string

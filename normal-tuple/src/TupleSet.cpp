@@ -243,6 +243,14 @@ TupleSet::projectExist(const std::vector<std::string> &columnNames) const {
   return make(columns);
 }
 
+tl::expected<std::shared_ptr<TupleSet>, std::string> TupleSet::project(const std::vector<int> &columnIds) const {
+  const auto &expTable = table_->SelectColumns(columnIds);
+  if (!expTable.ok()) {
+    return tl::make_unexpected(expTable.status().message());
+  }
+  return make(expTable.ValueOrDie());
+}
+
 tl::expected<void, std::string> TupleSet::renameColumns(const std::vector<std::string>& columnNames){
   if(valid()){
     auto expectedTable = table_->RenameColumns(columnNames);
@@ -281,6 +289,15 @@ TupleSet::renameColumns(const std::unordered_map<std::string, std::string> &colu
     else
       return tl::make_unexpected(expectedTable.status().message());
   }
+  return {};
+}
+
+tl::expected<void, std::string> TupleSet::combine() {
+  auto expectedTable = table_->CombineChunks();
+  if(expectedTable.ok())
+    table_ = *expectedTable;
+  else
+    return tl::make_unexpected(expectedTable.status().message());
   return {};
 }
 

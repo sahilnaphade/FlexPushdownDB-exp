@@ -71,13 +71,11 @@ TEST_CASE ("tpch-original-19" * doctest::skip(false || SKIP_SUITE)) {
   TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/", {"tpch/original/19.sql"});
 }
 
-TEST_CASE ("temp" * doctest::skip(true)) {
-  string dateStr = "1998-12-01";
-  auto parser = arrow::TimestampParser::MakeISO8601();
-  int64_t val;
-  (*parser)(dateStr.c_str(), 10, arrow::TimeUnit::MILLI, &val);
-  auto scalar = arrow::MakeScalar(arrow::date64(), val).ValueOrDie();
-  std::cout << scalar->ToString() << std::endl;
+TEST_CASE ("temp" * doctest::skip(false)) {
+  unique_ptr<arrow::ArrayBuilder> arrayBuilder;
+  auto status = arrow::MakeBuilder(arrow::default_memory_pool(), arrow::int64(), &arrayBuilder);
+//  arrayBuilder->AppendNulls(0);
+  std::cout << status.ok() << std::endl;
 }
 
 }

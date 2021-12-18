@@ -42,6 +42,14 @@ void ColumnBuilder::append(const std::shared_ptr<Scalar> &scalar) {
   }
 }
 
+tl::expected<void, std::string> ColumnBuilder::appendNulls(int64_t length) {
+  auto status = arrowBuilder_->AppendNulls(length);
+  if (!status.ok()) {
+    return tl::make_unexpected(status.message());
+  }
+  return {};
+}
+
 std::shared_ptr<Column> ColumnBuilder::finalize() {
   auto status = arrowBuilder_->Finish(&array_);
   if (!status.ok()) {

@@ -65,6 +65,7 @@ add_library(normal-executor STATIC
         src/physical/join/nestedloopjoin/NestedLoopJoinPOp.cpp include/normal/executor/physical/join/nestedloopjoin/NestedLoopJoinPOp.h
         src/physical/join/nestedloopjoin/NestedLoopJoinKernel.cpp include/normal/executor/physical/join/nestedloopjoin/NestedLoopJoinKernel.h
         src/physical/join/nestedloopjoin/RecordBatchNestedLoopJoiner.cpp include/normal/executor/physical/join/nestedloopjoin/RecordBatchNestedLoopJoiner.h
+        src/physical/join/OuterJoinHelper.cpp include/normal/executor/physical/join/OuterJoinHelper.h
         src/physical/merge/MergePOp.cpp include/normal/executor/physical/merge/MergePOp.h
         src/physical/merge/MergeKernel.cpp include/normal/executor/physical/merge/MergeKernel.h
         src/physical/project/ProjectPOp.cpp include/normal/executor/physical/project/ProjectPOp.h
