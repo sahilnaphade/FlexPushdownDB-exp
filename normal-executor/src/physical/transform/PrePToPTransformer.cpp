@@ -13,10 +13,10 @@
 #include <normal/executor/physical/group/GroupPOp.h>
 #include <normal/executor/physical/project/ProjectPOp.h>
 #include <normal/executor/physical/filter/FilterPOp.h>
-#include <normal/executor/physical/hashjoin/HashJoinBuildPOp.h>
-#include <normal/executor/physical/hashjoin/HashJoinProbePOp.h>
-#include <normal/executor/physical/hashjoin/HashJoinPredicate.h>
-#include <normal/executor/physical/nestedloopjoin/NestedLoopJoinPOp.h>
+#include <normal/executor/physical/join/hashjoin/HashJoinBuildPOp.h>
+#include <normal/executor/physical/join/hashjoin/HashJoinProbePOp.h>
+#include <normal/executor/physical/join/hashjoin/HashJoinPredicate.h>
+#include <normal/executor/physical/join/nestedloopjoin/NestedLoopJoinPOp.h>
 #include <normal/executor/physical/shuffle/ShufflePOp.h>
 #include <normal/executor/physical/split/SplitPOp.h>
 #include <normal/executor/physical/collate/CollatePOp.h>
@@ -395,16 +395,16 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
   auto joinType = hashJoinPrePOp->getJoinType();
   const auto &leftColumnNames = hashJoinPrePOp->getLeftColumnNames();
   const auto &rightColumnNames = hashJoinPrePOp->getRightColumnNames();
-  hashjoin::HashJoinPredicate hashJoinPredicate(leftColumnNames, rightColumnNames);
+  join::HashJoinPredicate hashJoinPredicate(leftColumnNames, rightColumnNames);
   const auto &hashJoinPredicateStr = hashJoinPredicate.toString();
 
   vector<shared_ptr<PhysicalOp>> hashJoinBuildPOps, hashJoinProbePOps;
   for (int i = 0; i < parallelDegree_; ++i) {
-    hashJoinBuildPOps.emplace_back(make_shared<hashjoin::HashJoinBuildPOp>(
+    hashJoinBuildPOps.emplace_back(make_shared<join::HashJoinBuildPOp>(
             fmt::format("HashJoinBuild[{}]-{}-{}", prePOpId, hashJoinPredicateStr, i),
             leftColumnNames,
             projectColumnNames));
-    hashJoinProbePOps.emplace_back(make_shared<hashjoin::HashJoinProbePOp>(
+    hashJoinProbePOps.emplace_back(make_shared<join::HashJoinProbePOp>(
             fmt::format("HashJoinProbe[{}]-{}-{}", prePOpId, hashJoinPredicateStr, i),
             hashJoinPredicate,
             joinType,
@@ -474,10 +474,10 @@ PrePToPTransformer::transformNestedLoopJoin(const shared_ptr<NestedLoopJoinPrePO
   vector<shared_ptr<PhysicalOp>> nestedLoopJoinPOps;
   nestedLoopJoinPOps.reserve(parallelDegree_);
   for (int i = 0; i < parallelDegree_; ++i) {
-    shared_ptr<nestedloopjoin::NestedLoopJoinPOp> nestedLoopJoinPOp =
-            make_shared<nestedloopjoin::NestedLoopJoinPOp>(fmt::format("NestedLoopJoin[{}]-{}", prePOpId, i),
-                                                           predicate,
-                                                           projectColumnNames);
+    shared_ptr<join::NestedLoopJoinPOp> nestedLoopJoinPOp =
+            make_shared<join::NestedLoopJoinPOp>(fmt::format("NestedLoopJoin[{}]-{}", prePOpId, i),
+                                                 predicate,
+                                                 projectColumnNames);
     // connect to left inputs
     for (const auto &upLeftConnPOp: leftTransRes.first) {
       upLeftConnPOp->produce(nestedLoopJoinPOp);
@@ -491,7 +491,7 @@ PrePToPTransformer::transformNestedLoopJoin(const shared_ptr<NestedLoopJoinPrePO
   if (parallelDegree_ == 1) {
     for (const auto &upRightConnPOp: rightTransRes.first) {
       upRightConnPOp->produce(nestedLoopJoinPOps[0]);
-      static_pointer_cast<nestedloopjoin::NestedLoopJoinPOp>(nestedLoopJoinPOps[0])->addRightProducer(upRightConnPOp);
+      static_pointer_cast<join::NestedLoopJoinPOp>(nestedLoopJoinPOps[0])->addRightProducer(upRightConnPOp);
     }
   } else {
     vector<shared_ptr<PhysicalOp>> splitPOps;
@@ -505,7 +505,7 @@ PrePToPTransformer::transformNestedLoopJoin(const shared_ptr<NestedLoopJoinPrePO
     for (const auto &upRightConnPOp: rightTransRes.first) {
       for (const auto &nestedLoopJoinPOp: nestedLoopJoinPOps) {
         upRightConnPOp->produce(nestedLoopJoinPOp);
-        static_pointer_cast<nestedloopjoin::NestedLoopJoinPOp>(nestedLoopJoinPOp)->addRightProducer(upRightConnPOp);
+        static_pointer_cast<join::NestedLoopJoinPOp>(nestedLoopJoinPOp)->addRightProducer(upRightConnPOp);
       }
     }
   }

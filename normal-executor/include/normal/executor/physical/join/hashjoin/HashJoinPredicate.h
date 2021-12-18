@@ -10,7 +10,7 @@
 
 using namespace std;
 
-namespace normal::executor::physical::hashjoin {
+namespace normal::executor::physical::join {
 
 /**
  * A join predicate for straight column to column joins

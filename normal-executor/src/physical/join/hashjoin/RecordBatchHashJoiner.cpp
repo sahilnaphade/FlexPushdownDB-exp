@@ -2,12 +2,12 @@
 // Created by matt on 3/8/20.
 //
 
-#include <normal/executor/physical/hashjoin/RecordBatchHashJoiner.h>
+#include <normal/executor/physical/join/hashjoin/RecordBatchHashJoiner.h>
 #include <normal/tuple/TupleSetIndexFinder.h>
 #include <normal/tuple/ArrayAppenderWrapper.h>
 #include <normal/tuple/TupleKey.h>
 
-using namespace normal::executor::physical::hashjoin;
+using namespace normal::executor::physical::join;
 
 RecordBatchHashJoiner::RecordBatchHashJoiner(std::shared_ptr<TupleSetIndex> buildTupleSetIndex,
                    std::vector<std::string> probeJoinColumnNames,

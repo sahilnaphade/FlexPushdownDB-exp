@@ -2,12 +2,12 @@
 // Created by matt on 29/4/20.
 //
 
-#include <normal/executor/physical/hashjoin/HashJoinPredicate.h>
+#include <normal/executor/physical/join/hashjoin/HashJoinPredicate.h>
 #include <utility>
 #include <sstream>
 #include <cassert>
 
-using namespace normal::executor::physical::hashjoin;
+using namespace normal::executor::physical::join;
 
 HashJoinPredicate::HashJoinPredicate(vector<string> leftColumnNames,
                                      vector<string> rightColumnNames) :

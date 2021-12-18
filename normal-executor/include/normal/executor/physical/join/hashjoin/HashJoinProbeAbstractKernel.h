@@ -5,7 +5,7 @@
 #ifndef NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_HASHJOIN_HASHJOINPROBEABSTRACTKERNEL_H
 #define NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_HASHJOIN_HASHJOINPROBEABSTRACTKERNEL_H
 
-#include <normal/executor/physical/hashjoin/HashJoinPredicate.h>
+#include <normal/executor/physical/join/hashjoin/HashJoinPredicate.h>
 #include <normal/tuple/TupleSet.h>
 #include <normal/tuple/TupleSetIndex.h>
 #include <set>
@@ -14,7 +14,7 @@
 using namespace normal::tuple;
 using namespace std;
 
-namespace normal::executor::physical::hashjoin {
+namespace normal::executor::physical::join {
 
 /**
  * Abstract class for kernel of hash join, derived class includes HashJoinProbeKernel, HashSemiJoinProbeKernel

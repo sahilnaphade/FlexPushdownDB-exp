@@ -2,11 +2,11 @@
 // Created by matt on 1/8/20.
 //
 
-#include <normal/executor/physical/hashjoin/HashJoinBuildKernel.h>
+#include <normal/executor/physical/join/hashjoin/HashJoinBuildKernel.h>
 #include <normal/tuple/ColumnName.h>
 #include <utility>
 
-using namespace normal::executor::physical::hashjoin;
+using namespace normal::executor::physical::join;
 
 HashJoinBuildKernel::HashJoinBuildKernel(vector<string> columnNames) :
 	columnNames_(move(columnNames)) {}

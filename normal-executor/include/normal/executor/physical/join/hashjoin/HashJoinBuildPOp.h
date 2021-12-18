@@ -5,7 +5,7 @@
 #ifndef NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_HASHJOIN_HASHJOINBUILDPOP_H
 #define NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_HASHJOIN_HASHJOINBUILDPOP_H
 
-#include <normal/executor/physical/hashjoin/HashJoinBuildKernel.h>
+#include <normal/executor/physical/join/hashjoin/HashJoinBuildKernel.h>
 #include <normal/executor/physical/PhysicalOp.h>
 #include <normal/executor/message/TupleMessage.h>
 #include <normal/executor/message/CompleteMessage.h>
@@ -15,7 +15,7 @@
 using namespace normal::executor::message;
 using namespace std;
 
-namespace normal::executor::physical::hashjoin {
+namespace normal::executor::physical::join {
 
 /**
  * Operator implementing build phase of a hash join

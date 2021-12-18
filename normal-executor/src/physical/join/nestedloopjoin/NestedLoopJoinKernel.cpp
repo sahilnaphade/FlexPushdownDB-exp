@@ -2,10 +2,10 @@
 // Created by Yifei Yang on 12/12/21.
 //
 
-#include <normal/executor/physical/nestedloopjoin/NestedLoopJoinKernel.h>
-#include <normal/executor/physical/nestedloopjoin/RecordBatchNestedLoopJoiner.h>
+#include <normal/executor/physical/join/nestedloopjoin/NestedLoopJoinKernel.h>
+#include <normal/executor/physical/join/nestedloopjoin/RecordBatchNestedLoopJoiner.h>
 
-namespace normal::executor::physical::nestedloopjoin {
+namespace normal::executor::physical::join {
 
 NestedLoopJoinKernel::NestedLoopJoinKernel(const optional<shared_ptr<expression::gandiva::Expression>> &predicate,
                                            const set<string> &neededColumnNames):
@@ -168,7 +168,7 @@ const optional<shared_ptr<TupleSet>> &NestedLoopJoinKernel::getBuffer() const {
   return buffer_;
 }
 
-void NestedLoopJoinKernel::clear() {
+void NestedLoopJoinKernel::clearBuffer() {
   buffer_ = nullopt;
 }
 

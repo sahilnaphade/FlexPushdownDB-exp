@@ -5,12 +5,12 @@
 #ifndef NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_HASHJOIN_HASHSEMIJOINPROBEKERNEL_H
 #define NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_HASHJOIN_HASHSEMIJOINPROBEKERNEL_H
 
-#include <normal/executor/physical/hashjoin/HashJoinProbeAbstractKernel.h>
+#include <normal/executor/physical/join/hashjoin/HashJoinProbeAbstractKernel.h>
 #include <normal/tuple/TupleSet.h>
 #include <normal/expression/gandiva/Filter.h>
 #include <unordered_set>
 
-namespace normal::executor::physical::hashjoin {
+namespace normal::executor::physical::join {
 
 class HashSemiJoinProbeKernel: public HashJoinProbeAbstractKernel {
 

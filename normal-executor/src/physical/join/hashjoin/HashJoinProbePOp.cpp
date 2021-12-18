@@ -2,15 +2,15 @@
 // Created by matt on 29/4/20.
 //
 
-#include <normal/executor/physical/hashjoin/HashJoinProbePOp.h>
-#include <normal/executor/physical/hashjoin/HashJoinProbeKernel.h>
-#include <normal/executor/physical/hashjoin/HashSemiJoinProbeKernel.h>
+#include <normal/executor/physical/join/hashjoin/HashJoinProbePOp.h>
+#include <normal/executor/physical/join/hashjoin/HashJoinProbeKernel.h>
+#include <normal/executor/physical/join/hashjoin/HashSemiJoinProbeKernel.h>
 #include <normal/executor/physical/Globals.h>
 #include <normal/executor/message/TupleSetIndexMessage.h>
 #include <normal/tuple/arrow/SchemaHelper.h>
 #include <utility>
 
-using namespace normal::executor::physical::hashjoin;
+using namespace normal::executor::physical::join;
 
 HashJoinProbePOp::HashJoinProbePOp(string name,
                                    HashJoinPredicate pred,

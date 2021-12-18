@@ -2,13 +2,13 @@
 // Created by matt on 29/4/20.
 //
 
-#include <normal/executor/physical/hashjoin/HashJoinBuildPOp.h>
+#include <normal/executor/physical/join/hashjoin/HashJoinBuildPOp.h>
 #include <normal/executor/physical/Globals.h>
 #include <normal/executor/message/TupleSetIndexMessage.h>
 #include <normal/tuple/TupleSet.h>
 #include <utility>
 
-using namespace normal::executor::physical::hashjoin;
+using namespace normal::executor::physical::join;
 using namespace normal::tuple;
 
 HashJoinBuildPOp::HashJoinBuildPOp(const string &name,

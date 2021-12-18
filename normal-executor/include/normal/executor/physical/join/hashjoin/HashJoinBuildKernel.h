@@ -13,7 +13,7 @@
 using namespace normal::tuple;
 using namespace std;
 
-namespace normal::executor::physical::hashjoin {
+namespace normal::executor::physical::join {
 
 /**
  * Kernel for creating the hash table on the build relation in a hash join

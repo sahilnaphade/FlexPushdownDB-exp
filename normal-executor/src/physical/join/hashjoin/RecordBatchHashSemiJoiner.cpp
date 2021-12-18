@@ -2,10 +2,10 @@
 // Created by Yifei Yang on 12/15/21.
 //
 
-#include <normal/executor/physical/hashjoin/RecordBatchHashSemiJoiner.h>
+#include <normal/executor/physical/join/hashjoin/RecordBatchHashSemiJoiner.h>
 #include <normal/tuple/TupleSetIndexFinder.h>
 
-namespace normal::executor::physical::hashjoin {
+namespace normal::executor::physical::join {
 
 RecordBatchHashSemiJoiner::RecordBatchHashSemiJoiner(const shared_ptr<TupleSetIndex> &buildTupleSetIndex,
                                                      const vector<string> &probeJoinColumnNames,

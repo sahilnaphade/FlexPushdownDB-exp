@@ -2,10 +2,10 @@
 // Created by Yifei Yang on 12/12/21.
 //
 
-#include <normal/executor/physical/nestedloopjoin/NestedLoopJoinPOp.h>
+#include <normal/executor/physical/join/nestedloopjoin/NestedLoopJoinPOp.h>
 #include <normal/executor/physical/Globals.h>
 
-namespace normal::executor::physical::nestedloopjoin {
+namespace normal::executor::physical::join {
 
 NestedLoopJoinPOp::NestedLoopJoinPOp(const string &name,
                                      const optional<shared_ptr<expression::gandiva::Expression>> &predicate,
@@ -84,7 +84,7 @@ void NestedLoopJoinPOp::send(bool force) {
 
       shared_ptr<Message> tupleMessage = make_shared<TupleMessage>(expProjectTupleSet.value(), name());
       ctx()->tell(tupleMessage);
-      kernel_.clear();
+      kernel_.clearBuffer();
     }
   }
 }

@@ -14,7 +14,7 @@ using namespace normal::tuple;
 using namespace normal::expression::gandiva;
 using namespace std;
 
-namespace normal::executor::physical::nestedloopjoin {
+namespace normal::executor::physical::join {
 
 class RecordBatchNestedLoopJoiner {
 

@@ -2,12 +2,12 @@
 // Created by matt on 31/7/20.
 //
 
-#include <normal/executor/physical/hashjoin/HashJoinProbeKernel.h>
-#include <normal/executor/physical/hashjoin/RecordBatchHashJoiner.h>
+#include <normal/executor/physical/join/hashjoin/HashJoinProbeKernel.h>
+#include <normal/executor/physical/join/hashjoin/RecordBatchHashJoiner.h>
 #include <arrow/api.h>
 #include <utility>
 
-using namespace normal::executor::physical::hashjoin;
+namespace normal::executor::physical::join {
 
 HashJoinProbeKernel::HashJoinProbeKernel(HashJoinPredicate pred, set<string> neededColumnNames) :
   HashJoinProbeAbstractKernel(move(pred), move(neededColumnNames)) {}
@@ -145,4 +145,6 @@ tl::expected<void, string> HashJoinProbeKernel::joinProbeTupleSet(const shared_p
 tl::expected<void, string> HashJoinProbeKernel::finalize() {
   clearInput();
   return {};
+}
+
 }

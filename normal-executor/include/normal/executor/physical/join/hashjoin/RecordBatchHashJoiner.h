@@ -15,7 +15,7 @@
 
 using namespace normal::tuple;
 
-namespace normal::executor::physical::hashjoin {
+namespace normal::executor::physical::join {
 
 class RecordBatchHashJoiner {
 public:

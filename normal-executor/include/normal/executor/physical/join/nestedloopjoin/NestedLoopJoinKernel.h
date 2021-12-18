@@ -13,7 +13,7 @@
 using namespace normal::tuple;
 using namespace std;
 
-namespace normal::executor::physical::nestedloopjoin {
+namespace normal::executor::physical::join {
 
 class NestedLoopJoinKernel {
 
@@ -28,7 +28,7 @@ public:
   tl::expected<void, string> joinIncomingRight(const shared_ptr<TupleSet> &incomingRight);
 
   const optional<shared_ptr<TupleSet>> &getBuffer() const;
-  void clear();
+  void clearBuffer();
 
 private:
   tl::expected<shared_ptr<TupleSet>, string> join(const shared_ptr<TupleSet> &leftTupleSet,

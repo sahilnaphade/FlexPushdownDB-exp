@@ -2,11 +2,11 @@
 // Created by Yifei Yang on 12/13/21.
 //
 
-#include <normal/executor/physical/nestedloopjoin/RecordBatchNestedLoopJoiner.h>
+#include <normal/executor/physical/join/nestedloopjoin/RecordBatchNestedLoopJoiner.h>
 #include <normal/expression/gandiva/Filter.h>
 #include <normal/tuple/ArrayAppenderWrapper.h>
 
-namespace normal::executor::physical::nestedloopjoin {
+namespace normal::executor::physical::join {
 
 RecordBatchNestedLoopJoiner::RecordBatchNestedLoopJoiner(const optional<shared_ptr<expression::gandiva::Expression>> &predicate,
                                                          const shared_ptr<::arrow::Schema> &outputSchema,

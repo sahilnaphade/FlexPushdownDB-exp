@@ -5,9 +5,9 @@
 #ifndef NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_HASHJOIN_HASHJOINPROBEKERNEL_H
 #define NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_HASHJOIN_HASHJOINPROBEKERNEL_H
 
-#include <normal/executor/physical/hashjoin/HashJoinProbeAbstractKernel.h>
+#include <normal/executor/physical/join/hashjoin/HashJoinProbeAbstractKernel.h>
 
-namespace normal::executor::physical::hashjoin {
+namespace normal::executor::physical::join {
 
 class HashJoinProbeKernel: public HashJoinProbeAbstractKernel {
 

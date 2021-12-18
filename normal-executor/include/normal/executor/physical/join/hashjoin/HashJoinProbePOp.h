@@ -6,8 +6,8 @@
 #define NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_HASHJOIN_HASHJOINPROBEPOP_H
 
 #include <normal/executor/physical/PhysicalOp.h>
-#include <normal/executor/physical/hashjoin/HashJoinProbeAbstractKernel.h>
-#include <normal/executor/physical/hashjoin/HashJoinPredicate.h>
+#include <normal/executor/physical/join/hashjoin/HashJoinProbeAbstractKernel.h>
+#include <normal/executor/physical/join/hashjoin/HashJoinPredicate.h>
 #include <normal/executor/message/TupleMessage.h>
 #include <normal/executor/message/CompleteMessage.h>
 #include <normal/executor/message/TupleSetIndexMessage.h>
@@ -17,7 +17,7 @@ using namespace normal::executor::message;
 using namespace normal::plan::prephysical;
 using namespace std;
 
-namespace normal::executor::physical::hashjoin {
+namespace normal::executor::physical::join {
 
 /**
  * Operator implementing probe phase of a hash join

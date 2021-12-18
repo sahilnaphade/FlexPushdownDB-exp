@@ -6,7 +6,7 @@
 #define NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_NESTEDLOOPJOIN_NESTEDLOOPJOINPOP_H
 
 #include <normal/executor/physical/PhysicalOp.h>
-#include <normal/executor/physical/nestedloopjoin/NestedLoopJoinKernel.h>
+#include <normal/executor/physical/join/nestedloopjoin/NestedLoopJoinKernel.h>
 #include <normal/executor/message/TupleMessage.h>
 #include <normal/executor/message/CompleteMessage.h>
 #include <normal/executor/message/TupleSetIndexMessage.h>
@@ -15,7 +15,7 @@ using namespace normal::executor::message;
 using namespace normal::expression::gandiva;
 using namespace std;
 
-namespace normal::executor::physical::nestedloopjoin {
+namespace normal::executor::physical::join {
 
 class NestedLoopJoinPOp : public PhysicalOp {
 public:

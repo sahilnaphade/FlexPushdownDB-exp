@@ -2,12 +2,12 @@
 // Created by Yifei Yang on 12/15/21.
 //
 
-#include <normal/executor/physical/hashjoin/HashSemiJoinProbeKernel.h>
-#include <normal/executor/physical/hashjoin/RecordBatchHashSemiJoiner.h>
+#include <normal/executor/physical/join/hashjoin/HashSemiJoinProbeKernel.h>
+#include <normal/executor/physical/join/hashjoin/RecordBatchHashSemiJoiner.h>
 #include <arrow/api.h>
 #include <utility>
 
-namespace normal::executor::physical::hashjoin {
+namespace normal::executor::physical::join {
 
 HashSemiJoinProbeKernel::HashSemiJoinProbeKernel(HashJoinPredicate pred, set<string> neededColumnNames) :
   HashJoinProbeAbstractKernel(move(pred), move(neededColumnNames)) {}

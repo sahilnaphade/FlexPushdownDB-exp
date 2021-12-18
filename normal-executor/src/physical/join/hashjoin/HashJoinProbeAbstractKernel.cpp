@@ -2,9 +2,9 @@
 // Created by Yifei Yang on 12/15/21.
 //
 
-#include <normal/executor/physical/hashjoin/HashJoinProbeAbstractKernel.h>
+#include <normal/executor/physical/join/hashjoin/HashJoinProbeAbstractKernel.h>
 
-namespace normal::executor::physical::hashjoin {
+namespace normal::executor::physical::join {
 
 HashJoinProbeAbstractKernel::HashJoinProbeAbstractKernel(HashJoinPredicate pred, set<string> neededColumnNames) :
         pred_(move(pred)), neededColumnNames_(move(neededColumnNames)) {}
