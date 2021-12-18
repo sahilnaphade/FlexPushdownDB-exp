@@ -24,6 +24,7 @@ public:
 
   set<string> getUsedColumnNames() override;
 
+  JoinType getJoinType() const;
   const shared_ptr<Expression> &getPredicate() const;
 
 private:

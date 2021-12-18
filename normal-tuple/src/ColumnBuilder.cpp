@@ -50,11 +50,19 @@ tl::expected<void, std::string> ColumnBuilder::appendNulls(int64_t length) {
   return {};
 }
 
-std::shared_ptr<Column> ColumnBuilder::finalize() {
+tl::expected<std::shared_ptr<Column>, std::string> ColumnBuilder::finalize() {
   auto status = arrowBuilder_->Finish(&array_);
   if (!status.ok()) {
-    throw std::runtime_error("Error when finalizing ColumnBuilder, " + status.message());
+    return tl::make_unexpected("Error when finalizing ColumnBuilder, " + status.message());
   }
   auto chunkedArray = std::make_shared<::arrow::ChunkedArray>(array_);
   return std::make_shared<Column>(name_, chunkedArray);
+}
+
+tl::expected<std::shared_ptr<arrow::Array>, std::string> ColumnBuilder::finalizeToArray() {
+  auto status = arrowBuilder_->Finish(&array_);
+  if (!status.ok()) {
+    return tl::make_unexpected("Error when finalizing ColumnBuilder, " + status.message());
+  }
+  return array_;
 }

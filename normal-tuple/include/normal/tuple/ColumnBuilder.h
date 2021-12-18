@@ -17,14 +17,15 @@ namespace normal::tuple {
 class ColumnBuilder {
 
 public:
-  ColumnBuilder(std::string  name, const std::shared_ptr<::arrow::DataType>& type);
+  ColumnBuilder(std::string name, const std::shared_ptr<::arrow::DataType>& type);
 
   static std::shared_ptr<ColumnBuilder> make(const std::string& name, const std::shared_ptr<::arrow::DataType>& type);
 
   void append(const std::shared_ptr<Scalar>& scalar);
   tl::expected<void, std::string> appendNulls(int64_t length);
 
-  std::shared_ptr<Column> finalize();
+  tl::expected<std::shared_ptr<Column>, std::string> finalize();
+  tl::expected<std::shared_ptr<arrow::Array>, std::string> finalizeToArray();
 
 private:
   std::string name_;

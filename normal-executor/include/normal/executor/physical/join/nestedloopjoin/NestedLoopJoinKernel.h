@@ -19,10 +19,14 @@ class NestedLoopJoinKernel {
 
 public:
   NestedLoopJoinKernel(const optional<shared_ptr<expression::gandiva::Expression>> &predicate,
-                       const set<string> &neededColumnNames);
+                       const set<string> &neededColumnNames,
+                       bool isLeft,
+                       bool isRight);
 
-  static NestedLoopJoinKernel make(const optional<shared_ptr<expression::gandiva::Expression>> &predicate,
-                                   const set<string> &neededColumnNames);
+  static shared_ptr<NestedLoopJoinKernel> make(const optional<shared_ptr<expression::gandiva::Expression>> &predicate,
+                                               const set<string> &neededColumnNames,
+                                               bool isLeft,
+                                               bool isRight);
 
   tl::expected<void, string> joinIncomingLeft(const shared_ptr<TupleSet> &incomingLeft);
   tl::expected<void, string> joinIncomingRight(const shared_ptr<TupleSet> &incomingRight);
@@ -43,6 +47,9 @@ private:
   optional<shared_ptr<::arrow::Schema>> outputSchema_;
   vector<shared_ptr<pair<bool, int>>> neededColumnIndice_;   // <true/false, i> -> ith column in left/right table
   optional<shared_ptr<TupleSet>> buffer_;
+
+  bool isLeft_;
+  bool isRight_;
   
 };
 

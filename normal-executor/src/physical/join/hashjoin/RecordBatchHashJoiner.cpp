@@ -9,28 +9,35 @@
 
 using namespace normal::executor::physical::join;
 
-RecordBatchHashJoiner::RecordBatchHashJoiner(std::shared_ptr<TupleSetIndex> buildTupleSetIndex,
-                   std::vector<std::string> probeJoinColumnNames,
-									 std::shared_ptr<::arrow::Schema> outputSchema,
-                   std::vector<std::shared_ptr<std::pair<bool, int>>> neededColumnIndice) :
-	buildTupleSetIndex_(std::move(buildTupleSetIndex)),
-	probeJoinColumnNames_(std::move(probeJoinColumnNames)),
-	outputSchema_(std::move(outputSchema)),
-	neededColumnIndice_(std::move(neededColumnIndice)),
+RecordBatchHashJoiner::RecordBatchHashJoiner(shared_ptr<TupleSetIndex> buildTupleSetIndex,
+                                             vector<string> probeJoinColumnNames,
+                                             shared_ptr<::arrow::Schema> outputSchema,
+                                             vector<shared_ptr<pair<bool, int>>> neededColumnIndice,
+                                             int64_t buildRowOffset) :
+	buildTupleSetIndex_(move(buildTupleSetIndex)),
+	probeJoinColumnNames_(move(probeJoinColumnNames)),
+	outputSchema_(move(outputSchema)),
+	neededColumnIndice_(move(neededColumnIndice)),
+	buildRowOffset_(buildRowOffset),
 	joinedArrayVectors_{static_cast<size_t>(outputSchema_->num_fields())} {
 }
 
-tl::expected<std::shared_ptr<RecordBatchHashJoiner>, std::string>
-RecordBatchHashJoiner::make(const std::shared_ptr<TupleSetIndex> &buildTupleSetIndex,
-						const std::vector<std::string> &probeJoinColumnNames,
-						const std::shared_ptr<::arrow::Schema> &outputSchema,
-            const std::vector<std::shared_ptr<std::pair<bool, int>>> &neededColumnIndice) {
+tl::expected<shared_ptr<RecordBatchHashJoiner>, string>
+RecordBatchHashJoiner::make(const shared_ptr<TupleSetIndex> &buildTupleSetIndex,
+                            const vector<string> &probeJoinColumnNames,
+                            const shared_ptr<::arrow::Schema> &outputSchema,
+                            const vector<shared_ptr<pair<bool, int>>> &neededColumnIndice,
+                            int64_t buildRowOffset) {
   const auto &canonicalColumnNames = ColumnName::canonicalize(probeJoinColumnNames);
-  return std::make_shared<RecordBatchHashJoiner>(buildTupleSetIndex, canonicalColumnNames, outputSchema, neededColumnIndice);
+  return make_shared<RecordBatchHashJoiner>(buildTupleSetIndex,
+                                            canonicalColumnNames,
+                                            outputSchema,
+                                            neededColumnIndice,
+                                            buildRowOffset);
 }
 
-tl::expected<void, std::string>
-RecordBatchHashJoiner::join(const std::shared_ptr<::arrow::RecordBatch> &recordBatch) {
+tl::expected<void, string> RecordBatchHashJoiner::join(const shared_ptr<::arrow::RecordBatch> &probeRecordBatch,
+                                                       int64_t probeRowOffset) {
 
   arrow::Status status;
 
@@ -44,7 +51,9 @@ RecordBatchHashJoiner::join(const std::shared_ptr<::arrow::RecordBatch> &recordB
   auto buildTable = buildTupleSetIndex_->getTable();
 
   // Create a tupleSetIndexFinder
-  const auto &expectedIndexFinder = TupleSetIndexFinder::make(buildTupleSetIndex_, probeJoinColumnNames_, recordBatch);
+  const auto &expectedIndexFinder = TupleSetIndexFinder::make(buildTupleSetIndex_,
+                                                              probeJoinColumnNames_,
+                                                              probeRecordBatch);
   if (!expectedIndexFinder.has_value())
 	  return tl::make_unexpected(expectedIndexFinder.error());
   auto indexFinder = expectedIndexFinder.value();
@@ -56,13 +65,13 @@ RecordBatchHashJoiner::join(const std::shared_ptr<::arrow::RecordBatch> &recordB
   }
 
   // Create references to each array in the record batch
-  std::vector<std::shared_ptr<::arrow::Array>> probeColumns{static_cast<size_t>(recordBatch->num_columns())};
-  for (int c = 0; c < recordBatch->num_columns(); ++c) {
-    probeColumns[c] = recordBatch->column(c);
+  vector<shared_ptr<::arrow::Array>> probeColumns{static_cast<size_t>(probeRecordBatch->num_columns())};
+  for (int c = 0; c < probeRecordBatch->num_columns(); ++c) {
+    probeColumns[c] = probeRecordBatch->column(c);
   }
 
   // create appenders to create the destination arrays
-  std::vector<std::shared_ptr<ArrayAppender>> appenders{static_cast<size_t>(outputSchema_->num_fields())};
+  vector<shared_ptr<ArrayAppender>> appenders{static_cast<size_t>(outputSchema_->num_fields())};
 
   for (int c = 0; c < outputSchema_->num_fields(); ++c) {
     auto expectedAppender = ArrayAppenderBuilder::make(outputSchema_->field(c)->type(), 0);
@@ -72,7 +81,7 @@ RecordBatchHashJoiner::join(const std::shared_ptr<::arrow::RecordBatch> &recordB
   }
 
   // Iterate through the probe join column
-  for (int64_t pr = 0; pr < recordBatch->num_rows(); ++pr) {
+  for (int64_t pr = 0; pr < probeRecordBatch->num_rows(); ++pr) {
 
     // Find matched rows in the build column
     const auto &expBuildRows = indexFinder->find(pr);
@@ -81,8 +90,16 @@ RecordBatchHashJoiner::join(const std::shared_ptr<::arrow::RecordBatch> &recordB
     }
     const auto &buildRows = expBuildRows.value();
 
+    // Save probeRowMatchIndexes
+    if (!buildRows.empty()) {
+      probeRowMatchIndexes_.emplace(probeRowOffset + pr);
+    }
+
     // Iterate the matched rows in the build column
     for (const auto br: buildRows) {
+
+      // Save buildRowMatchIndexes
+      buildRowMatchIndexes_.emplace(buildRowOffset_ + br);
 
       // Iterate needed columns
       for (size_t c = 0; c < neededColumnIndice_.size(); ++c) {
@@ -114,19 +131,19 @@ RecordBatchHashJoiner::join(const std::shared_ptr<::arrow::RecordBatch> &recordB
   return {};
 }
 
-tl::expected<std::shared_ptr<TupleSet>, std::string>
+tl::expected<shared_ptr<TupleSet>, string>
 RecordBatchHashJoiner::toTupleSet() {
   arrow::Status status;
 
   // Make chunked arrays
-  std::vector<std::shared_ptr<::arrow::ChunkedArray>> chunkedArrays;
+  vector<shared_ptr<::arrow::ChunkedArray>> chunkedArrays;
   for (const auto &joinedArrayVector: joinedArrayVectors_) {
     // check empty
     if (joinedArrayVector.empty()) {
       return TupleSet::make(outputSchema_);
     }
 
-    auto chunkedArray = std::make_shared<::arrow::ChunkedArray>(joinedArrayVector);
+    auto chunkedArray = make_shared<::arrow::ChunkedArray>(joinedArrayVector);
     chunkedArrays.emplace_back(chunkedArray);
   }
 
@@ -135,4 +152,12 @@ RecordBatchHashJoiner::toTupleSet() {
 
   joinedArrayVectors_.clear();
   return joinedTupleSet;
+}
+
+const unordered_set<int64_t> &RecordBatchHashJoiner::getBuildRowMatchIndexes() const {
+  return buildRowMatchIndexes_;
+}
+
+const unordered_set<int64_t> &RecordBatchHashJoiner::getProbeRowMatchIndexes() const {
+  return probeRowMatchIndexes_;
 }

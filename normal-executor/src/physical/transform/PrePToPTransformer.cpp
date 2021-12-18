@@ -466,6 +466,7 @@ PrePToPTransformer::transformNestedLoopJoin(const shared_ptr<NestedLoopJoinPrePO
   // transform self
   vector<string> projectColumnNames{nestedLoopJoinPrePOp->getProjectColumnNames().begin(),
                                     nestedLoopJoinPrePOp->getProjectColumnNames().end()};
+  auto joinType = nestedLoopJoinPrePOp->getJoinType();
   optional<shared_ptr<normal::expression::gandiva::Expression>> predicate;
   if (nestedLoopJoinPrePOp->getPredicate()) {
     predicate = nestedLoopJoinPrePOp->getPredicate();
@@ -477,6 +478,7 @@ PrePToPTransformer::transformNestedLoopJoin(const shared_ptr<NestedLoopJoinPrePO
     shared_ptr<join::NestedLoopJoinPOp> nestedLoopJoinPOp =
             make_shared<join::NestedLoopJoinPOp>(fmt::format("NestedLoopJoin[{}]-{}", prePOpId, i),
                                                  predicate,
+                                                 joinType,
                                                  projectColumnNames);
     // connect to left inputs
     for (const auto &upLeftConnPOp: leftTransRes.first) {

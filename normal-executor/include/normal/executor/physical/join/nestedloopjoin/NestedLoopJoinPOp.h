@@ -10,8 +10,10 @@
 #include <normal/executor/message/TupleMessage.h>
 #include <normal/executor/message/CompleteMessage.h>
 #include <normal/executor/message/TupleSetIndexMessage.h>
+#include <normal/plan/prephysical/JoinType.h>
 
 using namespace normal::executor::message;
+using namespace normal::plan::prephysical;
 using namespace normal::expression::gandiva;
 using namespace std;
 
@@ -21,6 +23,7 @@ class NestedLoopJoinPOp : public PhysicalOp {
 public:
   NestedLoopJoinPOp(const string &name,
                     const optional<shared_ptr<expression::gandiva::Expression>> &predicate,
+                    JoinType joinType,
                     const vector<string> &projectColumnNames);
 
   void onReceive(const Envelope &msg) override;
@@ -37,7 +40,7 @@ private:
   set<string> leftProducerNames_;
   set<string> rightProducerName_;
 
-  NestedLoopJoinKernel kernel_;
+  shared_ptr<NestedLoopJoinKernel> kernel_;
 
 };
 

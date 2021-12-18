@@ -49,7 +49,7 @@ public:
   bool validate() const;
   void clear();
   int64_t numRows() const;
-  int64_t numColumns() const;
+  int numColumns() const;
   size_t size() const;
   std::shared_ptr<arrow::Schema> schema() const;
   std::shared_ptr<arrow::Table> table() const;

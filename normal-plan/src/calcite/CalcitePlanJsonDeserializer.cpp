@@ -635,6 +635,12 @@ shared_ptr<prephysical::HashJoinPrePOp> CalcitePlanJsonDeserializer::deserialize
   JoinType joinType;
   if (joinTypeStr == "INNER") {
     joinType = INNER;
+  } else if (joinTypeStr == "LEFT") {
+    joinType = LEFT;
+  } else if (joinTypeStr == "RIGHT") {
+    joinType = RIGHT;
+  } else if (joinTypeStr == "FULL") {
+    joinType = FULL;
   } else if (joinTypeStr == "SEMI") {
     joinType = SEMI;
   } else {
@@ -666,6 +672,12 @@ shared_ptr<prephysical::NestedLoopJoinPrePOp> CalcitePlanJsonDeserializer::deser
   JoinType joinType;
   if (joinTypeStr == "INNER") {
     joinType = INNER;
+  } else if (joinTypeStr == "LEFT") {
+    joinType = LEFT;
+  } else if (joinTypeStr == "RIGHT") {
+    joinType = RIGHT;
+  } else if (joinTypeStr == "FULL") {
+    joinType = FULL;
   } else {
     throw runtime_error(fmt::format("Unsupported nested loop join type, {}, from: {}", joinTypeStr, to_string(jObj)));
   }

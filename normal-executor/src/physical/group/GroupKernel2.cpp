@@ -208,10 +208,18 @@ tl::expected<shared_ptr<TupleSet>, string> GroupKernel2::finalise() {
   vector<shared_ptr<Column>> outputColumns;
   outputColumns.reserve(groupColumnBuilders.size() + aggregateColumnBuilders.size());
   for (const auto &columnBuilder: groupColumnBuilders) {
-    outputColumns.emplace_back(columnBuilder->finalize());
+    const auto expColumn = columnBuilder->finalize();
+    if (!expColumn.has_value()) {
+      return tl::make_unexpected(expColumn.error());
+    }
+    outputColumns.emplace_back(expColumn.value());
   }
   for (const auto &columnBuilder: aggregateColumnBuilders) {
-    outputColumns.emplace_back(columnBuilder->finalize());
+    const auto expColumn = columnBuilder->finalize();
+    if (!expColumn.has_value()) {
+      return tl::make_unexpected(expColumn.error());
+    }
+    outputColumns.emplace_back(expColumn.value());
   }
 
   return TupleSet::make(outputColumns);

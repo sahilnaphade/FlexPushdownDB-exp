@@ -109,7 +109,7 @@ int64_t TupleSet::numRows() const {
   }
 }
 
-int64_t TupleSet::numColumns() const {
+int TupleSet::numColumns() const {
   if (table_) {
     return table_->num_columns();
   } else {

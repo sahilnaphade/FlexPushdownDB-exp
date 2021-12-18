@@ -22,6 +22,10 @@ public:
                   const shared_ptr<arrow::Schema> &outputSchema,
                   const vector<shared_ptr<pair<bool, int>>> &neededColumnIndice);
 
+  static shared_ptr<OuterJoinHelper> make(bool isLeft,
+                                          const shared_ptr<arrow::Schema> &outputSchema,
+                                          const vector<shared_ptr<pair<bool, int>>> &neededColumnIndice);
+
   void putRowMatchIndexes(const unordered_set<int64_t> &newRowMatchIndexes);
 
   /**

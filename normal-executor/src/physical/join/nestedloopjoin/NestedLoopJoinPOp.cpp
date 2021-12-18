@@ -9,10 +9,32 @@ namespace normal::executor::physical::join {
 
 NestedLoopJoinPOp::NestedLoopJoinPOp(const string &name,
                                      const optional<shared_ptr<expression::gandiva::Expression>> &predicate,
+                                     JoinType joinType,
                                      const vector<string> &projectColumnNames) :
-  PhysicalOp(name, "NestedLoopJoinPOp", projectColumnNames),
-  kernel_(NestedLoopJoinKernel::make(predicate,
-                                     set<string>(projectColumnNames.begin(),projectColumnNames.end()))) {}
+  PhysicalOp(name, "NestedLoopJoinPOp", projectColumnNames) {
+
+  set<string> neededColumnNames(getProjectColumnNames().begin(), getProjectColumnNames().end());
+  switch (joinType) {
+    case INNER: {
+      kernel_ = NestedLoopJoinKernel::make(predicate, neededColumnNames, false, false);
+      break;
+    }
+    case LEFT: {
+      kernel_ = NestedLoopJoinKernel::make(predicate, neededColumnNames, true, false);
+      break;
+    }
+    case RIGHT: {
+      kernel_ = NestedLoopJoinKernel::make(predicate, neededColumnNames, false, true);
+      break;
+    }
+    case FULL: {
+      kernel_ = NestedLoopJoinKernel::make(predicate, neededColumnNames, true, true);
+      break;
+    }
+    default:
+      throw runtime_error(fmt::format("Unsupported nested loop join type, {}", joinType));
+  }
+}
 
 void NestedLoopJoinPOp::onReceive(const Envelope &msg) {
   if (msg.message().type() == "StartMessage") {
@@ -47,9 +69,9 @@ void NestedLoopJoinPOp::onTuple(const TupleMessage &message) {
   // incremental join immediately
   tl::expected<void, string> result;
   if (leftProducerNames_.find(sender) != leftProducerNames_.end()) {
-    result = kernel_.joinIncomingLeft(tupleSet);
+    result = kernel_->joinIncomingLeft(tupleSet);
   } else if (rightProducerName_.find(sender) != rightProducerName_.end()) {
-    result = kernel_.joinIncomingRight(tupleSet);
+    result = kernel_->joinIncomingRight(tupleSet);
   } else {
     throw runtime_error(fmt::format("Unknown sender '{}', neither left nor right producer", sender));
   }
@@ -72,7 +94,7 @@ void NestedLoopJoinPOp::addRightProducer(const shared_ptr<PhysicalOp> &rightProd
 }
 
 void NestedLoopJoinPOp::send(bool force) {
-  auto buffer = kernel_.getBuffer();
+  auto buffer = kernel_->getBuffer();
   if (buffer.has_value()) {
     auto numRows = buffer.value()->numRows();
     if (numRows >= DefaultBufferSize || (force && numRows > 0)) {
@@ -84,7 +106,7 @@ void NestedLoopJoinPOp::send(bool force) {
 
       shared_ptr<Message> tupleMessage = make_shared<TupleMessage>(expProjectTupleSet.value(), name());
       ctx()->tell(tupleMessage);
-      kernel_.clearBuffer();
+      kernel_->clearBuffer();
     }
   }
 }

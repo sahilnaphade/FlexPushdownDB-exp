@@ -3,26 +3,35 @@
 //
 
 #include <normal/executor/physical/join/hashjoin/HashJoinProbeKernel.h>
-#include <normal/executor/physical/join/hashjoin/RecordBatchHashJoiner.h>
 #include <arrow/api.h>
 #include <utility>
 
 namespace normal::executor::physical::join {
 
-HashJoinProbeKernel::HashJoinProbeKernel(HashJoinPredicate pred, set<string> neededColumnNames) :
-  HashJoinProbeAbstractKernel(move(pred), move(neededColumnNames)) {}
+HashJoinProbeKernel::HashJoinProbeKernel(HashJoinPredicate pred,
+                                         set<string> neededColumnNames,
+                                         bool isLeft,
+                                         bool isRight) :
+  HashJoinProbeAbstractKernel(move(pred), move(neededColumnNames)),
+  isLeft_(isLeft),
+  isRight_(isRight) {}
 
-shared_ptr<HashJoinProbeKernel> HashJoinProbeKernel::make(HashJoinPredicate pred, set<string> neededColumnNames) {
-  return make_shared<HashJoinProbeKernel>(move(pred), move(neededColumnNames));
+shared_ptr<HashJoinProbeKernel> HashJoinProbeKernel::make(HashJoinPredicate pred,
+                                                          set<string> neededColumnNames,
+                                                          bool isLeft,
+                                                          bool isRight) {
+  return make_shared<HashJoinProbeKernel>(move(pred), move(neededColumnNames), isLeft, isRight);
 }
 
 tl::expected<shared_ptr<normal::tuple::TupleSet>, string>
-join(const shared_ptr<RecordBatchHashJoiner> &joiner, const shared_ptr<TupleSet> &tupleSet) {
+HashJoinProbeKernel::join(const shared_ptr<RecordBatchHashJoiner> &joiner,
+                          const shared_ptr<TupleSet> &probeTupleSet,
+                          int64_t probeRowOffset) {
   ::arrow::Result<shared_ptr<::arrow::RecordBatch>> recordBatchResult;
   ::arrow::Status status;
 
   // Read the table a batch at a time
-  auto probeTable = tupleSet->table();
+  auto probeTable = probeTupleSet->table();
   ::arrow::TableBatchReader reader{*probeTable};
   reader.set_chunksize((int64_t) DefaultChunkSize);
 
@@ -32,13 +41,18 @@ join(const shared_ptr<RecordBatchHashJoiner> &joiner, const shared_ptr<TupleSet>
     return tl::make_unexpected(recordBatchResult.status().message());
   }
   auto recordBatch = *recordBatchResult;
+  int64_t localProbeRowOffset = 0;
 
   while (recordBatch) {
+
     // Join
-    auto result = joiner->join(recordBatch);
+    auto result = joiner->join(recordBatch, probeRowOffset + localProbeRowOffset);
     if (!result.has_value()) {
       return tl::make_unexpected(result.error());
     }
+
+    // Increment localProbeRowOffset
+    localProbeRowOffset += recordBatch->num_rows();
 
     // Read a batch
     recordBatchResult = reader.Next();
@@ -50,17 +64,19 @@ join(const shared_ptr<RecordBatchHashJoiner> &joiner, const shared_ptr<TupleSet>
 
   // Get joined result
   auto expectedJoinedTupleSet = joiner->toTupleSet();
+  if (!expectedJoinedTupleSet.has_value()) {
+    return tl::make_unexpected(expectedJoinedTupleSet.error());
+  }
 
-#ifndef NDEBUG
+  // Save row match indexes
+  if (leftJoinHelper_.has_value()) {
+    leftJoinHelper_.value()->putRowMatchIndexes(joiner->getBuildRowMatchIndexes());
+  }
+  if (rightJoinHelper_.has_value()) {
+    rightJoinHelper_.value()->putRowMatchIndexes(joiner->getProbeRowMatchIndexes());
+  }
 
-  assert(expectedJoinedTupleSet.has_value());
-  assert(expectedJoinedTupleSet.value()->valid());
-  auto result = expectedJoinedTupleSet.value()->table()->ValidateFull();
-  if(!result.ok())
-    return tl::make_unexpected(fmt::format("{}, HashJoinProbeKernel", result.message()));
-
-#endif
-
+  // Return output tupleSet
   return expectedJoinedTupleSet.value();
 }
 
@@ -81,17 +97,25 @@ tl::expected<void, string> HashJoinProbeKernel::joinBuildTupleSetIndex(const sha
   // Create output schema
   bufferOutputSchema(tupleSetIndex, probeTupleSet_.value());
 
+  // Create outer join helpers
+  auto result = makeOuterJoinHelpers();
+  if (!result.has_value()) {
+    return result;
+  }
+
   // Create joiner
+  int64_t buildRowOffset = buildTupleSetIndex_.has_value() ? buildTupleSetIndex_.value()->getTable()->num_rows() : 0;
   auto expectedJoiner = RecordBatchHashJoiner::make(tupleSetIndex,
                                                     pred_.getRightColumnNames(),
                                                     outputSchema_.value(),
-                                                    neededColumnIndice_);
+                                                    neededColumnIndice_,
+                                                    buildRowOffset);
   if (!expectedJoiner.has_value()) {
     return tl::make_unexpected(expectedJoiner.error());
   }
 
   // Join
-  auto expectedJoinedTupleSet = join(expectedJoiner.value(), probeTupleSet_.value());
+  auto expectedJoinedTupleSet = join(expectedJoiner.value(), probeTupleSet_.value(), 0);
   if (!expectedJoinedTupleSet.has_value())
     return tl::make_unexpected(expectedJoinedTupleSet.error());
 
@@ -120,17 +144,25 @@ tl::expected<void, string> HashJoinProbeKernel::joinProbeTupleSet(const shared_p
   // Create output schema
   bufferOutputSchema(buildTupleSetIndex_.value(), tupleSet);
 
+  // Create outer join helpers
+  auto result = makeOuterJoinHelpers();
+  if (!result.has_value()) {
+    return result;
+  }
+
   // Create joiner
   auto expectedJoiner = RecordBatchHashJoiner::make(buildTupleSetIndex_.value(),
                                                     pred_.getRightColumnNames(),
                                                     outputSchema_.value(),
-                                                    neededColumnIndice_);
+                                                    neededColumnIndice_,
+                                                    0);
   if (!expectedJoiner.has_value()) {
     return tl::make_unexpected(expectedJoiner.error());
   }
 
   // Join
-  auto expectedJoinedTupleSet = join(expectedJoiner.value(), tupleSet);
+  int64_t probeRowOffset = probeTupleSet_.has_value() ? probeTupleSet_.value()->numRows() : 0;
+  auto expectedJoinedTupleSet = join(expectedJoiner.value(), tupleSet, probeRowOffset);
   if (!expectedJoinedTupleSet.has_value())
     return tl::make_unexpected(expectedJoinedTupleSet.error());
 
@@ -143,7 +175,46 @@ tl::expected<void, string> HashJoinProbeKernel::joinProbeTupleSet(const shared_p
 }
 
 tl::expected<void, string> HashJoinProbeKernel::finalize() {
+  // compute outer join
+  if (leftJoinHelper_.has_value() && probeTupleSet_.has_value()) {
+    const auto &expLeftOutput = leftJoinHelper_.value()->compute(probeTupleSet_.value());
+    if (!expLeftOutput.has_value()) {
+      return tl::make_unexpected(expLeftOutput.error());
+    }
+    auto result = buffer(expLeftOutput.value());
+    if (!result.has_value()) {
+      return result;
+    }
+  }
+  if (rightJoinHelper_.has_value() && buildTupleSetIndex_.has_value()) {
+    const auto &expRightOutput = rightJoinHelper_.value()->compute(
+            TupleSet::make(buildTupleSetIndex_.value()->getTable()));
+    if (!expRightOutput.has_value()) {
+      return tl::make_unexpected(expRightOutput.error());
+    }
+    auto result = buffer(expRightOutput.value());
+    if (!result.has_value()) {
+      return result;
+    }
+  }
+
   clearInput();
+  return {};
+}
+
+tl::expected<void, string> HashJoinProbeKernel::makeOuterJoinHelpers() {
+  if (!isOuterJoinHelperCreated_) {
+    if (!outputSchema_.has_value()) {
+      return tl::make_unexpected("Output schema not set when making outer join helpers");
+    }
+    if (isLeft_ && !leftJoinHelper_.has_value()) {
+      leftJoinHelper_ = OuterJoinHelper::make(true, outputSchema_.value(), neededColumnIndice_);
+    }
+    if (isRight_ && !rightJoinHelper_.has_value()) {
+      rightJoinHelper_ = OuterJoinHelper::make(false, outputSchema_.value(), neededColumnIndice_);
+    }
+    isOuterJoinHelperCreated_ = true;
+  }
   return {};
 }
 

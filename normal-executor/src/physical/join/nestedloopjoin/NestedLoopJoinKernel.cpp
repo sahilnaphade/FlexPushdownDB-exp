@@ -8,13 +8,20 @@
 namespace normal::executor::physical::join {
 
 NestedLoopJoinKernel::NestedLoopJoinKernel(const optional<shared_ptr<expression::gandiva::Expression>> &predicate,
-                                           const set<string> &neededColumnNames):
+                                           const set<string> &neededColumnNames,
+                                           bool isLeft,
+                                           bool isRight):
   predicate_(predicate),
-  neededColumnNames_(neededColumnNames) {}
+  neededColumnNames_(neededColumnNames),
+  isLeft_(isLeft),
+  isRight_(isRight) {}
 
-NestedLoopJoinKernel NestedLoopJoinKernel::make(const optional<shared_ptr<expression::gandiva::Expression>> &predicate,
-                                                const set<string> &neededColumnNames) {
-  return NestedLoopJoinKernel(predicate, neededColumnNames);
+shared_ptr<NestedLoopJoinKernel>
+NestedLoopJoinKernel::make(const optional<shared_ptr<expression::gandiva::Expression>> &predicate,
+                           const set<string> &neededColumnNames,
+                           bool isLeft,
+                           bool isRight) {
+  return make_shared<NestedLoopJoinKernel>(predicate, neededColumnNames, isLeft, isRight);
 }
 
 tl::expected<void, string> bufferInput(optional<shared_ptr<TupleSet>> &buffer,

@@ -159,7 +159,10 @@ tl::expected<void, string> HashSemiJoinProbeKernel::finalize() {
           *recordBatch, selectionVector,outputSchema_.value());
 
   // Buffer
-  buffer(TupleSet::make(outputSchema_.value(), filteredArrayVector));
+  auto result = buffer(TupleSet::make(outputSchema_.value(), filteredArrayVector));
+  if (!result.has_value()) {
+    return result;
+  }
 
   clearInput();
   return {};

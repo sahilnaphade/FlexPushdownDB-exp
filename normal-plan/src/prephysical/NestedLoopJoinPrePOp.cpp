@@ -30,4 +30,8 @@ const shared_ptr<Expression> &NestedLoopJoinPrePOp::getPredicate() const {
   return predicate_;
 }
 
+JoinType NestedLoopJoinPrePOp::getJoinType() const {
+  return joinType_;
+}
+
 }

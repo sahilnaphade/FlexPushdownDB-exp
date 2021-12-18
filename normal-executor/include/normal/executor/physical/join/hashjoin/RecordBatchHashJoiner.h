@@ -9,37 +9,48 @@
 #include <normal/tuple/TupleSet.h>
 #include <normal/tuple/ArrayAppender.h>
 #include <normal/tuple/ColumnName.h>
-#include <set>
+#include <unordered_set>
 #include <memory>
 #include <utility>
 
 using namespace normal::tuple;
+using namespace std;
 
 namespace normal::executor::physical::join {
 
 class RecordBatchHashJoiner {
 public:
-  RecordBatchHashJoiner(std::shared_ptr<TupleSetIndex> buildTupleSetIndex,
-					std::vector<std::string> probeJoinColumnNames,
-					std::shared_ptr<::arrow::Schema> outputSchema,
-          std::vector<std::shared_ptr<std::pair<bool, int>>> neededColumnIndice);
+  RecordBatchHashJoiner(shared_ptr<TupleSetIndex> buildTupleSetIndex,
+                        vector<string> probeJoinColumnNames,
+                        shared_ptr<::arrow::Schema> outputSchema,
+                        vector<shared_ptr<pair<bool, int>>> neededColumnIndice,
+                        int64_t buildRowOffset);
 
-  static tl::expected<std::shared_ptr<RecordBatchHashJoiner>, std::string>
-  make(const std::shared_ptr<TupleSetIndex> &buildTupleSetIndex,
-	   const std::vector<std::string> &probeJoinColumnNames,
-	   const std::shared_ptr<::arrow::Schema> &outputSchema,
-	   const std::vector<std::shared_ptr<std::pair<bool, int>>> &neededColumnIndice);
+  static tl::expected<shared_ptr<RecordBatchHashJoiner>, string> make(
+          const shared_ptr<TupleSetIndex> &buildTupleSetIndex,
+          const vector<string> &probeJoinColumnNames,
+          const shared_ptr<::arrow::Schema> &outputSchema,
+          const vector<shared_ptr<pair<bool, int>>> &neededColumnIndice,
+          int64_t buildRowOffset);
 
-  tl::expected<void, std::string> join(const std::shared_ptr<::arrow::RecordBatch> &recordBatch);
+  tl::expected<void, string> join(const shared_ptr<::arrow::RecordBatch> &probeRecordBatch,
+                                  int64_t probeRowOffset);
 
-  tl::expected<std::shared_ptr<TupleSet>, std::string> toTupleSet();
+  tl::expected<shared_ptr<TupleSet>, string> toTupleSet();
+
+  const unordered_set<int64_t> &getBuildRowMatchIndexes() const;
+  const unordered_set<int64_t> &getProbeRowMatchIndexes() const;
 
 private:
-  std::shared_ptr<TupleSetIndex> buildTupleSetIndex_;
-  std::vector<std::string> probeJoinColumnNames_;
-  std::shared_ptr<::arrow::Schema> outputSchema_;
-  std::vector<std::shared_ptr<std::pair<bool, int>>> neededColumnIndice_;
-  std::vector<::arrow::ArrayVector> joinedArrayVectors_;
+  shared_ptr<TupleSetIndex> buildTupleSetIndex_;
+  vector<string> probeJoinColumnNames_;
+  shared_ptr<::arrow::Schema> outputSchema_;
+  vector<shared_ptr<pair<bool, int>>> neededColumnIndice_;
+  int64_t buildRowOffset_;
+
+  vector<::arrow::ArrayVector> joinedArrayVectors_;
+  unordered_set<int64_t> buildRowMatchIndexes_;
+  unordered_set<int64_t> probeRowMatchIndexes_;
 
 };
 

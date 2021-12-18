@@ -21,7 +21,19 @@ HashJoinProbePOp::HashJoinProbePOp(string name,
   set<string> neededColumnNames(getProjectColumnNames().begin(), getProjectColumnNames().end());
   switch (joinType) {
     case INNER: {
-      kernel_ = HashJoinProbeKernel::make(move(pred), move(neededColumnNames));
+      kernel_ = HashJoinProbeKernel::make(move(pred), move(neededColumnNames), false, false);
+      break;
+    }
+    case LEFT: {
+      kernel_ = HashJoinProbeKernel::make(move(pred), move(neededColumnNames), true, false);
+      break;
+    }
+    case RIGHT: {
+      kernel_ = HashJoinProbeKernel::make(move(pred), move(neededColumnNames), false, true);
+      break;
+    }
+    case FULL: {
+      kernel_ = HashJoinProbeKernel::make(move(pred), move(neededColumnNames), true, true);
       break;
     }
     case SEMI: {
