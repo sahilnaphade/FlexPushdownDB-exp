@@ -155,8 +155,8 @@ tl::expected<void, string> HashSemiJoinProbeKernel::finalize() {
     return tl::make_unexpected(expSelectionVector.error());
   }
   const auto &selectionVector = expSelectionVector.value();
-  const auto &filteredArrayVector = normal::expression::gandiva::Filter::evaluateBySelectionVector(
-          *recordBatch, selectionVector,outputSchema_.value());
+  const auto &filteredArrayVector = normal::expression::gandiva::Filter::evaluateBySelectionVectorStatic(*recordBatch,
+                                                                                                         selectionVector);
 
   // Buffer
   auto result = buffer(TupleSet::make(outputSchema_.value(), filteredArrayVector));

@@ -99,9 +99,7 @@ tl::expected<arrow::ArrayVector, string> OuterJoinHelper::computeKeepSide(const 
   }
 
   // filter to get unmatched rows
-  return normal::expression::gandiva::Filter::evaluateBySelectionVector(*recordBatch,
-                                                                        selectionVector,
-                                                                        recordBatch->schema());
+  return normal::expression::gandiva::Filter::evaluateBySelectionVectorStatic(*recordBatch, selectionVector);
 }
 
 tl::expected<arrow::ArrayVector, string> OuterJoinHelper::computeDiscardSide(const shared_ptr<TupleSet> &keepTupleSet) {

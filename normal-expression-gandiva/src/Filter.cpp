@@ -18,36 +18,17 @@ std::shared_ptr<Filter> Filter::make(const std::shared_ptr<Expression> &Pred) {
   return std::make_shared<Filter>(Pred);
 }
 
-std::shared_ptr<::gandiva::SelectionVector> Filter::computeSelectionVector(const arrow::RecordBatch &recordBatch) {
-  // Create a bit vector
-  std::shared_ptr<::gandiva::SelectionVector> selectionVector;
-  auto status = ::gandiva::SelectionVector::MakeInt64(recordBatch.num_rows(),
-                                                      ::arrow::default_memory_pool(),
-                                                      &selectionVector);
-  if (!status.ok()) {
-    throw std::runtime_error(status.message());
-  }
-
-  // Compute the bit vector
-  status = gandivaFilter_->Evaluate(recordBatch, selectionVector);
-  if (!status.ok()) {
-    throw std::runtime_error(status.message());
-  }
-  return selectionVector;
-}
-
-arrow::ArrayVector Filter::evaluateBySelectionVector(const arrow::RecordBatch &recordBatch,
-                                                     const std::shared_ptr<::gandiva::SelectionVector> &selectionVector,
-                                                     const ::gandiva::SchemaPtr &schema) {
+arrow::ArrayVector Filter::evaluateBySelectionVectorStatic(const arrow::RecordBatch &recordBatch,
+                                                           const std::shared_ptr<::gandiva::SelectionVector> &selectionVector) {
   // Build a projector for the pass through expression
   std::shared_ptr<::gandiva::Projector> gandivaProjector;
   std::vector<std::shared_ptr<::gandiva::Expression>> fieldExpressions;
-  for (const auto &field: schema->fields()) {
+  for (const auto &field: recordBatch.schema()->fields()) {
     auto gandivaField = ::gandiva::TreeExprBuilder::MakeField(field);
     auto fieldExpression = ::gandiva::TreeExprBuilder::MakeExpression(gandivaField, field);
     fieldExpressions.push_back(fieldExpression);
   }
-  auto status = ::gandiva::Projector::Make(schema,
+  auto status = ::gandiva::Projector::Make(recordBatch.schema(),
                                            fieldExpressions,
                                            selectionVector->GetMode(),
                                            ::gandiva::ConfigurationBuilder::DefaultConfiguration(),
@@ -81,39 +62,12 @@ arrow::ArrayVector Filter::evaluate(const arrow::RecordBatch &recordBatch) {
   assert(recordBatch.ValidateFull().ok());
 
   // Create a bit vector
-  std::shared_ptr<::gandiva::SelectionVector> selection_vector;
-  auto status = ::gandiva::SelectionVector::MakeInt32(recordBatch.num_rows(), ::arrow::default_memory_pool(), &selection_vector);
-  if (!status.ok()) {
-    throw std::runtime_error(status.message());
-  }
-
-  // Compute the bit vector
-  status = gandivaFilter_->Evaluate(recordBatch, selection_vector);
-  if (!status.ok()) {
-    throw std::runtime_error(status.message());
-  }
+  const auto selection_vector = computeSelectionVector(recordBatch);
 
   SPDLOG_DEBUG("Evaluated SelectionVector  |  vector: {}", selection_vector->ToArray()->ToString());
 
   // Evaluate the expressions
-  /**
-   * NOTE: Gandiva fails if the projector is evaluated using an empty selection vector, so need to test for it
-   */
-  arrow::ArrayVector outputs;
-  if(selection_vector->GetNumSlots() > 0) {
-    status = gandivaProjector_->Evaluate(recordBatch, selection_vector.get(), arrow::default_memory_pool(), &outputs);
-    if (!status.ok()) {
-      throw std::runtime_error(status.message());
-    }
-  }
-  else{
-    auto columns = Schema::make(recordBatch.schema())->makeColumns();
-    auto outputChunkedArrays = Column::columnVectorToArrowChunkedArrayVector(columns);
-    for (const auto &chunkedArray: outputChunkedArrays) {
-      outputs.emplace_back(chunkedArray->chunk(0));
-    }
-  }
-  return outputs;
+  return evaluateBySelectionVector(recordBatch, selection_vector);
 }
 
 std::shared_ptr<normal::tuple::TupleSet> Filter::evaluate(const normal::tuple::TupleSet &tupleSet) {
@@ -197,6 +151,46 @@ std::shared_ptr<normal::tuple::TupleSet> Filter::evaluate(const normal::tuple::T
 	//  Raise an error for now
 	throw std::runtime_error("Cannot filter tuple set. Tuple set schema is undefined.");
   }
+}
+
+std::shared_ptr<::gandiva::SelectionVector> Filter::computeSelectionVector(const arrow::RecordBatch &recordBatch) {
+  // Create a bit vector
+  std::shared_ptr<::gandiva::SelectionVector> selectionVector;
+  auto status = ::gandiva::SelectionVector::MakeInt64(recordBatch.num_rows(),
+                                                      ::arrow::default_memory_pool(),
+                                                      &selectionVector);
+  if (!status.ok()) {
+    throw std::runtime_error(status.message());
+  }
+
+  // Compute the bit vector
+  status = gandivaFilter_->Evaluate(recordBatch, selectionVector);
+  if (!status.ok()) {
+    throw std::runtime_error(status.message());
+  }
+  return selectionVector;
+}
+
+arrow::ArrayVector Filter::evaluateBySelectionVector(const arrow::RecordBatch &recordBatch,
+                                                     const std::shared_ptr<::gandiva::SelectionVector> &selectionVector) {
+  /**
+   * NOTE: Gandiva fails if the projector is evaluated using an empty selection vector, so need to test for it
+   */
+  arrow::ArrayVector outputs;
+  if(selectionVector->GetNumSlots() > 0) {
+    auto status = gandivaProjector_->Evaluate(recordBatch, selectionVector.get(), arrow::default_memory_pool(), &outputs);
+    if (!status.ok()) {
+      throw std::runtime_error(status.message());
+    }
+  }
+  else{
+    auto columns = Schema::make(recordBatch.schema())->makeColumns();
+    auto outputChunkedArrays = Column::columnVectorToArrowChunkedArrayVector(columns);
+    for (const auto &chunkedArray: outputChunkedArrays) {
+      outputs.emplace_back(chunkedArray->chunk(0));
+    }
+  }
+  return outputs;
 }
 
 void Filter::compile(const std::shared_ptr<normal::tuple::Schema> &Schema) {

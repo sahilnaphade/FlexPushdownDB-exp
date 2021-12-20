@@ -21,13 +21,16 @@ public:
 
   static std::shared_ptr<Filter> make(const std::shared_ptr<Expression> &Pred);
 
-  static arrow::ArrayVector evaluateBySelectionVector(const arrow::RecordBatch &recordBatch,
-                                                      const std::shared_ptr<::gandiva::SelectionVector> &selectionVector,
-                                                      const ::gandiva::SchemaPtr &outputSchema);
+  static arrow::ArrayVector evaluateBySelectionVectorStatic(const arrow::RecordBatch &recordBatch,
+                                                            const std::shared_ptr<::gandiva::SelectionVector> &selectionVector);
 
   std::shared_ptr<normal::tuple::TupleSet> evaluate(const normal::tuple::TupleSet &TupleSet) override;
   arrow::ArrayVector evaluate(const arrow::RecordBatch &recordBatch) override;
+
   std::shared_ptr<::gandiva::SelectionVector> computeSelectionVector(const arrow::RecordBatch &recordBatch);
+  arrow::ArrayVector evaluateBySelectionVector(const arrow::RecordBatch &recordBatch,
+                                               const std::shared_ptr<::gandiva::SelectionVector> &selectionVector);
+
   void compile(const std::shared_ptr<normal::tuple::Schema> &schema) override;
 
 private:

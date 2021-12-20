@@ -187,9 +187,7 @@ arrow::ArrayVector RecordBatchNestedLoopJoiner::filter(const shared_ptr<arrow::R
   rightRowMatchIndexes_.insert(newRightRowMatchIndexes.begin(), newRightRowMatchIndexes.end());
 
   // return filtered result
-  return normal::expression::gandiva::Filter::evaluateBySelectionVector(*recordBatch,
-                                                                        selectionVector,
-                                                                        recordBatch->schema());
+  return filter_.value()->evaluateBySelectionVector(*recordBatch, selectionVector);
 }
 
 pair<unordered_set<int64_t>, unordered_set<int64_t>>
