@@ -57,7 +57,16 @@ void NestedLoopJoinPOp::onStart() {
 
 void NestedLoopJoinPOp::onComplete(const CompleteMessage &) {
   if (!ctx()->isComplete() && ctx()->operatorMap().allComplete(POpRelationshipType::Producer)) {
+    // Finalize
+    auto result = kernel_->finalize();
+    if (!result) {
+      throw runtime_error(result.error());
+    }
+
+    // Send final tupleSet
     send(true);
+
+    // Complete
     ctx()->notifyComplete();
   }
 }

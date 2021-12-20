@@ -32,6 +32,7 @@ private:
                                                                  const shared_ptr<TupleSet> &probeTupleSet,
                                                                  int64_t probeRowOffset);
   tl::expected<void, string> makeOuterJoinHelpers();
+  tl::expected<void, string> computeOuterJoin();
 
   bool isLeft_;
   bool isRight_;

@@ -18,9 +18,8 @@ RecordBatchHashJoiner::RecordBatchHashJoiner(shared_ptr<TupleSetIndex> buildTupl
 	probeJoinColumnNames_(move(probeJoinColumnNames)),
 	outputSchema_(move(outputSchema)),
 	neededColumnIndice_(move(neededColumnIndice)),
-	buildRowOffset_(buildRowOffset),
-	joinedArrayVectors_{static_cast<size_t>(outputSchema_->num_fields())} {
-}
+  joinedArrayVectors_{static_cast<size_t>(outputSchema_->num_fields())},
+	buildRowOffset_(buildRowOffset) {}
 
 tl::expected<shared_ptr<RecordBatchHashJoiner>, string>
 RecordBatchHashJoiner::make(const shared_ptr<TupleSetIndex> &buildTupleSetIndex,

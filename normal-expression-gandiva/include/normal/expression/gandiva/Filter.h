@@ -27,6 +27,7 @@ public:
 
   std::shared_ptr<normal::tuple::TupleSet> evaluate(const normal::tuple::TupleSet &TupleSet) override;
   arrow::ArrayVector evaluate(const arrow::RecordBatch &recordBatch) override;
+  std::shared_ptr<::gandiva::SelectionVector> computeSelectionVector(const arrow::RecordBatch &recordBatch);
   void compile(const std::shared_ptr<normal::tuple::Schema> &schema) override;
 
 private:

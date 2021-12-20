@@ -164,7 +164,6 @@ tl::expected<void, string> HashSemiJoinProbeKernel::finalize() {
     return result;
   }
 
-  clearInput();
   return {};
 }
 

@@ -62,12 +62,6 @@ HashJoinProbeKernel::join(const shared_ptr<RecordBatchHashJoiner> &joiner,
     recordBatch = *recordBatchResult;
   }
 
-  // Get joined result
-  auto expectedJoinedTupleSet = joiner->toTupleSet();
-  if (!expectedJoinedTupleSet.has_value()) {
-    return tl::make_unexpected(expectedJoinedTupleSet.error());
-  }
-
   // Save row match indexes
   if (leftJoinHelper_.has_value()) {
     leftJoinHelper_.value()->putRowMatchIndexes(joiner->getBuildRowMatchIndexes());
@@ -76,8 +70,8 @@ HashJoinProbeKernel::join(const shared_ptr<RecordBatchHashJoiner> &joiner,
     rightJoinHelper_.value()->putRowMatchIndexes(joiner->getProbeRowMatchIndexes());
   }
 
-  // Return output tupleSet
-  return expectedJoinedTupleSet.value();
+  // Return joined result
+  return joiner->toTupleSet();
 }
 
 tl::expected<void, string> HashJoinProbeKernel::joinBuildTupleSetIndex(const shared_ptr<TupleSetIndex> &tupleSetIndex) {
@@ -176,29 +170,11 @@ tl::expected<void, string> HashJoinProbeKernel::joinProbeTupleSet(const shared_p
 
 tl::expected<void, string> HashJoinProbeKernel::finalize() {
   // compute outer join
-  if (leftJoinHelper_.has_value() && probeTupleSet_.has_value()) {
-    const auto &expLeftOutput = leftJoinHelper_.value()->compute(probeTupleSet_.value());
-    if (!expLeftOutput.has_value()) {
-      return tl::make_unexpected(expLeftOutput.error());
-    }
-    auto result = buffer(expLeftOutput.value());
-    if (!result.has_value()) {
-      return result;
-    }
-  }
-  if (rightJoinHelper_.has_value() && buildTupleSetIndex_.has_value()) {
-    const auto &expRightOutput = rightJoinHelper_.value()->compute(
-            TupleSet::make(buildTupleSetIndex_.value()->getTable()));
-    if (!expRightOutput.has_value()) {
-      return tl::make_unexpected(expRightOutput.error());
-    }
-    auto result = buffer(expRightOutput.value());
-    if (!result.has_value()) {
-      return result;
-    }
+  auto result = computeOuterJoin();
+  if (!result) {
+    return result;
   }
 
-  clearInput();
   return {};
 }
 
@@ -215,6 +191,35 @@ tl::expected<void, string> HashJoinProbeKernel::makeOuterJoinHelpers() {
     }
     isOuterJoinHelperCreated_ = true;
   }
+  return {};
+}
+
+tl::expected<void, string> HashJoinProbeKernel::computeOuterJoin() {
+  // left outer join
+  if (leftJoinHelper_.has_value() && probeTupleSet_.has_value()) {
+    const auto &expLeftOutput = leftJoinHelper_.value()->compute(probeTupleSet_.value());
+    if (!expLeftOutput.has_value()) {
+      return tl::make_unexpected(expLeftOutput.error());
+    }
+    auto result = buffer(expLeftOutput.value());
+    if (!result.has_value()) {
+      return result;
+    }
+  }
+
+  // right outer join
+  if (rightJoinHelper_.has_value() && buildTupleSetIndex_.has_value()) {
+    const auto &expRightOutput = rightJoinHelper_.value()->compute(
+            TupleSet::make(buildTupleSetIndex_.value()->getTable()));
+    if (!expRightOutput.has_value()) {
+      return tl::make_unexpected(expRightOutput.error());
+    }
+    auto result = buffer(expRightOutput.value());
+    if (!result.has_value()) {
+      return result;
+    }
+  }
+
   return {};
 }
 

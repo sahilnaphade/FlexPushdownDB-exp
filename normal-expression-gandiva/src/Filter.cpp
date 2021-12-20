@@ -18,6 +18,24 @@ std::shared_ptr<Filter> Filter::make(const std::shared_ptr<Expression> &Pred) {
   return std::make_shared<Filter>(Pred);
 }
 
+std::shared_ptr<::gandiva::SelectionVector> Filter::computeSelectionVector(const arrow::RecordBatch &recordBatch) {
+  // Create a bit vector
+  std::shared_ptr<::gandiva::SelectionVector> selectionVector;
+  auto status = ::gandiva::SelectionVector::MakeInt64(recordBatch.num_rows(),
+                                                      ::arrow::default_memory_pool(),
+                                                      &selectionVector);
+  if (!status.ok()) {
+    throw std::runtime_error(status.message());
+  }
+
+  // Compute the bit vector
+  status = gandivaFilter_->Evaluate(recordBatch, selectionVector);
+  if (!status.ok()) {
+    throw std::runtime_error(status.message());
+  }
+  return selectionVector;
+}
+
 arrow::ArrayVector Filter::evaluateBySelectionVector(const arrow::RecordBatch &recordBatch,
                                                      const std::shared_ptr<::gandiva::SelectionVector> &selectionVector,
                                                      const ::gandiva::SchemaPtr &schema) {

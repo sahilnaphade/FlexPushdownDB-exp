@@ -71,7 +71,7 @@ TEST_CASE ("tpch-original-19" * doctest::skip(false || SKIP_SUITE)) {
   TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/", {"tpch/original/19.sql"});
 }
 
-TEST_CASE ("temp" * doctest::skip(false)) {
+TEST_CASE ("temp" * doctest::skip(true)) {
   unique_ptr<arrow::ArrayBuilder> arrayBuilder;
   auto status = arrow::MakeBuilder(arrow::default_memory_pool(), arrow::int64(), &arrayBuilder);
 //  arrayBuilder->AppendNulls(0);

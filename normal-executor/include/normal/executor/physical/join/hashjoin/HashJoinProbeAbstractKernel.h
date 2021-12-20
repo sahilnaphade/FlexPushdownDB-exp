@@ -37,7 +37,6 @@ protected:
   tl::expected<void, string> putProbeTupleSet(const shared_ptr<TupleSet>& tupleSet);
   tl::expected<void, string> buffer(const shared_ptr<TupleSet>& tupleSet);
   void bufferOutputSchema(const shared_ptr<TupleSetIndex> &tupleSetIndex, const shared_ptr<TupleSet> &tupleSet);
-  void clearInput();
 
   HashJoinPredicate pred_;
   vector<shared_ptr<pair<bool, int>>> neededColumnIndice_;   // <true/false, i> -> ith column in build/probe table

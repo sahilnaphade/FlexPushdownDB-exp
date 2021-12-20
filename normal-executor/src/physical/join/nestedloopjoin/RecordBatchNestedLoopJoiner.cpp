@@ -36,11 +36,15 @@ shared_ptr<RecordBatchNestedLoopJoiner>
 RecordBatchNestedLoopJoiner::make(const optional<shared_ptr<Expression>> &predicate,
                                   const shared_ptr<::arrow::Schema> &outputSchema,
                                   const vector<shared_ptr<pair<bool, int>>> &neededColumnIndice) {
-  return make_shared<RecordBatchNestedLoopJoiner>(predicate, outputSchema, neededColumnIndice);
+  return make_shared<RecordBatchNestedLoopJoiner>(predicate, 
+                                                  outputSchema, 
+                                                  neededColumnIndice);
 }
 
 tl::expected<void, string> RecordBatchNestedLoopJoiner::join(const shared_ptr<::arrow::RecordBatch> &leftRecordBatch,
-                                                             const shared_ptr<::arrow::RecordBatch> &rightRecordBatch) {
+                                                             const shared_ptr<::arrow::RecordBatch> &rightRecordBatch,
+                                                             int64_t leftRowOffset,
+                                                             int64_t rightRowOffset) {
   // compute cartesian product
   const auto &expCartesianBatch = cartesian(leftRecordBatch, rightRecordBatch);
   if (!expCartesianBatch.has_value()) {
@@ -51,7 +55,7 @@ tl::expected<void, string> RecordBatchNestedLoopJoiner::join(const shared_ptr<::
   // filter using predicate
   arrow::ArrayVector outputArrayVector;
   if (predicate_.has_value()) {
-    outputArrayVector = filter(cartesianBatch);
+    outputArrayVector = filter(cartesianBatch, leftRecordBatch->num_rows(), leftRowOffset, rightRowOffset);
   } else {
     outputArrayVector = cartesianBatch->columns();
   }
@@ -160,15 +164,47 @@ RecordBatchNestedLoopJoiner::cartesian(const shared_ptr<::arrow::RecordBatch> &l
   return arrow::RecordBatch::Make(outputSchema_, outputNumRows.value(), outputArrays);
 }
 
-arrow::ArrayVector RecordBatchNestedLoopJoiner::filter(const shared_ptr<arrow::RecordBatch> &recordBatch) {
+arrow::ArrayVector RecordBatchNestedLoopJoiner::filter(const shared_ptr<arrow::RecordBatch> &recordBatch,
+                                                       int64_t leftBatchNumRows,
+                                                       int64_t leftRowOffset,
+                                                       int64_t rightRowOffset) {
   // build filter if not yet
   if (!filter_.has_value()){
-    filter_ = normal::expression::gandiva::Filter::make(predicate_.value());
+    filter_ = make_shared<normal::expression::gandiva::Filter>(predicate_.value());
     filter_.value()->compile(Schema::make(recordBatch->schema()));
   }
 
-  // filter the record batch
-  return filter_.value()->evaluate(*recordBatch);
+  // filter the record batch, here we don't do it in one call, we first compute selection vector then project using it,
+  // because we need the selection vector to compute left/right row match indexes for outer join
+  const auto &selectionVector = filter_.value()->computeSelectionVector(*recordBatch);
+  const auto &inputRowMatchIndexes = computeInputRowMatchIndexes(selectionVector,
+                                                                 leftBatchNumRows,
+                                                                 leftRowOffset,
+                                                                 rightRowOffset);
+  const auto &newLeftRowMatchIndexes = inputRowMatchIndexes.first;
+  const auto &newRightRowMatchIndexes = inputRowMatchIndexes.second;
+  leftRowMatchIndexes_.insert(newLeftRowMatchIndexes.begin(), newLeftRowMatchIndexes.end());
+  rightRowMatchIndexes_.insert(newRightRowMatchIndexes.begin(), newRightRowMatchIndexes.end());
+
+  // return filtered result
+  return normal::expression::gandiva::Filter::evaluateBySelectionVector(*recordBatch,
+                                                                        selectionVector,
+                                                                        recordBatch->schema());
+}
+
+pair<unordered_set<int64_t>, unordered_set<int64_t>>
+RecordBatchNestedLoopJoiner::computeInputRowMatchIndexes(const shared_ptr<gandiva::SelectionVector> &selectionVector,
+                                                         int64_t leftBatchNumRows,
+                                                         int64_t leftRowOffset,
+                                                         int64_t rightRowOffset) const {
+  // compute the corresponding row index for both left and right inputs, for each matched output row
+  unordered_set<int64_t> leftRowMatchIndexes, rightRowMatchIndexes;
+  for (int64_t i = 0; i < selectionVector->GetNumSlots(); ++i) {
+    uint64_t outputRow = selectionVector->GetIndex(i);
+    leftRowMatchIndexes.emplace(outputRow % leftBatchNumRows + leftRowOffset);
+    rightRowMatchIndexes.emplace(outputRow / leftBatchNumRows + rightRowOffset);
+  }
+  return make_pair(leftRowMatchIndexes, rightRowMatchIndexes);
 }
 
 tl::expected<shared_ptr<TupleSet>, string> RecordBatchNestedLoopJoiner::toTupleSet() {
@@ -191,6 +227,14 @@ tl::expected<shared_ptr<TupleSet>, string> RecordBatchNestedLoopJoiner::toTupleS
 
   joinedArrayVectors_.clear();
   return joinedTupleSet;
+}
+
+const unordered_set<int64_t> &RecordBatchNestedLoopJoiner::getLeftRowMatchIndexes() const {
+  return leftRowMatchIndexes_;
+}
+
+const unordered_set<int64_t> &RecordBatchNestedLoopJoiner::getRightRowMatchIndexes() const {
+  return rightRowMatchIndexes_;
 }
 
 }

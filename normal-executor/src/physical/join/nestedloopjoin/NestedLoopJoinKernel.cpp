@@ -36,7 +36,11 @@ tl::expected<void, string> bufferInput(optional<shared_ptr<TupleSet>> &buffer,
 tl::expected<shared_ptr<TupleSet>, string> NestedLoopJoinKernel::join(const shared_ptr<TupleSet> &leftTupleSet,
                                                                       const shared_ptr<TupleSet> &rightTupleSet) {
   // create joiner
-  const auto &joiner = RecordBatchNestedLoopJoiner::make(predicate_, outputSchema_.value(), neededColumnIndice_);
+  int64_t leftRowOffset = leftTupleSet_.has_value() ? leftTupleSet_.value()->numRows() : 0;
+  int64_t rightRowOffset = rightTupleSet_.has_value() ? rightTupleSet_.value()->numRows() : 0;
+  const auto &joiner = RecordBatchNestedLoopJoiner::make(predicate_,
+                                                         outputSchema_.value(),
+                                                         neededColumnIndice_);
 
   ::arrow::Status status;
 
@@ -67,10 +71,13 @@ tl::expected<shared_ptr<TupleSet>, string> NestedLoopJoinKernel::join(const shar
 
     while (rightRecordBatch) {
       // join
-      auto result = joiner->join(leftRecordBatch, rightRecordBatch);
+      auto result = joiner->join(leftRecordBatch, rightRecordBatch, leftRowOffset, rightRowOffset);
       if (!result.has_value()) {
         return tl::make_unexpected(result.error());
       }
+
+      // incremental right row offset
+      rightRowOffset += rightRecordBatch->num_rows();
 
       // read a right batch
       rightRecordBatchResult = rightReader.Next();
@@ -80,6 +87,9 @@ tl::expected<shared_ptr<TupleSet>, string> NestedLoopJoinKernel::join(const shar
       rightRecordBatch = *rightRecordBatchResult;
     }
 
+    // incremental left row offset
+    leftRowOffset += leftRecordBatch->num_rows();
+
     // read a left batch
     leftRecordBatchResult = leftReader.Next();
     if (!leftRecordBatchResult.ok()) {
@@ -88,6 +98,15 @@ tl::expected<shared_ptr<TupleSet>, string> NestedLoopJoinKernel::join(const shar
     leftRecordBatch = *leftRecordBatchResult;
   }
 
+  // Save row match indexes
+  if (leftJoinHelper_.has_value()) {
+    leftJoinHelper_.value()->putRowMatchIndexes(joiner->getLeftRowMatchIndexes());
+  }
+  if (rightJoinHelper_.has_value()) {
+    rightJoinHelper_.value()->putRowMatchIndexes(joiner->getRightRowMatchIndexes());
+  }
+
+  // Return joined result
   return joiner->toTupleSet();
 }
 
@@ -179,6 +198,16 @@ void NestedLoopJoinKernel::clearBuffer() {
   buffer_ = nullopt;
 }
 
+tl::expected<void, string> NestedLoopJoinKernel::finalize() {
+  // compute outer join
+  auto result = computeOuterJoin();
+  if (!result) {
+    return result;
+  }
+
+  return {};
+}
+
 void NestedLoopJoinKernel::bufferOutputSchema(const shared_ptr<TupleSet> &leftTupleSet, 
                                               const shared_ptr<TupleSet> &rightTupleSet) {
   if (!outputSchema_.has_value()) {
@@ -201,6 +230,55 @@ void NestedLoopJoinKernel::bufferOutputSchema(const shared_ptr<TupleSet> &leftTu
     }
     outputSchema_ = make_shared<::arrow::Schema>(outputFields);
   }
+}
+
+tl::expected<void, string> NestedLoopJoinKernel::makeOuterJoinHelpers() {
+  if (!isOuterJoinHelperCreated_) {
+    if (!outputSchema_.has_value()) {
+      return tl::make_unexpected("Output schema not set when making outer join helpers");
+    }
+    if (isLeft_ && !leftJoinHelper_.has_value()) {
+      leftJoinHelper_ = OuterJoinHelper::make(true, outputSchema_.value(), neededColumnIndice_);
+    }
+    if (isRight_ && !rightJoinHelper_.has_value()) {
+      rightJoinHelper_ = OuterJoinHelper::make(false, outputSchema_.value(), neededColumnIndice_);
+    }
+    isOuterJoinHelperCreated_ = true;
+  }
+  return {};
+}
+
+tl::expected<void, string> NestedLoopJoinKernel::computeOuterJoin() {
+  // for cartesian product, outer join = inner join
+  if (!predicate_.has_value()) {
+    return {};
+  }
+
+  // left outer join
+  if (leftJoinHelper_.has_value() && rightTupleSet_.has_value()) {
+    const auto &expLeftOutput = leftJoinHelper_.value()->compute(rightTupleSet_.value());
+    if (!expLeftOutput.has_value()) {
+      return tl::make_unexpected(expLeftOutput.error());
+    }
+    auto result = buffer(expLeftOutput.value());
+    if (!result.has_value()) {
+      return result;
+    }
+  }
+
+  // right outer join
+  if (rightJoinHelper_.has_value() && leftTupleSet_.has_value()) {
+    const auto &expRightOutput = rightJoinHelper_.value()->compute(leftTupleSet_.value());
+    if (!expRightOutput.has_value()) {
+      return tl::make_unexpected(expRightOutput.error());
+    }
+    auto result = buffer(expRightOutput.value());
+    if (!result.has_value()) {
+      return result;
+    }
+  }
+
+  return {};
 }
 
 }

@@ -46,9 +46,9 @@ private:
   vector<string> probeJoinColumnNames_;
   shared_ptr<::arrow::Schema> outputSchema_;
   vector<shared_ptr<pair<bool, int>>> neededColumnIndice_;
-  int64_t buildRowOffset_;
 
   vector<::arrow::ArrayVector> joinedArrayVectors_;
+  int64_t buildRowOffset_;
   unordered_set<int64_t> buildRowMatchIndexes_;
   unordered_set<int64_t> probeRowMatchIndexes_;
 

@@ -5,6 +5,7 @@
 #ifndef NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_NESTEDLOOPJOIN_NESTEDLOOPJOINKERNEL_H
 #define NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_NESTEDLOOPJOIN_NESTEDLOOPJOINKERNEL_H
 
+#include <normal/executor/physical/join/OuterJoinHelper.h>
 #include <normal/expression/gandiva/Expression.h>
 #include <normal/tuple/TupleSet.h>
 #include <tl/expected.hpp>
@@ -32,13 +33,18 @@ public:
   tl::expected<void, string> joinIncomingRight(const shared_ptr<TupleSet> &incomingRight);
 
   const optional<shared_ptr<TupleSet>> &getBuffer() const;
+  tl::expected<void, string> finalize();
   void clearBuffer();
 
 private:
   tl::expected<shared_ptr<TupleSet>, string> join(const shared_ptr<TupleSet> &leftTupleSet,
                                                   const shared_ptr<TupleSet> &rightTupleSet);
+
   tl::expected<void, string> buffer(const shared_ptr<TupleSet>& tupleSet);
   void bufferOutputSchema(const shared_ptr<TupleSet> &leftTupleSet, const shared_ptr<TupleSet> &rightTupleSet);
+
+  tl::expected<void, string> makeOuterJoinHelpers();
+  tl::expected<void, string> computeOuterJoin();
   
   optional<shared_ptr<expression::gandiva::Expression>> predicate_;
   optional<shared_ptr<TupleSet>> leftTupleSet_;
@@ -50,6 +56,9 @@ private:
 
   bool isLeft_;
   bool isRight_;
+  bool isOuterJoinHelperCreated_ = false;
+  optional<shared_ptr<OuterJoinHelper>> leftJoinHelper_;
+  optional<shared_ptr<OuterJoinHelper>> rightJoinHelper_;
   
 };
 
