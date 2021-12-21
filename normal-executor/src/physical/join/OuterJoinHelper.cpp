@@ -60,8 +60,8 @@ tl::expected<arrow::ArrayVector, string> OuterJoinHelper::computeKeepSide(const 
   // project needed columns
   vector<int> columnIds;
   for (const auto &pair: neededColumnIndice_) {
-    if (pair->first) {
-      columnIds.emplace_back(pair->second);
+    if ((isLeft_ && pair->first) || (!isLeft_ && !pair->first)) {
+        columnIds.emplace_back(pair->second);
     }
   }
   const auto &expProjectTupleSet = tupleSet->project(columnIds);
@@ -105,7 +105,16 @@ tl::expected<arrow::ArrayVector, string> OuterJoinHelper::computeKeepSide(const 
 tl::expected<arrow::ArrayVector, string> OuterJoinHelper::computeDiscardSide(const shared_ptr<TupleSet> &keepTupleSet) {
   // make column builders for discard side
   vector<shared_ptr<ColumnBuilder>> columnBuilders;
-  for (int c = keepTupleSet->numColumns(); c < outputSchema_->num_fields(); ++c) {
+  int discardNumColumns = 0;
+  for (const auto &pair: neededColumnIndice_) {
+    if ((isLeft_ && !pair->first) || (!isLeft_ && pair->first)) {
+      ++discardNumColumns;
+    }
+  }
+  pair<int, int> discardColumnIdRange = isLeft_ ?
+          make_pair(outputSchema_->num_fields() - discardNumColumns, outputSchema_->num_fields()) :
+          make_pair(0, discardNumColumns);
+  for (int c = discardColumnIdRange.first; c < discardColumnIdRange.second; ++c) {
     const auto &field = outputSchema_->field(c);
     columnBuilders.emplace_back(ColumnBuilder::make(field->name(), field->type()));
   }

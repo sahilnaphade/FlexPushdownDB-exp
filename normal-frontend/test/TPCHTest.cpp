@@ -67,6 +67,10 @@ TEST_CASE ("tpch-original-12" * doctest::skip(false || SKIP_SUITE)) {
   TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/", {"tpch/original/12.sql"});
 }
 
+TEST_CASE ("tpch-original-13" * doctest::skip(false || SKIP_SUITE)) {
+  TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/", {"tpch/original/13.sql"});
+}
+
 TEST_CASE ("tpch-original-14" * doctest::skip(false || SKIP_SUITE)) {
   TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/", {"tpch/original/14.sql"});
 }
@@ -75,11 +79,24 @@ TEST_CASE ("tpch-original-19" * doctest::skip(false || SKIP_SUITE)) {
   TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/", {"tpch/original/19.sql"});
 }
 
-TEST_CASE ("temp" * doctest::skip(true)) {
+TEST_CASE ("temp" * doctest::skip(false)) {
+  auto builder = make_shared<arrow::Int64Builder>();
+  builder->AppendValues({1, 2, 3}, {true, true, false});
+  auto array0 = builder->Finish().ValueOrDie();
+
   unique_ptr<arrow::ArrayBuilder> arrayBuilder;
   auto status = arrow::MakeBuilder(arrow::default_memory_pool(), arrow::int64(), &arrayBuilder);
-//  arrayBuilder->AppendNulls(0);
-  std::cout << status.ok() << std::endl;
+  status = arrow::MakeBuilder(arrow::default_memory_pool(), arrow::utf8(), &arrayBuilder);
+  arrayBuilder->AppendNulls(3);
+  auto array1 = arrayBuilder->Finish().ValueOrDie();
+  arrow::ArrayVector arrayVector{array0, array1};
+
+  arrow::FieldVector fields;
+  fields.emplace_back(arrow::field("int1", arrow::int64()));
+  fields.emplace_back(arrow::field("int2", arrow::utf8()));
+  auto schema = arrow::schema(fields);
+
+  std::cout << TupleSet::make(schema, arrayVector)->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)) << std::endl;
 }
 
 }

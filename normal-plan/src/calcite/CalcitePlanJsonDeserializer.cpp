@@ -140,7 +140,8 @@ shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeAndOrNotOperation
       return or_(operands);
     }
   } else {
-    const auto expr = deserializeExpression(jObj["operand"]);
+    const auto &operands = jObj["operands"].get<vector<json>>();
+    const auto expr = deserializeExpression(operands[0]);
     return not_(expr);
   }
 }

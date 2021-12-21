@@ -138,6 +138,13 @@ public class TestOptimizer {
   }
 
   @Test
+  public void testTPCH_Q13() throws Exception {
+    Path queryPath = tpchQueryDirPath.resolve("13.sql");
+    String schemaName = "tpch-sf0.01/csv";
+    testSingle(schemaName, queryPath, true);
+  }
+
+  @Test
   public void testTPCH_Q14() throws Exception {
     Path queryPath = tpchQueryDirPath.resolve("14.sql");
     String schemaName = "tpch-sf0.01/csv";

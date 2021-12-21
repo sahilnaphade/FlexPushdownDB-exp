@@ -132,7 +132,10 @@ RecordBatchNestedLoopJoiner::cartesian(const shared_ptr<::arrow::RecordBatch> &l
     for (int64_t lr = 0; lr < leftRecordBatch->num_rows(); ++lr) {
       for (int c = 0; c < rightOutputSchema_->num_fields(); ++c) {
         int colId = neededRightColumnIndexes_[c];
-        rightAppenders[c]->safeAppendValue(rightColumns[colId], (size_t) rr);
+        auto appendResult = rightAppenders[c]->appendValue(rightColumns[colId], (size_t) rr);
+        if (!appendResult.has_value()) {
+          return tl::make_unexpected(appendResult.error());
+        }
       }
     }
   }

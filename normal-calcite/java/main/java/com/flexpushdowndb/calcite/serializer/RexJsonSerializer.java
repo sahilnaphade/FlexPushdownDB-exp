@@ -236,7 +236,8 @@ public class RexJsonSerializer {
                                       .put("values", serializeSargComplementedPoints(basicTypeName, sarg.rangeSet.asRanges())))));
       return new JSONObject()
               .put("op", SqlKind.NOT)
-              .put("operand", inJObj);
+              .put("operands", new JSONArray()
+                      .put(inJObj));
     }
 
     // otherwise

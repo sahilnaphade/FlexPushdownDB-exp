@@ -105,13 +105,13 @@ tl::expected<void, string> RecordBatchHashJoiner::join(const shared_ptr<::arrow:
 
         // build column
         if (neededColumnIndice_[c]->first) {
-          auto appendResult = appenders[c]->safeAppendValue(buildColumns[neededColumnIndice_[c]->second], br);
+          auto appendResult = appenders[c]->appendValue(buildColumns[neededColumnIndice_[c]->second], br);
           if(!appendResult) return appendResult;
         }
 
         // probe column
         else {
-          auto appendResult = appenders[c]->safeAppendValue(probeColumns[neededColumnIndice_[c]->second], pr);
+          auto appendResult = appenders[c]->appendValue(probeColumns[neededColumnIndice_[c]->second], pr);
           if(!appendResult) return appendResult;
         }
       }

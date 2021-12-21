@@ -196,8 +196,9 @@ tl::expected<void, string> HashJoinProbeKernel::makeOuterJoinHelpers() {
 
 tl::expected<void, string> HashJoinProbeKernel::computeOuterJoin() {
   // left outer join
-  if (leftJoinHelper_.has_value() && probeTupleSet_.has_value()) {
-    const auto &expLeftOutput = leftJoinHelper_.value()->compute(probeTupleSet_.value());
+  if (leftJoinHelper_.has_value() && buildTupleSetIndex_.has_value()) {
+    const auto &expLeftOutput = leftJoinHelper_.value()->compute(
+            TupleSet::make(buildTupleSetIndex_.value()->getTable()));
     if (!expLeftOutput.has_value()) {
       return tl::make_unexpected(expLeftOutput.error());
     }
@@ -208,9 +209,8 @@ tl::expected<void, string> HashJoinProbeKernel::computeOuterJoin() {
   }
 
   // right outer join
-  if (rightJoinHelper_.has_value() && buildTupleSetIndex_.has_value()) {
-    const auto &expRightOutput = rightJoinHelper_.value()->compute(
-            TupleSet::make(buildTupleSetIndex_.value()->getTable()));
+  if (rightJoinHelper_.has_value() && probeTupleSet_.has_value()) {
+    const auto &expRightOutput = rightJoinHelper_.value()->compute(probeTupleSet_.value());
     if (!expRightOutput.has_value()) {
       return tl::make_unexpected(expRightOutput.error());
     }
