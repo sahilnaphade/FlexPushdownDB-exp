@@ -107,6 +107,7 @@ public class Optimizer {
     HepProgram hepProgram = new HepProgramBuilder()
             .addRuleCollection(ImmutableList.of(
                     CoreRules.FILTER_PROJECT_TRANSPOSE,
+                    CoreRules.FILTER_AGGREGATE_TRANSPOSE,
                     EnhancedFilterJoinRule.WITH_FILTER,
                     EnhancedFilterJoinRule.NO_FILTER))
             .build();
