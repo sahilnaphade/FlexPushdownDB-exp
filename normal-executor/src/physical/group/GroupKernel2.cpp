@@ -242,7 +242,7 @@ tl::expected<GroupArrayVectorMap, string>
 GroupKernel2::groupRecordBatch(const ::arrow::RecordBatch &recordBatch) {
 
   // For each row, store the group key -> row data in the group map
-  for (int r = 0; r < recordBatch.num_rows(); ++r) {
+  for (int64_t r = 0; r < recordBatch.num_rows(); ++r) {
 
     // Make a group key for the row
     auto expectedGroupKey = TupleKeyBuilder::make(r, groupColumnIndices_, recordBatch);
@@ -281,7 +281,7 @@ tl::expected<void, string> GroupKernel2::groupTable(const arrow::Table &table) {
 
   // Create a record batch reader
   arrow::TableBatchReader reader{table};
-  reader.set_chunksize(DefaultChunkSize);
+  reader.set_chunksize((int64_t) DefaultChunkSize);
   auto recordBatchReadResult = reader.Next();
   if (!recordBatchReadResult.ok())
 	  return tl::make_unexpected(recordBatchReadResult.status().message());

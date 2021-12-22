@@ -31,19 +31,30 @@ public:
 	  return std::make_shared<ArrayAppenderWrapper>(expectedSize);
   }
 
-  tl::expected<void, std::string> appendValue(const std::shared_ptr<::arrow::Array> &array, size_t i) override {
+  static ::arrow::Status appendValues(const std::shared_ptr<ArrowBuilderType> &builder,
+                                      const std::vector<CType> &buffer,
+                                      const std::vector<bool> &isValid);
+
+  tl::expected<void, std::string> appendValue(const std::shared_ptr<::arrow::Array> &array, int64_t i) override {
+    // check array and index
     if (!array)
       return tl::make_unexpected(
         fmt::format("Cannot append value. Null source array"));
     if (array->length() < 0)
       return tl::make_unexpected(
         fmt::format("Cannot append value. Source array with negative length {}", array->length()));
-    if (i >= (size_t)array->length())
+    if (i >= array->length())
       return tl::make_unexpected(
         fmt::format("Cannot append value. Source index {} outside bounds of source array {}", i, array->length()));
 
-    buffer_.push_back(std::static_pointer_cast<ArrowArrayType>(array)->Value(i));
-    return {};
+    // check if the value at given index is null
+    if (array->IsNull(i)) {
+      return appendNull();
+    } else {
+      buffer_.emplace_back(std::static_pointer_cast<ArrowArrayType>(array)->Value(i));
+      isValid_.emplace_back(true);
+      return {};
+    }
   }
 
   tl::expected<std::shared_ptr<arrow::Array>, std::string> finalize() override {
@@ -52,7 +63,7 @@ public:
 
     buffer_.shrink_to_fit();
 
-    status = appendValues(builder_, buffer_);
+    status = appendValues(builder_, buffer_, isValid_);
     if (!status.ok()) {
       return tl::make_unexpected(status.message());
     }
@@ -67,15 +78,13 @@ public:
   }
 
 private:
-  /**
-   * Need this to compile on Mac, not sure why???
-   *
-   * @param builder
-   * @param buffer
-   * @return
-   */
-  ::arrow::Status appendValues(const std::shared_ptr<ArrowBuilderType> &builder, const std::vector<CType> &buffer);
+  tl::expected<void, std::string> appendNull() override {
+    buffer_.emplace_back(NULL);
+    isValid_.emplace_back(false);
+    return {};
+  }
 
+  std::vector<bool> isValid_;
   std::vector<CType> buffer_;
   std::shared_ptr<ArrowBuilderType> builder_;
 
@@ -83,7 +92,10 @@ private:
 
 template<>
 tl::expected<void, std::string> ArrayAppenderWrapper<std::string, ::arrow::StringType>::appendValue(
-        const std::shared_ptr<::arrow::Array> &array, size_t i);
+        const std::shared_ptr<::arrow::Array> &array, int64_t i);
+
+template<>
+tl::expected<void, std::string> ArrayAppenderWrapper<std::string, ::arrow::StringType>::appendNull();
 
 
 class ArrayAppenderBuilder {

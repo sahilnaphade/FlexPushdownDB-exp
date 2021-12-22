@@ -79,24 +79,28 @@ TEST_CASE ("tpch-original-19" * doctest::skip(false || SKIP_SUITE)) {
   TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/", {"tpch/original/19.sql"});
 }
 
-TEST_CASE ("temp" * doctest::skip(false)) {
+TEST_CASE ("temp" * doctest::skip(true)) {
   auto builder = make_shared<arrow::Int64Builder>();
   builder->AppendValues({1, 2, 3}, {true, true, false});
   auto array0 = builder->Finish().ValueOrDie();
 
-  unique_ptr<arrow::ArrayBuilder> arrayBuilder;
-  auto status = arrow::MakeBuilder(arrow::default_memory_pool(), arrow::int64(), &arrayBuilder);
-  status = arrow::MakeBuilder(arrow::default_memory_pool(), arrow::utf8(), &arrayBuilder);
-  arrayBuilder->AppendNulls(3);
-  auto array1 = arrayBuilder->Finish().ValueOrDie();
-  arrow::ArrayVector arrayVector{array0, array1};
+  std::cout << static_pointer_cast<arrow::Int64Array>(array0)->IsValid(0) << std::endl;
+  std::cout << static_pointer_cast<arrow::Int64Array>(array0)->IsValid(1) << std::endl;
+  std::cout << static_pointer_cast<arrow::Int64Array>(array0)->IsValid(2) << std::endl;
 
-  arrow::FieldVector fields;
-  fields.emplace_back(arrow::field("int1", arrow::int64()));
-  fields.emplace_back(arrow::field("int2", arrow::utf8()));
-  auto schema = arrow::schema(fields);
-
-  std::cout << TupleSet::make(schema, arrayVector)->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)) << std::endl;
+//  unique_ptr<arrow::ArrayBuilder> arrayBuilder;
+//  auto status = arrow::MakeBuilder(arrow::default_memory_pool(), arrow::int64(), &arrayBuilder);
+//  status = arrow::MakeBuilder(arrow::default_memory_pool(), arrow::utf8(), &arrayBuilder);
+//  arrayBuilder->AppendNulls(3);
+//  auto array1 = arrayBuilder->Finish().ValueOrDie();
+//  arrow::ArrayVector arrayVector{array0, array1};
+//
+//  arrow::FieldVector fields;
+//  fields.emplace_back(arrow::field("int1", arrow::int64()));
+//  fields.emplace_back(arrow::field("int2", arrow::utf8()));
+//  auto schema = arrow::schema(fields);
+//
+//  std::cout << TupleSet::make(schema, arrayVector)->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)) << std::endl;
 }
 
 }

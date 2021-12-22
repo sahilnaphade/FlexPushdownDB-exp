@@ -32,7 +32,13 @@ public:
    * @return
    */
   virtual inline tl::expected<void, std::string>
-  appendValue(const std::shared_ptr<::arrow::Array> &array, size_t i) = 0;
+  appendValue(const std::shared_ptr<::arrow::Array> &array, int64_t i) = 0;
+
+  /**
+   * Append null to this appender
+   * @return
+   */
+  virtual inline tl::expected<void, std::string> appendNull() = 0;
 
   /**
    * Builds the final array.
