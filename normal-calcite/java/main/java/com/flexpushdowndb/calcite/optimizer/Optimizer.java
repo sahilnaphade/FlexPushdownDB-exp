@@ -4,6 +4,7 @@ import com.flexpushdowndb.calcite.rule.EnhancedFilterJoinRule;
 import com.flexpushdowndb.calcite.rule.JoinSmallLeftRule;
 import com.flexpushdowndb.calcite.schema.SchemaImpl;
 import com.flexpushdowndb.calcite.schema.SchemaReader;
+import com.google.common.collect.ImmutableList;
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
 import org.apache.calcite.adapter.enumerable.EnumerableRules;
 import org.apache.calcite.config.CalciteConnectionConfig;
@@ -43,6 +44,9 @@ public class Optimizer {
   private final RelBuilder relBuilder;
   private final CalciteSchema rootSchema;
 
+  // assigned during query parsing
+  private SqlValidator sqlValidator = null;
+
   public Optimizer() {
     this.typeFactory = new JavaTypeFactoryImpl();
     this.cluster = newCluster(typeFactory);
@@ -52,6 +56,26 @@ public class Optimizer {
   }
 
   public RelNode planQuery(String query, String schemaName) throws Exception {
+    // Parse and Validate
+    RelNode logicalPlan = parseAndValidate(query, schemaName);
+
+    // Decorrelate
+    RelNode decorrelatedPlan = RelDecorrelator.decorrelateQuery(logicalPlan, relBuilder);
+
+    // Filter pushdown
+    RelNode filterPushdownPlan = filterPushdown(decorrelatedPlan);
+
+    // Volcano cost-based optimization
+    RelNode volOptPlan = logicalOptimize(filterPushdownPlan);
+
+    // Trim unused fields
+    RelNode trimmedPhysicalPlan = trim(volOptPlan);
+
+    // Heuristics to apply
+    return postHeuristics(trimmedPhysicalPlan);
+  }
+
+  private RelNode parseAndValidate(String query, String schemaName) throws Exception {
     // Load schema if not loaded
     if (!rootSchema.getSubSchemaMap().containsKey(schemaName)) {
       SchemaImpl schema = SchemaReader.readSchema(schemaName);
@@ -65,7 +89,7 @@ public class Optimizer {
     // Create a CatalogReader and an SQL validator to validate the AST
     CalciteCatalogReader catalogReader = new CalciteCatalogReader(rootSchema, Collections.singletonList(schemaName),
             typeFactory, CalciteConnectionConfig.DEFAULT.set(CalciteConnectionProperty.CASE_SENSITIVE, "false"));
-    SqlValidator sqlValidator = SqlValidatorUtil.newValidator(SqlStdOperatorTable.instance(), catalogReader,
+    sqlValidator = SqlValidatorUtil.newValidator(SqlStdOperatorTable.instance(), catalogReader,
             typeFactory, SqlValidator.Config.DEFAULT);
     SqlNode validAst = sqlValidator.validate(parseAst);
 
@@ -76,53 +100,54 @@ public class Optimizer {
             cluster,
             StandardConvertletTable.INSTANCE,
             SqlToRelConverter.config());
-    RelNode logicalPlan = sqlToRelConverter.convertQuery(validAst, false, true).rel;
+    return sqlToRelConverter.convertQuery(validAst, false, true).rel;
+  }
 
-    // Decorrelate
-    RelNode decorrelatedPlan = RelDecorrelator.decorrelateQuery(logicalPlan, relBuilder);
-
-    // Enhanced filter join pushdown
+  private RelNode filterPushdown(RelNode relNode) {
     HepProgram hepProgram = new HepProgramBuilder()
-            .addRuleInstance(CoreRules.FILTER_PROJECT_TRANSPOSE)
-            .addRuleInstance(EnhancedFilterJoinRule.WITH_FILTER)
-            .addRuleInstance(EnhancedFilterJoinRule.NO_FILTER)
+            .addRuleCollection(ImmutableList.of(
+                    CoreRules.FILTER_PROJECT_TRANSPOSE,
+                    EnhancedFilterJoinRule.WITH_FILTER,
+                    EnhancedFilterJoinRule.NO_FILTER))
             .build();
     HepPlanner hepPlanner = new HepPlanner(hepProgram);
-    hepPlanner.setRoot(decorrelatedPlan);
-    RelNode filterPushdownPlan = hepPlanner.findBestExp();
+    hepPlanner.setRoot(relNode);
+    return hepPlanner.findBestExp();
+  }
 
-    // Volcano cost-based optimization
+  private RelNode logicalOptimize(RelNode relNode) {
     Program program = Programs.of(getDefaultRuleSet());
-    RelNode volOptPlan = program.run(
+    return program.run(
             planner,
-            filterPushdownPlan,
-            filterPushdownPlan.getTraitSet().plus(EnumerableConvention.INSTANCE),
+            relNode,
+            relNode.getTraitSet().plus(EnumerableConvention.INSTANCE),
             Collections.emptyList(),
             Collections.emptyList()
     );
+  }
 
-    // Trim unused fields
+  private RelNode trim(RelNode relNode) {
     RelFieldTrimmer trimmer = new RelFieldTrimmer(sqlValidator, relBuilder);
-    RelNode trimmedPlan = trimmer.trim(volOptPlan);
+    RelNode trimmedPlan = trimmer.trim(relNode);
 
     // Convert trimmedPlan to physical
-    program = Programs.of(getConvertToPhysicalRuleSet());
-    RelNode trimmedPhysicalPlan = program.run(
+    Program program = Programs.of(getConvertToPhysicalRuleSet());
+    return program.run(
             planner,
             trimmedPlan,
             trimmedPlan.getTraitSet().plus(EnumerableConvention.INSTANCE),
             Collections.emptyList(),
             Collections.emptyList()
     );
+  }
 
-    // Heuristics to apply
-    hepProgram = new HepProgramBuilder()
+  private RelNode postHeuristics(RelNode relNode) {
+    HepProgram hepProgram = new HepProgramBuilder()
             .addRuleInstance(JoinSmallLeftRule.INSTANCE)
             .addRuleInstance(EnumerableRules.ENUMERABLE_PROJECT_RULE)
             .build();
-    hepPlanner = new HepPlanner(hepProgram);
-    hepPlanner.setRoot(trimmedPhysicalPlan);
-
+    HepPlanner hepPlanner = new HepPlanner(hepProgram);
+    hepPlanner.setRoot(relNode);
     return hepPlanner.findBestExp();
   }
 
