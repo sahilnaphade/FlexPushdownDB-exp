@@ -88,11 +88,19 @@ void ProjectPOp::bufferTuples(const TupleMessage &message) {
 
 void ProjectPOp::projectAndSendTuples() {
   if(tuples_ && tuples_->numRows() > 0) {
+    // Combine project expression columns with input columns as a full tupleSet
     std::shared_ptr<TupleSet> fullTupleSet;
 
     if (exprs_.empty()) {
+      // Rename
+      auto renameRes = tuples_->renameColumns(columnRenames_);
+      if (!renameRes.has_value()) {
+        throw std::runtime_error(renameRes.error());
+      }
       fullTupleSet = tuples_;
-    } else {
+    }
+
+    else {
       // Project expressions if any
       auto projExprTuples = projector_.value()->evaluate(*tuples_);
 
@@ -102,32 +110,47 @@ void ProjectPOp::projectAndSendTuples() {
         throw std::runtime_error(renameRes.error());
       }
 
-      // Combine with input columns
-      std::vector<std::shared_ptr<Column>> columns;
-      for (int c = 0; c < tuples_->numColumns(); ++c) {
-        const auto &expColumn = tuples_->getColumnByIndex(c);
-        if (!expColumn.has_value()) {
-          throw std::runtime_error(expColumn.error());
-        }
-        columns.emplace_back(expColumn.value());
+      // Rename input columns
+      renameRes = tuples_->renameColumns(columnRenames_);
+      if (!renameRes.has_value()) {
+        throw std::runtime_error(renameRes.error());
       }
+
+      // Combine project expression columns with input columns
+      // if the expr name is same with an input column, then the input column is discard, because if the input column
+      // should be kept, there must be a rename for that column which is done above
+      std::set<std::string> columnNameSet;
+      std::vector<std::shared_ptr<Column>> columns;
+
       for (int c = 0; c < projExprTuples->numColumns(); ++c) {
+        const auto &columnName = projExprTuples->schema()->field(c)->name();
+        if (columnNameSet.find(columnName) != columnNameSet.end()) {
+          continue;
+        }
         const auto &expColumn = projExprTuples->getColumnByIndex(c);
         if (!expColumn.has_value()) {
           throw std::runtime_error(expColumn.error());
         }
         columns.emplace_back(expColumn.value());
+        columnNameSet.emplace(columnName);
       }
+      for (int c = 0; c < tuples_->numColumns(); ++c) {
+        const auto &columnName = tuples_->schema()->field(c)->name();
+        if (columnNameSet.find(columnName) != columnNameSet.end()) {
+          continue;
+        }
+        const auto &expColumn = tuples_->getColumnByIndex(c);
+        if (!expColumn.has_value()) {
+          throw std::runtime_error(expColumn.error());
+        }
+        columns.emplace_back(expColumn.value());
+        columnNameSet.emplace(columnName);
+      }
+
       fullTupleSet = TupleSet::make(columns);
     }
 
-    // Rename project columns
-    auto renameRes = fullTupleSet->renameColumns(columnRenames_);
-    if (!renameRes.has_value()) {
-      throw std::runtime_error(renameRes.error());
-    }
-
-    // Project using projectColumnNames
+    // Project the fullTupleSet using projectColumnNames
     auto expProjectTupleSet = fullTupleSet->projectExist(getProjectColumnNames());
     if (!expProjectTupleSet) {
       throw std::runtime_error(expProjectTupleSet.error());

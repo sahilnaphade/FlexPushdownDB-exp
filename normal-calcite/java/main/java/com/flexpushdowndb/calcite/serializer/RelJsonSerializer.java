@@ -83,17 +83,9 @@ public final class RelJsonSerializer {
     // operator name
     jo.put("operator", join.getClass().getSimpleName());
 
-    // join condition
+    // join may incur field renames, if left and right inputs have overlapping field names
     List<String> leftFieldNames = join.getInput(0).getRowType().getFieldNames();
     List<String> rightFieldNames = join.getInput(1).getRowType().getFieldNames();
-    List<String> inputFieldNames = new ArrayList<>();
-    inputFieldNames.addAll(leftFieldNames);
-    inputFieldNames.addAll(rightFieldNames);
-    if (!join.getCondition().isAlwaysTrue()) {
-      jo.put("condition", RexJsonSerializer.serialize(join.getCondition(), inputFieldNames));
-    }
-
-    // join may incur field renames, if left and right inputs have overlapping field names
     List<String> outputFieldNames = join.getRowType().getFieldNames();
 
     // left
@@ -124,6 +116,16 @@ public final class RelJsonSerializer {
     }
     if (!rightFieldRenamesJArr.isEmpty()) {
       jo.put("rightFieldRenames", rightFieldRenamesJArr);
+    }
+
+    // join condition
+    List<String> inputFieldNames = new ArrayList<>(outputFieldNames);
+    if (inputFieldNames.size() < leftFieldNames.size() + rightFieldNames.size()) {
+      // if it's SEMI
+      inputFieldNames.addAll(rightFieldNames);
+    }
+    if (!join.getCondition().isAlwaysTrue()) {
+      jo.put("condition", RexJsonSerializer.serialize(join.getCondition(), inputFieldNames));
     }
 
     // join type
