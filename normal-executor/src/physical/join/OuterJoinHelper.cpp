@@ -57,13 +57,19 @@ tl::expected<shared_ptr<TupleSet>, string> OuterJoinHelper::compute(const shared
 }
 
 tl::expected<arrow::ArrayVector, string> OuterJoinHelper::computeKeepSide(const shared_ptr<TupleSet> &tupleSet) {
-  // project needed columns
+  // collect needed column indexes of the keep side
   vector<int> columnIds;
   for (const auto &pair: neededColumnIndice_) {
     if ((isLeft_ && pair->first) || (!isLeft_ && !pair->first)) {
         columnIds.emplace_back(pair->second);
     }
   }
+  // check if no columns needed
+  if (columnIds.empty()) {
+    return {};
+  }
+
+  // project needed columns
   const auto &expProjectTupleSet = tupleSet->project(columnIds);
   if (!expProjectTupleSet.has_value()) {
     return tl::make_unexpected(expProjectTupleSet.error());
@@ -110,6 +116,10 @@ tl::expected<arrow::ArrayVector, string> OuterJoinHelper::computeDiscardSide(con
     if ((isLeft_ && !pair->first) || (!isLeft_ && pair->first)) {
       ++discardNumColumns;
     }
+  }
+  // check if no columns needed
+  if (discardNumColumns == 0) {
+    return {};
   }
   pair<int, int> discardColumnIdRange = isLeft_ ?
           make_pair(outputSchema_->num_fields() - discardNumColumns, outputSchema_->num_fields()) :

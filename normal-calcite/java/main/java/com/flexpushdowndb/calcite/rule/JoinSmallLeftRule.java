@@ -26,8 +26,8 @@ public class JoinSmallLeftRule extends RelRule<JoinSmallLeftRule.Config>
   @Override
   public void onMatch(RelOptRuleCall call) {
     Join join = call.rel(0);
-    // Currently only deal with INNER join
-    if (join.getJoinType() != JoinRelType.INNER) {
+    // currently ignore SEMI and ANTI joins
+    if (join.getJoinType() == JoinRelType.SEMI || join.getJoinType() == JoinRelType.ANTI) {
       return;
     }
     RelMetadataQuery mq = join.getCluster().getMetadataQuery();
@@ -37,9 +37,10 @@ public class JoinSmallLeftRule extends RelRule<JoinSmallLeftRule.Config>
     double rightRowCount = rightRel.estimateRowCount(mq);
     if (leftRowCount > rightRowCount) {
       // swap join inputs and fetch the underlying join
-      Project project = (Project) JoinCommuteRule.swap(join, false, call.builder());
+      Project project = (Project) JoinCommuteRule.swap(join, true, call.builder());
       if (project == null) {
-        throw new NullPointerException("Null of swapped join, from " + this.getClass().getSimpleName());
+        // swap failed, no rewrite
+        return;
       }
       Join joinSwapInputs = (Join) project.getInput(0);
       // mirror the join condition
