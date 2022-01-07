@@ -22,29 +22,44 @@ const shared_ptr<normal::expression::gandiva::Expression> &AggregateFunction::ge
   return expression_;
 }
 
-shared_ptr<arrow::ChunkedArray> AggregateFunction::evaluateExpr(const shared_ptr<TupleSet> &tupleSet) {
+void AggregateFunction::compile(const shared_ptr<arrow::Schema> &schema) {
   // just column projection, no need to use gandiva projector
   if (expression_->getType() == expression::gandiva::COLUMN) {
-    const auto columnName = static_pointer_cast<expression::gandiva::Column>(expression_)->getColumnName();
+    const auto &columnName = static_pointer_cast<expression::gandiva::Column>(expression_)->getColumnName();
+    const auto &field = schema->GetFieldByName(columnName);
+    returnType_ = field->type();
+  }
+
+  // expression projection, need to use gandiva projector
+  else {
+    cacheInputSchema(schema);
+    buildAndCacheProjector();
+  }
+}
+
+shared_ptr<arrow::ChunkedArray> AggregateFunction::evaluateExpr(const shared_ptr<TupleSet> &tupleSet) {
+  // compile if not yet
+  if (!returnType_) {
+    compile(tupleSet->schema());
+  }
+
+  // just column projection, no need to use gandiva projector
+  if (expression_->getType() == expression::gandiva::COLUMN) {
+    const auto &columnName = static_pointer_cast<expression::gandiva::Column>(expression_)->getColumnName();
     const auto &column = tupleSet->table()->GetColumnByName(columnName);
-    returnType_ = column->type();
     return column;
   }
 
   // expression projection, need to use gandiva projector
   else {
-    // Set the input schema and build the projector if not done yet
-    cacheInputSchema(tupleSet);
-    buildAndCacheProjector();
-
     const auto exprTupleSet = projector_.value()->evaluate(*tupleSet);
     return exprTupleSet->table()->column(0);
   }
 }
 
-void AggregateFunction::cacheInputSchema(const shared_ptr<TupleSet> &tupleSet) {
+void AggregateFunction::cacheInputSchema(const shared_ptr<arrow::Schema> &schema) {
   if (!inputSchema_.has_value()) {
-    inputSchema_ = tupleSet->table()->schema();
+    inputSchema_ = schema;
   }
 }
 

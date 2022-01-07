@@ -45,8 +45,9 @@ public:
       return prefixInt_ + std::to_string(value_);
     } else if (arrowType->id() == arrow::Type::DOUBLE) {
       return prefixFloat_ + std::to_string(value_);
+    } else {
+      return std::to_string(value_);
     }
-    throw std::runtime_error(fmt::format("Unsupported numeric literal type: {}", arrowType->name()));
   }
 
   std::string getTypeString() override {

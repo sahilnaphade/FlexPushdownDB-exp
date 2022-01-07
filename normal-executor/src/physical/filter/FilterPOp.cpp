@@ -29,22 +29,21 @@ FilterPOp::FilterPOp(std::string name,
 	weightedSegmentKeys_(std::move(weightedSegmentKeys)) {}
 
 void FilterPOp::onReceive(const Envelope &Envelope) {
-
   const auto& message = Envelope.message();
 
   if (message.type() == "StartMessage") {
-	this->onStart();
+	  this->onStart();
   } else if (message.type() == "TupleMessage") {
-	auto tupleMessage = dynamic_cast<const TupleMessage &>(message);
-	this->onTuple(tupleMessage);
+    auto tupleMessage = dynamic_cast<const TupleMessage &>(message);
+    this->onTuple(tupleMessage);
   } else if (message.type() == "CompleteMessage") {
     if (*applicable_) {
       auto completeMessage = dynamic_cast<const CompleteMessage &>(message);
       this->onComplete(completeMessage);
     }
   } else {
-	// FIXME: Propagate error properly
-	throw std::runtime_error("Unrecognized message type " + message.type());
+    // FIXME: Propagate error properly
+    throw std::runtime_error("Unrecognized message type " + message.type());
   }
 }
 

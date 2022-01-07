@@ -76,25 +76,23 @@ HashJoinProbeKernel::join(const shared_ptr<RecordBatchHashJoiner> &joiner,
 
 tl::expected<void, string> HashJoinProbeKernel::joinBuildTupleSetIndex(const shared_ptr<TupleSetIndex> &tupleSetIndex) {
 
-  // Buffer tupleSetIndex if having tuples
-  if(tupleSetIndex->size() > 0) {
-    auto result = putBuildTupleSetIndex(tupleSetIndex);
-    if (!result)
-      return tl::make_unexpected(result.error());
+  // Buffer tupleSetIndex
+  auto putResult = putBuildTupleSetIndex(tupleSetIndex);
+  if (!putResult)
+    return tl::make_unexpected(putResult.error());
+
+  // Create output schema and outer join helpers
+  if (probeTupleSet_.has_value()) {
+    bufferOutputSchema(tupleSetIndex, probeTupleSet_.value());
+    auto result = makeOuterJoinHelpers();
+    if (!result.has_value()) {
+      return result;
+    }
   }
 
   // Check empty
   if (!probeTupleSet_.has_value() || probeTupleSet_.value()->numRows() == 0 || tupleSetIndex->size() == 0) {
     return {};
-  }
-
-  // Create output schema
-  bufferOutputSchema(tupleSetIndex, probeTupleSet_.value());
-
-  // Create outer join helpers
-  auto result = makeOuterJoinHelpers();
-  if (!result.has_value()) {
-    return result;
   }
 
   // Create joiner
@@ -123,25 +121,23 @@ tl::expected<void, string> HashJoinProbeKernel::joinBuildTupleSetIndex(const sha
 
 tl::expected<void, string> HashJoinProbeKernel::joinProbeTupleSet(const shared_ptr<TupleSet> &tupleSet) {
 
-  // Buffer tupleSet if having tuples
-  if (tupleSet->numRows() > 0) {
-    auto result = putProbeTupleSet(tupleSet);
-    if (!result)
-      return tl::make_unexpected(result.error());
+  // Buffer tupleSet
+  auto putResult = putProbeTupleSet(tupleSet);
+  if (!putResult)
+    return tl::make_unexpected(putResult.error());
+
+  // Create output schema and outer join helpers
+  if (buildTupleSetIndex_.has_value()) {
+    bufferOutputSchema(buildTupleSetIndex_.value(), tupleSet);
+    auto result = makeOuterJoinHelpers();
+    if (!result.has_value()) {
+      return result;
+    }
   }
 
   // Check empty
   if (!buildTupleSetIndex_.has_value() || buildTupleSetIndex_.value()->size() == 0 || tupleSet->numRows() == 0) {
     return {};
-  }
-
-  // Create output schema
-  bufferOutputSchema(buildTupleSetIndex_.value(), tupleSet);
-
-  // Create outer join helpers
-  auto result = makeOuterJoinHelpers();
-  if (!result.has_value()) {
-    return result;
   }
 
   // Create joiner

@@ -163,6 +163,10 @@ tl::expected<void, string> GroupKernel2::cache(const TupleSet &tupleSet) {
 }
 
 tl::expected<shared_ptr<TupleSet>, string> GroupKernel2::finalise() {
+  // If has no result, return an empty tupleSet
+  if (!hasResult()) {
+    return finaliseEmpty();
+  }
 
   // Create column builders for group columns
   vector<shared_ptr<ColumnBuilder>> groupColumnBuilders;
@@ -223,6 +227,31 @@ tl::expected<shared_ptr<TupleSet>, string> GroupKernel2::finalise() {
   }
 
   return TupleSet::make(outputColumns);
+}
+
+tl::expected<shared_ptr<TupleSet>, string> GroupKernel2::finaliseEmpty() {
+  if (!inputSchema_.has_value()) {
+    return tl::make_unexpected("InputSchema not set");
+  }
+  if (!aggregateInputSchema_.has_value()) {
+    return tl::make_unexpected("AggregateInputSchema not set");
+  }
+
+  // Obtain returnType of aggregate functions
+  for (const auto &function: aggregateFunctions_) {
+    function->compile(aggregateInputSchema_.value());
+  }
+
+  // Make output schema
+  arrow::FieldVector fields;
+  for (const auto &groupColumnIndex: groupColumnIndices_) {
+    fields.emplace_back(inputSchema_.value()->field(groupColumnIndex));
+  }
+  for (const auto &function: aggregateFunctions_) {
+    fields.emplace_back(make_shared<arrow::Field>(function->getOutputColumnName(), function->returnType()));
+  }
+  auto outputSchema = arrow::schema(fields);
+  return TupleSet::make(outputSchema);
 }
 
 tl::expected<vector<shared_ptr<ArrayAppender>>, string>

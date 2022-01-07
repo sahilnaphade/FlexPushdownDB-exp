@@ -17,6 +17,7 @@
 #include <normal/expression/gandiva/Multiply.h>
 #include <normal/expression/gandiva/Divide.h>
 #include <normal/expression/gandiva/EqualTo.h>
+#include <normal/expression/gandiva/NotEqualTo.h>
 #include <normal/expression/gandiva/LessThan.h>
 #include <normal/expression/gandiva/GreaterThan.h>
 #include <normal/expression/gandiva/LessThanOrEqualTo.h>
@@ -111,6 +112,9 @@ shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeLiteral(const jso
   } else if (type == "DOUBLE" || type == "DECIMAL") {
     const double value = literalJObj["value"].get<double>();
     return num_lit<arrow::DoubleType>(value);
+  } else if (type == "BOOLEAN") {
+    const bool value = literalJObj["value"].get<bool>();
+    return num_lit<arrow::BooleanType>(value);
   } else if (type == "DATE_MS") {
     const long value = literalJObj["value"].get<long>();
     return num_lit<arrow::Date64Type>(value);
@@ -194,6 +198,8 @@ shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeBinaryOperation(c
     return divide(leftExpr, rightExpr);
   } else if (opName == "EQUALS") {
     return eq(leftExpr, rightExpr);
+  } else if (opName == "NOT_EQUALS") {
+    return neq(leftExpr, rightExpr);
   } else if (opName == "LESS_THAN") {
     return lt(leftExpr, rightExpr);
   } else if (opName == "GREATER_THAN") {
@@ -283,8 +289,8 @@ shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeOperation(const j
   }
   // binary operation
   else if (opName == "PLUS" || opName == "MINUS" || opName == "TIMES" || opName == "DIVIDE" || opName == "EQUALS"
-    || opName == "LESS_THAN" || opName == "GREATER_THAN" || opName == "LESS_THAN_OR_EQUAL" || opName == "GREATER_THAN_OR_EQUAL"
-    || opName == "LIKE") {
+    || opName == "NOT_EQUALS" || opName == "LESS_THAN" || opName == "GREATER_THAN" || opName == "LESS_THAN_OR_EQUAL"
+    || opName == "GREATER_THAN_OR_EQUAL" || opName == "LIKE") {
     return deserializeBinaryOperation(opName, jObj);
   }
   // in
@@ -586,7 +592,7 @@ shared_ptr<prephysical::PrePhysicalOp> CalcitePlanJsonDeserializer::deserializeP
         // we need to keep the project to do the rename
         skipSelf = false;
       }
-    } else if (fieldExprJObj.contains("op")) {
+    } else if (fieldExprJObj.contains("op") || fieldExprJObj.contains("literal")) {
       const auto &expr = deserializeExpression(fieldExprJObj);
       const auto &exprUsedColumnNames = expr->involvedColumnNames();
       usedColumnNames.insert(exprUsedColumnNames.begin(), exprUsedColumnNames.end());

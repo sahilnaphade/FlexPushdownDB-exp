@@ -72,7 +72,9 @@ public final class RelJsonSerializer {
     // operator name
     jo.put("operator", filter.getClass().getSimpleName());
     // filter condition
-    jo.put("condition", RexJsonSerializer.serialize(filter.getCondition(), filter.getRowType().getFieldNames()));
+    jo.put("condition", RexJsonSerializer.serialize(filter.getCondition(),
+                                                    filter.getRowType().getFieldNames(),
+                                                    filter.getCluster().getRexBuilder()));
     // input operators
     jo.put("inputs", serializeRelInputs(filter));
     return jo;
@@ -125,7 +127,9 @@ public final class RelJsonSerializer {
       inputFieldNames.addAll(rightFieldNames);
     }
     if (!join.getCondition().isAlwaysTrue()) {
-      jo.put("condition", RexJsonSerializer.serialize(join.getCondition(), inputFieldNames));
+      jo.put("condition", RexJsonSerializer.serialize(join.getCondition(),
+                                                      inputFieldNames,
+                                                      join.getCluster().getRexBuilder()));
     }
 
     // join type
@@ -149,7 +153,7 @@ public final class RelJsonSerializer {
     for (RexNode rexNode: project.getProjects()) {
       JSONObject fieldJObj = new JSONObject();
       fieldJObj.put("name", outputFieldNames.get(projectId));
-      fieldJObj.put("expr", RexJsonSerializer.serialize(rexNode, inputFieldNames));
+      fieldJObj.put("expr", RexJsonSerializer.serialize(rexNode, inputFieldNames, project.getCluster().getRexBuilder()));
       fields.put(fieldJObj);
       ++projectId;
     }
@@ -227,7 +231,7 @@ public final class RelJsonSerializer {
     jo.put("sortFields", serializeSortFields(limitSort));
     // limit
     assert limitSort.fetch != null;
-    jo.put("limit", RexJsonSerializer.serialize(limitSort.fetch, null));
+    jo.put("limit", RexJsonSerializer.serialize(limitSort.fetch, null, limitSort.getCluster().getRexBuilder()));
     // input operators
     jo.put("inputs", serializeRelInputs(limitSort));
     return jo;

@@ -18,8 +18,11 @@ tl::expected<void, string> HashJoinProbeAbstractKernel::putBuildTupleSetIndex(co
   if (!buildTupleSetIndex_.has_value()) {
     buildTupleSetIndex_ = tupleSetIndex;
     return {};
+  } else if (tupleSetIndex->size() > 0) {
+    return buildTupleSetIndex_.value()->merge(tupleSetIndex);
+  } else {
+    return {};
   }
-  return buildTupleSetIndex_.value()->merge(tupleSetIndex);
 }
 
 tl::expected<void, string> HashJoinProbeAbstractKernel::putProbeTupleSet(const shared_ptr<TupleSet> &tupleSet) {
@@ -31,8 +34,11 @@ tl::expected<void, string> HashJoinProbeAbstractKernel::putProbeTupleSet(const s
   if (!probeTupleSet_.has_value()) {
     probeTupleSet_ = tupleSet;
     return {};
+  } else if (tupleSet->numRows() > 0) {
+    return probeTupleSet_.value()->append(tupleSet);
+  } else {
+    return {};
   }
-  return probeTupleSet_.value()->append(tupleSet);
 }
 
 tl::expected<void, string> HashJoinProbeAbstractKernel::buffer(const shared_ptr<TupleSet> &tupleSet) {

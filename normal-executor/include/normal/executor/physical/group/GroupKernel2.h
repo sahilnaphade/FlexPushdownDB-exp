@@ -68,8 +68,6 @@ public:
    */
   [[nodiscard]] tl::expected<shared_ptr<TupleSet>, string> finalise();
 
-  bool hasResult();
-
 private:
   vector<string> groupColumnNames_;
   vector<shared_ptr<AggregateFunction>> aggregateFunctions_;
@@ -119,6 +117,14 @@ private:
    * @param table
    */
   tl::expected<void, string> computeGroupAggregates();
+
+  /**
+   * Computes final aggregates and generates output tuple set, given that there is no aggregate result
+   *
+   * @return
+   */
+  tl::expected<shared_ptr<TupleSet>, string> finaliseEmpty();
+  bool hasResult();
 };
 
 }

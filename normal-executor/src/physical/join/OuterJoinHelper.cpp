@@ -85,6 +85,13 @@ tl::expected<arrow::ArrayVector, string> OuterJoinHelper::computeKeepSide(const 
   for (const auto &column: projectTupleSet->table()->columns()) {
     inputArrayVector.emplace_back(column->chunk(0));
   }
+
+  // if no rowMatchIndexes, then all rows are unmatched, then simply return inputArrayVector
+  if (!rowMatchIndexes_.has_value()) {
+    return inputArrayVector;
+  }
+
+  // make input recordBatch
   const auto &recordBatch = arrow::RecordBatch::Make(projectTupleSet->schema(),
                                                      projectTupleSet->numRows(),
                                                      inputArrayVector);
@@ -130,7 +137,8 @@ tl::expected<arrow::ArrayVector, string> OuterJoinHelper::computeDiscardSide(con
   }
 
   // append nulls
-  int64_t length = keepTupleSet->numRows() - (int64_t) rowMatchIndexes_->size();
+  int64_t length = rowMatchIndexes_.has_value() ?
+          keepTupleSet->numRows() - (int64_t) rowMatchIndexes_->size() : keepTupleSet->numRows();
   for (const auto &builder: columnBuilders) {
     auto result = builder->appendNulls(length);
     if (!result.has_value()) {

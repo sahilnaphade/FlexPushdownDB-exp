@@ -45,20 +45,18 @@ void GroupPOp::onTuple(const TupleMessage &message) {
 void GroupPOp::onComplete(const CompleteMessage &) {
   if (!ctx()->isComplete() && this->ctx()->operatorMap().allComplete(POpRelationshipType::Producer)) {
 
-    if (kernel2_->hasResult()) {
-      auto expectedGroupedTupleSet = kernel2_->finalise();
-      if (!expectedGroupedTupleSet)
-        throw runtime_error(expectedGroupedTupleSet.error());
+    auto expectedGroupedTupleSet = kernel2_->finalise();
+    if (!expectedGroupedTupleSet)
+      throw runtime_error(expectedGroupedTupleSet.error());
 
-      // Project using projectColumnNames
-      auto expProjectTupleSet = expectedGroupedTupleSet.value()->projectExist(getProjectColumnNames());
-      if (!expProjectTupleSet) {
-        throw runtime_error(expProjectTupleSet.error());
-      }
-
-      shared_ptr<Message> tupleMessage = make_shared<TupleMessage>(expProjectTupleSet.value(), this->name());
-      ctx()->tell(tupleMessage);
+    // Project using projectColumnNames
+    auto expProjectTupleSet = expectedGroupedTupleSet.value()->projectExist(getProjectColumnNames());
+    if (!expProjectTupleSet) {
+      throw runtime_error(expProjectTupleSet.error());
     }
+
+    shared_ptr<Message> tupleMessage = make_shared<TupleMessage>(expProjectTupleSet.value(), this->name());
+    ctx()->tell(tupleMessage);
 
     ctx()->notifyComplete();
   }

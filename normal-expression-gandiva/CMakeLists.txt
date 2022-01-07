@@ -19,6 +19,7 @@ add_library(normal-expression-gandiva STATIC
         src/LessThan.cpp include/normal/expression/gandiva/LessThan.h
         src/Filter.cpp include/normal/expression/gandiva/Filter.h
         src/EqualTo.cpp include/normal/expression/gandiva/EqualTo.h
+        src/NotEqualTo.cpp include/normal/expression/gandiva/NotEqualTo.h
         src/LessThanOrEqualTo.cpp include/normal/expression/gandiva/LessThanOrEqualTo.h
         src/GreaterThanOrEqualTo.cpp include/normal/expression/gandiva/GreaterThanOrEqualTo.h
         src/GreaterThan.cpp include/normal/expression/gandiva/GreaterThan.h

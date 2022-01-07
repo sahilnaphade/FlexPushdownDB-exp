@@ -75,6 +75,10 @@ TEST_CASE ("tpch-original-14" * doctest::skip(false || SKIP_SUITE)) {
   TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/", {"tpch/original/14.sql"});
 }
 
+TEST_CASE ("tpch-original-16" * doctest::skip(false || SKIP_SUITE)) {
+  TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/", {"tpch/original/16.sql"});
+}
+
 TEST_CASE ("tpch-original-17" * doctest::skip(false || SKIP_SUITE)) {
   TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/", {"tpch/original/17.sql"});
 }

@@ -13,14 +13,13 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.math.BigDecimal;
-import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
 @SuppressWarnings({"BetaApi", "type.argument.type.incompatible", "UnstableApiUsage"})
 public class RexJsonSerializer {
-  public static JSONObject serialize(RexNode rexNode, List<String> fieldNames) {
+  public static JSONObject serialize(RexNode rexNode, List<String> fieldNames, RexBuilder rexBuilder) {
     return rexNode.accept(new RexVisitor<JSONObject>() {
       @Override
       public JSONObject visitInputRef(RexInputRef inputRef) {
@@ -53,7 +52,7 @@ public class RexJsonSerializer {
             // operands
             JSONArray operandsJArr = new JSONArray();
             for (RexNode operand : call.getOperands()) {
-              operandsJArr.put(serialize(operand, fieldNames));
+              operandsJArr.put(serialize(operand, fieldNames, rexBuilder));
             }
             jo.put("operands", operandsJArr);
             return jo;
@@ -69,7 +68,18 @@ public class RexJsonSerializer {
             // op
             jo.put("op", call.getKind());
             // condition
-            jo.put("condition", visitCaseOperands(call.getOperands(), 0, fieldNames));
+            jo.put("condition", visitCaseOperands(call.getOperands(), 0, fieldNames, rexBuilder));
+            return jo;
+          }
+          case IS_NOT_TRUE: {
+            JSONObject jo = new JSONObject();
+            // op
+            jo.put("op", SqlKind.NOT_EQUALS);
+            // operands
+            JSONArray operandsJArr = new JSONArray();
+            operandsJArr.put(serialize(call.getOperands().get(0), fieldNames, rexBuilder));
+            operandsJArr.put(serialize(rexBuilder.makeLiteral(true), fieldNames, rexBuilder));
+            jo.put("operands", operandsJArr);
             return jo;
           }
           default: {
@@ -109,6 +119,11 @@ public class RexJsonSerializer {
           case DECIMAL: {
             literalJObj.put("type", basicTypeName);
             literalJObj.put("value", literal.getValueAs(Double.class));
+            break;
+          }
+          case BOOLEAN: {
+            literalJObj.put("type", basicTypeName);
+            literalJObj.put("value", literal.getValueAs(Boolean.class));
             break;
           }
           case DATE: {
@@ -180,14 +195,17 @@ public class RexJsonSerializer {
         throw new UnsupportedOperationException("Serialize unsupported RexNode: " + fieldRef.getClass().getSimpleName());
       }
 
-      private JSONObject visitCaseOperands(List<RexNode> rexNodes, int startIndex, List<String> fieldNames) {
+      private JSONObject visitCaseOperands(List<RexNode> rexNodes,
+                                           int startIndex,
+                                           List<String> fieldNames,
+                                           RexBuilder rexBuilder) {
         JSONObject jo = new JSONObject();
-        jo.put("if", serialize(rexNodes.get(startIndex), fieldNames));
-        jo.put("then", serialize(rexNodes.get(startIndex + 1), fieldNames));
+        jo.put("if", serialize(rexNodes.get(startIndex), fieldNames, rexBuilder));
+        jo.put("then", serialize(rexNodes.get(startIndex + 1), fieldNames, rexBuilder));
         if (startIndex + 2 == rexNodes.size() - 1) {
-          jo.put("else", serialize(rexNodes.get(startIndex + 2), fieldNames));
+          jo.put("else", serialize(rexNodes.get(startIndex + 2), fieldNames, rexBuilder));
         } else {
-          jo.put("else", visitCaseOperands(rexNodes, startIndex + 2, fieldNames));
+          jo.put("else", visitCaseOperands(rexNodes, startIndex + 2, fieldNames, rexBuilder));
         }
         return jo;
       }
