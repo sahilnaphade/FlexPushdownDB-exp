@@ -112,13 +112,9 @@ void NestedLoopJoinPOp::send(bool force) {
   if (buffer.has_value()) {
     auto numRows = buffer.value()->numRows();
     if (numRows >= DefaultBufferSize || (force && numRows > 0)) {
-      // Project using projectColumnNames
-      auto expProjectTupleSet = TupleSet::make(buffer.value()->table())->projectExist(getProjectColumnNames());
-      if (!expProjectTupleSet) {
-        throw runtime_error(expProjectTupleSet.error());
-      }
-
-      shared_ptr<Message> tupleMessage = make_shared<TupleMessage>(expProjectTupleSet.value(), name());
+      // Here no need to project buffer using projectColumnNames as it won't have redundant columns
+      auto tupleSet = TupleSet::make(buffer.value()->table());
+      shared_ptr<Message> tupleMessage = make_shared<TupleMessage>(tupleSet, name());
       ctx()->tell(tupleMessage);
       kernel_->clearBuffer();
     }
@@ -130,8 +126,8 @@ void NestedLoopJoinPOp::sendEmpty() {
   if (!outputSchema.has_value()) {
     throw runtime_error("OutputSchema not set yet");
   }
-  auto expProjectTupleSet = TupleSet::make(outputSchema.value())->projectExist(getProjectColumnNames());
-  shared_ptr<Message> tupleMessage = make_shared<TupleMessage>(expProjectTupleSet.value(), name());
+  auto tupleSet = TupleSet::make(outputSchema.value());
+  shared_ptr<Message> tupleMessage = make_shared<TupleMessage>(tupleSet, name());
   ctx()->tell(tupleMessage);
 }
 

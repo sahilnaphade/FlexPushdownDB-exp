@@ -125,16 +125,11 @@ void ProjectPOp::projectAndSendTuples() {
       }
     }
 
+    // Make output tupleSet
     std::shared_ptr<TupleSet> fullTupleSet = TupleSet::make(columns);
 
-    // Project the fullTupleSet using projectColumnNames
-    auto expProjectTupleSet = fullTupleSet->projectExist(getProjectColumnNames());
-    if (!expProjectTupleSet) {
-      throw std::runtime_error(expProjectTupleSet.error());
-    }
-
-    // Send
-    sendTuples(expProjectTupleSet.value());
+    // Send, here no need to project the fullTupleSet using projectColumnNames as it won't have redundant columns
+    sendTuples(fullTupleSet);
     tuples_->clear();
   }
 }
