@@ -640,7 +640,10 @@ shared_ptr<prephysical::PrePhysicalOp> CalcitePlanJsonDeserializer::deserializeP
       // check consumed id
       if (consumedFieldsIdSet.find(fieldId) != consumedFieldsIdSet.end()) {
         // this field is consumed by the consumer, here we add its involvedColumnNames instead of itself
-        projectColumnNames.insert(exprUsedColumnNames.begin(), exprUsedColumnNames.end());
+        for (const auto &columnName: exprUsedColumnNames) {
+          projectColumnNames.emplace(columnName);
+          projectColumnNamePairs.emplace_back(make_pair(columnName, columnName));
+        }
         continue;
       }
       // this field is unconsumed by the consumer, and it's an expr

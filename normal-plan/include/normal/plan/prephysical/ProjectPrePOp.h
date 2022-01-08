@@ -27,9 +27,6 @@ public:
   const vector<std::string> &getExprNames() const;
   const vector<pair<string, string>> &getProjectColumnNamePairs() const;
 
-  // override base implementation
-  void setProjectColumnNames(const set<string> &projectColumnNames);
-
 private:
   vector<shared_ptr<Expression>> exprs_;
   vector<string> exprNames_;
