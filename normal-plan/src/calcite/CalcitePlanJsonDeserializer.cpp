@@ -28,6 +28,7 @@
 #include <normal/expression/gandiva/If.h>
 #include <normal/expression/gandiva/Like.h>
 #include <normal/expression/gandiva/DateExtract.h>
+#include <normal/expression/gandiva/IsNull.h>
 #include <normal/tuple/ColumnName.h>
 
 #include <fmt/format.h>
@@ -281,6 +282,15 @@ shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeExtractOperation(
   return dateExtract(dateExpr, intervalType);
 }
 
+shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeNullOperation(const string &opName, const json &jObj) {
+  if (opName == "IS_NULL") {
+    const auto &expr = deserializeExpression(jObj["operands"].get<vector<json>>()[0]);
+    return isNull(expr);
+  } else {
+    throw runtime_error(fmt::format("Unsupported null expression type, {}, from: {}", opName, to_string(jObj)));
+  }
+}
+
 shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeOperation(const json &jObj) {
   const string &opName = jObj["op"].get<string>();
   // and, or
@@ -304,6 +314,10 @@ shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeOperation(const j
   // extract
   else if (opName == "EXTRACT") {
     return deserializeExtractOperation(jObj);
+  }
+  // is null
+  else if (opName == "IS_NULL") {
+    return deserializeNullOperation(opName, jObj);
   }
   // invalid
   else {
@@ -382,13 +396,26 @@ void CalcitePlanJsonDeserializer::addProjectForJoinColumnRenames(shared_ptr<PreP
   // left
   if (jObj.contains("leftFieldRenames")) {
     const auto &leftFieldRenames = deserializeColumnRenames(jObj["leftFieldRenames"]);
+    vector<pair<string, string>> projectColumnNamePairs;
+    set<string> projectColumnNames;
+    auto leftProjectColumnNames = leftProducer->getProjectColumnNames();
+    for (const auto &column: leftProjectColumnNames) {
+      const auto &renameIt = leftFieldRenames.find(column);
+      if (renameIt == leftFieldRenames.end()) {
+        projectColumnNamePairs.emplace_back(make_pair(column, column));
+        projectColumnNames.emplace(column);
+      } else {
+        projectColumnNamePairs.emplace_back(make_pair(column, renameIt->second));
+        projectColumnNames.emplace(renameIt->second);
+      }
+    }
+
+
     shared_ptr<ProjectPrePOp> projectPrePOp = make_shared<ProjectPrePOp>(pOpIdGenerator_.fetch_add(1),
                                                                          vector<shared_ptr<Expression>>(),
                                                                          vector<string>(),
-                                                                         leftFieldRenames);
-    auto leftProjectColumnNames = leftProducer->getProjectColumnNames();
-    Util::renameColumns(leftProjectColumnNames, leftFieldRenames);
-    projectPrePOp->setProjectColumnNames(leftProjectColumnNames);
+                                                                         projectColumnNamePairs);
+    projectPrePOp->setProjectColumnNames(projectColumnNames);
     projectPrePOp->setProducers({leftProducer});
     calibratedProducers.emplace_back(projectPrePOp);
   } else {
@@ -398,13 +425,25 @@ void CalcitePlanJsonDeserializer::addProjectForJoinColumnRenames(shared_ptr<PreP
   // right
   if (jObj.contains("rightFieldRenames")) {
     const auto &rightFieldRenames = deserializeColumnRenames(jObj["rightFieldRenames"]);
+    vector<pair<string, string>> projectColumnNamePairs;
+    set<string> projectColumnNames;
+    auto rightProjectColumnNames = rightProducer->getProjectColumnNames();
+    for (const auto &column: rightProjectColumnNames) {
+      const auto &renameIt = rightFieldRenames.find(column);
+      if (renameIt == rightFieldRenames.end()) {
+        projectColumnNamePairs.emplace_back(make_pair(column, column));
+        projectColumnNames.emplace(column);
+      } else {
+        projectColumnNamePairs.emplace_back(make_pair(column, renameIt->second));
+        projectColumnNames.emplace(renameIt->second);
+      }
+    }
+
     shared_ptr<ProjectPrePOp> projectPrePOp = make_shared<ProjectPrePOp>(pOpIdGenerator_.fetch_add(1),
                                                                          vector<shared_ptr<Expression>>(),
                                                                          vector<string>(),
-                                                                         rightFieldRenames);
-    auto rightProjectColumnNames = rightProducer->getProjectColumnNames();
-    Util::renameColumns(rightProjectColumnNames, rightFieldRenames);
-    projectPrePOp->setProjectColumnNames(rightProjectColumnNames);
+                                                                         projectColumnNamePairs);
+    projectPrePOp->setProjectColumnNames(projectColumnNames);
     projectPrePOp->setProducers({rightProducer});
     calibratedProducers.emplace_back(projectPrePOp);
   } else {
@@ -571,28 +610,29 @@ shared_ptr<prephysical::PrePhysicalOp> CalcitePlanJsonDeserializer::deserializeP
 
   // project columns (may need rename) and exprs
   set<string> usedColumnNames, projectColumnNames;
+  vector<pair<string, string>> projectColumnNamePairs;
   vector<shared_ptr<Expression>> exprs;
   vector<string> exprNames;
-  unordered_map<string, string> columnRenames;
   const auto &fieldsJArr = jObj["fields"].get<vector<json>>();
 
   for (uint fieldId = 0; fieldId < fieldsJArr.size(); ++fieldId) {
     const auto &fieldJObj = fieldsJArr[fieldId];
     // deserialize field
-    const auto &outputFieldName = ColumnName::canonicalize(fieldJObj["name"].get<string>());
+    const auto &outputColumnName = ColumnName::canonicalize(fieldJObj["name"].get<string>());
     const auto &fieldExprJObj = fieldJObj["expr"];
+
     if (fieldExprJObj.contains("inputRef")) {
-      const string &projectColumnName = ColumnName::canonicalize(fieldExprJObj["inputRef"].get<string>());
-      usedColumnNames.emplace(projectColumnName);
-      if (projectColumnName == outputFieldName) {
-        projectColumnNames.emplace(projectColumnName);
-      } else {
-        projectColumnNames.emplace(outputFieldName);
-        columnRenames.emplace(projectColumnName, outputFieldName);
+      const string &inputColumnName = ColumnName::canonicalize(fieldExprJObj["inputRef"].get<string>());
+      usedColumnNames.emplace(inputColumnName);
+      projectColumnNames.emplace(outputColumnName);
+      projectColumnNamePairs.emplace_back(make_pair(inputColumnName, outputColumnName));
+      if (inputColumnName != outputColumnName) {
         // we need to keep the project to do the rename
         skipSelf = false;
       }
-    } else if (fieldExprJObj.contains("op") || fieldExprJObj.contains("literal")) {
+    }
+
+    else if (fieldExprJObj.contains("op") || fieldExprJObj.contains("literal")) {
       const auto &expr = deserializeExpression(fieldExprJObj);
       const auto &exprUsedColumnNames = expr->involvedColumnNames();
       usedColumnNames.insert(exprUsedColumnNames.begin(), exprUsedColumnNames.end());
@@ -605,10 +645,12 @@ shared_ptr<prephysical::PrePhysicalOp> CalcitePlanJsonDeserializer::deserializeP
       }
       // this field is unconsumed by the consumer, and it's an expr
       exprs.emplace_back(expr);
-      exprNames.emplace_back(outputFieldName);
-      projectColumnNames.emplace(outputFieldName);
+      exprNames.emplace_back(outputColumnName);
+      projectColumnNames.emplace(outputColumnName);
       skipSelf = false;
-    } else {
+    }
+
+    else {
       throw runtime_error(fmt::format("Invalid project field, only column or expr are valid, from: {}",
                                       to_string(jObj)));
     }
@@ -627,7 +669,7 @@ shared_ptr<prephysical::PrePhysicalOp> CalcitePlanJsonDeserializer::deserializeP
     shared_ptr<ProjectPrePOp> projectPrePOp = make_shared<ProjectPrePOp>(pOpIdGenerator_.fetch_add(1),
                                                                          exprs,
                                                                          exprNames,
-                                                                         columnRenames);
+                                                                         projectColumnNamePairs);
     projectPrePOp->setProjectColumnNames(projectColumnNames);
 
     // deserialize producers

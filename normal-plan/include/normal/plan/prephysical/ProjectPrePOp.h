@@ -17,7 +17,7 @@ public:
   ProjectPrePOp(uint id,
                 const vector<shared_ptr<Expression>> &exprs,
                 const vector<std::string> &exprNames,
-                const unordered_map<string, string> &columnRenames);
+                const vector<pair<string, string>> &projectColumnNamePairs);
 
   string getTypeString() override;
 
@@ -25,12 +25,12 @@ public:
 
   const vector<shared_ptr<Expression>> &getExprs() const;
   const vector<std::string> &getExprNames() const;
-  const unordered_map<string, string> &getColumnRenames() const;
+  const vector<pair<string, string>> &getProjectColumnNamePairs() const;
 
 private:
   vector<shared_ptr<Expression>> exprs_;
   vector<string> exprNames_;
-  unordered_map<string, string> columnRenames_;
+  vector<pair<string, string>> projectColumnNamePairs_;
 };
 
 }

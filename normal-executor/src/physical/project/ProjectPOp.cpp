@@ -15,12 +15,12 @@ namespace normal::executor::physical::project {
 ProjectPOp::ProjectPOp(std::string name,
                  std::vector<std::shared_ptr<normal::expression::gandiva::Expression>> exprs,
                  std::vector<std::string> exprNames,
-                 std::unordered_map<std::string, std::string> columnRenames,
+                 std::vector<std::pair<std::string, std::string>> projectColumnNamePairs,
                  std::vector<std::string> projectColumnNames)
     : PhysicalOp(std::move(name), "ProjectPOp", std::move(projectColumnNames)),
       exprs_(std::move(exprs)),
       exprNames_(std::move(exprNames)),
-      columnRenames_(std::move(columnRenames)) {}
+      projectColumnNamePairs_(std::move(projectColumnNamePairs)) {}
 
 void ProjectPOp::onStart() {
   SPDLOG_DEBUG("Starting operator  |  name: '{}'", this->name());
@@ -88,67 +88,44 @@ void ProjectPOp::bufferTuples(const TupleMessage &message) {
 
 void ProjectPOp::projectAndSendTuples() {
   if(tuples_ && tuples_->numRows() > 0) {
-    // Combine project expression columns with input columns as a full tupleSet
-    std::shared_ptr<TupleSet> fullTupleSet;
+    // Collect project columns and project expr columns
+    std::vector<std::shared_ptr<Column>> columns;
 
-    if (exprs_.empty()) {
-      // Rename
-      auto renameRes = tuples_->renameColumns(columnRenames_);
-      if (!renameRes.has_value()) {
-        throw std::runtime_error(renameRes.error());
+    // Project columns
+    for (const auto &projectColumnPair: projectColumnNamePairs_) {
+      const auto &inputColumnName = projectColumnPair.first;
+      const auto &outputColumnName = projectColumnPair.second;
+      const auto &expColumn = tuples_->getColumnByName(inputColumnName);
+      if (!expColumn.has_value()) {
+        throw std::runtime_error(expColumn.error());
       }
-      fullTupleSet = tuples_;
+      const auto &column = expColumn.value();
+      column->setName(outputColumnName);
+      columns.emplace_back(column);
     }
 
-    else {
-      // Project expressions if any
+    // Columns from project exprs
+    if (!exprs_.empty()) {
+      // Evaluate
       auto projExprTuples = projector_.value()->evaluate(*tuples_);
 
-      // Rename project expression columns
+      // Rename
       auto renameRes = projExprTuples->renameColumns(exprNames_);
       if (!renameRes.has_value()) {
         throw std::runtime_error(renameRes.error());
       }
 
-      // Rename input columns
-      renameRes = tuples_->renameColumns(columnRenames_);
-      if (!renameRes.has_value()) {
-        throw std::runtime_error(renameRes.error());
-      }
-
-      // Combine project expression columns with input columns
-      // if the expr name is same with an input column, then the input column is discard, because if the input column
-      // should be kept, there must be a rename for that column which is done above
-      std::set<std::string> columnNameSet;
-      std::vector<std::shared_ptr<Column>> columns;
-
+      // Add columns
       for (int c = 0; c < projExprTuples->numColumns(); ++c) {
-        const auto &columnName = projExprTuples->schema()->field(c)->name();
-        if (columnNameSet.find(columnName) != columnNameSet.end()) {
-          continue;
-        }
         const auto &expColumn = projExprTuples->getColumnByIndex(c);
         if (!expColumn.has_value()) {
           throw std::runtime_error(expColumn.error());
         }
         columns.emplace_back(expColumn.value());
-        columnNameSet.emplace(columnName);
       }
-      for (int c = 0; c < tuples_->numColumns(); ++c) {
-        const auto &columnName = tuples_->schema()->field(c)->name();
-        if (columnNameSet.find(columnName) != columnNameSet.end()) {
-          continue;
-        }
-        const auto &expColumn = tuples_->getColumnByIndex(c);
-        if (!expColumn.has_value()) {
-          throw std::runtime_error(expColumn.error());
-        }
-        columns.emplace_back(expColumn.value());
-        columnNameSet.emplace(columnName);
-      }
-
-      fullTupleSet = TupleSet::make(columns);
     }
+
+    std::shared_ptr<TupleSet> fullTupleSet = TupleSet::make(columns);
 
     // Project the fullTupleSet using projectColumnNames
     auto expProjectTupleSet = fullTupleSet->projectExist(getProjectColumnNames());

@@ -29,7 +29,8 @@ enum ExpressionType {
   IN,
   IF,
   LIKE,
-  DATE_EXTRACT
+  DATE_EXTRACT,
+  IS_NULL
 };
 
 }

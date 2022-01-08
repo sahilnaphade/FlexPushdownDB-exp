@@ -87,7 +87,7 @@ tl::expected<arrow::ArrayVector, string> OuterJoinHelper::computeKeepSide(const 
   }
 
   // if no rowMatchIndexes, then all rows are unmatched, then simply return inputArrayVector
-  if (!rowMatchIndexes_.has_value()) {
+  if (!rowMatchIndexes_.has_value() || rowMatchIndexes_.value().empty()) {
     return inputArrayVector;
   }
 

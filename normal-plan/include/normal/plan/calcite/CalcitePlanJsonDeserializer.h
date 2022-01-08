@@ -45,6 +45,7 @@ private:
   shared_ptr<Expression> deserializeInOperation(const json &jObj);
   shared_ptr<Expression> deserializeCaseOperation(const json &jObj);
   shared_ptr<Expression> deserializeExtractOperation(const json &jObj);
+  shared_ptr<Expression> deserializeNullOperation(const string &opName, const json &jObj);
   shared_ptr<Expression> deserializeExpression(const json &jObj);
 
   unordered_map<string, string> deserializeColumnRenames(const vector<json> &jArr);

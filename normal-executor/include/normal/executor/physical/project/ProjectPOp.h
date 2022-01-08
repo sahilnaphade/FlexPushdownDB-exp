@@ -28,7 +28,7 @@ public:
   ProjectPOp(std::string name,
           std::vector<std::shared_ptr<normal::expression::gandiva::Expression>> exprs,
           std::vector<std::string> exprNames,
-          std::unordered_map<std::string, std::string> columnRenames,
+          std::vector<std::pair<std::string, std::string>> projectColumnNamePairs,
           std::vector<std::string> projectColumnNames);
 
   /**
@@ -89,9 +89,9 @@ private:
   std::vector<std::string> exprNames_;
 
   /**
-   * Columns to be renamed
+   * The project columns (pair of input name and output name)
    */
-  std::unordered_map<std::string, std::string> columnRenames_;
+  std::vector<std::pair<std::string, std::string>> projectColumnNamePairs_;
 
   /**
    * A buffer of received tuples that are not projected until enough tuples have been received

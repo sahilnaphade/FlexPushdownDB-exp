@@ -5,6 +5,7 @@ import com.google.common.collect.Range;
 import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.apache.calcite.rex.*;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.DateString;
 import org.apache.calcite.util.NlsString;
@@ -45,7 +46,8 @@ public class RexJsonSerializer {
           case TIMES:
           case DIVIDE:
           case LIKE:
-          case EXTRACT: {
+          case EXTRACT:
+          case IS_NULL: {
             JSONObject jo = new JSONObject();
             // op
             jo.put("op", call.getKind());
@@ -71,16 +73,31 @@ public class RexJsonSerializer {
             jo.put("condition", visitCaseOperands(call.getOperands(), 0, fieldNames, rexBuilder));
             return jo;
           }
-          case IS_NOT_TRUE: {
+          case IS_TRUE:
+          case IS_FALSE: {
             JSONObject jo = new JSONObject();
             // op
-            jo.put("op", SqlKind.NOT_EQUALS);
+            jo.put("op", SqlKind.EQUALS);
             // operands
             JSONArray operandsJArr = new JSONArray();
             operandsJArr.put(serialize(call.getOperands().get(0), fieldNames, rexBuilder));
-            operandsJArr.put(serialize(rexBuilder.makeLiteral(true), fieldNames, rexBuilder));
+            if (call.getKind() == SqlKind.IS_TRUE) {
+              operandsJArr.put(serialize(rexBuilder.makeLiteral(true), fieldNames, rexBuilder));
+            } else {
+              operandsJArr.put(serialize(rexBuilder.makeLiteral(false), fieldNames, rexBuilder));
+            }
             jo.put("operands", operandsJArr);
             return jo;
+          }
+          case IS_NOT_TRUE:
+          case IS_NOT_FALSE: {
+            RexNode operand = call.getOperands().get(0);
+            RexNode isNull = rexBuilder.makeCall(SqlStdOperatorTable.IS_NULL, operand);
+            RexNode nodeIfNotNull = call.getKind() == SqlKind.IS_NOT_TRUE ?
+                    rexBuilder.makeCall(SqlStdOperatorTable.IS_FALSE, operand):
+                    rexBuilder.makeCall(SqlStdOperatorTable.IS_TRUE, operand);
+            RexNode orNode = rexBuilder.makeCall(SqlStdOperatorTable.OR, isNull, nodeIfNotNull);
+            return serialize(orNode, fieldNames, rexBuilder);
           }
           default: {
             throw new UnsupportedOperationException("Serialize unsupported RexCall: " + call.getKind());

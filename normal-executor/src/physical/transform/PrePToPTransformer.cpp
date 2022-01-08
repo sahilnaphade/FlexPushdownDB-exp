@@ -323,7 +323,7 @@ PrePToPTransformer::transformProject(const shared_ptr<ProjectPrePOp> &projectPre
     selfPOps.emplace_back(make_shared<project::ProjectPOp>(fmt::format("Project[{}]-{}", prePOpId, i),
                                                            projectPrePOp->getExprs(),
                                                            projectPrePOp->getExprNames(),
-                                                           projectPrePOp->getColumnRenames(),
+                                                           projectPrePOp->getProjectColumnNamePairs(),
                                                            projectColumnNames));
   }
 
