@@ -82,6 +82,10 @@ void HashJoinProbeAbstractKernel::bufferOutputSchema(const shared_ptr<TupleSetIn
   }
 }
 
+const optional<shared_ptr<::arrow::Schema>> &HashJoinProbeAbstractKernel::getOutputSchema() const {
+  return outputSchema_;
+}
+
 const optional<shared_ptr<normal::tuple::TupleSet>> &HashJoinProbeAbstractKernel::getBuffer() const {
   return buffer_;
 }
@@ -100,5 +104,5 @@ tl::expected<void, string> HashJoinProbeAbstractKernel::validateColumnNames(cons
 
   return {};
 }
-          
+
 }

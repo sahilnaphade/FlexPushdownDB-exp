@@ -30,6 +30,8 @@ public:
   virtual tl::expected<void, string> finalize() = 0;
 
   const optional<shared_ptr<normal::tuple::TupleSet>> &getBuffer() const;
+  const optional<shared_ptr<::arrow::Schema>> &getOutputSchema() const;
+
   void clearBuffer();
 
 protected:

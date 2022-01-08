@@ -29,8 +29,11 @@ tl::expected<void, string> bufferInput(optional<shared_ptr<TupleSet>> &buffer,
   if (!buffer.has_value()) {
     buffer = incomingTupleSet;
     return {};
+  } else if (incomingTupleSet->numRows() > 0) {
+    return buffer.value()->append(incomingTupleSet);
+  } else {
+    return {};
   }
-  return buffer.value()->append(incomingTupleSet);
 }
 
 tl::expected<shared_ptr<TupleSet>, string> NestedLoopJoinKernel::join(const shared_ptr<TupleSet> &leftTupleSet,
@@ -111,11 +114,18 @@ tl::expected<shared_ptr<TupleSet>, string> NestedLoopJoinKernel::join(const shar
 }
 
 tl::expected<void, string> NestedLoopJoinKernel::joinIncomingLeft(const shared_ptr<TupleSet> &incomingLeft) {
-  // buffer tupleSet if having tuples
-  if (incomingLeft->numRows() > 0) {
-    auto result = bufferInput(leftTupleSet_, incomingLeft);
-    if (!result) {
-      return tl::make_unexpected(result.error());
+  // buffer tupleSet
+  auto result = bufferInput(leftTupleSet_, incomingLeft);
+  if (!result) {
+    return tl::make_unexpected(result.error());
+  }
+
+  // create output schema and outer join helpers
+  if (rightTupleSet_.has_value()) {
+    bufferOutputSchema(incomingLeft, rightTupleSet_.value());
+    auto makeResult = makeOuterJoinHelpers();
+    if (!makeResult.has_value()) {
+      return makeResult;
     }
   }
   
@@ -123,9 +133,6 @@ tl::expected<void, string> NestedLoopJoinKernel::joinIncomingLeft(const shared_p
   if (!rightTupleSet_.has_value() || rightTupleSet_.value()->numRows() == 0 || incomingLeft->numRows() == 0) {
     return {};
   }
-
-  // create output schema
-  bufferOutputSchema(incomingLeft, rightTupleSet_.value());
 
   // join
   const auto &expectedJoinedTupleSet = join(incomingLeft, rightTupleSet_.value());
@@ -143,11 +150,18 @@ tl::expected<void, string> NestedLoopJoinKernel::joinIncomingLeft(const shared_p
 }
 
 tl::expected<void, string> NestedLoopJoinKernel::joinIncomingRight(const shared_ptr<TupleSet> &incomingRight) {
-  // buffer tupleSet if having tuples
-  if (incomingRight->numRows() > 0) {
-    auto result = bufferInput(rightTupleSet_, incomingRight);
-    if (!result) {
-      return tl::make_unexpected(result.error());
+  // buffer tupleSet
+  auto result = bufferInput(rightTupleSet_, incomingRight);
+  if (!result) {
+    return tl::make_unexpected(result.error());
+  }
+
+  // Create output schema and outer join helpers
+  if (leftTupleSet_.has_value()) {
+    bufferOutputSchema(leftTupleSet_.value(), incomingRight);
+    auto makeResult = makeOuterJoinHelpers();
+    if (!makeResult.has_value()) {
+      return makeResult;
     }
   }
 
@@ -155,9 +169,6 @@ tl::expected<void, string> NestedLoopJoinKernel::joinIncomingRight(const shared_
   if (!leftTupleSet_.has_value() || leftTupleSet_.value()->numRows() == 0 || incomingRight->numRows() == 0) {
     return {};
   }
-
-  // create output schema
-  bufferOutputSchema(leftTupleSet_.value(), incomingRight);
 
   // join
   const auto &expectedJoinedTupleSet = join(leftTupleSet_.value(), incomingRight);
@@ -230,6 +241,10 @@ void NestedLoopJoinKernel::bufferOutputSchema(const shared_ptr<TupleSet> &leftTu
     }
     outputSchema_ = make_shared<::arrow::Schema>(outputFields);
   }
+}
+
+const optional<shared_ptr<::arrow::Schema>> &NestedLoopJoinKernel::getOutputSchema() const {
+  return outputSchema_;
 }
 
 tl::expected<void, string> NestedLoopJoinKernel::makeOuterJoinHelpers() {

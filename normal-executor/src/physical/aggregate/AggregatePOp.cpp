@@ -54,13 +54,16 @@ void AggregatePOp::onComplete(const CompleteMessage &) {
   if (!ctx()->isComplete() &&
       this->ctx()->operatorMap().allComplete(normal::executor::physical::POpRelationshipType::Producer)) {
 
-    // Finalize if has result
+    // Finalize
+    shared_ptr<TupleSet> tupleSet;
     if (hasResult()) {
-      const auto &tupleSet = finalize();
-      shared_ptr<Message> tupleMessage = make_shared<TupleMessage>(tupleSet, this->name());
-      ctx()->tell(tupleMessage);
+      tupleSet = finalize();
+    } else {
+      tupleSet = finalizeEmpty();
     }
 
+    shared_ptr<Message> tupleMessage = make_shared<TupleMessage>(tupleSet, this->name());
+    ctx()->tell(tupleMessage);
     ctx()->notifyComplete();
   }
 }
@@ -123,6 +126,15 @@ shared_ptr<TupleSet> AggregatePOp::finalize() {
 
   SPDLOG_DEBUG("Completing  |  Aggregation result: \n{}", aggregatedTuples->toString());
   return expProjectTupleSet.value();
+}
+
+shared_ptr<TupleSet> AggregatePOp::finalizeEmpty() {
+  arrow::FieldVector fields;
+  for (const auto &function: functions_) {
+    fields.emplace_back(make_shared<arrow::Field>(function->getOutputColumnName(), function->returnType()));
+  }
+  auto outputSchema = arrow::schema(fields);
+  return TupleSet::make(outputSchema);
 }
 
 bool AggregatePOp::hasResult() {

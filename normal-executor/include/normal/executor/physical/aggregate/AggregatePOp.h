@@ -35,6 +35,7 @@ private:
 
   void compute(const shared_ptr<TupleSet> &tupleSet);
   shared_ptr<TupleSet> finalize();
+  shared_ptr<TupleSet> finalizeEmpty();
 
   bool hasResult();
   

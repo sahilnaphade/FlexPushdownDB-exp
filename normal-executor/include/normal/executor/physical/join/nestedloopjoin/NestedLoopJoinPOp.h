@@ -35,12 +35,15 @@ private:
   void onStart();
   void onComplete(const CompleteMessage &);
   void onTuple(const TupleMessage &message);
+
   void send(bool force);
+  void sendEmpty();
 
   set<string> leftProducerNames_;
   set<string> rightProducerName_;
 
   shared_ptr<NestedLoopJoinKernel> kernel_;
+  bool sentResult = false;
 
 };
 

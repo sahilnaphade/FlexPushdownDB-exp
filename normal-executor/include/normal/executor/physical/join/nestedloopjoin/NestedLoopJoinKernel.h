@@ -33,6 +33,7 @@ public:
   tl::expected<void, string> joinIncomingRight(const shared_ptr<TupleSet> &incomingRight);
 
   const optional<shared_ptr<TupleSet>> &getBuffer() const;
+  const optional<shared_ptr<::arrow::Schema>> &getOutputSchema() const;
   tl::expected<void, string> finalize();
   void clearBuffer();
 
@@ -45,7 +46,7 @@ private:
 
   tl::expected<void, string> makeOuterJoinHelpers();
   tl::expected<void, string> computeOuterJoin();
-  
+
   optional<shared_ptr<expression::gandiva::Expression>> predicate_;
   optional<shared_ptr<TupleSet>> leftTupleSet_;
   optional<shared_ptr<TupleSet>> rightTupleSet_;

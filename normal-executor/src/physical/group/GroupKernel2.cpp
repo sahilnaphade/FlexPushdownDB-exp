@@ -251,6 +251,7 @@ tl::expected<shared_ptr<TupleSet>, string> GroupKernel2::finaliseEmpty() {
     fields.emplace_back(make_shared<arrow::Field>(function->getOutputColumnName(), function->returnType()));
   }
   auto outputSchema = arrow::schema(fields);
+
   return TupleSet::make(outputSchema);
 }
 

@@ -43,8 +43,10 @@ private:
   void onComplete(const CompleteMessage &msg);
 
   void send(bool force);
+  void sendEmpty();
 
   shared_ptr<HashJoinProbeAbstractKernel> kernel_;
+  bool sentResult = false;
 
 };
 

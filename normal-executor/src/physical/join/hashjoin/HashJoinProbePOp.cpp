@@ -89,6 +89,11 @@ void HashJoinProbePOp::onComplete(const CompleteMessage &) {
     // Send final tupleSet
     send(true);
 
+    // Send empty if no result
+    if (!sentResult) {
+      sendEmpty();
+    }
+
     // Complete
   	ctx()->notifyComplete();
   }
@@ -117,7 +122,18 @@ void HashJoinProbePOp::send(bool force) {
 
       shared_ptr<Message> tupleMessage = make_shared<TupleMessage>(expProjectTupleSet.value(), name());
       ctx()->tell(tupleMessage);
+      sentResult = true;
       kernel_->clearBuffer();
     }
   }
+}
+
+void HashJoinProbePOp::sendEmpty() {
+  auto outputSchema = kernel_->getOutputSchema();
+  if (!outputSchema.has_value()) {
+    throw runtime_error("OutputSchema not set yet");
+  }
+  auto expProjectTupleSet = TupleSet::make(outputSchema.value())->projectExist(getProjectColumnNames());
+  shared_ptr<Message> tupleMessage = make_shared<TupleMessage>(expProjectTupleSet.value(), name());
+  ctx()->tell(tupleMessage);
 }
