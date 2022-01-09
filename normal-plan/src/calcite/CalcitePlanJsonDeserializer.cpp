@@ -29,6 +29,7 @@
 #include <normal/expression/gandiva/Like.h>
 #include <normal/expression/gandiva/DateExtract.h>
 #include <normal/expression/gandiva/IsNull.h>
+#include <normal/expression/gandiva/Substr.h>
 #include <normal/tuple/ColumnName.h>
 
 #include <fmt/format.h>
@@ -98,32 +99,36 @@ shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeInputRef(const js
 shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeLiteral(const json &jObj) {
   const auto &literalJObj = jObj["literal"];
   const auto &type = literalJObj["type"].get<string>();
+  const auto &valueJObj = literalJObj["value"];
+
+  // check if the value is null
+  bool isNull = valueJObj.is_null();
 
   if (type == "CHAR" || type == "VARCHAR") {
-    const string &value = literalJObj["value"].get<string>();
+    optional<string> value = isNull ? nullopt : optional<string>(valueJObj.get<string>());
     return str_lit(value);
   } else if (type == "INTEGER") {
-    const int value = literalJObj["value"].get<int>();
+    optional<int> value = isNull ? nullopt : optional<int>(valueJObj.get<int>());
     // gandiva only supports binary expressions with same left, right and return type,
     // so to avoid casting we make all integer fields as int64, as well as scalars.
     return num_lit<arrow::Int64Type>(value);
   } else if (type == "BIGINT") {
-    const long value = literalJObj["value"].get<long>();
+    optional<long> value = isNull ? nullopt : optional<long>(valueJObj.get<long>());
     return num_lit<arrow::Int64Type>(value);
   } else if (type == "DOUBLE" || type == "DECIMAL") {
-    const double value = literalJObj["value"].get<double>();
+    optional<double> value = isNull ? nullopt : optional<double>(valueJObj.get<double>());
     return num_lit<arrow::DoubleType>(value);
   } else if (type == "BOOLEAN") {
-    const bool value = literalJObj["value"].get<bool>();
+    optional<bool> value = isNull ? nullopt : optional<bool>(valueJObj.get<bool>());
     return num_lit<arrow::BooleanType>(value);
   } else if (type == "DATE_MS") {
-    const long value = literalJObj["value"].get<long>();
+    optional<long> value = isNull ? nullopt : optional<long>(valueJObj.get<long>());
     return num_lit<arrow::Date64Type>(value);
   } else if (type == "INTERVAL_DAY") {
-    const int value = literalJObj["value"].get<int>();
+    optional<int> value = isNull ? nullopt : optional<int>(valueJObj.get<int>());
     return num_lit<arrow::Int32Type>(value, DAY);
   } else if (type == "INTERVAL_MONTH") {
-    const int value = literalJObj["value"].get<int>();
+    optional<int> value = isNull ? nullopt : optional<int>(valueJObj.get<int>());
     return num_lit<arrow::Int32Type>(value, MONTH);
   }
   else {
@@ -291,6 +296,14 @@ shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeNullOperation(con
   }
 }
 
+shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeSubstrOperation(const json &jObj) {
+  const auto &operandsJArr = jObj["operands"].get<vector<json>>();
+  const auto &expr = deserializeExpression(operandsJArr[0]);
+  const auto &fromLit = deserializeExpression(operandsJArr[1]);
+  const auto &forLit = deserializeExpression(operandsJArr[2]);
+  return substr(expr, fromLit, forLit);
+}
+
 shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeOperation(const json &jObj) {
   const string &opName = jObj["op"].get<string>();
   // and, or
@@ -318,6 +331,9 @@ shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeOperation(const j
   // is null
   else if (opName == "IS_NULL") {
     return deserializeNullOperation(opName, jObj);
+  }
+  else if (opName == "SUBSTRING") {
+    return deserializeSubstrOperation(jObj);
   }
   // invalid
   else {

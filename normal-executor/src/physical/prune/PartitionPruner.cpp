@@ -141,18 +141,38 @@ shared_ptr<Scalar> PartitionPruner::litToScalar(const shared_ptr<Expression> &li
   switch (literal->getType()) {
     case expression::gandiva::STRING_LITERAL: {
       const auto &strLit = static_pointer_cast<StringLiteral>(literal);
-      return Scalar::make(arrow::MakeScalar(strLit->value()));
+      const auto &value = strLit->value();
+      if (value.has_value()) {
+        return Scalar::make(arrow::MakeScalar(*value));
+      } else {
+        return nullptr;
+      }
     }
     case expression::gandiva::NUMERIC_LITERAL: {
       if (literal->getTypeString() == "NumericLiteral<Int32>") {
         const auto &numLit = static_pointer_cast<NumericLiteral<arrow::Int32Type>>(literal);
-        return Scalar::make(arrow::MakeScalar(numLit->value()));
+        const auto &value = numLit->value();
+        if (value.has_value()) {
+          return Scalar::make(arrow::MakeScalar(*value));
+        } else {
+          return nullptr;
+        }
       } else if (literal->getTypeString() == "NumericLiteral<Int64>") {
         const auto &numLit = static_pointer_cast<NumericLiteral<arrow::Int64Type>>(literal);
-        return Scalar::make(arrow::MakeScalar(numLit->value()));
+        const auto &value = numLit->value();
+        if (value.has_value()) {
+          return Scalar::make(arrow::MakeScalar(*value));
+        } else {
+          return nullptr;
+        }
       } if (literal->getTypeString() == "NumericLiteral<Double>") {
         const auto &numLit = static_pointer_cast<NumericLiteral<arrow::DoubleType>>(literal);
-        return Scalar::make(arrow::MakeScalar(numLit->value()));
+        const auto &value = numLit->value();
+        if (value.has_value()) {
+          return Scalar::make(arrow::MakeScalar(*value));
+        } else {
+          return nullptr;
+        }
       } else {
         return nullptr;
       }

@@ -30,7 +30,8 @@ enum ExpressionType {
   IF,
   LIKE,
   DATE_EXTRACT,
-  IS_NULL
+  IS_NULL,
+  SUBSTR
 };
 
 }

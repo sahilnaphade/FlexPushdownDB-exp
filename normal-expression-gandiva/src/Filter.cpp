@@ -93,7 +93,7 @@ std::shared_ptr<normal::tuple::TupleSet> Filter::evaluate(const normal::tuple::T
 
 	  assert(batch->ValidateFull().ok());
 	  std::shared_ptr<::gandiva::SelectionVector> selection_vector;
-	  auto status = ::gandiva::SelectionVector::MakeInt32(batch->num_rows(), ::arrow::default_memory_pool(), &selection_vector);
+	  auto status = ::gandiva::SelectionVector::MakeInt64(batch->num_rows(), ::arrow::default_memory_pool(), &selection_vector);
 	  if (!status.ok()) {
 		throw std::runtime_error(status.message());
 	  }
@@ -223,7 +223,7 @@ void Filter::compile(const std::shared_ptr<normal::tuple::Schema> &Schema) {
   // Build a projector for the pass through expression
   status = ::gandiva::Projector::Make(Schema->getSchema(),
                                       fieldExpressions,
-                                      ::gandiva::SelectionVector::MODE_UINT32,
+                                      ::gandiva::SelectionVector::MODE_UINT64,
                                       ::gandiva::ConfigurationBuilder::DefaultConfiguration(),
                                       &gandivaProjector_);
 

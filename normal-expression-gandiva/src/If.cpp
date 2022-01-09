@@ -20,7 +20,7 @@ void If::compile(const shared_ptr<arrow::Schema> &schema) {
   thenExpr_->compile(schema);
   elseExpr_->compile(schema);
 
-  // FIXME: check return type between "then" and "else
+  // FIXME: check return type between "then" and "else"
   returnType_ = thenExpr_->getReturnType();
   gandivaExpression_ = ::gandiva::TreeExprBuilder::MakeIf(ifExpr_->getGandivaExpression(),
                                                           thenExpr_->getGandivaExpression(),

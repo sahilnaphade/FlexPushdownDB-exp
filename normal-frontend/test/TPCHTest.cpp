@@ -95,6 +95,10 @@ TEST_CASE ("tpch-original-20" * doctest::skip(false || SKIP_SUITE)) {
   TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/", {"tpch/original/20.sql"});
 }
 
+TEST_CASE ("tpch-original-22" * doctest::skip(false || SKIP_SUITE)) {
+  TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/", {"tpch/original/22.sql"});
+}
+
 TEST_CASE ("temp" * doctest::skip(true)) {
   auto builder = make_shared<arrow::Int64Builder>();
   builder->AppendValues({1, 2, 3}, {true, true, false});

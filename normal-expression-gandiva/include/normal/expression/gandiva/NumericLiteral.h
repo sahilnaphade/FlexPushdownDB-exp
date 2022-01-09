@@ -15,14 +15,13 @@
 #include <memory>
 #include <sstream>
 
-
 namespace normal::expression::gandiva {
 
 template<typename ARROW_TYPE, typename C_TYPE = typename ARROW_TYPE::c_type>
 class NumericLiteral : public Expression {
 
 public:
-  explicit NumericLiteral(C_TYPE value, std::optional<DateIntervalType> intervalType) :
+  explicit NumericLiteral(std::optional<C_TYPE> value, std::optional<DateIntervalType> intervalType) :
     Expression(NUMERIC_LITERAL),
     value_(value),
     intervalType_(intervalType) {}
@@ -30,7 +29,12 @@ public:
   void compile(const std::shared_ptr<arrow::Schema> &) override {
     returnType_ = ::arrow::TypeTraits<ARROW_TYPE>::type_singleton();
 
-    auto literal = ::gandiva::TreeExprBuilder::MakeLiteral(value_);
+    ::gandiva::NodePtr literal;
+    if (value_.has_value()) {
+      literal = ::gandiva::TreeExprBuilder::MakeLiteral(*value_);
+    } else {
+      literal = ::gandiva::TreeExprBuilder::MakeNull(returnType_);
+    }
     // if the type is date64, the initial literal made from value_ will be int64, so we need to cast
     if (returnType_->id() == arrow::Type::DATE64) {
       literal = ::gandiva::TreeExprBuilder::MakeFunction("castDate", {literal}, returnType_);
@@ -42,11 +46,23 @@ public:
   std::string alias() override {
     const shared_ptr<arrow::DataType> &arrowType = ::arrow::TypeTraits<ARROW_TYPE>::type_singleton();
     if (arrowType->id() == arrow::Type::INT32 || arrowType->id() == arrow::Type::INT64) {
-      return prefixInt_ + std::to_string(value_);
+      if (value_.has_value()) {
+        return prefixInt_ + std::to_string(*value_);
+      } else {
+        return prefixInt_ + "0";
+      }
     } else if (arrowType->id() == arrow::Type::DOUBLE) {
-      return prefixFloat_ + std::to_string(value_);
+      if (value_.has_value()) {
+        return prefixFloat_ + std::to_string(*value_);
+      } else {
+        return prefixFloat_ + "0.0";
+      };
     } else {
-      return std::to_string(value_);
+      if (value_.has_value()) {
+        return std::to_string(*value_);
+      } else {
+        return "0";
+      }
     }
   }
 
@@ -69,10 +85,10 @@ public:
   }
 
   std::set<std::string> involvedColumnNames() override{
-    return std::set<std::string>();
+    return {};
   }
 
-  C_TYPE value() const {
+  std::optional<C_TYPE> value() const {
     return value_;
   }
 
@@ -82,17 +98,22 @@ public:
 
   // make the opposite literal of the current one, e.g. 5 -> -5
   void makeOpposite() {
-    value_ = -value_;
+    if (value_.has_value()) {
+      value_ = std::optional<C_TYPE>(-*value_);
+    } else {
+      throw runtime_error("Cannot make opposite on null literal");
+    }
   }
 
 private:
-  C_TYPE value_;
+  std::optional<C_TYPE> value_;
   std::optional<DateIntervalType> intervalType_;    // denote whether this literal is used as an interval
 
 };
 
 template<typename ARROW_TYPE, typename C_TYPE = typename ARROW_TYPE::c_type>
-std::shared_ptr<Expression> num_lit(C_TYPE value, std::optional<DateIntervalType> intervalType = std::nullopt){
+std::shared_ptr<Expression> num_lit(std::optional<C_TYPE> value,
+                                    std::optional<DateIntervalType> intervalType = std::nullopt){
   return std::make_shared<NumericLiteral<ARROW_TYPE>>(value, intervalType);
 }
 

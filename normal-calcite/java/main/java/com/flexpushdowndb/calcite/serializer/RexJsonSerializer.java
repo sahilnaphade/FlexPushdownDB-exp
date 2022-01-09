@@ -2,6 +2,7 @@ package com.flexpushdowndb.calcite.serializer;
 
 import com.google.common.collect.BoundType;
 import com.google.common.collect.Range;
+import com.sun.org.apache.xpath.internal.operations.Bool;
 import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.apache.calcite.rex.*;
 import org.apache.calcite.sql.SqlKind;
@@ -14,6 +15,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.math.BigDecimal;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -99,6 +101,9 @@ public class RexJsonSerializer {
             RexNode orNode = rexBuilder.makeCall(SqlStdOperatorTable.OR, isNull, nodeIfNotNull);
             return serialize(orNode, fieldNames, rexBuilder);
           }
+          case OTHER_FUNCTION: {
+            return visitOtherFunction(call, fieldNames);
+          }
           default: {
             throw new UnsupportedOperationException("Serialize unsupported RexCall: " + call.getKind());
           }
@@ -114,54 +119,55 @@ public class RexJsonSerializer {
       public JSONObject visitLiteral(RexLiteral literal) {
         JSONObject literalJObj = new JSONObject();
         SqlTypeName basicTypeName = literal.getType().getSqlTypeName();
+        Object type, value;
 
         switch (basicTypeName) {
           case CHAR:
           case VARCHAR: {
-            literalJObj.put("type", basicTypeName);
-            literalJObj.put("value", literal.getValueAs(String.class));
+            type = basicTypeName;
+            value = literal.getValueAs(String.class);
             break;
           }
           case INTEGER: {
-            literalJObj.put("type", basicTypeName);
-            literalJObj.put("value", literal.getValueAs(Integer.class));
+            type = basicTypeName;
+            value = literal.getValueAs(Integer.class);
             break;
           }
           case BIGINT: {
-            literalJObj.put("type", basicTypeName);
-            literalJObj.put("value", literal.getValueAs(Long.class));
+            type = basicTypeName;
+            value = literal.getValueAs(Long.class);
             break;
           }
           case DOUBLE:
           case DECIMAL: {
-            literalJObj.put("type", basicTypeName);
-            literalJObj.put("value", literal.getValueAs(Double.class));
+            type = basicTypeName;
+            value = literal.getValueAs(Double.class);
             break;
           }
           case BOOLEAN: {
-            literalJObj.put("type", basicTypeName);
-            literalJObj.put("value", literal.getValueAs(Boolean.class));
+            type = basicTypeName;
+            value = literal.getValueAs(Boolean.class);
             break;
           }
           case DATE: {
-            literalJObj.put("type", "DATE_MS");
-            literalJObj.put("value", Objects.requireNonNull(literal.getValueAs(DateString.class)).getMillisSinceEpoch());
+            type = "DATE_MS";
+            value = Objects.requireNonNull(literal.getValueAs(DateString.class)).getMillisSinceEpoch();
             break;
           }
           case INTERVAL_DAY: {
-            literalJObj.put("type", "INTERVAL_DAY");
-            literalJObj.put("value", literal.getValueAs(Long.class) / 86400_000);   // number of days
+            type = "INTERVAL_DAY";
+            value = literal.getValueAs(Long.class) / 86400_000;   // number of days
             break;
           }
           case INTERVAL_YEAR:
           case INTERVAL_MONTH:{
-            literalJObj.put("type", "INTERVAL_MONTH");
-            literalJObj.put("value", literal.getValueAs(Integer.class));            // number of months
+            type = "INTERVAL_MONTH";
+            value = literal.getValueAs(Integer.class);            // number of months
             break;
           }
           case SYMBOL: {
-            literalJObj.put("type", basicTypeName);
-            literalJObj.put("value", literal.getValueAs(TimeUnitRange.class));
+            type = basicTypeName;
+            value = literal.getValueAs(TimeUnitRange.class);
             break;
           }
           default:
@@ -169,6 +175,12 @@ public class RexJsonSerializer {
                     + basicTypeName);
         }
 
+        literalJObj.put("type", type);
+        if (value != null) {
+          literalJObj.put("value", value);
+        } else {
+          literalJObj.put("value", JSONObject.NULL);
+        }
         return new JSONObject().put("literal", literalJObj);
       }
 
@@ -225,6 +237,26 @@ public class RexJsonSerializer {
           jo.put("else", visitCaseOperands(rexNodes, startIndex + 2, fieldNames, rexBuilder));
         }
         return jo;
+      }
+
+      private JSONObject visitOtherFunction(RexCall call, List<String> fieldNames) {
+        switch (call.op.getName()) {
+          case "SUBSTRING": {
+            JSONObject jo = new JSONObject();
+            // op
+            jo.put("op", call.op.getName());
+            // operands
+            JSONArray operandsJArr = new JSONArray();
+            for (RexNode operand : call.getOperands()) {
+              operandsJArr.put(serialize(operand, fieldNames, rexBuilder));
+            }
+            jo.put("operands", operandsJArr);
+            return jo;
+          }
+          default: {
+            throw new UnsupportedOperationException("Serialize unsupported OTHER_FUNCTION: " + call.op.getName());
+          }
+        }
       }
     });
   }
