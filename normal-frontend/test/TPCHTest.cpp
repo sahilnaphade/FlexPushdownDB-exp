@@ -99,7 +99,8 @@ TEST_CASE ("tpch-original-20" * doctest::skip(false || SKIP_SUITE)) {
   TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/", {"tpch/original/20.sql"});
 }
 
-// Cannot finish, plan from Calcite has too many Cartesian product
+// Cannot finish, plan from Calcite has too many Cartesian product.
+// See https://issues.apache.org/jira/browse/CALCITE-320?jql=text%20~%20%22decorrelator%22
 TEST_CASE ("tpch-original-21" * doctest::skip(true || SKIP_SUITE)) {
   TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/", {"tpch/original/21.sql"});
 }
