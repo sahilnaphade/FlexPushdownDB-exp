@@ -412,10 +412,10 @@ void CalcitePlanJsonDeserializer::addProjectForJoinColumnRenames(shared_ptr<PreP
   // left
   if (jObj.contains("leftFieldRenames")) {
     const auto &leftFieldRenames = deserializeColumnRenames(jObj["leftFieldRenames"]);
+    const auto &leftFieldNames = jObj["leftFieldNames"].get<vector<string>>();
     vector<pair<string, string>> projectColumnNamePairs;
     set<string> projectColumnNames;
-    auto leftProjectColumnNames = leftProducer->getProjectColumnNames();
-    for (const auto &column: leftProjectColumnNames) {
+    for (const auto &column: leftFieldNames) {
       const auto &renameIt = leftFieldRenames.find(column);
       if (renameIt == leftFieldRenames.end()) {
         projectColumnNamePairs.emplace_back(make_pair(column, column));
@@ -441,10 +441,10 @@ void CalcitePlanJsonDeserializer::addProjectForJoinColumnRenames(shared_ptr<PreP
   // right
   if (jObj.contains("rightFieldRenames")) {
     const auto &rightFieldRenames = deserializeColumnRenames(jObj["rightFieldRenames"]);
+    const auto &rightFieldNames = jObj["rightFieldNames"].get<vector<string>>();
     vector<pair<string, string>> projectColumnNamePairs;
     set<string> projectColumnNames;
-    auto rightProjectColumnNames = rightProducer->getProjectColumnNames();
-    for (const auto &column: rightProjectColumnNames) {
+    for (const auto &column: rightFieldNames) {
       const auto &renameIt = rightFieldRenames.find(column);
       if (renameIt == rightFieldRenames.end()) {
         projectColumnNamePairs.emplace_back(make_pair(column, column));

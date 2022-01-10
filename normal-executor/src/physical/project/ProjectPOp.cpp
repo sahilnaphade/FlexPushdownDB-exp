@@ -77,17 +77,16 @@ void ProjectPOp::bufferTuples(const TupleMessage &message) {
   } else {
     // Append message contents to tuples buffer
     auto tables = {tuples_->table(), message.tuples()->table()};
-    auto res = arrow::ConcatenateTables(tables);
-    if (!res.ok()) {
-      tuples_->table(*res);
-    } else {
-      throw std::runtime_error(res.status().message());
+    auto expTable = arrow::ConcatenateTables(tables);
+    if (!expTable.ok()) {
+      throw std::runtime_error(expTable.status().message());
     }
+    tuples_->table(*expTable);
   }
 }
 
 void ProjectPOp::projectAndSendTuples() {
-  if(tuples_ && tuples_->numRows() > 0) {
+  if (tuples_) {
     // Collect project columns and project expr columns
     std::vector<std::shared_ptr<Column>> columns;
 
@@ -130,7 +129,7 @@ void ProjectPOp::projectAndSendTuples() {
 
     // Send, here no need to project the fullTupleSet using projectColumnNames as it won't have redundant columns
     sendTuples(fullTupleSet);
-    tuples_->clear();
+    tuples_ = nullptr;
   }
 }
 

@@ -99,6 +99,11 @@ TEST_CASE ("tpch-original-20" * doctest::skip(false || SKIP_SUITE)) {
   TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/", {"tpch/original/20.sql"});
 }
 
+// Cannot finish, plan from Calcite has too many Cartesian product
+TEST_CASE ("tpch-original-21" * doctest::skip(true || SKIP_SUITE)) {
+  TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/", {"tpch/original/21.sql"});
+}
+
 TEST_CASE ("tpch-original-22" * doctest::skip(false || SKIP_SUITE)) {
   TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/", {"tpch/original/22.sql"});
 }

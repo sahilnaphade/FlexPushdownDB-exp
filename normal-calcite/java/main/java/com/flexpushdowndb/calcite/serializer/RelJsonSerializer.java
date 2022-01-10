@@ -103,6 +103,7 @@ public final class RelJsonSerializer {
     }
     if (!leftFieldRenamesJArr.isEmpty()) {
       jo.put("leftFieldRenames", leftFieldRenamesJArr);
+      jo.put("leftFieldNames", leftFieldNames);
     }
 
     // right
@@ -118,6 +119,7 @@ public final class RelJsonSerializer {
     }
     if (!rightFieldRenamesJArr.isEmpty()) {
       jo.put("rightFieldRenames", rightFieldRenamesJArr);
+      jo.put("rightFieldNames", rightFieldNames);
     }
 
     // join condition

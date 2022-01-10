@@ -14,6 +14,8 @@ namespace normal::plan::prephysical {
 
 class ProjectPrePOp: public PrePhysicalOp {
 public:
+  constexpr static const char *const DUMMY_COLUMN_PREFIX = "dummy";
+
   ProjectPrePOp(uint id,
                 const vector<shared_ptr<Expression>> &exprs,
                 const vector<std::string> &exprNames,
@@ -26,6 +28,8 @@ public:
   const vector<shared_ptr<Expression>> &getExprs() const;
   const vector<std::string> &getExprNames() const;
   const vector<pair<string, string>> &getProjectColumnNamePairs() const;
+
+  void updateProjectColumnNamePairs(const set<string> &projectColumnNames);
 
 private:
   vector<shared_ptr<Expression>> exprs_;

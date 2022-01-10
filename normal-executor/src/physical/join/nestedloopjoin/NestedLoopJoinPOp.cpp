@@ -124,6 +124,7 @@ void NestedLoopJoinPOp::send(bool force) {
 
       shared_ptr<Message> tupleMessage = make_shared<TupleMessage>(expProjectTupleSet.value(), name());
       ctx()->tell(tupleMessage);
+      sentResult = true;
       kernel_->clearBuffer();
     }
   }
@@ -135,6 +136,10 @@ void NestedLoopJoinPOp::sendEmpty() {
     throw runtime_error("OutputSchema not set yet");
   }
   auto expProjectTupleSet = TupleSet::make(outputSchema.value())->projectExist(getProjectColumnNames());
+  if (!expProjectTupleSet.has_value()) {
+    throw runtime_error(expProjectTupleSet.error());
+  }
+
   shared_ptr<Message> tupleMessage = make_shared<TupleMessage>(expProjectTupleSet.value(), name());
   ctx()->tell(tupleMessage);
 }

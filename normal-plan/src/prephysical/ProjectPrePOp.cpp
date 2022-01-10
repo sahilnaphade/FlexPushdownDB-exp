@@ -46,4 +46,26 @@ const vector<pair<string, string>> &ProjectPrePOp::getProjectColumnNamePairs() c
   return projectColumnNamePairs_;
 }
 
+void ProjectPrePOp::updateProjectColumnNamePairs(const set<string> &projectColumnNames) {
+  // check if additional projectColumnNames are added
+  set<string> columnFromNamePairsAndExprs(exprNames_.begin(), exprNames_.end());
+  for (const auto &namePair: projectColumnNamePairs_) {
+    columnFromNamePairsAndExprs.emplace(namePair.second);
+  }
+  for (const auto &columnName: projectColumnNames) {
+    if (columnFromNamePairsAndExprs.find(columnName) == columnFromNamePairsAndExprs.end()) {
+      projectColumnNamePairs_.emplace_back(make_pair(columnName, columnName));
+    }
+  }
+
+  // check if some projectColumnNames are excluded
+  for (auto it = projectColumnNamePairs_.begin(); it != projectColumnNamePairs_.end();) {
+    if (projectColumnNames.find(it->second) == projectColumnNames.end()) {
+      it = projectColumnNamePairs_.erase(it);
+    } else {
+      ++it;
+    }
+  }
+}
+
 }
