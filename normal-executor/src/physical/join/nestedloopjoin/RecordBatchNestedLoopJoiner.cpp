@@ -83,11 +83,10 @@ RecordBatchNestedLoopJoiner::cartesian(const shared_ptr<::arrow::RecordBatch> &l
    * left part: add whole left array [#rows of right array] times
    */
   vector<arrow::ArrayVector> leftOutputArrayVectors{neededLeftColumnIndexes_.size()};
-  for (int64_t rr = 0; rr < rightRecordBatch->num_rows(); ++rr) {
-    for (uint c = 0; c < neededLeftColumnIndexes_.size(); ++c) {
-      const auto &leftColumn = leftColumns[neededLeftColumnIndexes_[c]];
-      const auto &copiedArray = leftColumn->Slice(0);
-      leftOutputArrayVectors[c].emplace_back(copiedArray);
+  for (uint c = 0; c < neededLeftColumnIndexes_.size(); ++c) {
+    const auto &leftColumn = leftColumns[neededLeftColumnIndexes_[c]];
+    for (int64_t rr = 0; rr < rightRecordBatch->num_rows(); ++rr) {
+      leftOutputArrayVectors[c].emplace_back(leftColumn);
     }
   }
 
