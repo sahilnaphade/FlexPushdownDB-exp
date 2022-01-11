@@ -13,9 +13,11 @@
 #include <memory>
 #include <queue>
 
-namespace normal::executor::physical {
+CAF_BEGIN_TYPE_ID_BLOCK(POpActor, caf::first_custom_type_id + 100)
+CAF_ADD_ATOM(POpActor, GetProcessingTimeAtom)
+CAF_END_TYPE_ID_BLOCK(POpActor)
 
-using GetProcessingTimeAtom = caf::atom_constant<caf::atom("get-pt")>;
+namespace normal::executor::physical {
 
 /**
  * Physical operator actor implements caf::actor and combines the physical operators' behaviour and state

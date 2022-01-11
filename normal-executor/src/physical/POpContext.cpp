@@ -38,19 +38,19 @@ tl::expected<void, std::string> POpContext::send(const std::shared_ptr<message::
 
   if(recipientId == "SegmentCache"){
     if(msg->type() == "LoadRequestMessage"){
-      operatorActor_->request(segmentCacheActor_, infinite, normal::executor::cache::LoadAtom::value, std::static_pointer_cast<normal::executor::message::LoadRequestMessage>(msg))
+      operatorActor_->request(segmentCacheActor_, infinite, LoadAtom_v, std::static_pointer_cast<normal::executor::message::LoadRequestMessage>(msg))
       .then([=](const std::shared_ptr<normal::executor::message::LoadResponseMessage>& response){
       operatorActor_->anon_send(this->operatorActor(), Envelope(response));
       });
     }
     else if(msg->type() == "StoreRequestMessage"){
-      operatorActor_->anon_send(segmentCacheActor_, normal::executor::cache::StoreAtom::value, std::static_pointer_cast<normal::executor::message::StoreRequestMessage>(msg));
+      operatorActor_->anon_send(segmentCacheActor_, StoreAtom_v, std::static_pointer_cast<normal::executor::message::StoreRequestMessage>(msg));
     }
     else if(msg->type() == "WeightRequestMessage"){
-      operatorActor_->anon_send(segmentCacheActor_, normal::executor::cache::WeightAtom::value, std::static_pointer_cast<normal::executor::message::WeightRequestMessage>(msg));
+      operatorActor_->anon_send(segmentCacheActor_, WeightAtom_v, std::static_pointer_cast<normal::executor::message::WeightRequestMessage>(msg));
     }
     else if(msg->type() == "CacheMetricsMessage"){
-      operatorActor_->anon_send(segmentCacheActor_, normal::executor::cache::MetricsAtom::value, std::static_pointer_cast<normal::executor::message::CacheMetricsMessage>(msg));
+      operatorActor_->anon_send(segmentCacheActor_, MetricsAtom_v, std::static_pointer_cast<normal::executor::message::CacheMetricsMessage>(msg));
     }
     else{
       throw std::runtime_error("Unrecognized message " + msg->type());

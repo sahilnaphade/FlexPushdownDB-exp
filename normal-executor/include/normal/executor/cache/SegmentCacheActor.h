@@ -15,6 +15,23 @@
 #include <normal/plan/Mode.h>
 #include <caf/all.hpp>
 
+CAF_BEGIN_TYPE_ID_BLOCK(SegmentCacheActor, caf::first_custom_type_id)
+CAF_ADD_ATOM(SegmentCacheActor, LoadAtom)
+CAF_ADD_ATOM(SegmentCacheActor, StoreAtom)
+CAF_ADD_ATOM(SegmentCacheActor, WeightAtom)
+CAF_ADD_ATOM(SegmentCacheActor, NewQueryAtom)
+CAF_ADD_ATOM(SegmentCacheActor, GetNumHitsAtom)
+CAF_ADD_ATOM(SegmentCacheActor, GetNumMissesAtom)
+CAF_ADD_ATOM(SegmentCacheActor, GetNumShardHitsAtom)
+CAF_ADD_ATOM(SegmentCacheActor, GetNumShardMissesAtom)
+CAF_ADD_ATOM(SegmentCacheActor, GetCrtQueryNumHitsAtom)
+CAF_ADD_ATOM(SegmentCacheActor, GetCrtQueryNumMissesAtom)
+CAF_ADD_ATOM(SegmentCacheActor, GetCrtQueryNumShardHitsAtom)
+CAF_ADD_ATOM(SegmentCacheActor, GetCrtQueryNumShardMissesAtom)
+CAF_ADD_ATOM(SegmentCacheActor, ClearMetricsAtom)
+CAF_ADD_ATOM(SegmentCacheActor, MetricsAtom)
+CAF_END_TYPE_ID_BLOCK(SegmentCacheActor)
+
 using namespace normal::executor::message;
 using namespace normal::cache;
 using namespace normal::plan;
@@ -26,21 +43,6 @@ struct SegmentCacheActorState {
   std::string name = "segment-cache";
   std::shared_ptr<SegmentCache> cache;
 };
-
-using LoadAtom = atom_constant<atom("Load")>;
-using StoreAtom = atom_constant<atom("Store")>;
-using WeightAtom = atom_constant<atom("Weight")>;
-using NewQueryAtom = atom_constant<atom("NewQuery")>;
-using GetNumHitsAtom = atom_constant<atom("NumHits")>;
-using GetNumMissesAtom = atom_constant<atom("NumMisses")>;
-using GetNumShardHitsAtom = atom_constant<atom("NumShrdHit")>;
-using GetNumShardMissesAtom = atom_constant<atom("NumShrdMis")>;
-using GetCrtQueryNumHitsAtom = atom_constant<atom("CNumHits")>;
-using GetCrtQueryNumMissesAtom = atom_constant<atom("CNumMisses")>;
-using GetCrtQueryNumShardHitsAtom = atom_constant<atom("CNmShrdHit")>;
-using GetCrtQueryNumShardMissesAtom = atom_constant<atom("CNmShrdMis")>;
-using ClearMetricsAtom = atom_constant<atom("ClrMetrics")>;
-using MetricsAtom = atom_constant<atom("Metrics")>;
 
 class SegmentCacheActor {
 

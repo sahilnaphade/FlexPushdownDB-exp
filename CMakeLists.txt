@@ -16,6 +16,10 @@ include(Configure_LLVM)
 
 if (${APPLE})
   set(OPENSSL_ROOT_DIR /usr/local/opt/openssl)
+  # This is a bug in CMake that causes it to prefer the system version over
+  # the one in the specified ROOT folder.
+  set(OPENSSL_CRYPTO_LIBRARY ${OPENSSL_ROOT_DIR}/lib/libcrypto.dylib CACHE FILEPATH "" FORCE)
+  set(OPENSSL_SSL_LIBRARY ${OPENSSL_ROOT_DIR}/lib/libssl.dylib CACHE FILEPATH "" FORCE)
 endif()
 
 
