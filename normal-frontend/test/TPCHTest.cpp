@@ -99,38 +99,12 @@ TEST_CASE ("tpch-original-20" * doctest::skip(false || SKIP_SUITE)) {
   TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/", {"tpch/original/20.sql"});
 }
 
-// Cannot finish, plan from Calcite has too many Cartesian product.
-// See https://issues.apache.org/jira/browse/CALCITE-320?jql=text%20~%20%22decorrelator%22
-TEST_CASE ("tpch-original-21" * doctest::skip(true || SKIP_SUITE)) {
+TEST_CASE ("tpch-original-21" * doctest::skip(false || SKIP_SUITE)) {
   TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/", {"tpch/original/21.sql"});
 }
 
 TEST_CASE ("tpch-original-22" * doctest::skip(false || SKIP_SUITE)) {
   TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/", {"tpch/original/22.sql"});
-}
-
-TEST_CASE ("temp" * doctest::skip(true)) {
-  auto builder = make_shared<arrow::Int64Builder>();
-  builder->AppendValues({1, 2, 3}, {true, true, false});
-  auto array0 = builder->Finish().ValueOrDie();
-
-  std::cout << static_pointer_cast<arrow::Int64Array>(array0)->IsValid(0) << std::endl;
-  std::cout << static_pointer_cast<arrow::Int64Array>(array0)->IsValid(1) << std::endl;
-  std::cout << static_pointer_cast<arrow::Int64Array>(array0)->IsValid(2) << std::endl;
-
-//  unique_ptr<arrow::ArrayBuilder> arrayBuilder;
-//  auto status = arrow::MakeBuilder(arrow::default_memory_pool(), arrow::int64(), &arrayBuilder);
-//  status = arrow::MakeBuilder(arrow::default_memory_pool(), arrow::utf8(), &arrayBuilder);
-//  arrayBuilder->AppendNulls(3);
-//  auto array1 = arrayBuilder->Finish().ValueOrDie();
-//  arrow::ArrayVector arrayVector{array0, array1};
-//
-//  arrow::FieldVector fields;
-//  fields.emplace_back(arrow::field("int1", arrow::int64()));
-//  fields.emplace_back(arrow::field("int2", arrow::utf8()));
-//  auto schema = arrow::schema(fields);
-//
-//  std::cout << TupleSet::make(schema, arrayVector)->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)) << std::endl;
 }
 
 }
