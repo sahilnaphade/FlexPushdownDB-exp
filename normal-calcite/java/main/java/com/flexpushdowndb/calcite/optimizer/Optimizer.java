@@ -60,7 +60,7 @@ public class Optimizer {
     RelNode logicalPlan = parseAndValidate(query, schemaName);
 
     // Decorrelate
-    RelNode decorrelatedPlan = RelDecorrelator.decorrelateQuery(logicalPlan, relBuilder);
+    RelNode decorrelatedPlan = decorrelate(logicalPlan);
 
     // Filter pushdown
     RelNode filterPushdownPlan = filterPushdown(decorrelatedPlan);
@@ -101,6 +101,20 @@ public class Optimizer {
             StandardConvertletTable.INSTANCE,
             SqlToRelConverter.config());
     return sqlToRelConverter.convertQuery(validAst, false, true).rel;
+  }
+
+  private RelNode decorrelate(RelNode relNode) {
+    // Need to push filter past correlate first
+    HepProgram hepProgram = new HepProgramBuilder()
+            .addRuleCollection(ImmutableList.of(
+                    CoreRules.FILTER_PROJECT_TRANSPOSE,
+                    CoreRules.FILTER_AGGREGATE_TRANSPOSE,
+                    CoreRules.FILTER_CORRELATE))
+            .build();
+    HepPlanner hepPlanner = new HepPlanner(hepProgram);
+    hepPlanner.setRoot(relNode);
+    RelNode pushFilterPastCorrelatePlan = hepPlanner.findBestExp();
+    return RelDecorrelator.decorrelateQuery(pushFilterPastCorrelatePlan, relBuilder);
   }
 
   private RelNode filterPushdown(RelNode relNode) {
