@@ -18,13 +18,13 @@ class LocalPOpDirectoryEntry {
 
 private:
   std::string name_;
-  caf::actor actor_;
+  ::caf::actor actor_;
   POpRelationshipType relationshipType_;
   bool complete_;
 
 public:
   LocalPOpDirectoryEntry(std::string name,
-                         caf::actor actor,
+                         ::caf::actor actor,
                          POpRelationshipType relationshipType,
                          bool complete);
 
@@ -34,7 +34,7 @@ public:
 
   const std::string &name() const;
   void name(const std::string &name);
-  const caf::actor &getActor() const;
+  const ::caf::actor &getActor() const;
   void destroyActor();
   POpRelationshipType relationshipType() const;
   void relationshipType(POpRelationshipType relationshipType);

@@ -12,19 +12,22 @@
 #include <normal/executor/message/TupleMessage.h>
 #include <normal/executor/message/cache/StoreRequestMessage.h>
 #include <normal/catalogue/local-fs/LocalFSPartition.h>
-#include <caf/all.hpp>
+#include <normal/caf/CAFUtil.h>
 #include <utility>
 
 using namespace normal::executor::message;
 using namespace normal::executor::cache;
 using namespace normal::tuple;
 
+CAF_BEGIN_TYPE_ID_BLOCK(FileScanPOp2, normal::caf::CAFUtil::FileScanPOp2_first_custom_type_id)
+CAF_ADD_ATOM(FileScanPOp2, ScanAtom)
+CAF_ADD_TYPE_ID(FileScanPOp2, (std::vector<std::string>))
+CAF_END_TYPE_ID_BLOCK(FileScanPOp2)
+
 namespace normal::executor::physical::file {
 
-using ScanAtom = caf::atom_constant<caf::atom("scan")>;
-
 using FileScanActor = POpActor2::extend_with<::caf::typed_actor<
-	caf::reacts_to<ScanAtom, std::vector<std::string>, bool>>>;
+	::caf::reacts_to<ScanAtom, std::vector<std::string>, bool>>>;
 
 using FileScanStatefulActor = FileScanActor::stateful_pointer<FileScanState>;
 
@@ -38,8 +41,8 @@ public:
 				unsigned long startOffset,
 				unsigned long finishOffset,
 				long queryId,
-				const caf::actor &rootActorHandle,
-				const caf::actor &segmentCacheActorHandle,
+				const ::caf::actor &rootActorHandle,
+				const ::caf::actor &segmentCacheActorHandle,
 				bool scanOnStart = false) {
 
 	POpActorState::setBaseState(actor, std::move(name), queryId, rootActorHandle, segmentCacheActorHandle);
@@ -62,7 +65,7 @@ public:
 		actor,
 		[=](ScanAtom, const std::vector<std::string> &columnNames, bool /*resultNeeded*/) {
 		  process(actor,
-				  [=](const caf::strong_actor_ptr &messageSender) {
+				  [=](const ::caf::strong_actor_ptr &messageSender) {
 					return onScan(actor,
 								  messageSender,
 								  columnNames);
@@ -85,7 +88,7 @@ private:
 protected:
 
   tl::expected<void, std::string>
-  onStart(FileScanStatefulActor actor, const caf::strong_actor_ptr & /*messageSender*/) override {
+  onStart(FileScanStatefulActor actor, const ::caf::strong_actor_ptr & /*messageSender*/) override {
 	if (scanOnStart_) {
 	  return readAndSendTuples(actor, columnNames_)
 		  .and_then([=]() { return notifyComplete(actor); });
@@ -94,7 +97,7 @@ protected:
   }
 
   tl::expected<void, std::string>
-  onComplete(FileScanStatefulActor actor, const caf::strong_actor_ptr & /*messageSender*/) override {
+  onComplete(FileScanStatefulActor actor, const ::caf::strong_actor_ptr & /*messageSender*/) override {
 	if (!isComplete() && isAllProducersComplete()) {
 	  return notifyComplete(actor);
 	}
@@ -103,7 +106,7 @@ protected:
 
   tl::expected<void, std::string>
   onEnvelope(FileScanStatefulActor actor,
-			 const caf::strong_actor_ptr &messageSender,
+			 const ::caf::strong_actor_ptr &messageSender,
 			 const Envelope &envelope) override {
 	if (envelope.message().type() == "ScanMessage") {
 	  auto scanMessage = dynamic_cast<const ScanMessage &>(envelope.message());
@@ -117,7 +120,7 @@ private:
 
   [[nodiscard]] tl::expected<void, std::string>
   onScan(FileScanStatefulActor actor,
-		 const caf::strong_actor_ptr &messageSender,
+		 const ::caf::strong_actor_ptr &messageSender,
 		 const std::vector<std::string> &columnsToScan) {
 
 	SPDLOG_DEBUG("[Actor {} ('{}')]  Scan  |  sender: {}", actor->id(),
@@ -148,7 +151,7 @@ private:
 
 	anonymousSend(actor,
 				  getSegmentCacheActorHandle().value(),
-				  StoreAtom::value,
+				  StoreAtom_v,
 				  StoreRequestMessage::make(segmentsToStore, name));
   }
 
@@ -184,8 +187,8 @@ FileScanActor::behavior_type FileScanFunctor(FileScanStatefulActor actor,
 											 unsigned long startOffset,
 											 unsigned long finishOffset,
 											 long queryId,
-											 const caf::actor &rootActorHandle,
-											 const caf::actor &segmentCacheActorHandle,
+											 const ::caf::actor &rootActorHandle,
+											 const ::caf::actor &segmentCacheActorHandle,
 											 bool scanOnStart = false);
 
 }

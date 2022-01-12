@@ -27,7 +27,7 @@ void POpContext::tell(std::shared_ptr<Message> &msg) {
 
   // Send message to consumers
   for(const auto& consumer: this->operatorActor()->operator_()->consumers()){
-    caf::actor actorHandle = operatorMap_.get(consumer.first).value().getActor();
+    ::caf::actor actorHandle = operatorMap_.get(consumer.first).value().getActor();
     operatorActor_->anon_send(actorHandle, e);
   }
 }
@@ -70,7 +70,7 @@ tl::expected<void, std::string> POpContext::send(const std::shared_ptr<message::
   }
 }
 
-POpContext::POpContext(caf::actor rootActor, caf::actor segmentCacheActor):
+POpContext::POpContext(::caf::actor rootActor, ::caf::actor segmentCacheActor):
     operatorActor_(nullptr),
     rootActor_(std::move(rootActor)),
     segmentCacheActor_(std::move(segmentCacheActor))
@@ -102,7 +102,7 @@ void POpContext::notifyComplete() {
 
   // Send message to consumers
   for(const auto& consumer: this->operatorActor()->operator_()->consumers()){
-    caf::actor actorHandle = operatorMap_.get(consumer.first).value().getActor();
+    ::caf::actor actorHandle = operatorMap_.get(consumer.first).value().getActor();
     operatorActor->anon_send(actorHandle, e);
   }
 

@@ -5,13 +5,6 @@
 #include <doctest/doctest.h>
 #include "TestUtil.h"
 #include <string>
-#include <arrow/api.h>
-#include <iostream>
-#include <normal/expression/gandiva/NumericLiteral.h>
-#include <normal/tuple/TupleSet.h>
-#include <arrow/util/value_parsing.h>
-
-using namespace normal::tuple;
 
 namespace normal::frontend::test {
 

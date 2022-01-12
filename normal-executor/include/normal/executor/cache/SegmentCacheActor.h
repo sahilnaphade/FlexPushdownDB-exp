@@ -13,9 +13,14 @@
 #include <normal/cache/policy/CachingPolicy.h>
 #include <normal/cache/SegmentCache.h>
 #include <normal/plan/Mode.h>
-#include <caf/all.hpp>
+#include <normal/caf/CAFUtil.h>
 
-CAF_BEGIN_TYPE_ID_BLOCK(SegmentCacheActor, caf::first_custom_type_id)
+using namespace normal::executor::message;
+using namespace normal::cache;
+using namespace normal::plan;
+using namespace caf;
+
+CAF_BEGIN_TYPE_ID_BLOCK(SegmentCacheActor, normal::caf::CAFUtil::SegmentCacheActor_first_custom_type_id)
 CAF_ADD_ATOM(SegmentCacheActor, LoadAtom)
 CAF_ADD_ATOM(SegmentCacheActor, StoreAtom)
 CAF_ADD_ATOM(SegmentCacheActor, WeightAtom)
@@ -30,12 +35,13 @@ CAF_ADD_ATOM(SegmentCacheActor, GetCrtQueryNumShardHitsAtom)
 CAF_ADD_ATOM(SegmentCacheActor, GetCrtQueryNumShardMissesAtom)
 CAF_ADD_ATOM(SegmentCacheActor, ClearMetricsAtom)
 CAF_ADD_ATOM(SegmentCacheActor, MetricsAtom)
-CAF_END_TYPE_ID_BLOCK(SegmentCacheActor)
 
-using namespace normal::executor::message;
-using namespace normal::cache;
-using namespace normal::plan;
-using namespace caf;
+CAF_ADD_TYPE_ID(SegmentCacheActor, (std::shared_ptr<LoadResponseMessage>))
+CAF_ADD_TYPE_ID(SegmentCacheActor, (std::shared_ptr<LoadRequestMessage>))
+CAF_ADD_TYPE_ID(SegmentCacheActor, (std::shared_ptr<StoreRequestMessage>))
+CAF_ADD_TYPE_ID(SegmentCacheActor, (std::shared_ptr<WeightRequestMessage>))
+CAF_ADD_TYPE_ID(SegmentCacheActor, (std::shared_ptr<CacheMetricsMessage>))
+CAF_END_TYPE_ID_BLOCK(SegmentCacheActor)
 
 namespace normal::executor::cache {
 
@@ -62,10 +68,10 @@ public:
 
 }
 
-CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::shared_ptr<normal::executor::message::LoadResponseMessage>)
-CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::shared_ptr<normal::executor::message::LoadRequestMessage>)
-CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::shared_ptr<normal::executor::message::StoreRequestMessage>)
-CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::shared_ptr<normal::executor::message::WeightRequestMessage>)
-CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::shared_ptr<normal::executor::message::CacheMetricsMessage>)
+CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::shared_ptr<LoadResponseMessage>)
+CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::shared_ptr<LoadRequestMessage>)
+CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::shared_ptr<StoreRequestMessage>)
+CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::shared_ptr<WeightRequestMessage>)
+CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::shared_ptr<CacheMetricsMessage>)
 
 #endif //NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_CACHE_SEGMENTCACHEACTOR_H

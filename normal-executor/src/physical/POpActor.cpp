@@ -11,14 +11,14 @@
 
 namespace normal::executor::physical {
 
-POpActor::POpActor(caf::actor_config &cfg, std::shared_ptr<PhysicalOp> opBehaviour) :
-	caf::event_based_actor(cfg),
+POpActor::POpActor(::caf::actor_config &cfg, std::shared_ptr<PhysicalOp> opBehaviour) :
+	::caf::event_based_actor(cfg),
 	opBehaviour_(std::move(opBehaviour)) {
 
   name_ = opBehaviour_->name();
 }
 
-caf::behavior behaviour(POpActor *self) {
+::caf::behavior behaviour(POpActor *self) {
 
   auto ctx = self->operator_()->ctx();
   ctx->operatorActor(self);
@@ -75,7 +75,7 @@ caf::behavior behaviour(POpActor *self) {
 		}
 		else{
 		  if(!self->running_){
-			self->buffer_.emplace(self->current_mailbox_element()->move_content_to_message(), self->current_sender());
+			self->buffer_.emplace(self->current_mailbox_element()->content(), self->current_sender());
 		  }
 		  else {
 			if (msg.message().type() == "CompleteMessage") {
@@ -94,7 +94,7 @@ caf::behavior behaviour(POpActor *self) {
   };
 }
 
-caf::behavior POpActor::make_behavior() {
+::caf::behavior POpActor::make_behavior() {
   return behaviour(this);
 }
 

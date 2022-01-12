@@ -12,7 +12,7 @@
 #include <normal/executor/message/StartMessage.h>
 #include <normal/executor/message/CompleteMessage.h>
 #include <normal/executor/message/ConnectMessage.h>
-#include <caf/all.hpp>
+#include <normal/caf/CAFUtil.h>
 #include <boost/callable_traits.hpp>
 #include <fmt/format.h>
 #include <spdlog/spdlog.h>
@@ -27,16 +27,20 @@ using ExpectedVoidString = tl::expected<void, std::string>;
 CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::vector<normal::executor::physical::POpConnection>);
 CAF_ALLOW_UNSAFE_MESSAGE_TYPE(ExpectedVoidString);
 
+CAF_BEGIN_TYPE_ID_BLOCK(POpActor2, normal::caf::CAFUtil::POpActor2_first_custom_type_id)
+CAF_ADD_ATOM(POpActor2, ConnectAtom)
+CAF_ADD_ATOM(POpActor2, StartAtom)
+CAF_ADD_ATOM(POpActor2, StopAtom)
+CAF_ADD_ATOM(POpActor2, CompleteAtom)
+CAF_ADD_TYPE_ID(POpActor2, (std::vector<normal::executor::physical::POpConnection>))
+CAF_ADD_TYPE_ID(POpActor2, (ExpectedVoidString))
+CAF_END_TYPE_ID_BLOCK(POpActor2)
+
 /**
  * [WIP] Stateful physical operator Actor
  */
 
 namespace normal::executor::physical {
-
-using ConnectAtom = ::caf::atom_constant<caf::atom("connect")>;
-using StartAtom = ::caf::atom_constant<caf::atom("start")>;
-using StopAtom = ::caf::atom_constant<caf::atom("stop")>;
-using CompleteAtom = ::caf::atom_constant<caf::atom("complete")>;
 
 /**
  * Base operator actor definition
@@ -66,8 +70,8 @@ protected:
   void setBaseState(Actor /* actor */,
 					std::string name_,
 					unsigned long queryId,
-					::caf::actor rootActor,
-					::caf::actor segmentCacheActorHandle) {
+					const ::caf::actor& rootActor,
+					const ::caf::actor& segmentCacheActorHandle) {
 	name = std::move(name_);
 	queryId_ = queryId;
 	rootActorHandle_ = std::move(rootActor);
@@ -93,11 +97,11 @@ protected:
   template<typename F,
 	  typename R = boost::callable_traits::return_type_t<F>,
 	  typename = std::enable_if_t<!std::is_void_v<R>>>
-  caf::result<R> process(Actor actor, const F &f) {
+  ::caf::result<R> process(Actor actor, const F &f) {
 
 	auto processingStartTime_ = std::chrono::steady_clock::now();
 
-	caf::strong_actor_ptr messageSender;
+  ::caf::strong_actor_ptr messageSender;
 	if (overriddenMessageSender_)
 	  messageSender = overriddenMessageSender_.value();
 	else
@@ -110,7 +114,7 @@ protected:
 	 */
 	if constexpr (tl::detail::is_expected<R>::value) {
 	  if (!r) {
-		auto error = caf::make_error(caf::sec::runtime_error, r.error());
+		auto error = ::caf::make_error(::caf::sec::runtime_error, r.error());
 		actor->call_error_handler(error);
 	  }
 	}
@@ -119,7 +123,7 @@ protected:
 	processingTime_ +=
 		std::chrono::duration_cast<std::chrono::nanoseconds>(processingStopTime_ - processingStartTime_).count();
 
-	return caf::make_result(r);
+	return ::caf::make_result(r);
   }
 
   /**
@@ -137,7 +141,7 @@ protected:
 
 	auto processingStartTime_ = std::chrono::steady_clock::now();
 
-	caf::strong_actor_ptr messageSender;
+  ::caf::strong_actor_ptr messageSender;
 	if (overriddenMessageSender_)
 	  messageSender = overriddenMessageSender_.value();
 	else
@@ -185,15 +189,19 @@ protected:
 	 * Default behavior is print_and_drop, which simply returns an unexpected_message
 	 * error. See caf::scheduled_actor::print_and_drop
 	 */
-	actor->set_default_handler([=](caf::scheduled_actor * /*actor*/, ::caf::message_view &message) {
-
-	  SPDLOG_ERROR("[Actor {} ('{}')]  Operator received unexpected message  |  queryId: {}, message: {}", actor->id(),
-				   actor->name(), queryId_.value(), message.content().stringify());
-
-	  onUnexpectedMessage(actor, message);
-
-	  return caf::sec::unexpected_message;
-	});
+	 // FIXME: CAF 0.18.5 deleted message_view, how to adjust accordingly?
+//	actor->set_default_handler([=](::caf::scheduled_actor * /*actor*/, ::caf::message &message) {
+//
+//	  SPDLOG_ERROR("[Actor {} ('{}')]  Operator received unexpected message  |  queryId: {}, message: {}",
+//                 actor->id(),
+//                 actor->name(),
+//                 queryId_.value(),
+//                 std::string(reinterpret_cast<const char *>(message.data().storage()), message.data().size()));
+//
+//	  onUnexpectedMessage(actor, message);
+//
+//	  return ::caf::sec::unexpected_message;
+//	});
 
 	/**
 	 * Handler for unexpected exceptions thrown by actor
@@ -225,7 +233,7 @@ protected:
 	/**
 	 * Handler for actor exit event
 	 */
-	actor->attach_functor([=](const caf::error &reason) {
+	actor->attach_functor([=](const ::caf::error &reason) {
 
 	  // FIXME: Actor name appears to have been destroyed by this stage, it
 	  //  often comes out as garbage anyway, so we avoid using it. Something
@@ -283,16 +291,16 @@ protected:
 	///
 	/// Message handlers
 	///
-	return caf::make_typed_behavior(
+	return ::caf::make_typed_behavior(
 		[=](StartAtom) {
-		  process(actor, [=](const caf::strong_actor_ptr &messageSender) { return handleStart(actor, messageSender); });
+		  process(actor, [=](const ::caf::strong_actor_ptr &messageSender) { return handleStart(actor, messageSender); });
 		},
 		[=](StopAtom) {
-		  process(actor, [=](const caf::strong_actor_ptr &messageSender) { return handleStop(actor, messageSender); });
+		  process(actor, [=](const ::caf::strong_actor_ptr &messageSender) { return handleStop(actor, messageSender); });
 		},
 		[=](ConnectAtom, const std::vector<POpConnection> &connections) {
 		  process(actor,
-				  [=](const caf::strong_actor_ptr &messageSender) {
+				  [=](const ::caf::strong_actor_ptr &messageSender) {
 					return handleConnect(actor,
 										 messageSender,
 										 connections);
@@ -300,11 +308,11 @@ protected:
 		},
 		[=](CompleteAtom) {
 		  process(actor,
-				  [=](const caf::strong_actor_ptr &messageSender) { return handleComplete(actor, messageSender); });
+				  [=](const ::caf::strong_actor_ptr &messageSender) { return handleComplete(actor, messageSender); });
 		},
 		[=](GetProcessingTimeAtom) {
 		  return process(actor,
-						 [=](const caf::strong_actor_ptr &messageSender) {
+						 [=](const ::caf::strong_actor_ptr &messageSender) {
 						   return handleGetProcessingTime(actor,
 														  messageSender);
 						 });
@@ -312,7 +320,7 @@ protected:
 		// Legacy handler
 		[=](const Envelope &envelope) {
 		  process(actor,
-				  [=](const caf::strong_actor_ptr &messageSender) {
+				  [=](const ::caf::strong_actor_ptr &messageSender) {
 					return handleEnvelope(actor,
 										  messageSender,
 										  envelope);
@@ -332,31 +340,31 @@ protected:
   virtual void onMonitoredDown(Actor /*actor*/, const ::caf::down_msg &/*downMessage*/) { /*NOOP*/ };
   virtual void onLinkedExit(Actor /*actor*/, const ::caf::exit_msg &/*exitMessage*/) { /*NOOP*/ };
   virtual void onException(Actor /*actor*/, const std::exception_ptr &/*exceptionPointer*/) { /*NOOP*/ };
-  virtual void onUnexpectedMessage(Actor /*actor*/, const ::caf::message_view &/*message*/) { /*NOOP*/ };
+  virtual void onUnexpectedMessage(Actor /*actor*/, const ::caf::message &/*message*/) { /*NOOP*/ };
 
   [[nodiscard]] virtual tl::expected<void, std::string>
   onStart(Actor /*actor*/,
-		  const caf::strong_actor_ptr & /*messageSender*/) { return {}; };
+		  const ::caf::strong_actor_ptr & /*messageSender*/) { return {}; };
 
   [[nodiscard]] virtual tl::expected<void, std::string>
   onStop(Actor /*actor*/,
-		 const caf::strong_actor_ptr & /*messageSender*/) { return {}; };
+		 const ::caf::strong_actor_ptr & /*messageSender*/) { return {}; };
 
   [[nodiscard]] virtual tl::expected<void, std::string>
   onConnect(Actor /*actor*/,
-			const caf::strong_actor_ptr & /*messageSender*/) { return {}; };
+			const ::caf::strong_actor_ptr & /*messageSender*/) { return {}; };
 
   [[nodiscard]] virtual tl::expected<void, std::string>
   onComplete(Actor /*actor*/,
-			 const caf::strong_actor_ptr & /*messageSender*/) { return {}; };
+			 const ::caf::strong_actor_ptr & /*messageSender*/) { return {}; };
 
   [[nodiscard]] virtual tl::expected<void, std::string>
   onEnvelope(Actor /*actor*/,
-			 const caf::strong_actor_ptr & /*messageSender*/,
+			 const ::caf::strong_actor_ptr & /*messageSender*/,
 			 const Envelope &/*envelope*/) { return {}; };
 
   template<typename... Parameters>
-  void anonymousSend(Actor actor, caf::actor destination, Parameters...parameters) {
+  void anonymousSend(Actor actor, ::caf::actor destination, Parameters...parameters) {
 	actor->anon_send(destination, parameters...);
   }
 
@@ -445,11 +453,11 @@ protected:
   /**
    * @return SegmentCache actor handle
    */
-  [[nodiscard]] const std::optional<caf::actor> &getSegmentCacheActorHandle() const {
+  [[nodiscard]] const std::optional<::caf::actor> &getSegmentCacheActorHandle() const {
 	return segmentCacheActorHandle_;
   }
 
-  [[nodiscard]] const std::optional<caf::actor> &getRootActorHandle() const {
+  [[nodiscard]] const std::optional<::caf::actor> &getRootActorHandle() const {
 	return rootActorHandle_;
   }
 
@@ -468,16 +476,16 @@ protected:
 private:
   std::optional<unsigned long> queryId_;
 
-  std::optional<caf::actor> rootActorHandle_;
-  std::optional<caf::actor> segmentCacheActorHandle_;
+  std::optional<::caf::actor> rootActorHandle_;
+  std::optional<::caf::actor> segmentCacheActorHandle_;
 
   bool running_ = false;
   bool complete_ = false;
 
-  std::optional<caf::strong_actor_ptr> overriddenMessageSender_;
-  std::queue<std::pair<caf::message, caf::strong_actor_ptr>> buffer_;
+  std::optional<::caf::strong_actor_ptr> overriddenMessageSender_;
+  std::queue<std::pair<::caf::message, ::caf::strong_actor_ptr>> buffer_;
 
-  std::map<caf::actor_id, std::tuple<caf::actor, std::string, POpRelationshipType, bool>> operatorDirectory_;
+  std::map<::caf::actor_id, std::tuple<::caf::actor, std::string, POpRelationshipType, bool>> operatorDirectory_;
   int numProducers_ = 0;
   int numConsumers_ = 0;
   int numCompleteProducers_ = 0;
@@ -489,7 +497,7 @@ private:
   /// Message handlers
   ///
 
-  [[nodiscard]] tl::expected<void, std::string> handleStart(Actor actor, const caf::strong_actor_ptr &messageSender) {
+  [[nodiscard]] tl::expected<void, std::string> handleStart(Actor actor, const ::caf::strong_actor_ptr &messageSender) {
 
 	SPDLOG_DEBUG("[Actor {} ('{}')]  Starting operator  |  queryId: {}, source: {}", actor->id(),
 				 actor->name(), queryId_.value(), to_string(messageSender));
@@ -508,7 +516,7 @@ private:
 	return onStart(actor, messageSender);
   };
 
-  [[nodiscard]] tl::expected<void, std::string> handleStop(Actor actor, const caf::strong_actor_ptr &messageSender) {
+  [[nodiscard]] tl::expected<void, std::string> handleStop(Actor actor, const ::caf::strong_actor_ptr &messageSender) {
 
 	SPDLOG_DEBUG("[Actor {} ('{}')]  Stopping operator  |  queryId: {}, source: {}", actor->id(),
 				 actor->name(), queryId_.value(), to_string(messageSender));
@@ -519,7 +527,7 @@ private:
   };
 
   [[nodiscard]] tl::expected<void, std::string> handleConnect(Actor actor,
-															  const caf::strong_actor_ptr &messageSender,
+															  const ::caf::strong_actor_ptr &messageSender,
 															  const std::vector<POpConnection> &connections) {
 
 	SPDLOG_DEBUG("[Actor {} ('{}')]  Connecting operator  |  queryId: {}, source: {}", actor->id(),
@@ -542,7 +550,7 @@ private:
   };
 
   [[nodiscard]] tl::expected<void, std::string> handleComplete(Actor actor,
-															   const caf::strong_actor_ptr &messageSender) {
+															   const ::caf::strong_actor_ptr &messageSender) {
 
 	auto maybeEntry = operatorDirectory_.find(actor->current_sender()->id());
 	if (maybeEntry == operatorDirectory_.end()) {
@@ -569,7 +577,7 @@ private:
 	}
   };
 
-  int64_t handleGetProcessingTime(Actor actor, const caf::strong_actor_ptr &messageSender) {
+  int64_t handleGetProcessingTime(Actor actor, const ::caf::strong_actor_ptr &messageSender) {
 	SPDLOG_DEBUG("[Actor {} ('{}')]  Getting operator processing time  |  queryId: {}, source: {}", actor->id(),
 				 actor->name(), queryId_.value(), to_string(messageSender));
 
@@ -583,7 +591,7 @@ private:
    * @param envelope
    */
   [[nodiscard]] tl::expected<void, std::string>
-  handleEnvelope(Actor actor, const caf::strong_actor_ptr &messageSender, const Envelope &envelope) {
+  handleEnvelope(Actor actor, const ::caf::strong_actor_ptr &messageSender, const Envelope &envelope) {
 	SPDLOG_DEBUG("[Actor {} ('{}')]  Operator received envelope  |  queryId: {}, source: {}, message type: {}",
 				 actor->id(),
 				 actor->name(),
@@ -602,7 +610,7 @@ private:
 						   dynamic_cast<const ConnectMessage&>(message).connections());
 	} else {
 	  if (!actor->state.running_) {
-		actor->state.buffer_.emplace(actor->current_mailbox_element()->move_content_to_message(),
+		actor->state.buffer_.emplace(actor->current_mailbox_element()->content(),
 									 messageSender);
 		return {};
 	  } else {

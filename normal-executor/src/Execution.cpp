@@ -13,14 +13,14 @@
 namespace normal::executor {
 
 Execution::Execution(long queryId, 
-                     const shared_ptr<caf::actor_system> &actorSystem,
-                     const caf::actor &segmentCacheActor,
+                     const shared_ptr<::caf::actor_system> &actorSystem,
+                     const ::caf::actor &segmentCacheActor,
                      const shared_ptr<PhysicalPlan> &physicalPlan) :
   queryId_(queryId),
   actorSystem_(actorSystem),
   segmentCacheActor_(segmentCacheActor),
   physicalPlan_(physicalPlan) {
-  rootActor_ = make_shared<caf::scoped_actor>(*actorSystem_);
+  rootActor_ = make_shared<::caf::scoped_actor>(*actorSystem_);
 }
 
 Execution::~Execution() {
@@ -39,7 +39,7 @@ void Execution::boot() {
 
   // Tell segment cache actor that new query comes
   if (segmentCacheActor_) {
-    (*rootActor_)->anon_send(segmentCacheActor_, cache::NewQueryAtom::value);
+    (*rootActor_)->anon_send(segmentCacheActor_, NewQueryAtom_v);
   }
 
   // Set query id, and add physical operators to operator directory
@@ -69,7 +69,7 @@ void Execution::boot() {
 //      );
 //      if (!actorHandle)
 //        throw runtime_error(fmt::format("Failed to spawn operator actor '{}'", op->name()));
-//      element.second.setActorHandle(caf::actor_cast<caf::actor>(actorHandle));
+//      element.second.setActorHandle(::caf::actor_cast<::caf::actor>(actorHandle));
 //    }
 //    else if(op->getType() == "Collate"){
 //      legacyCollateOperator_ = static_pointer_cast<Collate>(op);
@@ -81,7 +81,7 @@ void Execution::boot() {
 //      );
 //      if (!collateActorHandle_)
 //      throw runtime_error(fmt::format("Failed to spawn operator actor '{}'", op->name()));
-//      element.second.setActorHandle(caf::actor_cast<caf::actor>(collateActorHandle_));
+//      element.second.setActorHandle(::caf::actor_cast<::caf::actor>(collateActorHandle_));
 //    }
 
     auto ctx = make_shared<POpContext>(*rootActor_, segmentCacheActor_);
@@ -95,7 +95,7 @@ void Execution::boot() {
       auto actorHandle = actorSystem_->spawn<POpActor, detached>(op);
       if (!actorHandle)
         throw runtime_error(fmt::format("Failed to spawn operator actor '{}'", op->name()));
-      element.second.setActorHandle(caf::actor_cast<caf::actor>(actorHandle));
+      element.second.setActorHandle(::caf::actor_cast<::caf::actor>(actorHandle));
     } 
     
     else {
@@ -105,7 +105,7 @@ void Execution::boot() {
       auto actorHandle = actorSystem_->spawn<POpActor>(op);
       if (!actorHandle)
         throw runtime_error(fmt::format("Failed to spawn operator actor '{}'", op->name()));
-      element.second.setActorHandle(caf::actor_cast<caf::actor>(actorHandle));
+      element.second.setActorHandle(::caf::actor_cast<::caf::actor>(actorHandle));
     }
   }
 }
@@ -143,7 +143,7 @@ void Execution::start() {
 void Execution::join() {
   SPDLOG_DEBUG("Waiting for all operators to complete");
 
-  auto handle_err = [&](const caf::error &err) {
+  auto handle_err = [&](const ::caf::error &err) {
     throw runtime_error(to_string(err));
   };
 
@@ -159,11 +159,11 @@ void Execution::join() {
           handle_err);
 
   // TODO: After POpActor2 is generally finished we may use this
-//  (*rootActor_)->request(collateActorHandle_, caf::infinite, GetTupleSetAtom::value).receive(
+//  (*rootActor_)->request(collateActorHandle_, ::caf::infinite, GetTupleSetAtom::value).receive(
 //	  [&](const tl::expected<shared_ptr<TupleSet>, string> &expectedTupleSet) {
 //		legacyCollateOperator_->setTuples(expectedTupleSet.value());
 //	  },
-//	  [&](const caf::error&  error){
+//	  [&](const ::caf::error&  error){
 //		throw runtime_error(to_string(error));
 //	  });
 
@@ -173,7 +173,7 @@ void Execution::join() {
 void Execution::close() {
   if(rootActor_ != nullptr){
     for (const auto &element: opDirectory_) {
-      (*rootActor_)->send_exit(element.second.getActorHandle(), caf::exit_reason::user_shutdown);
+      (*rootActor_)->send_exit(element.second.getActorHandle(), ::caf::exit_reason::user_shutdown);
     }
     rootActor_.reset();
   }
@@ -308,11 +308,11 @@ string Execution::showMetrics(bool showOpTimes, bool showScanMetrics) {
   ss << "Metrics |" << endl << endl;
   long totalProcessingTime = 0;
   for (auto &entry : opDirectory_) {
-    (*rootActor_)->request(entry.second.getActorHandle(), caf::infinite, GetProcessingTimeAtom::value).receive(
+    (*rootActor_)->request(entry.second.getActorHandle(), ::caf::infinite, GetProcessingTimeAtom_v).receive(
             [&](long processingTime) {
               totalProcessingTime += processingTime;
             },
-            [&](const caf::error&  error){
+            [&](const ::caf::error&  error){
               throw runtime_error(to_string(error));
             });
   }
@@ -347,11 +347,11 @@ string Execution::showMetrics(bool showOpTimes, bool showScanMetrics) {
       auto operatorName = entry.first;
 
       long processingTime;
-      (*rootActor_)->request(entry.second.getActorHandle(), caf::infinite, GetProcessingTimeAtom::value).receive(
+      (*rootActor_)->request(entry.second.getActorHandle(), ::caf::infinite, GetProcessingTimeAtom_v).receive(
               [&](long time) {
                 processingTime = time;
               },
-              [&](const caf::error &error) {
+              [&](const ::caf::error &error) {
                 throw runtime_error(to_string(error));
               });
 

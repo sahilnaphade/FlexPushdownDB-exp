@@ -15,8 +15,8 @@ FileScanActor::behavior_type FileScanFunctor(FileScanStatefulActor self,
 											 unsigned long startOffset,
 											 unsigned long finishOffset,
 											 long queryId,
-											 const caf::actor& rootActorHandle,
-											 const caf::actor& segmentCacheActorHandle,
+											 const ::caf::actor& rootActorHandle,
+											 const ::caf::actor& segmentCacheActorHandle,
 											 bool scanOnStart) {
 
   self->state.setState(self,

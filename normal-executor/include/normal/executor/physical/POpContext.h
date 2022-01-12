@@ -22,12 +22,12 @@ class POpContext {
 private:
   POpActor* operatorActor_;
   LocalPOpDirectory operatorMap_;
-  caf::actor rootActor_;
-  caf::actor segmentCacheActor_;
+  ::caf::actor rootActor_;
+  ::caf::actor segmentCacheActor_;
   bool complete_ = false;
 
 public:
-  POpContext(caf::actor rootActor, caf::actor segmentCacheActor);
+  POpContext(::caf::actor rootActor, ::caf::actor segmentCacheActor);
 
   POpActor* operatorActor();
   void operatorActor(POpActor *operatorActor);

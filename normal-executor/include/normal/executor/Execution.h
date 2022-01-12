@@ -29,8 +29,8 @@ class Execution {
 
 public:
   Execution(long queryId,
-            const shared_ptr<caf::actor_system> &actorSystem,
-            const caf::actor &segmentCacheActor,
+            const shared_ptr<::caf::actor_system> &actorSystem,
+            const ::caf::actor &segmentCacheActor,
             const shared_ptr<PhysicalPlan> &physicalPlan);
   ~Execution();
 
@@ -53,9 +53,9 @@ private:
   void close();
 
   long queryId_;
-  shared_ptr<caf::actor_system> actorSystem_;
-  shared_ptr<caf::scoped_actor> rootActor_;
-  caf::actor segmentCacheActor_;
+  shared_ptr<::caf::actor_system> actorSystem_;
+  shared_ptr<::caf::scoped_actor> rootActor_;
+  ::caf::actor segmentCacheActor_;
   shared_ptr<PhysicalPlan> physicalPlan_;
   POpDirectory opDirectory_;
   [[maybe_unused]] physical::collate::CollateActor collateActorHandle_;

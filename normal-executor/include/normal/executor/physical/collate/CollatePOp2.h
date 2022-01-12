@@ -9,7 +9,7 @@
 #include <normal/executor/physical/POpActor2.h>
 #include <normal/executor/cache/SegmentCacheActor.h>
 #include <normal/executor/message/TupleMessage.h>
-#include <caf/all.hpp>
+#include <normal/caf/CAFUtil.h>
 
 using namespace normal::executor::physical;
 using namespace normal::executor::message;
@@ -21,14 +21,18 @@ CAF_ALLOW_UNSAFE_MESSAGE_TYPE(TupleSetPtr)
 using ExpectedTupleSetPtrString = tl::expected<std::shared_ptr<TupleSet>, std::string>;
 CAF_ALLOW_UNSAFE_MESSAGE_TYPE(ExpectedTupleSetPtrString)
 
+CAF_BEGIN_TYPE_ID_BLOCK(CollatePOp2, normal::caf::CAFUtil::CollatePOp2_first_custom_type_id)
+CAF_ADD_ATOM(CollatePOp2, TupleSetAtom)
+CAF_ADD_ATOM(CollatePOp2, GetTupleSetAtom)
+CAF_ADD_TYPE_ID(CollatePOp2, (TupleSetPtr))
+CAF_ADD_TYPE_ID(CollatePOp2, (ExpectedTupleSetPtrString))
+CAF_END_TYPE_ID_BLOCK(CollatePOp2)
+
 namespace normal::executor::physical::collate {
 
-using TupleSetAtom = caf::atom_constant<caf::atom("tupleset")>;
-using GetTupleSetAtom = caf::atom_constant<caf::atom("g-tupleset")>;
-
 using CollateActor = POpActor2::extend_with<::caf::typed_actor<
-        caf::reacts_to<TupleSetAtom, TupleSetPtr>,
-        caf::replies_to<GetTupleSetAtom>::with<ExpectedTupleSetPtrString>>>;
+        ::caf::reacts_to<TupleSetAtom, TupleSetPtr>,
+        ::caf::replies_to<GetTupleSetAtom>::with<ExpectedTupleSetPtrString>>>;
 
 using CollateStatefulActor = CollateActor::stateful_pointer<CollateState>;
 
@@ -37,8 +41,8 @@ public:
   [[maybe_unused]] void setState(CollateStatefulActor actor,
 				const std::string &name,
 				long queryId,
-				const caf::actor &rootActorHandle,
-				const caf::actor &segmentCacheActorHandle) {
+				const ::caf::actor &rootActorHandle,
+				const ::caf::actor &segmentCacheActorHandle) {
 
 	POpActorState::setBaseState(actor, name, queryId, rootActorHandle, segmentCacheActorHandle);
   }
@@ -49,13 +53,13 @@ public:
 		actor,
 		[=](TupleSetAtom, const TupleSetPtr &tupleSet) {
 		  process(actor,
-				  [=](const caf::strong_actor_ptr &messageSender) {
+				  [=](const ::caf::strong_actor_ptr &messageSender) {
 					return onTupleSet(actor, messageSender, tupleSet);
 				  });
 		},
 		[=](GetTupleSetAtom) {
 		  return process(actor,
-						 [=](const caf::strong_actor_ptr &messageSender) {
+						 [=](const ::caf::strong_actor_ptr &messageSender) {
 						   return onGetTupleSet(actor, messageSender);
 						 });
 		},
@@ -76,7 +80,7 @@ protected:
   }
 
   tl::expected<void, std::string> onComplete(CollateStatefulActor actor,
-											 const caf::strong_actor_ptr & /*messageSender*/) override {
+											 const ::caf::strong_actor_ptr & /*messageSender*/) override {
 	if (!isComplete() && isAllProducersComplete()) {
 	  return notifyComplete(actor);
 	}
@@ -84,7 +88,7 @@ protected:
   }
 
   tl::expected<void, std::string> onEnvelope(CollateStatefulActor actor,
-											 const caf::strong_actor_ptr &messageSender,
+											 const ::caf::strong_actor_ptr &messageSender,
 											 const Envelope &envelope) override {
 	if (envelope.message().type() == "TupleMessage") {
 	  auto tupleMessage = dynamic_cast<const TupleMessage &>(envelope.message());
@@ -97,7 +101,7 @@ protected:
 private:
 
   [[nodiscard]] tl::expected<void, std::string> onTupleSet(CollateStatefulActor actor,
-														   const caf::strong_actor_ptr &messageSender,
+														   const ::caf::strong_actor_ptr &messageSender,
 														   const TupleSetPtr &tupleSet) {
 	SPDLOG_DEBUG("[Actor {} ('{}')]  Received tupleSet  |  sender: {}", actor->id(),
 				 actor->name(), to_string(messageSender));
@@ -111,7 +115,7 @@ private:
   }
 
   [[nodiscard]] ExpectedTupleSetPtrString onGetTupleSet(CollateStatefulActor actor,
-														const caf::strong_actor_ptr &messageSender) {
+														const ::caf::strong_actor_ptr &messageSender) {
 
 	SPDLOG_DEBUG("[Actor {} ('{}')]  Getting tupleSet  |  sender: {}", actor->id(),
 				 actor->name(), to_string(messageSender));
@@ -124,8 +128,8 @@ private:
 [[maybe_unused]] CollateActor::behavior_type CollateFunctor(CollateStatefulActor actor,
 										   const std::string &name,
 										   long queryId,
-										   const caf::actor &rootActorHandle,
-										   const caf::actor &segmentCacheActorHandle);
+										   const ::caf::actor &rootActorHandle,
+										   const ::caf::actor &segmentCacheActorHandle);
 
 }
 

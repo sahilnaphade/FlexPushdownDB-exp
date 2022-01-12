@@ -84,7 +84,7 @@ void SegmentCacheActor::metrics(const CacheMetricsMessage &msg, stateful_actor<S
   /**
    * Handler for actor exit event
    */
-  self->attach_functor([=](const caf::error &reason) {
+  self->attach_functor([=](const ::caf::error &reason) {
 
 	// FIXME: Actor name appears to have been destroyed by this stage, it
 	//  often comes out as garbage anyway, so we avoid using it. Something

@@ -45,8 +45,8 @@ public:
    */
   pair<shared_ptr<TupleSet>, long> execute(const shared_ptr<PhysicalPlan> &physicalPlan);
 
-  const caf::actor &getSegmentCacheActor() const;
-  const shared_ptr<caf::actor_system> &getActorSystem() const;
+  const ::caf::actor &getSegmentCacheActor() const;
+  const shared_ptr<::caf::actor_system> &getActorSystem() const;
 
   /**
    * Metrics
@@ -57,13 +57,18 @@ public:
   double getCrtQueryShardHitRatio();
 
 private:
+  /**
+   * Required before using actors
+   */
+  void initCAFGlobalMetaObjects();
+
   bool isCacheUsed();
   long nextQueryId();
 
-  caf::actor_system_config actorSystemConfig_;
-  shared_ptr<caf::actor_system> actorSystem_;
-  unique_ptr<caf::scoped_actor> rootActor_;
-  caf::actor segmentCacheActor_;
+  ::caf::actor_system_config actorSystemConfig_;
+  shared_ptr<::caf::actor_system> actorSystem_;
+  unique_ptr<::caf::scoped_actor> rootActor_;
+  ::caf::actor segmentCacheActor_;
   shared_ptr<CachingPolicy> cachingPolicy_;
   shared_ptr<Mode> mode_;
   std::atomic<long> queryCounter_;

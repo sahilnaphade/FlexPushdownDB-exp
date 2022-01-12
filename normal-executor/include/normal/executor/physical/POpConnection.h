@@ -13,15 +13,15 @@ namespace normal::executor::physical {
 
 class POpConnection {
 public:
-  POpConnection(std::string Name, caf::actor ActorHandle, POpRelationshipType ConnectionType);
+  POpConnection(std::string Name, ::caf::actor ActorHandle, POpRelationshipType ConnectionType);
 
   const std::string &getName() const;
-  const caf::actor &getActorHandle() const;
+  const ::caf::actor &getActorHandle() const;
   POpRelationshipType getConnectionType() const;
 
 private:
   std::string name_;
-  caf::actor actorHandle_;
+  ::caf::actor actorHandle_;
   POpRelationshipType connectionType_;
 
 };

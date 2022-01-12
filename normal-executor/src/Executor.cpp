@@ -5,6 +5,7 @@
 #include <normal/executor/Executor.h>
 #include <normal/executor/Execution.h>
 #include <normal/executor/cache/SegmentCacheActor.h>
+#include <normal/executor/physical/file/FileScanPOp2.h>
 
 using namespace normal::executor::cache;
 
@@ -14,13 +15,16 @@ Executor::Executor(const shared_ptr<Mode> &mode,
                    const shared_ptr<CachingPolicy> &cachingPolicy,
                    bool showOpTimes,
                    bool showScanMetrics) :
-  actorSystem_(make_shared<caf::actor_system>(actorSystemConfig_)),
   cachingPolicy_(cachingPolicy),
   mode_(mode),
   queryCounter_(0),
   running_(false),
   showOpTimes_(showOpTimes),
-  showScanMetrics_(showScanMetrics) {}
+  showScanMetrics_(showScanMetrics) {
+  // need to init CAF meta objects before creating the actor system
+  initCAFGlobalMetaObjects();
+  actorSystem_ = make_shared<::caf::actor_system>(actorSystemConfig_);
+}
 
 Executor::~Executor() {
   if (running_) {
@@ -29,7 +33,7 @@ Executor::~Executor() {
 }
 
 void Executor::start() {
-  rootActor_ = make_unique<caf::scoped_actor>(*actorSystem_);
+  rootActor_ = make_unique<::caf::scoped_actor>(*actorSystem_);
   if ((mode_->id() == CACHING_ONLY || mode_->id() == HYBRID) && !cachingPolicy_) {
     throw runtime_error(fmt::format("Failed to start, missing caching policy for mode: {}", mode_->toString()));
   }
@@ -44,7 +48,7 @@ void Executor::start() {
 void Executor::stop() {
   // Stop the cache actor if cache is used
   if (isCacheUsed()) {
-    (*rootActor_)->send_exit(caf::actor_cast<caf::actor>(segmentCacheActor_), caf::exit_reason::user_shutdown);
+    (*rootActor_)->send_exit(::caf::actor_cast<::caf::actor>(segmentCacheActor_), ::caf::exit_reason::user_shutdown);
   }
 
   // Stop the root actor (seems, being defined by "scope", it needs to actually be destroyed to stop it)
@@ -71,7 +75,7 @@ const actor &Executor::getSegmentCacheActor() const {
   return segmentCacheActor_;
 }
 
-const shared_ptr<caf::actor_system> &Executor::getActorSystem() const {
+const shared_ptr<::caf::actor_system> &Executor::getActorSystem() const {
   return actorSystem_;
 }
 
@@ -87,7 +91,7 @@ std::string Executor::showCacheMetrics() {
   size_t hitNum, missNum;
   size_t shardHitNum, shardMissNum;
 
-  auto errorHandler = [&](const caf::error &error) {
+  auto errorHandler = [&](const ::caf::error &error) {
     throw std::runtime_error(to_string(error));
   };
 
@@ -98,25 +102,25 @@ std::string Executor::showCacheMetrics() {
     shardMissNum = 0;
   } else {
     scoped_actor self{*actorSystem_};
-    self->request(segmentCacheActor_, infinite, GetNumHitsAtom::value).receive(
+    self->request(segmentCacheActor_, infinite, GetNumHitsAtom_v).receive(
             [&](size_t numHits) {
               hitNum = numHits;
             },
             errorHandler);
 
-    self->request(segmentCacheActor_, infinite, GetNumMissesAtom::value).receive(
+    self->request(segmentCacheActor_, infinite, GetNumMissesAtom_v).receive(
             [&](size_t numMisses) {
               missNum = numMisses;
             },
             errorHandler);
 
-    self->request(segmentCacheActor_, infinite, GetNumShardHitsAtom::value).receive(
+    self->request(segmentCacheActor_, infinite, GetNumShardHitsAtom_v).receive(
             [&](size_t numShardHits) {
               shardHitNum = numShardHits;
             },
             errorHandler);
 
-    self->request(segmentCacheActor_, infinite, GetNumShardMissesAtom::value).receive(
+    self->request(segmentCacheActor_, infinite, GetNumShardMissesAtom_v).receive(
             [&](size_t numShardMisses) {
               shardMissNum = numShardMisses;
             },
@@ -160,7 +164,7 @@ std::string Executor::showCacheMetrics() {
 
 void Executor::clearCacheMetrics() {
   if (isCacheUsed()) {
-    (*rootActor_)->anon_send(segmentCacheActor_, ClearMetricsAtom::value);
+    (*rootActor_)->anon_send(segmentCacheActor_, ClearMetricsAtom_v);
   }
 }
 
@@ -172,19 +176,19 @@ double Executor::getCrtQueryHitRatio() {
     crtQueryHitNum = 0;
     crtQueryMissNum = 0;
   } else {
-    auto errorHandler = [&](const caf::error &error) {
+    auto errorHandler = [&](const ::caf::error &error) {
       throw std::runtime_error(to_string(error));
     };
 
     // NOTE: Creating a new scoped_actor will work, but can use rootActor_ as well
     scoped_actor self{*actorSystem_};
-    self->request(segmentCacheActor_, infinite, GetCrtQueryNumHitsAtom::value).receive(
+    self->request(segmentCacheActor_, infinite, GetCrtQueryNumHitsAtom_v).receive(
             [&](size_t numHits) {
               crtQueryHitNum = numHits;
             },
             errorHandler);
 
-    self->request(segmentCacheActor_, infinite, GetCrtQueryNumMissesAtom::value).receive(
+    self->request(segmentCacheActor_, infinite, GetCrtQueryNumMissesAtom_v).receive(
             [&](size_t numMisses) {
               crtQueryMissNum = numMisses;
             },
@@ -203,19 +207,19 @@ double Executor::getCrtQueryShardHitRatio() {
     crtQueryShardHitNum = 0;
     crtQueryShardMissNum = 0;
   } else {
-    auto errorHandler = [&](const caf::error &error) {
+    auto errorHandler = [&](const ::caf::error &error) {
       throw std::runtime_error(to_string(error));
     };
 
     // NOTE: Creating a new scoped_actor will work, but can use rootActor_ as well
     scoped_actor self{*actorSystem_};
-    self->request(segmentCacheActor_, infinite, GetCrtQueryNumShardHitsAtom::value).receive(
+    self->request(segmentCacheActor_, infinite, GetCrtQueryNumShardHitsAtom_v).receive(
             [&](size_t numShardHits) {
               crtQueryShardHitNum = numShardHits;
             },
             errorHandler);
 
-    self->request(segmentCacheActor_, infinite, GetCrtQueryNumShardMissesAtom::value).receive(
+    self->request(segmentCacheActor_, infinite, GetCrtQueryNumShardMissesAtom_v).receive(
             [&](size_t numShardMisses) {
               crtQueryShardMissNum = numShardMisses;
             },
@@ -224,6 +228,17 @@ double Executor::getCrtQueryShardHitRatio() {
 
   return (crtQueryShardHitNum + crtQueryShardMissNum == 0) ? 0.0 :
     (double) crtQueryShardHitNum / (double) (crtQueryShardHitNum + crtQueryShardMissNum);
+}
+
+void Executor::initCAFGlobalMetaObjects() {
+  ::caf::exec_main_init_meta_objects<::caf::id_block::SegmentCacheActor,
+                                     ::caf::id_block::Envelope,
+                                     ::caf::id_block::POpActor,
+                                     ::caf::id_block::POpActor2,
+                                     ::caf::id_block::CollatePOp2,
+                                     ::caf::id_block::FileScanPOp2>();
+
+  ::caf::core::init_global_meta_objects();
 }
 
 }

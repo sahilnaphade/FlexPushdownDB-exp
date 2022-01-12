@@ -6,7 +6,7 @@
 #define NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_MESSAGE_ENVELOPE_H
 
 #include <normal/executor/message/Message.h>
-#include <caf/all.hpp>
+#include <normal/caf/CAFUtil.h>
 #include <memory>
 
 namespace normal::executor::message {
@@ -21,16 +21,21 @@ namespace normal::executor::message {
  */
 class Envelope {
 
-private:
-  std::shared_ptr<Message> message_;
-
 public:
   explicit Envelope(std::shared_ptr<Message> message);
+  Envelope() = default;
   const Message &message() const;
+
+private:
+  std::shared_ptr<Message> message_;
 
 };
 
 }
+
+CAF_BEGIN_TYPE_ID_BLOCK(Envelope, normal::caf::CAFUtil::Envelope_first_custom_type_id)
+CAF_ADD_TYPE_ID(Envelope, (normal::executor::message::Envelope))
+CAF_END_TYPE_ID_BLOCK(Envelope)
 
 CAF_ALLOW_UNSAFE_MESSAGE_TYPE(normal::executor::message::Envelope)
 

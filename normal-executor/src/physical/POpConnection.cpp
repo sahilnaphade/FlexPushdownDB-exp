@@ -8,7 +8,7 @@
 namespace normal::executor::physical {
 
 POpConnection::POpConnection(std::string name,
-                             caf::actor actorHandle,
+                             ::caf::actor actorHandle,
                              POpRelationshipType connectionType) :
 	name_(std::move(name)),
 	actorHandle_(std::move(actorHandle)),
@@ -18,7 +18,7 @@ const std::string &POpConnection::getName() const {
   return name_;
 }
 
-const caf::actor &POpConnection::getActorHandle() const {
+const ::caf::actor &POpConnection::getActorHandle() const {
   return actorHandle_;
 }
 
