@@ -11,6 +11,7 @@
 #include <normal/executor/cache/SegmentCacheActor.h>
 #include <normal/executor/message/TupleMessage.h>
 #include <normal/executor/message/cache/StoreRequestMessage.h>
+#include <normal/executor/serialization/MessageSerializer.h>
 #include <normal/catalogue/local-fs/LocalFSPartition.h>
 #include <normal/caf/CAFUtil.h>
 #include <utility>

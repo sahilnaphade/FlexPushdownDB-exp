@@ -34,6 +34,16 @@ CAF_ADD_TYPE_ID(Message, (TupleMessage))
 CAF_ADD_TYPE_ID(Message, (TupleSetIndexMessage))
 // For the following cache messages, we have to implement `inspect` for concrete derived shared_ptr type one by one,
 // because SegmentCacheActor directly uses the concrete derived types rather than base type Message used by other actors
+CAF_ADD_TYPE_ID(Message, (LoadRequestMessage))
+CAF_ADD_TYPE_ID(Message, (LoadResponseMessage))
+CAF_ADD_TYPE_ID(Message, (StoreRequestMessage))
+CAF_ADD_TYPE_ID(Message, (WeightRequestMessage))
+CAF_ADD_TYPE_ID(Message, (CacheMetricsMessage))
+CAF_ADD_TYPE_ID(Message, (std::shared_ptr<LoadResponseMessage>))
+CAF_ADD_TYPE_ID(Message, (std::shared_ptr<LoadRequestMessage>))
+CAF_ADD_TYPE_ID(Message, (std::shared_ptr<StoreRequestMessage>))
+CAF_ADD_TYPE_ID(Message, (std::shared_ptr<WeightRequestMessage>))
+CAF_ADD_TYPE_ID(Message, (std::shared_ptr<CacheMetricsMessage>))
 CAF_END_TYPE_ID_BLOCK(Message)
 
 // Variant-based approach on MessagePtr

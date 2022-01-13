@@ -10,6 +10,7 @@
 #include <normal/executor/message/cache/StoreRequestMessage.h>
 #include <normal/executor/message/cache/WeightRequestMessage.h>
 #include <normal/executor/message/cache/CacheMetricsMessage.h>
+#include <normal/executor/serialization/MessageSerializer.h>
 #include <normal/cache/policy/CachingPolicy.h>
 #include <normal/cache/SegmentCache.h>
 #include <normal/plan/Mode.h>
@@ -35,17 +36,6 @@ CAF_ADD_ATOM(SegmentCacheActor, GetCrtQueryNumShardHitsAtom)
 CAF_ADD_ATOM(SegmentCacheActor, GetCrtQueryNumShardMissesAtom)
 CAF_ADD_ATOM(SegmentCacheActor, ClearMetricsAtom)
 CAF_ADD_ATOM(SegmentCacheActor, MetricsAtom)
-
-CAF_ADD_TYPE_ID(SegmentCacheActor, (LoadRequestMessage))
-CAF_ADD_TYPE_ID(SegmentCacheActor, (LoadResponseMessage))
-CAF_ADD_TYPE_ID(SegmentCacheActor, (StoreRequestMessage))
-CAF_ADD_TYPE_ID(SegmentCacheActor, (WeightRequestMessage))
-CAF_ADD_TYPE_ID(SegmentCacheActor, (CacheMetricsMessage))
-CAF_ADD_TYPE_ID(SegmentCacheActor, (std::shared_ptr<LoadResponseMessage>))
-CAF_ADD_TYPE_ID(SegmentCacheActor, (std::shared_ptr<LoadRequestMessage>))
-CAF_ADD_TYPE_ID(SegmentCacheActor, (std::shared_ptr<StoreRequestMessage>))
-CAF_ADD_TYPE_ID(SegmentCacheActor, (std::shared_ptr<WeightRequestMessage>))
-CAF_ADD_TYPE_ID(SegmentCacheActor, (std::shared_ptr<CacheMetricsMessage>))
 CAF_END_TYPE_ID_BLOCK(SegmentCacheActor)
 
 namespace normal::executor::cache {

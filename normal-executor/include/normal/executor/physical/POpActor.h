@@ -8,6 +8,7 @@
 #include <normal/executor/physical/PhysicalOp.h>
 #include <normal/executor/message/Message.h>
 #include <normal/executor/message/StartMessage.h>
+#include <normal/executor/serialization/MessageSerializer.h>
 #include <normal/executor/physical/Forward.h>
 #include <normal/caf/CAFUtil.h>
 #include <memory>

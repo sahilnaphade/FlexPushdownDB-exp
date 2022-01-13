@@ -3,10 +3,10 @@
 //
 
 #include <normal/executor/physical/POpContext.h>
+#include <normal/executor/cache/SegmentCacheActor.h>
 #include <normal/executor/message/Message.h>
 #include <normal/executor/message/CompleteMessage.h>
 #include <normal/executor/message/cache/LoadRequestMessage.h>
-#include <normal/executor/cache/SegmentCacheActor.h>
 #include <normal/executor/message/cache/CacheMetricsMessage.h>
 #include <spdlog/spdlog.h>
 #include <utility>
