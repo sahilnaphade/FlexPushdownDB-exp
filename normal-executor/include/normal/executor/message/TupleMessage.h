@@ -18,15 +18,26 @@ namespace normal::executor::message {
  */
 class TupleMessage : public Message {
 
-private:
-  std::shared_ptr<TupleSet> tuples_;
-
 public:
   explicit TupleMessage(std::shared_ptr<TupleSet> tuples, std::string sender);
+  TupleMessage() = default;
+  TupleMessage(const TupleMessage&) = default;
+  TupleMessage& operator=(const TupleMessage&) = default;
   ~TupleMessage() override = default;
 
   const std::shared_ptr<TupleSet>& tuples() const;
 
+private:
+  std::shared_ptr<TupleSet> tuples_;
+
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, TupleMessage& msg) {
+    return f.object(msg).fields(f.field("type", msg.typeNoConst()),
+                                f.field("sender", msg.senderNoConst()),
+                                f.field("tuples", msg.tuples_));
+  }
 };
 
 }

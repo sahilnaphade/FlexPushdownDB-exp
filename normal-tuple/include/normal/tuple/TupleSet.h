@@ -11,6 +11,8 @@
 #include <normal/tuple/Schema.h>
 #include <normal/tuple/Column.h>
 #include <normal/tuple/TupleSetShowOptions.h>
+#include <normal/tuple/serialization/ArrowSerializer.h>
+#include <normal/caf/CAFUtil.h>
 #include <arrow/api.h>
 #include <arrow/csv/api.h>
 #include <tl/expected.hpp>
@@ -29,7 +31,7 @@ namespace normal::tuple {
 class TupleSet : public std::enable_shared_from_this<TupleSet> {
 
 public:
-  explicit TupleSet();
+  explicit TupleSet() = default;
   explicit TupleSet(std::shared_ptr<arrow::Table> table);
 
   static std::shared_ptr<TupleSet> make(const std::shared_ptr<arrow::Table> &table);
@@ -179,8 +181,35 @@ private:
   tupleSetVectorToArrowTableVector(const std::vector<std::shared_ptr<TupleSet>> &tupleSets);
 
   std::shared_ptr<arrow::Table> table_;
+
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, TupleSet& tupleSet) {
+    auto toBytes = [&tupleSet]() -> decltype(auto) {
+      return ArrowSerializer::table_to_bytes(tupleSet.table_);
+    };
+    auto fromBytes = [&tupleSet](const std::vector<std::uint8_t> &bytes) {
+      tupleSet.table_ = ArrowSerializer::bytes_to_table(bytes);
+      return true;
+    };
+    return f.object(tupleSet).fields(f.field("table", toBytes, fromBytes));
+  }
 };
 
 }
+
+using TupleSetPtr = std::shared_ptr<normal::tuple::TupleSet>;
+
+CAF_BEGIN_TYPE_ID_BLOCK(TupleSet, normal::caf::CAFUtil::TupleSet_first_custom_type_id)
+CAF_ADD_TYPE_ID(TupleSet, (normal::tuple::TupleSet))
+CAF_END_TYPE_ID_BLOCK(TupleSet)
+
+namespace caf {
+template <>
+struct inspector_access<TupleSetPtr> : variant_inspector_access<TupleSetPtr> {
+  // nop
+};
+} // namespace caf
 
 #endif //NORMAL_NORMAL_TUPLE_INCLUDE_NORMAL_TUPLE_TUPLESET_H

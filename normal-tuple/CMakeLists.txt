@@ -42,11 +42,13 @@ add_library(normal-tuple STATIC
         src/arrow/ArrowAWSGZIPInputStream2.cpp include/normal/tuple/arrow/ArrowAWSGZIPInputStream2.h
         src/arrow/CSVToArrowSIMDStreamParser.cpp include/normal/tuple/arrow/CSVToArrowSIMDStreamParser.h
         src/arrow/SIMDParserHelpers.cpp include/normal/tuple/arrow/SIMDParserHelpers.h
-        src/arrow/CSVToArrowSIMDChunkParser.cpp include/normal/tuple/arrow/CSVToArrowSIMDChunkParser.h)
+        src/arrow/CSVToArrowSIMDChunkParser.cpp include/normal/tuple/arrow/CSVToArrowSIMDChunkParser.h
+        src/serialization/ArrowSerializer.cpp include/normal/tuple/serialization/ArrowSerializer.h)
 
 target_include_directories(normal-tuple PUBLIC include)
 
-
+target_link_libraries(normal-tuple PUBLIC normal-util)
+target_link_libraries(normal-tuple PUBLIC normal-caf)
 target_link_libraries(normal-tuple PUBLIC spdlog::spdlog)
 target_link_libraries(normal-tuple PUBLIC fmt::fmt)
 target_link_libraries(normal-tuple PUBLIC LLVM-filesystem)
@@ -55,7 +57,6 @@ target_link_libraries(normal-tuple PUBLIC arrow_static)
 target_link_libraries(normal-tuple PUBLIC parquet_static)
 target_link_libraries(normal-tuple PUBLIC deflate)
 target_link_libraries(normal-tuple PUBLIC zlibstatic)
-target_link_libraries(normal-tuple PUBLIC normal-util)
 
 
 #-----------------------------------------------------------------------------------------------------------------------

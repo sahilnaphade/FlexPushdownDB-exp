@@ -15,8 +15,6 @@ namespace arrow { class MemoryPool; }
 
 using namespace normal::tuple;
 
-TupleSet::TupleSet() = default;
-
 TupleSet::TupleSet(std::shared_ptr<arrow::Table> table) :
   table_(std::move(table)) {}
 

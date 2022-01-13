@@ -18,13 +18,25 @@ namespace normal::executor::message {
  */
 class ConnectMessage : public Message {
 
+public:
+  explicit ConnectMessage(std::vector<POpConnection> operatorConnections, std::string from);
+  ConnectMessage() = default;
+  ConnectMessage(const ConnectMessage&) = default;
+  ConnectMessage& operator=(const ConnectMessage&) = default;
+
+  const std::vector<POpConnection> &connections() const;
+
 private:
   std::vector<POpConnection> connections_;
 
+// caf inspect
 public:
-  explicit ConnectMessage(std::vector<POpConnection> operatorConnections, std::string from);
-  const std::vector<POpConnection> &connections() const;
-
+  template <class Inspector>
+  friend bool inspect(Inspector& f, ConnectMessage& msg) {
+    return f.object(msg).fields(f.field("type", msg.typeNoConst()),
+                                f.field("sender", msg.senderNoConst()),
+                                f.field("operatorConnections", msg.connections_));
+  }
 };
 
 }

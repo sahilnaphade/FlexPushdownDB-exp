@@ -84,6 +84,8 @@ add_library(normal-executor STATIC
         src/physical/transform/PrePToPTransformer.cpp include/normal/executor/physical/transform/PrePToPTransformer.h
         src/physical/transform/PrePToS3PTransformer.cpp include/normal/executor/physical/transform/PrePToS3PTransformer.h
         src/physical/prune/PartitionPruner.cpp include/normal/executor/physical/prune/PartitionPruner.h
+#        CAF serializer
+        include/normal/executor/serialization/MessageSerializer.h
 #        executor
         src/Executor.cpp include/normal/executor/Executor.h
         src/Execution.cpp include/normal/executor/Execution.h)

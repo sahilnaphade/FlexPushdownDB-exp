@@ -15,7 +15,17 @@ class CompleteMessage : public Message {
 
 public:
   explicit CompleteMessage(std::string sender);
+  CompleteMessage() = default;
+  CompleteMessage(const CompleteMessage&) = default;
+  CompleteMessage& operator=(const CompleteMessage&) = default;
 
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, CompleteMessage& msg) {
+    return f.object(msg).fields(f.field("type", msg.typeNoConst()),
+                                f.field("sender", msg.senderNoConst()));
+  }
 };
 
 }

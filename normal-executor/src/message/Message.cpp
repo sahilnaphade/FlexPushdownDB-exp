@@ -19,4 +19,12 @@ const std::string& Message::sender() const {
   return sender_;
 }
 
+std::string& Message::typeNoConst() {
+  return type_;
+}
+
+std::string& Message::senderNoConst() {
+  return sender_;
+}
+
 } // namespace

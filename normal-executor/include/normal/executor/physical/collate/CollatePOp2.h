@@ -16,7 +16,6 @@ using namespace normal::executor::message;
 using namespace normal::tuple;
 
 using TupleSetPtr = std::shared_ptr<TupleSet>;
-CAF_ALLOW_UNSAFE_MESSAGE_TYPE(TupleSetPtr)
 
 using ExpectedTupleSetPtrString = tl::expected<std::shared_ptr<TupleSet>, std::string>;
 CAF_ALLOW_UNSAFE_MESSAGE_TYPE(ExpectedTupleSetPtrString)

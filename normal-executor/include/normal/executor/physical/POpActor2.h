@@ -24,7 +24,6 @@ using namespace normal::executor::message;
 using namespace boost::callable_traits;
 
 using ExpectedVoidString = tl::expected<void, std::string>;
-CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::vector<normal::executor::physical::POpConnection>);
 CAF_ALLOW_UNSAFE_MESSAGE_TYPE(ExpectedVoidString);
 
 CAF_BEGIN_TYPE_ID_BLOCK(POpActor2, normal::caf::CAFUtil::POpActor2_first_custom_type_id)

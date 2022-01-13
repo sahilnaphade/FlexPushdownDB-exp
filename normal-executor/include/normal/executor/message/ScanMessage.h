@@ -18,6 +18,10 @@ class ScanMessage : public Message {
 
 public:
   ScanMessage(std::vector<std::string> columnNames_, const std::string &sender, bool resultNeeded);
+  ScanMessage() = default;
+  ScanMessage(const ScanMessage&) = default;
+  ScanMessage& operator=(const ScanMessage&) = default;
+  
   [[nodiscard]] const std::vector<std::string> &getColumnNames() const;
   [[nodiscard]] bool isResultNeeded() const;
 
@@ -25,6 +29,15 @@ private:
   std::vector<std::string> columnNames_;
   bool resultNeeded_;
 
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, ScanMessage& msg) {
+    return f.object(msg).fields(f.field("type", msg.typeNoConst()),
+                                f.field("sender", msg.senderNoConst()),
+                                f.field("columnNames", msg.columnNames_),
+                                f.field("resultNeeded", msg.resultNeeded_));
+  };
 };
 
 }

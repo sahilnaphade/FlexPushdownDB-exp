@@ -24,6 +24,9 @@ class Envelope {
 public:
   explicit Envelope(std::shared_ptr<Message> message);
   Envelope() = default;
+  Envelope(const Envelope&) = default;
+  Envelope& operator=(const Envelope&) = default;
+
   const Message &message() const;
 
 private:

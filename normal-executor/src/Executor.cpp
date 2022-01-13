@@ -4,8 +4,9 @@
 
 #include <normal/executor/Executor.h>
 #include <normal/executor/Execution.h>
-#include <normal/executor/cache/SegmentCacheActor.h>
 #include <normal/executor/physical/file/FileScanPOp2.h>
+#include <normal/executor/cache/SegmentCacheActor.h>
+#include <normal/executor/serialization/MessageSerializer.h>
 
 using namespace normal::executor::cache;
 
@@ -236,7 +237,9 @@ void Executor::initCAFGlobalMetaObjects() {
                                      ::caf::id_block::POpActor,
                                      ::caf::id_block::POpActor2,
                                      ::caf::id_block::CollatePOp2,
-                                     ::caf::id_block::FileScanPOp2>();
+                                     ::caf::id_block::FileScanPOp2,
+                                     ::caf::id_block::TupleSet,
+                                     ::caf::id_block::Message>();
 
   ::caf::core::init_global_meta_objects();
 }

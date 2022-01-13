@@ -36,6 +36,11 @@ CAF_ADD_ATOM(SegmentCacheActor, GetCrtQueryNumShardMissesAtom)
 CAF_ADD_ATOM(SegmentCacheActor, ClearMetricsAtom)
 CAF_ADD_ATOM(SegmentCacheActor, MetricsAtom)
 
+CAF_ADD_TYPE_ID(SegmentCacheActor, (LoadRequestMessage))
+CAF_ADD_TYPE_ID(SegmentCacheActor, (LoadResponseMessage))
+CAF_ADD_TYPE_ID(SegmentCacheActor, (StoreRequestMessage))
+CAF_ADD_TYPE_ID(SegmentCacheActor, (WeightRequestMessage))
+CAF_ADD_TYPE_ID(SegmentCacheActor, (CacheMetricsMessage))
 CAF_ADD_TYPE_ID(SegmentCacheActor, (std::shared_ptr<LoadResponseMessage>))
 CAF_ADD_TYPE_ID(SegmentCacheActor, (std::shared_ptr<LoadRequestMessage>))
 CAF_ADD_TYPE_ID(SegmentCacheActor, (std::shared_ptr<StoreRequestMessage>))
@@ -67,11 +72,5 @@ public:
 };
 
 }
-
-CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::shared_ptr<LoadResponseMessage>)
-CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::shared_ptr<LoadRequestMessage>)
-CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::shared_ptr<StoreRequestMessage>)
-CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::shared_ptr<WeightRequestMessage>)
-CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::shared_ptr<CacheMetricsMessage>)
 
 #endif //NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_CACHE_SEGMENTCACHEACTOR_H

@@ -18,7 +18,17 @@ class StartMessage : public Message {
 
 public:
   explicit StartMessage(std::string from);
+  StartMessage() = default;
+  StartMessage(const StartMessage&) = default;
+  StartMessage& operator=(const StartMessage&) = default;
 
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, StartMessage& msg) {
+    return f.object(msg).fields(f.field("type", msg.typeNoConst()),
+                                f.field("sender", msg.senderNoConst()));
+  }
 };
 
 }
