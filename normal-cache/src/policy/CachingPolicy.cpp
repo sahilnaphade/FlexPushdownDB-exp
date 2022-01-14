@@ -24,7 +24,7 @@ CachingPolicy::CachingPolicy(CachingPolicyType type,
     if (catalogueEntry_->getType() == S3) {
       const auto schemaName = catalogueEntry_->getSchemaName();
       filesystem::path metadataPath = catalogueEntry_
-              ->getCatalogue()
+              ->getCatalogue().lock()
               ->getMetadataPath()
               .append(schemaName)
               .append("segment_info");

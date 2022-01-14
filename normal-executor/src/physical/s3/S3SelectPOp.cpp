@@ -462,13 +462,13 @@ void S3SelectPOp::sendSegmentWeight() {
    */
   double predicateNum = getPredicateNum();
   auto numKey = (double) weightedSegmentKeys_.size();
-  auto weightMap = std::make_shared<std::unordered_map<std::shared_ptr<SegmentKey>, double>>();
+  std::unordered_map<std::shared_ptr<SegmentKey>, double> weightMap;
   for (auto const &segmentKey: weightedSegmentKeys_) {
     auto columnName = segmentKey->getColumnName();
     auto lenCol = (double) table_->getApxColumnLength(columnName);
 
     auto weight = selectivity / vNetwork + (lenRow / (lenCol * vS3Scan) + predicateNum / (lenCol * vS3Filter)) / numKey;
-    weightMap->emplace(segmentKey, weight);
+    weightMap.emplace(segmentKey, weight);
   }
 
   ctx()->send(WeightRequestMessage::make(weightMap, name()), "SegmentCache")

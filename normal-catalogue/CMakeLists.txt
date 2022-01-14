@@ -22,8 +22,8 @@ add_library(normal-catalogue STATIC
         include/normal/catalogue/format/FormatType.h
         src/format/Format.cpp include/normal/catalogue/format/Format.h
         src/format/CSVFormat.cpp include/normal/catalogue/format/CSVFormat.h
-        src/format/ParquetFormat.cpp include/normal/catalogue/format/ParquetFormat.h)
-
+        src/format/ParquetFormat.cpp include/normal/catalogue/format/ParquetFormat.h
+        include/normal/catalogue/serialization/PartitionSerializer.h)
 
 target_include_directories(normal-catalogue PUBLIC include)
 

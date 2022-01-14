@@ -20,6 +20,14 @@ public:
   inline static constexpr ::caf::type_id_t FileScanPOp2_first_custom_type_id = ::caf::first_custom_type_id + 500;
   inline static constexpr ::caf::type_id_t TupleSet_first_custom_type_id = ::caf::first_custom_type_id + 600;
   inline static constexpr ::caf::type_id_t Message_first_custom_type_id = ::caf::first_custom_type_id + 700;
+  inline static constexpr ::caf::type_id_t SegmentKey_first_custom_type_id = ::caf::first_custom_type_id + 800;
+  inline static constexpr ::caf::type_id_t Partition_first_custom_type_id = ::caf::first_custom_type_id + 900;
+  inline static constexpr ::caf::type_id_t SegmentMetadata_first_custom_type_id = ::caf::first_custom_type_id + 1000;
+  inline static constexpr ::caf::type_id_t SegmentData_first_custom_type_id = ::caf::first_custom_type_id + 1100;
+  inline static constexpr ::caf::type_id_t Column_first_custom_type_id = ::caf::first_custom_type_id + 1200;
+  inline static constexpr ::caf::type_id_t TupleSetIndex_first_custom_type_id = ::caf::first_custom_type_id + 1300;
+  inline static constexpr ::caf::type_id_t TupleKey_first_custom_type_id = ::caf::first_custom_type_id + 1400;
+  inline static constexpr ::caf::type_id_t TupleKeyElement_first_custom_type_id = ::caf::first_custom_type_id + 1500;
 
 };
 

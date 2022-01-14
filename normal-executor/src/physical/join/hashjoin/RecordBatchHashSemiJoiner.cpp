@@ -27,7 +27,6 @@ tl::expected<void, string> RecordBatchHashSemiJoiner::join(const shared_ptr<::ar
   auto combineResult = buildTupleSetIndex_->combine();
   if (!combineResult)
     return tl::make_unexpected(combineResult.error());
-  auto buildTable = buildTupleSetIndex_->getTable();
 
   // Create a tupleSetIndexFinder
   const auto &expectedIndexFinder = TupleSetIndexFinder::make(buildTupleSetIndex_, probeJoinColumnNames_, recordBatch);

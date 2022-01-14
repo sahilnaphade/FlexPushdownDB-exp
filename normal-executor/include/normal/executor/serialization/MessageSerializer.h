@@ -5,8 +5,6 @@
 #ifndef NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_SERIALIZATION_MESSAGESERIALIZER_H
 #define NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_SERIALIZATION_MESSAGESERIALIZER_H
 
-#include <caf/all.hpp>
-#include <normal/caf/CAFUtil.h>
 #include <normal/executor/message/Message.h>
 #include <normal/executor/message/StartMessage.h>
 #include <normal/executor/message/ConnectMessage.h>
@@ -19,6 +17,8 @@
 #include <normal/executor/message/cache/StoreRequestMessage.h>
 #include <normal/executor/message/cache/WeightRequestMessage.h>
 #include <normal/executor/message/cache/CacheMetricsMessage.h>
+#include <normal/caf/CAFUtil.h>
+#include <normal/tuple/serialization/TupleKeyElementSerializer.h>
 
 using namespace normal::executor::message;
 

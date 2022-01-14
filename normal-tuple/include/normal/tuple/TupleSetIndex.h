@@ -6,6 +6,8 @@
 #define NORMAL_NORMAL_TUPLE_INCLUDE_NORMAL_TUPLE_TUPLESETINDEX_H
 
 #include <normal/tuple/TupleKey.h>
+#include <normal/tuple/TupleSet.h>
+#include <normal/caf/CAFUtil.h>
 #include <arrow/api.h>
 #include <tl/expected.hpp>
 #include <utility>
@@ -27,15 +29,18 @@ class TupleSetIndex {
 public:
   TupleSetIndex(vector<string> columnNames,
                 vector<int> columnIndexes,
-                shared_ptr<::arrow::Table> table,
+                shared_ptr<TupleSet> tupleSet,
                 unordered_multimap<shared_ptr<TupleKey>, int64_t, TupleKeyPointerHash, TupleKeyPointerPredicate> valueRowMap);
+  TupleSetIndex() = default;
+  TupleSetIndex(const TupleSetIndex&) = default;
+  TupleSetIndex& operator=(const TupleSetIndex&) = default;
   virtual ~TupleSetIndex() = default;
 
   static tl::expected<shared_ptr<TupleSetIndex>, string> make(const vector<string> &columnNames,
-                                                              const shared_ptr<::arrow::Table> &table);
+                                                              const shared_ptr<TupleSet> &tupleSet);
 
   int64_t size() const;
-  const shared_ptr<::arrow::Table> &getTable() const;
+  const shared_ptr<TupleSet> &getTupleSet() const;
   string toString() const;
 
   /**
@@ -89,10 +94,33 @@ public:
 private:
   vector<string> columnNames_;
   vector<int> columnIndexes_;
-  shared_ptr<::arrow::Table> table_;
+  shared_ptr<TupleSet> tupleSet_;
   unordered_multimap<shared_ptr<TupleKey>, int64_t, TupleKeyPointerHash, TupleKeyPointerPredicate> valueRowMap_;
+
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, TupleSetIndex& tupleSetIndex) {
+    return f.object(tupleSetIndex).fields(f.field("columnNames", tupleSetIndex.columnNames_),
+                                          f.field("columnIndexes", tupleSetIndex.columnIndexes_),
+                                          f.field("tupleSet", tupleSetIndex.tupleSet_),
+                                          f.field("valueRowMap", tupleSetIndex.valueRowMap_));
+  }
 };
 
 }
+
+using TupleSetIndexPtr = std::shared_ptr<normal::tuple::TupleSetIndex>;
+
+CAF_BEGIN_TYPE_ID_BLOCK(TupleSetIndex, normal::caf::CAFUtil::TupleSetIndex_first_custom_type_id)
+CAF_ADD_TYPE_ID(TupleSetIndex, (normal::tuple::TupleSetIndex))
+CAF_END_TYPE_ID_BLOCK(TupleSetIndex)
+
+namespace caf {
+template <>
+struct inspector_access<TupleSetIndexPtr> : variant_inspector_access<TupleSetIndexPtr> {
+  // nop
+};
+} // namespace caf
 
 #endif //NORMAL_NORMAL_TUPLE_INCLUDE_NORMAL_TUPLE_TUPLESETINDEX_H

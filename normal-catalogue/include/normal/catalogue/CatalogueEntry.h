@@ -21,11 +21,11 @@ class CatalogueEntry {
 public:
   explicit CatalogueEntry(CatalogueEntryType type,
                           string schemaName,
-                          shared_ptr<Catalogue> Catalogue);
+                          const shared_ptr<Catalogue>& Catalogue);
   virtual ~CatalogueEntry() = default;
 
   const string &getSchemaName() const;
-  const shared_ptr<Catalogue> &getCatalogue() const;
+  const weak_ptr<Catalogue> &getCatalogue() const;
   CatalogueEntryType getType() const;
   virtual string getTypeName() const = 0;
   virtual string getName() const = 0;
@@ -33,7 +33,7 @@ public:
 private:
   CatalogueEntryType type_;
   string schemaName_;
-  shared_ptr<Catalogue> catalogue_;
+  weak_ptr<Catalogue> catalogue_;
 
 };
 

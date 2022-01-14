@@ -56,7 +56,7 @@ join(const shared_ptr<RecordBatchHashSemiJoiner> &joiner, const shared_ptr<Tuple
 tl::expected<void, string> HashSemiJoinProbeKernel::joinBuildTupleSetIndex(const shared_ptr<TupleSetIndex> &tupleSetIndex) {
 
   // Get rowIndexOffset
-  int64_t rowIndexOffset = buildTupleSetIndex_.has_value() ? buildTupleSetIndex_.value()->getTable()->num_rows() : 0;
+  int64_t rowIndexOffset = buildTupleSetIndex_.has_value() ? buildTupleSetIndex_.value()->size() : 0;
 
   // Buffer tupleSetIndex if having tuples
   if(tupleSetIndex->size() > 0) {
@@ -128,13 +128,13 @@ tl::expected<void, string> HashSemiJoinProbeKernel::joinProbeTupleSet(const shar
 
 tl::expected<void, string> HashSemiJoinProbeKernel::finalize() {
   // Check if has input rows
-  if (!buildTupleSetIndex_.has_value() || buildTupleSetIndex_.value()->getTable()->num_rows() == 0) {
+  if (!buildTupleSetIndex_.has_value() || buildTupleSetIndex_.value()->size() == 0) {
     return {};
   }
 
   // Make input as a record batch, project only neededColumns of tupleSetIndex
   buildTupleSetIndex_.value()->combine();
-  const auto &inputTable = buildTupleSetIndex_.value()->getTable();
+  const auto &inputTable = buildTupleSetIndex_.value()->getTupleSet()->table();
   arrow::ArrayVector arrayVector;
   for (const auto &index: neededColumnIndice_) {
     if (index->first) {

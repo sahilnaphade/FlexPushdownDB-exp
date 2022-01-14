@@ -6,6 +6,7 @@
 #define NORMAL_NORMAL_TUPLE_INCLUDE_NORMAL_TUPLE_TUPLEKEY_H
 
 #include <normal/util/Util.h>
+#include <normal/caf/CAFUtil.h>
 #include <tl/expected.hpp>
 #include <arrow/api.h>
 #include <fmt/format.h>
@@ -22,6 +23,7 @@ public:
   virtual ~TupleKeyElement() = default;
   virtual bool equals(const shared_ptr<TupleKeyElement> &other) = 0;
   virtual size_t hash() = 0;
+  virtual shared_ptr<arrow::DataType> type() = 0;
   virtual tl::expected<shared_ptr<arrow::Scalar>, string> toScalar() = 0;
   virtual string toString() = 0;
 };
@@ -33,6 +35,9 @@ using CType = typename arrow::TypeTraits<ArrowType>::CType;
 
 public:
   explicit TupleKeyElementWrapper(CType value) : value(move(value)) {}
+  TupleKeyElementWrapper() = default;
+  TupleKeyElementWrapper(const TupleKeyElementWrapper&) = default;
+  TupleKeyElementWrapper& operator=(const TupleKeyElementWrapper&) = default;
 
   size_t hash() override {
     return std::hash<CType>()(value);
@@ -42,8 +47,12 @@ public:
     return value == static_pointer_cast<TupleKeyElementWrapper<ArrowType>>(other)->value;
   };
 
+  shared_ptr<arrow::DataType> type() override {
+    return arrow::TypeTraits<ArrowType>::type_singleton();
+  }
+
   tl::expected<shared_ptr<arrow::Scalar>, string> toScalar() override {
-    const auto expScalar = arrow::MakeScalar(arrow::TypeTraits<ArrowType>::type_singleton(), value);
+    const auto expScalar = arrow::MakeScalar(type(), value);
     if (!expScalar.ok()) {
       return tl::make_unexpected(expScalar.status().message());
     }
@@ -57,12 +66,21 @@ public:
 private:
   CType value;
 
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, TupleKeyElementWrapper& tupleKeyElementWrapper) {
+    return f.apply(tupleKeyElementWrapper.value);
+  }
 };
 
 template<>
 class TupleKeyElementWrapper<arrow::StringType> : public TupleKeyElement {
 public:
   explicit TupleKeyElementWrapper(string value) : value(move(value)) {}
+  TupleKeyElementWrapper() = default;
+  TupleKeyElementWrapper(const TupleKeyElementWrapper&) = default;
+  TupleKeyElementWrapper& operator=(const TupleKeyElementWrapper&) = default;
 
   size_t hash() override {
     return std::hash<string>()(value);
@@ -71,6 +89,10 @@ public:
   bool equals(const shared_ptr<TupleKeyElement> &other) override  {
     return value == static_pointer_cast<TupleKeyElementWrapper<arrow::StringType>>(other)->value;
   };
+
+  shared_ptr<arrow::DataType> type() override {
+    return arrow::utf8();
+  }
 
   tl::expected<shared_ptr<arrow::Scalar>, string> toScalar() override {
     return arrow::MakeScalar(value);
@@ -83,6 +105,12 @@ public:
 private:
   string value;
 
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, TupleKeyElementWrapper& tupleKeyElementWrapper) {
+    return f.apply(tupleKeyElementWrapper.value);
+  }
 };
 
 class TupleKeyElementBuilder {
@@ -119,6 +147,9 @@ public:
 class TupleKey {
 public:
   explicit TupleKey(vector<shared_ptr<TupleKeyElement>> Elements) : elements_(move(Elements)) {}
+  TupleKey() = default;
+  TupleKey(const TupleKey&) = default;
+  TupleKey& operator=(const TupleKey&) = default;
 
   size_t hash() {
     vector<size_t> hashes;
@@ -166,6 +197,12 @@ public:
 private:
   vector<shared_ptr<TupleKeyElement>> elements_;
 
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, TupleKey& tupleKey) {
+    return f.apply(tupleKey.elements_);
+  }
 };
 
 struct TupleKeyPointerHash {
@@ -200,5 +237,17 @@ public:
 
 }
 
+using TupleKeyPtr = std::shared_ptr<normal::tuple::TupleKey>;
+
+CAF_BEGIN_TYPE_ID_BLOCK(TupleKey, normal::caf::CAFUtil::TupleKey_first_custom_type_id)
+CAF_ADD_TYPE_ID(TupleKey, (normal::tuple::TupleKey))
+CAF_END_TYPE_ID_BLOCK(TupleKey)
+
+namespace caf {
+template <>
+struct inspector_access<TupleKeyPtr> : variant_inspector_access<TupleKeyPtr> {
+  // nop
+};
+} // namespace caf
 
 #endif //NORMAL_NORMAL_TUPLE_INCLUDE_NORMAL_TUPLE_TUPLEKEY_H

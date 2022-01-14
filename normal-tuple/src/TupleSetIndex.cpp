@@ -12,19 +12,19 @@ using namespace normal::tuple;
 
 TupleSetIndex::TupleSetIndex(vector<string> columnNames,
                              vector<int> columnIndexes,
-                             shared_ptr<::arrow::Table> table,
+                             shared_ptr<TupleSet> tupleSet,
                              unordered_multimap<shared_ptr<TupleKey>, int64_t, TupleKeyPointerHash, TupleKeyPointerPredicate> valueRowMap) :
 	columnNames_(move(columnNames)),
 	columnIndexes_(move(columnIndexes)), 
-	table_(move(table)),
+	tupleSet_(move(tupleSet)),
 	valueRowMap_(move(valueRowMap)) {}
 
 tl::expected<shared_ptr<TupleSetIndex>, string>
-TupleSetIndex::make(const vector<string> &columnNames, const shared_ptr<::arrow::Table> &table) {
+TupleSetIndex::make(const vector<string> &columnNames, const shared_ptr<TupleSet> &tupleSet) {
   // Get the column indexes, checking the column exists
   vector<int> columnIndexes;
   for (const auto &columnName: columnNames) {
-    auto columnIndex = table->schema()->GetFieldIndex(ColumnName::canonicalize(columnName));
+    auto columnIndex = tupleSet->schema()->GetFieldIndex(ColumnName::canonicalize(columnName));
     if (columnIndex == -1) {
       return tl::make_unexpected(fmt::format("Cannot make TupleSetIndex. Column '{}' does not exist", columnName));
     }
@@ -32,13 +32,13 @@ TupleSetIndex::make(const vector<string> &columnNames, const shared_ptr<::arrow:
   }
 
   // Build valueRowMap
-  auto expValueRowMap = build(columnIndexes, 0, table);
+  auto expValueRowMap = build(columnIndexes, 0, tupleSet->table());
   if (!expValueRowMap.has_value()) {
     return tl::make_unexpected(expValueRowMap.error());
   }
   auto valueRowMap = expValueRowMap.value();
 
-  return make_shared<TupleSetIndex>(columnNames, columnIndexes, table, valueRowMap);
+  return make_shared<TupleSetIndex>(columnNames, columnIndexes, tupleSet, valueRowMap);
 }
 
 tl::expected<unordered_multimap<shared_ptr<TupleKey>, int64_t, TupleKeyPointerHash, TupleKeyPointerPredicate>, string>
@@ -90,7 +90,7 @@ TupleSetIndex::build(const vector<int>& columnIndexes,
 tl::expected<void, string> TupleSetIndex::put(const shared_ptr<::arrow::Table> &table) {
   // Need to synchronize schemas (schemas can be the same but in different orders)
   shared_ptr<::arrow::Table> alignedTable;
-  auto schema = table_->schema();
+  auto schema = tupleSet_->schema();
   if (!schema->Equals(table->schema())) {
     vector<shared_ptr<::arrow::ChunkedArray>> newChunkedArrays;
     for (auto const &field: schema->fields()) {
@@ -119,7 +119,7 @@ tl::expected<void, string> TupleSetIndex::put(const shared_ptr<::arrow::Table> &
   }
 
   // Build valueRowIndexMap
-  const auto &expValueRowIndexMap = build(columnIndexes, table_->num_rows(), alignedTable);
+  const auto &expValueRowIndexMap = build(columnIndexes, tupleSet_->numRows(), alignedTable);
   if (!expValueRowIndexMap.has_value())
     return tl::make_unexpected(expValueRowIndexMap.error());
   const auto &valueRowIndexMap = expValueRowIndexMap.value();
@@ -128,17 +128,17 @@ tl::expected<void, string> TupleSetIndex::put(const shared_ptr<::arrow::Table> &
   valueRowMap_.insert(valueRowIndexMap.begin(), valueRowIndexMap.end());
 
   // Save the incoming table
-  auto appendResult = ::arrow::ConcatenateTables({table_, alignedTable});
+  auto appendResult = ::arrow::ConcatenateTables({tupleSet_->table(), alignedTable});
   if (!appendResult.ok())
     return tl::make_unexpected(appendResult.status().message());
-  table_ = *appendResult;
+  tupleSet_->table(*appendResult);
 
-  assert(valueRowMap_.size() == static_cast<size_t>(table_->num_rows()));
+  assert(valueRowMap_.size() == static_cast<size_t>(tupleSet_->numRows()));
   return {};
 }
 
 tl::expected<void, string> TupleSetIndex::merge(const shared_ptr<TupleSetIndex> &other) {
-  int64_t rowOffset = table_->num_rows();
+  int64_t rowOffset = tupleSet_->numRows();
 
   // Add the other rows to hashtable, offsetting their row numbers
   for (const auto &valueIndexMapIterator: other->valueRowMap_) {
@@ -146,13 +146,13 @@ tl::expected<void, string> TupleSetIndex::merge(const shared_ptr<TupleSetIndex> 
   }
 
   // Add the other's table to the existing table
-  auto appendResult = ::arrow::ConcatenateTables({table_, other->table_});
+  auto appendResult = ::arrow::ConcatenateTables({tupleSet_->table(), other->tupleSet_->table()});
   if (!appendResult.ok()) {
     return tl::make_unexpected(appendResult.status().message());
   }
-  table_ = *appendResult;
+  tupleSet_->table(*appendResult);
 
-  assert(valueRowMap_.size() == static_cast<size_t>(table_->num_rows()));
+  assert(valueRowMap_.size() == static_cast<size_t>(tupleSet_->numRows()));
   return {};
 }
 
@@ -162,7 +162,7 @@ tl::expected<void, string> TupleSetIndex::validate() {
   // Read the table a batch at a time
   ::arrow::Result<shared_ptr<::arrow::RecordBatch>> recordBatchResult;
   ::arrow::Status status;
-  ::arrow::TableBatchReader reader{*table_};
+  ::arrow::TableBatchReader reader{*tupleSet_->table()};
   reader.set_chunksize((int64_t) DefaultChunkSize);
 
   // Read a batch
@@ -222,21 +222,16 @@ vector<int64_t> TupleSetIndex::find(const shared_ptr<TupleKey> &tupleKey) {
   return rowIndexes;
 }
 
-const shared_ptr<::arrow::Table> &TupleSetIndex::getTable() const {
-  return table_;
+const shared_ptr<TupleSet> &TupleSetIndex::getTupleSet() const {
+  return tupleSet_;
 }
 
 int64_t TupleSetIndex::size() const {
-  return table_->num_rows();
+  return tupleSet_->numRows();
 }
 
 tl::expected<void, string> TupleSetIndex::combine() {
-  auto expectedTable = table_->CombineChunks(::arrow::default_memory_pool());
-  if(expectedTable.ok())
-    table_ = *expectedTable;
-  else
-    return tl::make_unexpected(expectedTable.status().message());
-  return {};
+  return tupleSet_->combine();
 }
 
 string TupleSetIndex::toString() const {

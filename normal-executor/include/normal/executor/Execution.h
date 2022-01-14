@@ -40,7 +40,7 @@ public:
 
   long getElapsedTime();
   shared_ptr<PhysicalOp> getPhysicalOp(const std::string &name);
-  s3::S3SelectScanStats getAggregateS3SelectScanStats();
+  physical::s3::S3SelectScanStats getAggregateS3SelectScanStats();
   std::tuple<size_t, size_t, size_t> getFilterTimeNSInputOutputBytes();
   string showMetrics(bool showOpTimes = true, bool showScanMetrics = true);
 

@@ -232,14 +232,22 @@ double Executor::getCrtQueryShardHitRatio() {
 }
 
 void Executor::initCAFGlobalMetaObjects() {
-  ::caf::exec_main_init_meta_objects<::caf::id_block::SegmentCacheActor,
-                                     ::caf::id_block::Envelope,
-                                     ::caf::id_block::POpActor,
-                                     ::caf::id_block::POpActor2,
-                                     ::caf::id_block::CollatePOp2,
-                                     ::caf::id_block::FileScanPOp2,
-                                     ::caf::id_block::TupleSet,
-                                     ::caf::id_block::Message>();
+  ::caf::init_global_meta_objects<::caf::id_block::SegmentCacheActor>();
+  ::caf::init_global_meta_objects<::caf::id_block::Envelope>();
+  ::caf::init_global_meta_objects<::caf::id_block::POpActor>();
+  ::caf::init_global_meta_objects<::caf::id_block::POpActor2>();
+  ::caf::init_global_meta_objects<::caf::id_block::CollatePOp2>();
+  ::caf::init_global_meta_objects<::caf::id_block::FileScanPOp2>();
+  ::caf::init_global_meta_objects<::caf::id_block::TupleSet>();
+  ::caf::init_global_meta_objects<::caf::id_block::Message>();
+  ::caf::init_global_meta_objects<::caf::id_block::SegmentKey>();
+  ::caf::init_global_meta_objects<::caf::id_block::Partition>();
+  ::caf::init_global_meta_objects<::caf::id_block::SegmentMetadata>();
+  ::caf::init_global_meta_objects<::caf::id_block::SegmentData>();
+  ::caf::init_global_meta_objects<::caf::id_block::Column>();
+  ::caf::init_global_meta_objects<::caf::id_block::TupleSetIndex>();
+  ::caf::init_global_meta_objects<::caf::id_block::TupleKey>();
+  ::caf::init_global_meta_objects<::caf::id_block::TupleKeyElement>();
 
   ::caf::core::init_global_meta_objects();
 }

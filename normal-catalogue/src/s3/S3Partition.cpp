@@ -46,6 +46,10 @@ bool S3Partition::equalTo(shared_ptr<Partition> other) {
   }
 }
 
+CatalogueEntryType S3Partition::getCatalogueEntryType() {
+  return S3;
+}
+
 bool S3Partition::operator==(const S3Partition &other) {
   return s3Bucket_ == other.s3Bucket_ && s3Object_ == other.s3Object_;
 }

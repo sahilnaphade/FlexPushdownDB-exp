@@ -32,6 +32,10 @@ bool LocalFSPartition::equalTo(shared_ptr<Partition> other) {
   }
 }
 
+CatalogueEntryType LocalFSPartition::getCatalogueEntryType() {
+  return LOCAL_FS;
+}
+
 bool LocalFSPartition::operator==(const LocalFSPartition &other) {
   return path_ == other.path_;
 }

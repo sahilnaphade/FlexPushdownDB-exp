@@ -259,13 +259,13 @@ shared_ptr<PhysicalOp> Execution::getPhysicalOp(const string &name) {
   return expectedEntry.value().getDef();
 }
 
-s3::S3SelectScanStats Execution::getAggregateS3SelectScanStats() {
-  s3::S3SelectScanStats aggregateS3SelectScanStats = {0, 0, 0, 0 , 0, 0 ,0, 0}; // initialize all fields to 0
+physical::s3::S3SelectScanStats Execution::getAggregateS3SelectScanStats() {
+  physical::s3::S3SelectScanStats aggregateS3SelectScanStats = {0, 0, 0, 0 , 0, 0 ,0, 0}; // initialize all fields to 0
   for (const auto &entry: opDirectory_) {
     const auto op = entry.second.getDef();
     if (op->getType() == "S3GetPOp" || op->getType() == "S3SelectPOp") {
-      auto s3SelectScanOp = static_pointer_cast<s3::S3SelectScanAbstractPOp>(op);
-      s3::S3SelectScanStats currentS3SelectScanStats = s3SelectScanOp->getS3SelectScanStats();
+      auto s3SelectScanOp = static_pointer_cast<physical::s3::S3SelectScanAbstractPOp>(op);
+      physical::s3::S3SelectScanStats currentS3SelectScanStats = s3SelectScanOp->getS3SelectScanStats();
 
       // Add these s3SelectScanStats to our aggregate stats
       aggregateS3SelectScanStats.processedBytes += currentS3SelectScanStats.processedBytes;
@@ -402,7 +402,7 @@ string Execution::showMetrics(bool showOpTimes, bool showScanMetrics) {
   }
 
   if (showScanMetrics) {
-    s3::S3SelectScanStats s3SelectScanStats = getAggregateS3SelectScanStats();
+    physical::s3::S3SelectScanStats s3SelectScanStats = getAggregateS3SelectScanStats();
 
     stringstream formattedProcessedBytes;
     formattedProcessedBytes << s3SelectScanStats.processedBytes << " B" << " ("

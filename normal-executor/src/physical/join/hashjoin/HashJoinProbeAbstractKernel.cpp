@@ -10,7 +10,7 @@ HashJoinProbeAbstractKernel::HashJoinProbeAbstractKernel(HashJoinPredicate pred,
         pred_(move(pred)), neededColumnNames_(move(neededColumnNames)) {}
 
 tl::expected<void, string> HashJoinProbeAbstractKernel::putBuildTupleSetIndex(const shared_ptr<TupleSetIndex> &tupleSetIndex) {
-  const auto &validateRes = validateColumnNames(tupleSetIndex->getTable()->schema(), pred_.getLeftColumnNames());
+  const auto &validateRes = validateColumnNames(tupleSetIndex->getTupleSet()->schema(), pred_.getLeftColumnNames());
   if (!validateRes.has_value()) {
     return tl::make_unexpected(fmt::format("Cannot put build tuple set index into probe kernel. {}", validateRes.error()));
   }
@@ -64,8 +64,8 @@ void HashJoinProbeAbstractKernel::bufferOutputSchema(const shared_ptr<TupleSetIn
     // Create the outputSchema_ and neededColumnIndice_ from neededColumnNames_
     vector<shared_ptr<::arrow::Field>> outputFields;
 
-    for (int c = 0; c < tupleSetIndex->getTable()->schema()->num_fields(); ++c) {
-      auto field = tupleSetIndex->getTable()->schema()->field(c);
+    for (int c = 0; c < tupleSetIndex->getTupleSet()->schema()->num_fields(); ++c) {
+      auto field = tupleSetIndex->getTupleSet()->schema()->field(c);
       if (neededColumnNames_.find(field->name()) != neededColumnNames_.end()) {
         neededColumnIndice_.emplace_back(make_shared<pair<bool, int>>(true, c));
         outputFields.emplace_back(field);

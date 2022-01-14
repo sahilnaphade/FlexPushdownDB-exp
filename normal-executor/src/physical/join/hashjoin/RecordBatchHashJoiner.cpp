@@ -47,7 +47,7 @@ tl::expected<void, string> RecordBatchHashJoiner::join(const shared_ptr<::arrow:
 
   //  buildTupleSetIndex_->validate();
 
-  auto buildTable = buildTupleSetIndex_->getTable();
+  auto buildTable = buildTupleSetIndex_->getTupleSet()->table();
 
   // Create a tupleSetIndexFinder
   const auto &expectedIndexFinder = TupleSetIndexFinder::make(buildTupleSetIndex_,

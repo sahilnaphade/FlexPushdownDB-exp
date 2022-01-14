@@ -5,7 +5,6 @@
 #include <normal/catalogue/Partition.h>
 
 namespace normal::catalogue {
-Partition::Partition() = default;
 
 const long &Partition::getNumBytes() const {
   return numBytes_;

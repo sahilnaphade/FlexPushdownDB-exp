@@ -51,4 +51,8 @@ int Table::getApxRowLength() const {
   return apxRowLength_;
 }
 
+const weak_ptr<CatalogueEntry> Table::getCatalogueEntry() const {
+  return catalogueEntry_;
+}
+
 }

@@ -5,8 +5,8 @@
 #ifndef NORMAL_NORMAL_CATALOGUE_INCLUDE_NORMAL_CATALOGUE_PARTITION_H
 #define NORMAL_NORMAL_CATALOGUE_INCLUDE_NORMAL_CATALOGUE_PARTITION_H
 
+#include <normal/catalogue/Table.h>
 #include <normal/tuple/Scalar.h>
-
 #include <memory>
 #include <string>
 #include <optional>
@@ -23,7 +23,9 @@ namespace normal::catalogue {
 class Partition {
 
 public:
-  Partition();
+  Partition() = default;
+  Partition(const Partition&) = default;
+  Partition& operator=(const Partition&) = default;
 
   virtual ~Partition() = default;
 
@@ -33,8 +35,11 @@ public:
 
   virtual size_t hash() = 0;
 
+  virtual CatalogueEntryType getCatalogueEntryType() = 0;
+
   const long &getNumBytes() const;
   const unordered_map<string, pair<shared_ptr<Scalar>, shared_ptr<Scalar>>> &getZoneMap() const;
+  const weak_ptr<Table> &getTable() const;
 
   void setNumBytes(long numBytes);
   void addMinMax(const string &columnName,
@@ -44,6 +49,13 @@ private:
   long numBytes_ = 0;
   unordered_map<string, pair<shared_ptr<Scalar>, shared_ptr<Scalar>>> zoneMap_;   // <columnName, <min, max>>
 
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, Partition& partition) {
+    return f.object(partition).fields(f.field("numBytes", partition.numBytes_),
+                                      f.field("zoneMap", partition.zoneMap_));
+  }
 };
 
 struct PartitionPointerHash {

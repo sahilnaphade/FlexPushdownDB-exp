@@ -6,6 +6,7 @@
 #define NORMAL_NORMAL_CATALOGUE_INCLUDE_NORMAL_CATALOGUE_S3_S3PARTITION_H
 
 #include <normal/catalogue/Partition.h>
+#include <normal/catalogue/Table.h>
 #include <string>
 #include <memory>
 
@@ -22,19 +23,31 @@ public:
                        string s3Object,
                        long numBytes);
 
+  S3Partition() = default;
+  S3Partition(const S3Partition&) = default;
+  S3Partition& operator=(const S3Partition&) = default;
+
   [[nodiscard]] const string &getBucket() const;
   [[nodiscard]] const string &getObject() const;
 
   string toString() override;
   size_t hash() override;
-
   bool equalTo(shared_ptr<Partition> other) override;
+  CatalogueEntryType getCatalogueEntryType() override;
 
   bool operator==(const S3Partition& other);
 
 private:
   string s3Bucket_;
   string s3Object_;
+
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, S3Partition& partition) {
+    return f.object(partition).fields(f.field("bucket", partition.s3Bucket_),
+                                      f.field("object", partition.s3Object_));
+  }
 };
 
 }

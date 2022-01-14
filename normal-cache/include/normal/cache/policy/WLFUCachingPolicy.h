@@ -22,7 +22,7 @@ public:
                              std::shared_ptr<CatalogueEntry> catalogueEntry);
 
   void onLoad(const std::shared_ptr<SegmentKey> &key) override;
-  void onWeight(const std::shared_ptr<std::unordered_map<std::shared_ptr<SegmentKey>, double>> &weightMap);
+  void onWeight(const std::unordered_map<std::shared_ptr<SegmentKey>, double> &weightMap);
   void onRemove(const std::shared_ptr<SegmentKey> &key) override;
   std::optional<std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>>> onStore(const std::shared_ptr<SegmentKey> &key) override;
   std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> onToCache(std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> segmentKeys) override;

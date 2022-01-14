@@ -32,6 +32,7 @@ public:
   vector<string> getColumnNames() const;
   int getApxColumnLength(const string &columnName) const;
   int getApxRowLength() const;
+  const weak_ptr<CatalogueEntry> getCatalogueEntry() const;
 
 private:
   string name_;
@@ -40,7 +41,7 @@ private:
   unordered_map<string, int> apxColumnLengthMap_;   // apx: approximate
   int apxRowLength_;
   unordered_set<string> zonemapColumnNames_;
-  shared_ptr<CatalogueEntry> catalogueEntry_;
+  weak_ptr<CatalogueEntry> catalogueEntry_;
 };
 
 }

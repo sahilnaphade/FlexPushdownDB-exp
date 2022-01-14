@@ -20,20 +20,19 @@ namespace normal::executor::message {
 class WeightRequestMessage : public Message {
 
 public:
-  WeightRequestMessage(const std::shared_ptr<std::unordered_map<std::shared_ptr<SegmentKey>, double>> &weightMap,
+  WeightRequestMessage(const std::unordered_map<std::shared_ptr<SegmentKey>, double> &weightMap,
                        const std::string &sender);
   WeightRequestMessage() = default;
   WeightRequestMessage(const WeightRequestMessage&) = default;
   WeightRequestMessage& operator=(const WeightRequestMessage&) = default;
 
-  static std::shared_ptr<WeightRequestMessage> make(
-          const std::shared_ptr<std::unordered_map<std::shared_ptr<SegmentKey>, double>> &weightMap,
-          const std::string &sender);
+  static std::shared_ptr<WeightRequestMessage>
+  make(const std::unordered_map<std::shared_ptr<SegmentKey>, double> &weightMap, const std::string &sender);
 
-  const std::shared_ptr<std::unordered_map<std::shared_ptr<SegmentKey>, double>> &getWeightMap() const;
+  const std::unordered_map<std::shared_ptr<SegmentKey>, double> &getWeightMap() const;
 
 private:
-  std::shared_ptr<std::unordered_map<std::shared_ptr<SegmentKey>, double>> weightMap_;
+  std::unordered_map<std::shared_ptr<SegmentKey>, double> weightMap_;
 
 // caf inspect
 public:

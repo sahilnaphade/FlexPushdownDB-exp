@@ -56,9 +56,9 @@ void WLFUCachingPolicy::onLoad(const std::shared_ptr<SegmentKey> &key) {
     onLoadTime += std::chrono::duration_cast<std::chrono::nanoseconds>(stopTime - startTime).count();
 }
 
-void WLFUCachingPolicy::onWeight(const std::shared_ptr<std::unordered_map<std::shared_ptr<SegmentKey>, double>> &weightMap) {
+void WLFUCachingPolicy::onWeight(const std::unordered_map<std::shared_ptr<SegmentKey>, double> &weightMap) {
   // update value using weight
-  for (auto const &weightEntry: *weightMap) {
+  for (auto const &weightEntry: weightMap) {
     auto segmentKey = weightEntry.first;
     auto weight = weightEntry.second;
     if (weightUpdatedKeys_.find(segmentKey) == weightUpdatedKeys_.end()) {

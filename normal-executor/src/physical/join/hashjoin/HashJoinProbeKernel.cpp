@@ -96,7 +96,7 @@ tl::expected<void, string> HashJoinProbeKernel::joinBuildTupleSetIndex(const sha
   }
 
   // Create joiner
-  int64_t buildRowOffset = buildTupleSetIndex_.has_value() ? buildTupleSetIndex_.value()->getTable()->num_rows() : 0;
+  int64_t buildRowOffset = buildTupleSetIndex_.has_value() ? buildTupleSetIndex_.value()->size() : 0;
   auto expectedJoiner = RecordBatchHashJoiner::make(tupleSetIndex,
                                                     pred_.getRightColumnNames(),
                                                     outputSchema_.value(),
@@ -193,8 +193,7 @@ tl::expected<void, string> HashJoinProbeKernel::makeOuterJoinHelpers() {
 tl::expected<void, string> HashJoinProbeKernel::computeOuterJoin() {
   // left outer join
   if (leftJoinHelper_.has_value() && buildTupleSetIndex_.has_value()) {
-    const auto &expLeftOutput = leftJoinHelper_.value()->compute(
-            TupleSet::make(buildTupleSetIndex_.value()->getTable()));
+    const auto &expLeftOutput = leftJoinHelper_.value()->compute(buildTupleSetIndex_.value()->getTupleSet());
     if (!expLeftOutput.has_value()) {
       return tl::make_unexpected(expLeftOutput.error());
     }

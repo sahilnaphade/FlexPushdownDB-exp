@@ -43,7 +43,8 @@ add_library(normal-tuple STATIC
         src/arrow/CSVToArrowSIMDStreamParser.cpp include/normal/tuple/arrow/CSVToArrowSIMDStreamParser.h
         src/arrow/SIMDParserHelpers.cpp include/normal/tuple/arrow/SIMDParserHelpers.h
         src/arrow/CSVToArrowSIMDChunkParser.cpp include/normal/tuple/arrow/CSVToArrowSIMDChunkParser.h
-        src/serialization/ArrowSerializer.cpp include/normal/tuple/serialization/ArrowSerializer.h)
+        src/serialization/ArrowSerializer.cpp include/normal/tuple/serialization/ArrowSerializer.h
+        include/normal/tuple/serialization/TupleKeyElementSerializer.h)
 
 target_include_directories(normal-tuple PUBLIC include)
 

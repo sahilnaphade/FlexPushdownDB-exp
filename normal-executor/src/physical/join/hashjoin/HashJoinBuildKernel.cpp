@@ -24,7 +24,7 @@ tl::expected<void, string> HashJoinBuildKernel::put(const shared_ptr<TupleSet> &
   assert(tupleSet);
 
   if(!tupleSetIndex_.has_value()){
-    auto expectedTupleSetIndex = TupleSetIndex::make(columnNames_, tupleSet->table());
+    auto expectedTupleSetIndex = TupleSetIndex::make(columnNames_, tupleSet);
     if(!expectedTupleSetIndex.has_value()){
       return tl::make_unexpected(expectedTupleSetIndex.error());
     }

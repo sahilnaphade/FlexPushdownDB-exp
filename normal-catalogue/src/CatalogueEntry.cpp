@@ -8,16 +8,16 @@ using namespace normal::catalogue;
 
 CatalogueEntry::CatalogueEntry(CatalogueEntryType type,
                                string schemaName,
-                               shared_ptr<Catalogue> Catalogue) :
+                               const shared_ptr<Catalogue>& Catalogue) :
   type_(type),
   schemaName_(move(schemaName)),
-  catalogue_(move(Catalogue)) {}
+  catalogue_(Catalogue) {}
 
 const string &CatalogueEntry::getSchemaName() const {
   return schemaName_;
 }
 
-const shared_ptr<Catalogue> &CatalogueEntry::getCatalogue() const {
+const weak_ptr<Catalogue> &CatalogueEntry::getCatalogue() const {
   return catalogue_;
 }
 
