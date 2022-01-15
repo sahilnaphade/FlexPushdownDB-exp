@@ -30,6 +30,9 @@ public:
           std::vector<std::string> exprNames,
           std::vector<std::pair<std::string, std::string>> projectColumnNamePairs,
           std::vector<std::string> projectColumnNames);
+  ProjectPOp() = default;
+  ProjectPOp(const ProjectPOp&) = default;
+  ProjectPOp& operator=(const ProjectPOp&) = default;
 
   /**
    * Default destructor

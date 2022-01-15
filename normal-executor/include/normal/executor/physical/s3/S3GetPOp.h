@@ -31,6 +31,9 @@ public:
            std::shared_ptr<AWSClient> awsClient,
            bool scanOnStart = true,
            bool toCache = false);
+  S3GetPOp() = default;
+  S3GetPOp(const S3GetPOp&) = default;
+  S3GetPOp& operator=(const S3GetPOp&) = default;
 
 private:
   void processScanMessage(const ScanMessage &message) override;

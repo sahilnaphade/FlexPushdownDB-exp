@@ -33,6 +33,9 @@ public:
          bool scanOnStart = true,
          bool toCache = false,
          std::vector<std::shared_ptr<normal::cache::SegmentKey>> weightedSegmentKeys = {});
+  S3SelectPOp() = default;
+  S3SelectPOp(const S3SelectPOp&) = default;
+  S3SelectPOp& operator=(const S3SelectPOp&) = default;
 
 private:
 #ifdef __AVX2__

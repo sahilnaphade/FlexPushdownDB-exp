@@ -80,7 +80,8 @@ struct variant_inspector_traits<MessagePtr> {
       return 5;
     else if (x->type() == "TupleSetIndexMessage")
       return 6;
-    else return -1;
+    else
+      return -1;
   }
 
   // Applies f to the value of x.

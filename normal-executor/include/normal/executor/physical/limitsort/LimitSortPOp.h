@@ -22,6 +22,9 @@ public:
   LimitSortPOp(const string &name,
                const arrow::compute::SelectKOptions &selectKOptions,
                const vector<string> &projectColumnNames);
+  LimitSortPOp() = default;
+  LimitSortPOp(const LimitSortPOp&) = default;
+  LimitSortPOp& operator=(const LimitSortPOp&) = default;
 
   void onReceive(const Envelope &msg) override;
 

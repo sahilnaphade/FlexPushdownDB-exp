@@ -28,6 +28,9 @@ public:
 					 int64_t startOffset,
 					 int64_t finishOffset,
 					 S3ClientType s3ClientType);
+  CacheLoadPOp() = default;
+  CacheLoadPOp(const CacheLoadPOp&) = default;
+  CacheLoadPOp& operator=(const CacheLoadPOp&) = default;
   ~CacheLoadPOp() override = default;
 
   void onReceive(const Envelope &msg) override;

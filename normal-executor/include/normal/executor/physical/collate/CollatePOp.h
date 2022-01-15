@@ -25,6 +25,9 @@ class CollatePOp : public PhysicalOp {
 public:
   explicit CollatePOp(std::string name,
                       std::vector<std::string> projectColumnNames);
+  CollatePOp() = default;
+  CollatePOp(const CollatePOp&) = default;
+  CollatePOp& operator=(const CollatePOp&) = default;
   ~CollatePOp() override = default;
 
   std::shared_ptr<TupleSet> tuples();

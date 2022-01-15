@@ -3,6 +3,7 @@
 //
 
 #include <normal/frontend/Client.h>
+#include <normal/frontend/CAFInit.h>
 #include <normal/executor/physical/transform/PrePToPTransformer.h>
 #include <normal/plan/calcite/CalcitePlanJsonDeserializer.h>
 #include <normal/catalogue/s3/S3CatalogueEntryReader.h>
@@ -43,11 +44,12 @@ string Client::start() {
   // execution config
   execConfig_ = ExecConfig::parseExecConfig(catalogue_, awsClient_);
 
-  // actor system config
+  // actor system config and actor system
   const auto &remoteIps = readRemoteIps();
   actorSystemConfig_ = make_shared<ActorSystemConfig>(execConfig_->getCAFServerPort(),
                                                       remoteIps,
                                                       false);
+  CAFInit::initCAFGlobalMetaObjects();
 
   // executor
   executor_ = make_shared<Executor>(execConfig_->getMode(),

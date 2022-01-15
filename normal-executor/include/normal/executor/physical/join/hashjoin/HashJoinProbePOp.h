@@ -33,6 +33,9 @@ public:
                    HashJoinPredicate pred,
                    JoinType joinType,
                    vector<string> projectColumnNames);
+  HashJoinProbePOp() = default;
+  HashJoinProbePOp(const HashJoinProbePOp&) = default;
+  HashJoinProbePOp& operator=(const HashJoinProbePOp&) = default;
 
   void onReceive(const Envelope &msg) override;
 

@@ -4,6 +4,7 @@
 
 #include <normal/frontend/Server.h>
 #include <normal/frontend/ExecConfig.h>
+#include <normal/frontend/CAFInit.h>
 #include <normal/util/Util.h>
 #include <iostream>
 
@@ -17,8 +18,7 @@ void Server::start() {
   int CAFServerPort = ExecConfig::parseCAFServerPort();
 
   // create the actor system
-  ::caf::core::init_global_meta_objects();
-  ::caf::io::middleman::init_global_meta_objects();
+  CAFInit::initCAFGlobalMetaObjects();
   actorSystemConfig_ = std::make_shared<ActorSystemConfig>(CAFServerPort, remoteIps, true);
   actorSystem_ = std::make_shared<::caf::actor_system>(*actorSystemConfig_);
 

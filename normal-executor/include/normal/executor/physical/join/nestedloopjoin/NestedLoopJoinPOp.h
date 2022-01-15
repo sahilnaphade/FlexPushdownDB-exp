@@ -25,6 +25,9 @@ public:
                     const optional<shared_ptr<expression::gandiva::Expression>> &predicate,
                     JoinType joinType,
                     const vector<string> &projectColumnNames);
+  NestedLoopJoinPOp() = default;
+  NestedLoopJoinPOp(const NestedLoopJoinPOp&) = default;
+  NestedLoopJoinPOp& operator=(const NestedLoopJoinPOp&) = default;
 
   void onReceive(const Envelope &msg) override;
 

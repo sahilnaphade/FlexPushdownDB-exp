@@ -25,6 +25,9 @@ public:
   ShufflePOp(string name,
              vector<string> columnNames,
              vector<string> projectColumnNames);
+  ShufflePOp() = default;
+  ShufflePOp(const ShufflePOp&) = default;
+  ShufflePOp& operator=(const ShufflePOp&) = default;
 
   /**
    * Operators message handler

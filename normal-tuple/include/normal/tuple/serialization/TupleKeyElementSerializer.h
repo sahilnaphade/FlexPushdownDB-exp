@@ -51,8 +51,10 @@ struct variant_inspector_traits<TupleKeyElementPtr> {
       return 4;
     else if (x->type()->id() == arrow::date64()->id())
       return 5;
-    else
+    else if (x->type()->id() == arrow::utf8()->id())
       return 6;
+    else
+      return -1;
   }
 
   // Applies f to the value of x.

@@ -30,6 +30,11 @@ public:
            const shared_ptr<CachingPolicy> &cachingPolicy,
            bool showOpTimes,
            bool showScanMetrics);
+  Executor(const shared_ptr<Mode> &mode,
+           const shared_ptr<CachingPolicy> &cachingPolicy,
+           bool showOpTimes,
+           bool showScanMetrics,
+           const shared_ptr<::caf::actor_system> &actorSystem);
   ~Executor();
 
   /**
@@ -57,11 +62,6 @@ public:
   double getCrtQueryShardHitRatio();
 
 private:
-  /**
-   * Required before using actors
-   */
-  void initCAFGlobalMetaObjects();
-
   bool isCacheUsed();
   long nextQueryId();
 

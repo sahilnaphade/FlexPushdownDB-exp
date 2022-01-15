@@ -21,6 +21,9 @@ class SplitPOp : public PhysicalOp {
 public:
   SplitPOp(const string &name,
            const vector<string> &projectColumnNames);
+  SplitPOp() = default;
+  SplitPOp(const SplitPOp&) = default;
+  SplitPOp& operator=(const SplitPOp&) = default;
 
   void onReceive(const Envelope &msg) override;
 

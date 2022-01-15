@@ -37,6 +37,9 @@ public:
            const vector<string> &groupColumnNames,
            const vector<shared_ptr<aggregate::AggregateFunction>> &aggregateFunctions,
            const vector<string> &projectColumnNames);
+  GroupPOp() = default;
+  GroupPOp(const GroupPOp&) = default;
+  GroupPOp& operator=(const GroupPOp&) = default;
 
   void onReceive(const Envelope &msg) override;
 

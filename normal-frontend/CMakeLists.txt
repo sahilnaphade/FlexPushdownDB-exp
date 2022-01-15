@@ -9,6 +9,7 @@ project(normal-frontend VERSION "${PROJECT_VERSION}" LANGUAGES C CXX)
 add_library(normal-frontend
         src/ExecConfig.cpp include/normal/frontend/ExecConfig.h
         include/normal/frontend/ActorSystemConfig.h
+        src/CAFInit.cpp include/normal/frontend/CAFInit.h
         src/Client.cpp include/normal/frontend/Client.h
         src/Server.cpp include/normal/frontend/Server.h)
 
@@ -61,3 +62,8 @@ target_link_libraries(normal-frontend-test PRIVATE doctest::doctest)
 if (${APPLE})
   linkForMacExecutable(normal-frontend-test)
 endif()
+
+add_executable(custom_type4
+        src/custom_type4.cpp)
+target_link_libraries(custom_type4 PUBLIC caf::libcaf_core_shared)
+target_link_libraries(custom_type4 PUBLIC caf::libcaf_io_shared)

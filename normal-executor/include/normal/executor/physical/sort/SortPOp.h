@@ -21,6 +21,9 @@ public:
   SortPOp(const string &name,
           const arrow::compute::SortOptions &sortOptions,
           const vector<string> &projectColumnNames);
+  SortPOp() = default;
+  SortPOp(const SortPOp&) = default;
+  SortPOp& operator=(const SortPOp&) = default;
 
   void onReceive(const Envelope &msg) override;
 

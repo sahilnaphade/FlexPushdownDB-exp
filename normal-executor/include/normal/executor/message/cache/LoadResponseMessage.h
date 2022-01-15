@@ -46,8 +46,8 @@ private:
 public:
   template <class Inspector>
   friend bool inspect(Inspector& f, LoadResponseMessage& msg) {
-    return f.object(msg).fields(f.field("type", msg.typeNoConst()),
-                                f.field("sender", msg.senderNoConst()),
+    return f.object(msg).fields(f.field("type", msg.type_),
+                                f.field("sender", msg.sender_),
                                 f.field("segments", msg.segments_),
                                 f.field("segmentKeysToCache", msg.segmentKeysToCache_));
   };

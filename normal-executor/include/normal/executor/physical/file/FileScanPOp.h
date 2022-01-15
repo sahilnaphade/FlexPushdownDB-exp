@@ -27,6 +27,9 @@ public:
 		   unsigned long startOffset,
 		   unsigned long finishOffset,
 		   bool scanOnStart = false);
+  FileScanPOp() = default;
+  FileScanPOp(const FileScanPOp&) = default;
+  FileScanPOp& operator=(const FileScanPOp&) = default;
 
   [[nodiscard]] const std::unique_ptr<FileScanKernel> &getKernel() const;
   [[nodiscard]] bool isScanOnStart() const;

@@ -35,7 +35,9 @@ private:
 public:
   template <class Inspector>
   friend bool inspect(Inspector& f, LocalFSPartition& partition) {
-    return f.apply(partition.path_);
+    return f.object(partition).fields(f.field("numBytes", partition.numBytes_),
+                                      f.field("zoneMap", partition.zoneMap_),
+                                      f.field("path", partition.path_));
   }
 };
 

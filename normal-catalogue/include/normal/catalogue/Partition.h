@@ -45,17 +45,9 @@ public:
   void addMinMax(const string &columnName,
                  const pair<shared_ptr<Scalar>, shared_ptr<Scalar>> &minMax);
 
-private:
+protected:
   long numBytes_ = 0;
   unordered_map<string, pair<shared_ptr<Scalar>, shared_ptr<Scalar>>> zoneMap_;   // <columnName, <min, max>>
-
-// caf inspect
-public:
-  template <class Inspector>
-  friend bool inspect(Inspector& f, Partition& partition) {
-    return f.object(partition).fields(f.field("numBytes", partition.numBytes_),
-                                      f.field("zoneMap", partition.zoneMap_));
-  }
 };
 
 struct PartitionPointerHash {

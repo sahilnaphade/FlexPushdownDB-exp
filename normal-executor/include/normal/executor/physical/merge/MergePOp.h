@@ -20,6 +20,9 @@ class MergePOp : public PhysicalOp {
 public:
   explicit MergePOp(const std::string &name,
                     const std::vector<std::string> &projectColumnNames);
+  MergePOp() = default;
+  MergePOp(const MergePOp&) = default;
+  MergePOp& operator=(const MergePOp&) = default;
 
   void onReceive(const Envelope &msg) override;
 

@@ -86,6 +86,7 @@ add_library(normal-executor STATIC
         src/physical/prune/PartitionPruner.cpp include/normal/executor/physical/prune/PartitionPruner.h
 #        CAF serializer
         include/normal/executor/serialization/MessageSerializer.h
+        include/normal/executor/serialization/POpSerializer.h
 #        executor
         src/Executor.cpp include/normal/executor/Executor.h
         src/Execution.cpp include/normal/executor/Execution.h)

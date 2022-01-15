@@ -27,6 +27,9 @@ public:
                   std::shared_ptr<Table> table,
                   std::vector<std::string> projectColumnNames,
                   std::vector<std::shared_ptr<normal::cache::SegmentKey>> weightedSegmentKeys = {});
+  FilterPOp() = default;
+  FilterPOp(const FilterPOp&) = default;
+  FilterPOp& operator=(const FilterPOp&) = default;
 
   void onReceive(const Envelope &Envelope) override;
 

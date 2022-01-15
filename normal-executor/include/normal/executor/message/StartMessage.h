@@ -26,8 +26,8 @@ public:
 public:
   template <class Inspector>
   friend bool inspect(Inspector& f, StartMessage& msg) {
-    return f.object(msg).fields(f.field("type", msg.typeNoConst()),
-                                f.field("sender", msg.senderNoConst()));
+    return f.object(msg).fields(f.field("type", msg.type_),
+                                f.field("sender", msg.sender_));
   }
 };
 

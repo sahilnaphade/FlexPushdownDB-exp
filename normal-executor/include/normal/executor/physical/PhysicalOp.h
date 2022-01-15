@@ -22,19 +22,13 @@ namespace normal::executor::physical {
  */
 class PhysicalOp {
 
-private:
-  std::string name_;
-  std::string type_;
-  std::vector<std::string> projectColumnNames_;
-  long queryId_;
-  std::shared_ptr<POpContext> opContext_;
-  std::map<std::string, std::string> producers_;
-  std::map<std::string, std::string> consumers_;
-
 public:
   explicit PhysicalOp(std::string name,
                       std::string type,
                       std::vector<std::string> projectColumnNames);
+  PhysicalOp() = default;
+  PhysicalOp(const PhysicalOp&) = default;
+  PhysicalOp& operator=(const PhysicalOp&) = default;
   virtual ~PhysicalOp() = default;
 
   std::string &name();
@@ -54,6 +48,16 @@ public:
 
   virtual void onReceive(const normal::executor::message::Envelope &msg) = 0;
   void destroyActor();
+
+private:
+  std::string name_;
+  std::string type_;
+  std::vector<std::string> projectColumnNames_;
+  long queryId_;
+  std::shared_ptr<POpContext> opContext_;
+  std::map<std::string, std::string> producers_;
+  std::map<std::string, std::string> consumers_;
+
 };
 
 } // namespace

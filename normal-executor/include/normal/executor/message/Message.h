@@ -15,6 +15,7 @@ namespace normal::executor::message {
 class Message {
 
 public:
+
   explicit Message(std::string type, std::string sender);
   Message() = default;
   Message(const Message&) = default;
@@ -24,11 +25,7 @@ public:
   const std::string& type() const;
   const std::string& sender() const;
 
-  // caf inspector needs non-const field type, so the following are needed when inspecting derived message types
-  std::string& typeNoConst();
-  std::string& senderNoConst();
-
-private:
+protected:
   std::string type_;
   std::string sender_;
 

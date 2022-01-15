@@ -30,6 +30,9 @@ public:
   explicit HashJoinBuildPOp(const string &name,
                             const vector<string> &columnNames,
                             const vector<string> &projectColumnNames);
+  HashJoinBuildPOp() = default;
+  HashJoinBuildPOp(const HashJoinBuildPOp&) = default;
+  HashJoinBuildPOp& operator=(const HashJoinBuildPOp&) = default;
 
   void onReceive(const Envelope &msg) override;
 

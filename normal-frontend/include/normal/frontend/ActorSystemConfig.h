@@ -22,7 +22,7 @@ struct ActorSystemConfig: ::caf::actor_system_config {
     nodeIps_(nodeIps),
     isServer_(isServer) {
     load<::caf::io::middleman>();
-//    add_actor_type<POpActor, ::caf::actor_config, std::shared_ptr<PhysicalOp>>("POpActor");
+//    add_actor_type<POpActor, std::shared_ptr<PhysicalOp>&>("POpActor");
   }
 
   int port_;

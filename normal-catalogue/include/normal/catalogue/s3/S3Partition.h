@@ -45,7 +45,9 @@ private:
 public:
   template <class Inspector>
   friend bool inspect(Inspector& f, S3Partition& partition) {
-    return f.object(partition).fields(f.field("bucket", partition.s3Bucket_),
+    return f.object(partition).fields(f.field("numBytes", partition.numBytes_),
+                                      f.field("zoneMap", partition.zoneMap_),
+                                      f.field("bucket", partition.s3Bucket_),
                                       f.field("object", partition.s3Object_));
   }
 };

@@ -37,8 +37,10 @@ struct variant_inspector_traits<PartitionPtr> {
       return 0;
     else if (x->getCatalogueEntryType() == normal::catalogue::S3)
       return 1;
-    else
+    else if (x->getCatalogueEntryType() == normal::catalogue::LOCAL_FS)
       return 2;
+    else
+      return -1;
   }
 
   // Applies f to the value of x.

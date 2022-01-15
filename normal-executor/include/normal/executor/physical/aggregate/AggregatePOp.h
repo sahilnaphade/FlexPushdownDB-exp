@@ -24,6 +24,9 @@ public:
   AggregatePOp(string name,
                vector<shared_ptr<AggregateFunction>> functions,
                vector<string> projectColumnNames);
+  AggregatePOp() = default;
+  AggregatePOp(const AggregatePOp&) = default;
+  AggregatePOp& operator=(const AggregatePOp&) = default;
   ~AggregatePOp() override = default;
 
   void onReceive(const Envelope &message) override;
