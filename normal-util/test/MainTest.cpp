@@ -4,10 +4,7 @@
 
 #define DOCTEST_CONFIG_IMPLEMENT
 #include <doctest/doctest.h>
-
 #include "Globals.h"
-
-backward::SignalHandling sh;
 
 /**
  * Returns the name of the current test case

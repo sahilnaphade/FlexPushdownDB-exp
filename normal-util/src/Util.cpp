@@ -4,16 +4,11 @@
 
 #include <normal/util/Util.h>
 #include <fmt/format.h>
+#include <filesystem>
 #include <fstream>
 #include <sstream>
-#include <stdexcept>
-#include <unistd.h>
-#include <netdb.h>
-#include <netinet/in.h>
 #include <arpa/inet.h>
-#include <iostream>
-#include <vector>
-#include <filesystem>
+#include <ifaddrs.h>
 
 using namespace normal::util;
 
@@ -63,6 +58,22 @@ unordered_map<string, string> normal::util::readConfig(const string &fileName) {
   return configMap;
 }
 
+vector<string> normal::util::readRemoteIps() {
+  auto expLocalIp = getLocalIp();
+  if (!expLocalIp) {
+    throw runtime_error(expLocalIp.error());
+  }
+  const auto &localIp = *expLocalIp;
+  string clusterIpFilePath = filesystem::current_path()
+          .parent_path()
+          .append("resources/config/cluster_ips")
+          .string();
+  auto clusterIps = readFileByLine(clusterIpFilePath);
+  set<string> clusterIpSet(clusterIps.begin(), clusterIps.end());
+  clusterIpSet.erase(localIp);
+  return vector<string>(clusterIpSet.begin(), clusterIpSet.end());
+}
+
 bool normal::util::parseBool(const string& stringToParse) {
   if (stringToParse == "TRUE") {
     return true;
@@ -88,14 +99,36 @@ bool normal::util::isInteger(const string& str) {
   return true;
 }
 
-string normal::util::getLocalIp() {
-  char hostBuffer[256];
-  int hostName = gethostname(hostBuffer, sizeof(hostBuffer));
-  struct hostent *host_entry = gethostbyname(hostBuffer);
-  if (host_entry == nullptr) {
-    cerr << "Cannot get local ip" << endl;
-    return "";
+tl::expected<string, string> normal::util::getLocalIp() {
+  string ipv4Addr;
+  struct ifaddrs *ifAddrStruct = nullptr;
+  struct ifaddrs *ifa;
+  void *tmpAddrPtr;
+
+  getifaddrs(&ifAddrStruct);
+
+  for (ifa = ifAddrStruct; ifa != nullptr; ifa = ifa->ifa_next) {
+    if (!ifa->ifa_addr) {
+      continue;
+    }
+    if (ifa->ifa_addr->sa_family == AF_INET) { // check it is IPv4
+      // is a valid IP4 Address
+      tmpAddrPtr=&((struct sockaddr_in *)ifa->ifa_addr)->sin_addr;
+      char addressBuffer[INET_ADDRSTRLEN];
+      inet_ntop(AF_INET, tmpAddrPtr, addressBuffer, INET_ADDRSTRLEN);
+      if (strcmp(ifa->ifa_name, "lo0") == 0) {
+        // this is loopback address
+        continue;
+      }
+      ipv4Addr = string(addressBuffer);
+      break;
+    }
   }
-  char *IPBuffer = inet_ntoa(*((struct in_addr*)host_entry->h_addr_list[0]));
-  return string(IPBuffer);
+  if (ifAddrStruct != nullptr) freeifaddrs(ifAddrStruct);
+
+  if (ipv4Addr.empty()) {
+    return tl::make_unexpected("Cannot find local IP address");
+  } else {
+    return ipv4Addr;
+  }
 }

@@ -2,29 +2,56 @@ project(normal-frontend VERSION "${PROJECT_VERSION}" LANGUAGES C CXX)
 
 
 #-----------------------------------------------------------------------------------------------------------------------
-# Target
+# Targets: normal-frontend-client
 #-----------------------------------------------------------------------------------------------------------------------
 
-# normal-frontend
-add_library(normal-frontend
+# normal-frontend-client
+add_library(normal-frontend-client
         src/ExecConfig.cpp include/normal/frontend/ExecConfig.h
+        include/normal/frontend/ClientActorSystemConfig.h
         src/Client.cpp include/normal/frontend/Client.h)
 
-target_include_directories(normal-frontend PUBLIC include)
+target_include_directories(normal-frontend-client PUBLIC include)
 
-target_link_libraries(normal-frontend PUBLIC normal-executor)
-target_link_libraries(normal-frontend PUBLIC normal-util)
-target_link_libraries(normal-frontend PUBLIC ssl crypto)
+target_link_libraries(normal-frontend-client PUBLIC normal-executor)
+target_link_libraries(normal-frontend-client PUBLIC normal-util)
+target_link_libraries(normal-frontend-client PUBLIC ssl crypto)
 
 
-# normal-frontend-main
-add_executable(normal-frontend-main
+# normal-frontend-client-main
+add_executable(normal-frontend-client-main
         src/Main.cpp)
 
-target_link_libraries(normal-frontend-main PRIVATE normal-frontend)
+target_link_libraries(normal-frontend-client-main PRIVATE normal-frontend-client)
 # need to add and link libraries on mac
 if (${APPLE})
-  linkForMacExecutable(normal-frontend-main)
+  linkForMacExecutable(normal-frontend-client-main)
+endif()
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+# Targets: normal-frontend-server
+#-----------------------------------------------------------------------------------------------------------------------
+
+# normal-frontend-server
+add_library(normal-frontend-server
+        include/normal/frontend/ServerActorSystemConfig.h
+        src/Server.cpp include/normal/frontend/Server.h)
+
+target_include_directories(normal-frontend-server PUBLIC include)
+target_link_libraries(normal-frontend-server PUBLIC normal-util)
+target_link_libraries(normal-frontend-server PUBLIC caf::libcaf_core_shared)
+target_link_libraries(normal-frontend-server PUBLIC caf::libcaf_io_shared)
+target_link_libraries(normal-frontend-server PUBLIC ssl crypto)
+
+
+# normal-frontend-server-main
+add_executable(normal-frontend-server-main
+        src/ServerMain.cpp)
+
+target_link_libraries(normal-frontend-server-main PRIVATE normal-frontend-server)
+if (${APPLE})
+  target_link_directories(normal-frontend-server-main PRIVATE /usr/local/opt/openssl/lib)
 endif()
 
 

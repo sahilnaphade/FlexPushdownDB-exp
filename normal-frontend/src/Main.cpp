@@ -56,7 +56,12 @@ bool execute(const std::string& command, const std::shared_ptr<Client>& client) 
         RESULT(setConfig(word2, client));
         return false;
       } else if (word1 == "local_ip") {
-        RESULT(getLocalIp());
+        auto expLocalIp = getLocalIp();
+        if (expLocalIp.has_value()) {
+          RESULT(*expLocalIp);
+        } else {
+          ERROR(expLocalIp.error())
+        }
         return false;
       }
     }

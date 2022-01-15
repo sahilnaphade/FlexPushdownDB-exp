@@ -6,6 +6,7 @@
 #define NORMAL_FRONTEND_CLIENT_H
 
 #include <normal/frontend/ExecConfig.h>
+#include <normal/frontend/ClientActorSystemConfig.h>
 #include <normal/executor/Executor.h>
 #include <normal/executor/physical/PhysicalPlan.h>
 #include <normal/calcite/CalciteClient.h>
@@ -20,7 +21,7 @@ namespace normal::frontend {
 class Client {
 
 public:
-  explicit Client();
+  explicit Client() = default;
 
   static path getDefaultMetadataPath();
   static string getDefaultCatalogueName();
@@ -49,8 +50,12 @@ private:
   // config parameters
   shared_ptr<ExecConfig> execConfig_;
 
+  // client actor system config
+  shared_ptr<ClientActorSystemConfig> actorSystemConfig_;
+
   // executor
   shared_ptr<Executor> executor_;
+
 };
 
 }

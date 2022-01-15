@@ -27,7 +27,8 @@ public:
              string schemaName,
              int parallelDegree,
              bool showOpTimes,
-             bool showScanMetrics);
+             bool showScanMetrics,
+             int CAFServerPort);
 
   static shared_ptr<ExecConfig> parseExecConfig(const shared_ptr<Catalogue> &catalogue,
                                                 const shared_ptr<AWSClient> &awsClient);
@@ -39,6 +40,7 @@ public:
   int getParallelDegree() const;
   bool showOpTimes() const;
   bool showScanMetrics() const;
+  int getCAFServerPort() const;
 
 private:
   static size_t parseCacheSize(const string& stringToParse);
@@ -54,6 +56,7 @@ private:
   int parallelDegree_;
   bool showOpTimes_;
   bool showScanMetrics_;
+  int CAFServerPort_;
 
 };
 

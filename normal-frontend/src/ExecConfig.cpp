@@ -25,14 +25,16 @@ ExecConfig::ExecConfig(const shared_ptr<Mode> &mode,
                        string schemaName,
                        int parallelDegree,
                        bool showOpTimes,
-                       bool showScanMetrics) :
+                       bool showScanMetrics,
+                       int CAFServerPort) :
   mode_(mode),
   cachingPolicy_(cachingPolicy),
   s3Bucket_(move(s3Bucket)),
   schemaName_(move(schemaName)),
   parallelDegree_(parallelDegree),
   showOpTimes_(showOpTimes),
-  showScanMetrics_(showScanMetrics) {}
+  showScanMetrics_(showScanMetrics),
+  CAFServerPort_(CAFServerPort) {}
 
 shared_ptr<ExecConfig> ExecConfig::parseExecConfig(const shared_ptr<Catalogue> &catalogue,
                                                    const shared_ptr<AWSClient> &awsClient) {
@@ -45,6 +47,7 @@ shared_ptr<ExecConfig> ExecConfig::parseExecConfig(const shared_ptr<Catalogue> &
   int parallelDegree = stoi(configMap["PARALLEL_DEGREE"]);
   bool showOpTimes = parseBool(configMap["SHOW_OP_TIMES"]);
   bool showScanMetrics = parseBool(configMap["SHOW_SCAN_METRICS"]);
+  int CAFServerPort = stoi(configMap["CAF_SERVER_PORT"]);
 
   // catalogue entry
   shared_ptr<CatalogueEntry> catalogueEntry;
@@ -59,7 +62,14 @@ shared_ptr<ExecConfig> ExecConfig::parseExecConfig(const shared_ptr<Catalogue> &
   // caching policy
   shared_ptr<CachingPolicy> cachingPolicy = parseCachingPolicy(configMap["CACHING_POLICY"], cacheSize, catalogueEntry);
 
-  return make_shared<ExecConfig>(mode, cachingPolicy, s3Bucket, schemaName, parallelDegree, showOpTimes, showScanMetrics);
+  return make_shared<ExecConfig>(mode,
+                                 cachingPolicy,
+                                 s3Bucket,
+                                 schemaName,
+                                 parallelDegree,
+                                 showOpTimes,
+                                 showScanMetrics,
+                                 CAFServerPort);
 }
 
 size_t ExecConfig::parseCacheSize(const string& stringToParse) {
@@ -141,4 +151,9 @@ bool ExecConfig::showOpTimes() const {
 bool ExecConfig::showScanMetrics() const {
   return showScanMetrics_;
 }
+
+int ExecConfig::getCAFServerPort() const {
+  return CAFServerPort_;
+}
+
 }

@@ -12,9 +12,11 @@
 
 using namespace normal::util;
 
-TEST_SUITE ("traits" * doctest::skip(false)) {
+#define SKIP_SUITE true
 
-TEST_CASE ("traits-lambda" * doctest::skip(false)) {
+TEST_SUITE ("traits" * doctest::skip(SKIP_SUITE)) {
+
+TEST_CASE ("traits-lambda" * doctest::skip(false || SKIP_SUITE)) {
 
   {
 	auto test = [](int a) mutable -> long { return static_cast<long>(a); };

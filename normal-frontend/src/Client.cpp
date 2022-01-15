@@ -14,8 +14,6 @@ using namespace normal::util;
 
 namespace normal::frontend {
 
-Client::Client() = default;
-
 path Client::getDefaultMetadataPath() {
   return current_path().parent_path().append("resources/metadata");
 }
@@ -44,6 +42,10 @@ string Client::start() {
 
   // execution config
   execConfig_ = ExecConfig::parseExecConfig(catalogue_, awsClient_);
+
+  // actor system config
+  const auto &remoteIps = readRemoteIps();
+  actorSystemConfig_ = make_shared<ClientActorSystemConfig>(execConfig_->getCAFServerPort(), remoteIps);
 
   // executor
   executor_ = make_shared<Executor>(execConfig_->getMode(),

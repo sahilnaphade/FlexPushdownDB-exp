@@ -5,7 +5,7 @@
 #ifndef NORMAL_UTIL_UTIL_H
 #define NORMAL_UTIL_UTIL_H
 
-#include <normal/util/Globals.h>
+#include <tl/expected.hpp>
 #include <vector>
 #include <unordered_map>
 #include <set>
@@ -27,6 +27,12 @@ namespace normal::util {
    * @return
    */
   unordered_map<string, string> readConfig(const string &fileName);
+
+  /**
+   * Read ip of all remote nodes from "cluster_ip"
+   * @return
+   */
+  vector<string> readRemoteIps();
 
   /**
    * Parsing bool string
@@ -85,7 +91,7 @@ namespace normal::util {
   }
 
   bool isInteger(const string& str);
-  string getLocalIp();
+  tl::expected<string, string> getLocalIp();
 }
 
 
