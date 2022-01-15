@@ -25,8 +25,7 @@ int main() {
 
   // wait to stop
   std::cout << "Press <Enter> to shutdown the server" << std::endl;
-  std::string line;
-  std::getline(std::cin, line);
+  getchar();
   server->stop();
   server.reset();
   return 0;
