@@ -5,18 +5,21 @@
 #ifndef NORMAL_NORMAL_TUPLE_INCLUDE_NORMAL_TUPLE_SCALAR_H
 #define NORMAL_NORMAL_TUPLE_INCLUDE_NORMAL_TUPLE_SCALAR_H
 
-#include <memory>
-
+#include <normal/tuple/serialization/ArrowSerializer.h>
+#include <normal/caf/CAFUtil.h>
 #include <arrow/visitor_inline.h>
 #include <arrow/scalar.h>
+#include <memory>
 
 namespace normal::tuple {
 
 class Scalar {
 
 public:
-
   explicit Scalar(std::shared_ptr<::arrow::Scalar> scalar);
+  Scalar() = default;
+  Scalar(const Scalar&) = default;
+  Scalar& operator=(const Scalar&) = default;
 
   static std::shared_ptr<Scalar> make(const std::shared_ptr<::arrow::Scalar> &scalar);
 
@@ -89,8 +92,34 @@ public:
 private:
   std::shared_ptr<::arrow::Scalar> scalar_;
 
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, Scalar& scalar) {
+    auto toBytes = [&scalar]() -> decltype(auto) {
+      return ArrowSerializer::scalar_to_bytes(scalar.scalar_);
+    };
+    auto fromBytes = [&scalar](const std::vector<std::uint8_t> &bytes) {
+      scalar.scalar_ = ArrowSerializer::bytes_to_scalar(bytes);
+      return true;
+    };
+    return f.object(scalar).fields(f.field("scalar", toBytes, fromBytes));
+  }
 };
 
 }
+
+using ScalarPtr = std::shared_ptr<normal::tuple::Scalar>;
+
+CAF_BEGIN_TYPE_ID_BLOCK(Scalar, normal::caf::CAFUtil::Scalar_first_custom_type_id)
+CAF_ADD_TYPE_ID(Scalar, (normal::tuple::Scalar))
+CAF_END_TYPE_ID_BLOCK(Scalar)
+
+namespace caf {
+template <>
+struct inspector_access<ScalarPtr> : variant_inspector_access<ScalarPtr> {
+  // nop
+};
+} // namespace caf
 
 #endif //NORMAL_NORMAL_TUPLE_INCLUDE_NORMAL_TUPLE_SCALAR_H

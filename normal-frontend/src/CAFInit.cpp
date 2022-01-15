@@ -10,6 +10,7 @@
 #include <normal/executor/cache/SegmentCacheActor.h>
 #include <normal/executor/message/Envelope.h>
 #include <normal/executor/serialization/MessageSerializer.h>
+//#include <normal/executor/serialization/POpSerializer.h>
 
 namespace normal::frontend {
 
@@ -30,6 +31,8 @@ void CAFInit::initCAFGlobalMetaObjects() {
   ::caf::init_global_meta_objects<::caf::id_block::TupleSetIndex>();
   ::caf::init_global_meta_objects<::caf::id_block::TupleKey>();
   ::caf::init_global_meta_objects<::caf::id_block::TupleKeyElement>();
+//  ::caf::init_global_meta_objects<::caf::id_block::POp>();
+  ::caf::init_global_meta_objects<::caf::id_block::Scalar>();
 
   ::caf::core::init_global_meta_objects();
   ::caf::io::middleman::init_global_meta_objects();

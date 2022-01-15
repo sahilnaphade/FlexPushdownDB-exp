@@ -29,6 +29,7 @@ public:
   inline static constexpr ::caf::type_id_t TupleKey_first_custom_type_id = ::caf::first_custom_type_id + 1400;
   inline static constexpr ::caf::type_id_t TupleKeyElement_first_custom_type_id = ::caf::first_custom_type_id + 1500;
   inline static constexpr ::caf::type_id_t POp_first_custom_type_id = ::caf::first_custom_type_id + 1600;
+  inline static constexpr ::caf::type_id_t Scalar_first_custom_type_id = ::caf::first_custom_type_id + 1700;
 
 };
 
