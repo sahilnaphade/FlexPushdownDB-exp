@@ -72,6 +72,11 @@ shared_ptr<ExecConfig> ExecConfig::parseExecConfig(const shared_ptr<Catalogue> &
                                  CAFServerPort);
 }
 
+int ExecConfig::parseCAFServerPort() {
+  unordered_map<string, string> configMap = readConfig("exec.conf");
+  return stoi(configMap["CAF_SERVER_PORT"]);
+}
+
 size_t ExecConfig::parseCacheSize(const string& stringToParse) {
   size_t cacheSize;
   if (stringToParse.substr(stringToParse.length() - 2) == "GB"

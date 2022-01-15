@@ -5,7 +5,7 @@
 #ifndef NORMAL_NORMAL_FRONTEND_INCLUDE_NORMAL_FRONTEND_SERVER_H
 #define NORMAL_NORMAL_FRONTEND_INCLUDE_NORMAL_FRONTEND_SERVER_H
 
-#include <normal/frontend/ServerActorSystemConfig.h>
+#include <normal/frontend/ActorSystemConfig.h>
 
 namespace normal::frontend {
 
@@ -18,9 +18,7 @@ public:
   void stop();
 
 private:
-  static int parseCAFServerPort();
-
-  std::shared_ptr<ServerActorSystemConfig> actorSystemConfig_;
+  std::shared_ptr<ActorSystemConfig> actorSystemConfig_;
   std::shared_ptr<::caf::actor_system> actorSystem_;
 
 };

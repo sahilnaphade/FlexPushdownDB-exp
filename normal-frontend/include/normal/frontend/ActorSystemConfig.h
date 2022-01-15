@@ -14,17 +14,20 @@ using namespace normal::executor::physical;
 
 namespace normal::frontend {
 
-struct ClientActorSystemConfig: ::caf::actor_system_config {
-  ClientActorSystemConfig(int port,
-                          const std::vector<std::string> &nodeIps):
+struct ActorSystemConfig: ::caf::actor_system_config {
+  ActorSystemConfig(int port,
+                    const std::vector<std::string> &nodeIps,
+                    bool isServer):
     port_(port),
-    nodeIps_(nodeIps) {
+    nodeIps_(nodeIps),
+    isServer_(isServer) {
     load<::caf::io::middleman>();
 //    add_actor_type<POpActor, ::caf::actor_config, std::shared_ptr<PhysicalOp>>("POpActor");
   }
 
   int port_;
   std::vector<std::string> nodeIps_;
+  bool isServer_;
 };
 
 };

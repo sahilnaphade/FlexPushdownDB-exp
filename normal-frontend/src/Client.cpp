@@ -45,7 +45,9 @@ string Client::start() {
 
   // actor system config
   const auto &remoteIps = readRemoteIps();
-  actorSystemConfig_ = make_shared<ClientActorSystemConfig>(execConfig_->getCAFServerPort(), remoteIps);
+  actorSystemConfig_ = make_shared<ActorSystemConfig>(execConfig_->getCAFServerPort(),
+                                                      remoteIps,
+                                                      false);
 
   // executor
   executor_ = make_shared<Executor>(execConfig_->getMode(),

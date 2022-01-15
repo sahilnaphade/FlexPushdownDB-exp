@@ -32,6 +32,7 @@ public:
 
   static shared_ptr<ExecConfig> parseExecConfig(const shared_ptr<Catalogue> &catalogue,
                                                 const shared_ptr<AWSClient> &awsClient);
+  static int parseCAFServerPort();
 
   const shared_ptr<Mode> &getMode() const;
   const shared_ptr<CachingPolicy> &getCachingPolicy() const;
