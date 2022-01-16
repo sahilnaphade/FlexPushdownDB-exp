@@ -27,7 +27,7 @@ void POpContext::tell(std::shared_ptr<Message> &msg) {
 
   // Send message to consumers
   for(const auto& consumer: this->operatorActor()->operator_()->consumers()){
-    ::caf::actor actorHandle = operatorMap_.get(consumer.first).value().getActor();
+    ::caf::actor actorHandle = operatorMap_.get(consumer).value().getActor();
     operatorActor_->anon_send(actorHandle, e);
   }
 }
@@ -102,7 +102,7 @@ void POpContext::notifyComplete() {
 
   // Send message to consumers
   for(const auto& consumer: this->operatorActor()->operator_()->consumers()){
-    ::caf::actor actorHandle = operatorMap_.get(consumer.first).value().getActor();
+    ::caf::actor actorHandle = operatorMap_.get(consumer).value().getActor();
     operatorActor->anon_send(actorHandle, e);
   }
 

@@ -120,12 +120,12 @@ void Execution::start() {
 
     vector<POpConnection> opConnections;
     for (const auto &producer: element.second.getDef()->producers()) {
-      auto producerHandle = opDirectory_.get(producer.first).value().getActorHandle();
-      opConnections.emplace_back(producer.first, producerHandle, POpRelationshipType::Producer);
+      auto producerHandle = opDirectory_.get(producer).value().getActorHandle();
+      opConnections.emplace_back(producer, producerHandle, POpRelationshipType::Producer);
     }
     for (const auto &consumer: element.second.getDef()->consumers()) {
-      auto consumerHandle = opDirectory_.get(consumer.first).value().getActorHandle();
-      opConnections.emplace_back(consumer.first, consumerHandle, POpRelationshipType::Consumer);
+      auto consumerHandle = opDirectory_.get(consumer).value().getActorHandle();
+      opConnections.emplace_back(consumer, consumerHandle, POpRelationshipType::Consumer);
     }
 
     auto cm = make_shared<message::ConnectMessage>(opConnections, ExecutionRootActorName);
@@ -213,7 +213,7 @@ void Execution::write_graph(const string &file) {
   for (const auto &op: this->opDirectory_) {
     auto opNode = agfindnode(graph, (char *)(op.second.getDef()->name().c_str()));
     for (const auto &c: op.second.getDef()->consumers()) {
-      auto consumerOpNode = agfindnode(graph, (char *)(c.second.c_str()));
+      auto consumerOpNode = agfindnode(graph, (char *)(c.c_str()));
       agedge(graph, opNode, consumerOpNode, const_cast<char *>(string("Edge").c_str()), true);
     }
   }

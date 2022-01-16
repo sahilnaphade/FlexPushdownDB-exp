@@ -30,18 +30,18 @@ const std::vector<std::string> &PhysicalOp::getProjectColumnNames() const {
 }
 
 void PhysicalOp::produce(const std::shared_ptr<PhysicalOp> &op) {
-  consumers_.emplace(op->name(), op->name());
+  consumers_.emplace(op->name());
 }
 
 void PhysicalOp::consume(const std::shared_ptr<PhysicalOp> &op) {
-  producers_.emplace(op->name(), op->name());
+  producers_.emplace(op->name());
 }
 
-std::map<std::string, std::string> PhysicalOp::consumers() {
+std::set<std::string>PhysicalOp::consumers() {
   return consumers_;
 }
 
-std::map<std::string, std::string> PhysicalOp::producers() {
+std::set<std::string> PhysicalOp::producers() {
   return producers_;
 }
 

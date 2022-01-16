@@ -36,8 +36,8 @@ public:
   const std::vector<std::string> &getProjectColumnNames() const;
   long getQueryId() const;
   void setQueryId(long queryId);
-  std::map<std::string, std::string> producers();
-  std::map<std::string, std::string> consumers();
+  std::set<std::string> producers();
+  std::set<std::string> consumers();
   std::shared_ptr<POpContext> ctx();
 
   void setName(const std::string &Name);
@@ -49,14 +49,14 @@ public:
   virtual void onReceive(const normal::executor::message::Envelope &msg) = 0;
   void destroyActor();
 
-private:
+protected:
   std::string name_;
   std::string type_;
   std::vector<std::string> projectColumnNames_;
   long queryId_;
   std::shared_ptr<POpContext> opContext_;
-  std::map<std::string, std::string> producers_;
-  std::map<std::string, std::string> consumers_;
+  std::set<std::string> producers_;
+  std::set<std::string> consumers_;
 
 };
 
