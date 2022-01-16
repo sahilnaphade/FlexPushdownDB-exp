@@ -14,9 +14,12 @@ LocalFSTable::LocalFSTable(const string &name,
                            const unordered_map<string, int> &apxColumnLengthMap,
                            int apxRowLength,
                            const unordered_set<string> &zonemapColumnNames,
-                           const vector<shared_ptr<LocalFSPartition>> &localFsPartitions,
-                           const shared_ptr<CatalogueEntry> &catalogueEntry) :
-  Table(name, schema, format, apxColumnLengthMap, apxRowLength, zonemapColumnNames, catalogueEntry),
+                           const vector<shared_ptr<LocalFSPartition>> &localFsPartitions) :
+  Table(name, schema, format, apxColumnLengthMap, apxRowLength, zonemapColumnNames),
   localFSPartitions_(localFsPartitions) {}
+
+CatalogueEntryType LocalFSTable::getCatalogueEntryType() {
+  return LOCAL_FS;
+}
 
 }

@@ -7,28 +7,22 @@
 using namespace normal::executor::physical::file;
 
 FileScanKernel::FileScanKernel(std::string path,
-							   FileType fileType,
 							   std::shared_ptr<FileReader> reader,
 							   unsigned long startPos,
 							   unsigned long finishPos) :
 	path_(std::move(path)),
-	fileType_(fileType),
 	reader_(std::move(reader)),
 	startPos_(startPos),
 	finishPos_(finishPos) {}
 
-std::unique_ptr<FileScanKernel> FileScanKernel::make(const std::string &path,
-													 FileType fileType,
-													 unsigned long startPos,
-													 unsigned long finishPos) {
+FileScanKernel FileScanKernel::make(const std::string &path,
+                                    FileType fileType,
+                                    unsigned long startPos,
+                                    unsigned long finishPos) {
 
   auto reader = FileReaderBuilder::make(path, fileType);
 
-  return std::make_unique<FileScanKernel>(path,
-										  fileType,
-										  std::move(reader),
-										  startPos,
-										  finishPos);
+  return {path, std::move(reader), startPos, finishPos};
 }
 
 tl::expected<std::shared_ptr<TupleSet>, std::string>
@@ -40,8 +34,8 @@ const std::string &FileScanKernel::getPath() const {
   return path_;
 }
 
-const std::optional<FileType> &FileScanKernel::getFileType() const {
-  return fileType_;
+FileType FileScanKernel::getFileType() const {
+  return reader_->getType();
 }
 
 unsigned long FileScanKernel::getStartPos() const {

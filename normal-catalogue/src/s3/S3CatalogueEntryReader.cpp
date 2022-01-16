@@ -72,8 +72,7 @@ S3CatalogueEntryReader::readS3CatalogueEntry(const shared_ptr<Catalogue> &catalo
                                                        apxColumnLengthMapMap.find(tableName)->second,
                                                        apxRowLengthMap.find(tableName)->second,
                                                        zoneMapColumnNamesMap.find(tableName)->second,
-                                                       s3PartitionsMap.find(tableName)->second,
-                                                       s3CatalogueEntry);
+                                                       s3PartitionsMap.find(tableName)->second);
     s3CatalogueEntry->addS3Table(s3Table);
   }
 

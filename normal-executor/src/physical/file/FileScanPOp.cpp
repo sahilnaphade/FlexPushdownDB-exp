@@ -75,7 +75,7 @@ void FileScanPOp::readAndSendTuples(const std::vector<std::string> &columnNames)
   if (columnNames.empty()) {
     readTupleSet = TupleSet::makeWithEmptyTable();
   } else {
-    auto expectedReadTupleSet = kernel_->scan(columnNames);
+    auto expectedReadTupleSet = kernel_.scan(columnNames);
     readTupleSet = expectedReadTupleSet.value();
 
     // Store the read columns in the cache
@@ -91,15 +91,15 @@ void FileScanPOp::onCacheLoadResponse(const ScanMessage &Message) {
 }
 
 void FileScanPOp::requestStoreSegmentsInCache(const std::shared_ptr<TupleSet> &tupleSet) {
-  auto partition = std::make_shared<catalogue::local_fs::LocalFSPartition>(kernel_->getPath());
-  CacheHelper::requestStoreSegmentsInCache(tupleSet, partition, kernel_->getStartPos(), kernel_->getFinishPos(), name(), ctx());
+  auto partition = std::make_shared<catalogue::local_fs::LocalFSPartition>(kernel_.getPath());
+  CacheHelper::requestStoreSegmentsInCache(tupleSet, partition, kernel_.getStartPos(), kernel_.getFinishPos(), name(), ctx());
 }
 
 bool FileScanPOp::isScanOnStart() const {
   return scanOnStart_;
 }
 
-const std::unique_ptr<FileScanKernel> &FileScanPOp::getKernel() const {
+const FileScanKernel &FileScanPOp::getKernel() const {
   return kernel_;
 }
 

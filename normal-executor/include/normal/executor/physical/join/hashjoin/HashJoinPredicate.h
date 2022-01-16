@@ -22,6 +22,9 @@ class HashJoinPredicate {
 public:
   HashJoinPredicate(vector<string> leftColumnNames,
                     vector<string> rightColumnNames);
+  HashJoinPredicate() = default;
+  HashJoinPredicate(const HashJoinPredicate&) = default;
+  HashJoinPredicate& operator=(const HashJoinPredicate&) = default;
 
   const vector<string> &getLeftColumnNames() const;
   const vector<string> &getRightColumnNames() const;
@@ -32,6 +35,13 @@ private:
   vector<string> leftColumnNames_;
   vector<string> rightColumnNames_;
 
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, HashJoinPredicate& pred) {
+    return f.object(pred).fields(f.field("leftColumnNames", pred.leftColumnNames_),
+                                 f.field("rightColumnNames", pred.rightColumnNames_));
+  }
 };
 
 }

@@ -23,8 +23,12 @@ class HashJoinProbeAbstractKernel {
   
 public:
   HashJoinProbeAbstractKernel(HashJoinPredicate pred, set<string> neededColumnNames);
+  HashJoinProbeAbstractKernel() = default;
+  HashJoinProbeAbstractKernel(const HashJoinProbeAbstractKernel&) = default;
+  HashJoinProbeAbstractKernel& operator=(const HashJoinProbeAbstractKernel&) = default;
   virtual ~HashJoinProbeAbstractKernel() = default;
 
+  virtual bool isSemi() const;
   virtual tl::expected<void, string> joinBuildTupleSetIndex(const shared_ptr<TupleSetIndex>& tupleSetIndex) = 0;
   virtual tl::expected<void, string> joinProbeTupleSet(const shared_ptr<TupleSet>& tupleSet) = 0;
   virtual tl::expected<void, string> finalize() = 0;
@@ -39,18 +43,17 @@ protected:
   tl::expected<void, string> putProbeTupleSet(const shared_ptr<TupleSet>& tupleSet);
   tl::expected<void, string> buffer(const shared_ptr<TupleSet>& tupleSet);
   void bufferOutputSchema(const shared_ptr<TupleSetIndex> &tupleSetIndex, const shared_ptr<TupleSet> &tupleSet);
+  tl::expected<void, string> validateColumnNames(const shared_ptr<arrow::Schema> &schema,
+                                                 const vector<string> &columnNames);
+
 
   HashJoinPredicate pred_;
+  set<string> neededColumnNames_;
+
   vector<shared_ptr<pair<bool, int>>> neededColumnIndice_;   // <true/false, i> -> ith column in build/probe table
   optional<shared_ptr<::arrow::Schema>> outputSchema_;
   optional<shared_ptr<TupleSetIndex>> buildTupleSetIndex_;
   optional<shared_ptr<TupleSet>> probeTupleSet_;
-
-private:
-  tl::expected<void, string> validateColumnNames(const shared_ptr<arrow::Schema> &schema,
-                                                 const vector<string> &columnNames);
-
-  set<string> neededColumnNames_;
   optional<shared_ptr<normal::tuple::TupleSet>> buffer_;
 
 };

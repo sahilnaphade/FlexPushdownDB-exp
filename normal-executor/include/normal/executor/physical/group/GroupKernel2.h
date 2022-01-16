@@ -52,6 +52,9 @@ class GroupKernel2 {
 public:
   GroupKernel2(const vector<string>& groupColumnNames,
                vector<shared_ptr<AggregateFunction>> aggregateFunctions);
+  GroupKernel2() = default;
+  GroupKernel2(const GroupKernel2&) = default;
+  GroupKernel2& operator=(const GroupKernel2&) = default;
 
   /**
    * Groups the input tuple set and computes intermediate aggregates
@@ -125,6 +128,14 @@ private:
    */
   tl::expected<shared_ptr<TupleSet>, string> finaliseEmpty();
   bool hasResult();
+
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, GroupKernel2& kernel) {
+    return f.object(kernel).fields(f.field("groupColumnNames", kernel.groupColumnNames_),
+                                   f.field("aggregateFunctions", kernel.aggregateFunctions_));
+  }
 };
 
 }

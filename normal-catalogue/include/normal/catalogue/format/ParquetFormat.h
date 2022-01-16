@@ -10,8 +10,18 @@
 namespace normal::catalogue::format {
 
 class ParquetFormat: public Format{
+  
 public:
   ParquetFormat();
+  ParquetFormat(const ParquetFormat&) = default;
+  ParquetFormat& operator=(const ParquetFormat&) = default;
+
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, ParquetFormat& format) {
+    return f.apply(format.type_);
+  }
 };
 
 }

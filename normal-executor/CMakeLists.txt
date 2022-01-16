@@ -89,6 +89,7 @@ add_library(normal-executor STATIC
         include/normal/executor/serialization/MessageSerializer.h
         include/normal/executor/serialization/POpSerializer.h
         include/normal/executor/serialization/AggregateFunctionSerializer.h
+        include/normal/executor/serialization/HashJoinProbeAbstractKernelSerializer.h
 #        executor
         src/Executor.cpp include/normal/executor/Executor.h
         src/Execution.cpp include/normal/executor/Execution.h)

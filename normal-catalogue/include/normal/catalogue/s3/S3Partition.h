@@ -7,6 +7,7 @@
 
 #include <normal/catalogue/Partition.h>
 #include <normal/catalogue/Table.h>
+#include <normal/caf/CAFUtil.h>
 #include <string>
 #include <memory>
 
@@ -53,5 +54,18 @@ public:
 };
 
 }
+
+using S3PartitionPtr = std::shared_ptr<normal::catalogue::s3::S3Partition>;
+
+CAF_BEGIN_TYPE_ID_BLOCK(S3Partition, normal::caf::CAFUtil::S3Partition_first_custom_type_id)
+CAF_ADD_TYPE_ID(S3Partition, (normal::catalogue::s3::S3Partition))
+CAF_END_TYPE_ID_BLOCK(S3Partition)
+
+namespace caf {
+template <>
+struct inspector_access<S3PartitionPtr> : variant_inspector_access<S3PartitionPtr> {
+  // nop
+};
+} // namespace caf
 
 #endif //NORMAL_NORMAL_CATALOGUE_INCLUDE_NORMAL_CATALOGUE_S3_S3PARTITION_H

@@ -18,11 +18,16 @@ public:
                       set<string> neededColumnNames,
                       bool isLeft,
                       bool isRight);
+  HashJoinProbeKernel() = default;
+  HashJoinProbeKernel(const HashJoinProbeKernel&) = default;
+  HashJoinProbeKernel& operator=(const HashJoinProbeKernel&) = default;
+  
   static shared_ptr<HashJoinProbeKernel> make(HashJoinPredicate pred,
                                               set<string> neededColumnNames,
                                               bool isLeft,
                                               bool isRight);
 
+  bool isSemi() const override;
   tl::expected<void, string> joinBuildTupleSetIndex(const shared_ptr<TupleSetIndex>& tupleSetIndex) override;
   tl::expected<void, string> joinProbeTupleSet(const shared_ptr<TupleSet>& tupleSet) override;
   tl::expected<void, string> finalize() override;
@@ -40,6 +45,15 @@ private:
   optional<shared_ptr<OuterJoinHelper>> leftJoinHelper_;
   optional<shared_ptr<OuterJoinHelper>> rightJoinHelper_;
 
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, HashJoinProbeKernel& kernel) {
+    return f.object(kernel).fields(f.field("pred", kernel.pred_),
+                                   f.field("neededColumnNames", kernel.neededColumnNames_),
+                                   f.field("isLeft", kernel.isLeft_),
+                                   f.field("isRight", kernel.isRight_));
+  }
 };
 
 }

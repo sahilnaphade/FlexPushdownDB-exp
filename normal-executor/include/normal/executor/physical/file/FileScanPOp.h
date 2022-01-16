@@ -31,7 +31,7 @@ public:
   FileScanPOp(const FileScanPOp&) = default;
   FileScanPOp& operator=(const FileScanPOp&) = default;
 
-  [[nodiscard]] const std::unique_ptr<FileScanKernel> &getKernel() const;
+  [[nodiscard]] const FileScanKernel &getKernel() const;
   [[nodiscard]] bool isScanOnStart() const;
 
   void onReceive(const Envelope &message) override;
@@ -44,7 +44,22 @@ private:
   void readAndSendTuples(const std::vector<std::string> &columnNames);
 
   bool scanOnStart_;
-  std::unique_ptr<FileScanKernel> kernel_;
+  FileScanKernel kernel_;
+
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, FileScanPOp& op) {
+    return f.object(op).fields(f.field("name", op.name_),
+                               f.field("type", op.type_),
+                               f.field("projectColumnNames", op.projectColumnNames_),
+                               f.field("queryId", op.queryId_),
+                               f.field("opContext", op.opContext_),
+                               f.field("producers", op.producers_),
+                               f.field("consumers", op.consumers_),
+                               f.field("scanOnStart", op.scanOnStart_),
+                               f.field("kernel", op.kernel_));
+  }
 };
 
 }

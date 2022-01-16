@@ -16,6 +16,10 @@ shared_ptr<HashSemiJoinProbeKernel> HashSemiJoinProbeKernel::make(HashJoinPredic
   return make_shared<HashSemiJoinProbeKernel>(move(pred), move(neededColumnNames));
 }
 
+bool HashSemiJoinProbeKernel::isSemi() const {
+  return true;
+}
+
 tl::expected<unordered_set<int64_t>, string>
 join(const shared_ptr<RecordBatchHashSemiJoiner> &joiner, const shared_ptr<TupleSet> &tupleSet) {
   unordered_set<int64_t> joinResult;

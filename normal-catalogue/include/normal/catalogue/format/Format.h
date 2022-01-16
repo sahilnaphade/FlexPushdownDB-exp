@@ -12,10 +12,13 @@ namespace normal::catalogue::format {
 class Format {
 public:
   Format(FormatType type);
+  Format() = default;
+  Format(const Format&) = default;
+  Format& operator=(const Format&) = default;
 
   FormatType getType() const;
 
-private:
+protected:
   FormatType type_;
 };
 

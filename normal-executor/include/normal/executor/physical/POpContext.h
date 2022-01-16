@@ -10,6 +10,7 @@
 #include <normal/executor/physical/LocalPOpDirectory.h>
 #include <normal/executor/message/Message.h>
 #include <normal/executor/physical/Forward.h>
+#include <normal/caf/CAFUtil.h>
 #include <memory>
 #include <string>
 
@@ -59,5 +60,18 @@ public:
 };
 
 }
+
+using POpContextPtr = std::shared_ptr<normal::executor::physical::POpContext>;
+
+CAF_BEGIN_TYPE_ID_BLOCK(POpContext, normal::caf::CAFUtil::POpContext_first_custom_type_id)
+CAF_ADD_TYPE_ID(POpContext, (normal::executor::physical::POpContext))
+CAF_END_TYPE_ID_BLOCK(POpContext)
+
+namespace caf {
+template <>
+struct inspector_access<POpContextPtr> : variant_inspector_access<POpContextPtr> {
+  // nop
+};
+} // namespace caf
 
 #endif //NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_POPCONTEXT_H

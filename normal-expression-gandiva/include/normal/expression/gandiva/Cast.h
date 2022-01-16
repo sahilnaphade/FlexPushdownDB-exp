@@ -6,7 +6,7 @@
 #define NORMAL_NORMAL_EXPRESSION_GANDIVA_INCLUDE_NORMAL_EXPRESSION_GANDIVA_CAST_H
 
 #include <normal/expression/gandiva/Expression.h>
-#include <normal/tuple/DataType.h>
+#include <normal/tuple/serialization/ArrowSerializer.h>
 #include <arrow/api.h>
 #include <gandiva/node.h>
 #include <string>
@@ -34,16 +34,22 @@ private:
   ::gandiva::NodePtr buildGandivaExpression();
 
   std::shared_ptr<Expression> expr_;
-  //use normal::tuple::DataType instead of arrow::DataType for ease of serialization
   std::shared_ptr<arrow::DataType> dataType_;
 
 // caf inspect
 public:
   template <class Inspector>
   friend bool inspect(Inspector& f, Cast& expr) {
+    auto dataTypeToBytes = [&expr]() -> decltype(auto) {
+      return normal::tuple::ArrowSerializer::dataType_to_bytes(expr.dataType_);
+    };
+    auto dataTypeFromBytes = [&expr](const std::vector<std::uint8_t> &bytes) {
+      expr.dataType_ = normal::tuple::ArrowSerializer::bytes_to_dataType(bytes);
+      return true;
+    };
     return f.object(expr).fields(f.field("type", expr.type_),
                                  f.field("expr", expr.expr_),
-                                 f.field("dataType", expr.dataType_));
+                                 f.field("dataType", dataTypeToBytes, dataTypeFromBytes));
   }
 };
 

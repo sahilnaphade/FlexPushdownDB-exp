@@ -48,7 +48,21 @@ private:
   void onTuple(const TupleMessage &msg);
   void onComplete(const CompleteMessage &msg);
 
-  unique_ptr<GroupKernel2> kernel2_;
+  GroupKernel2 kernel2_;
+
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, GroupPOp& op) {
+    return f.object(op).fields(f.field("name", op.name_),
+                               f.field("type", op.type_),
+                               f.field("projectColumnNames", op.projectColumnNames_),
+                               f.field("queryId", op.queryId_),
+                               f.field("opContext", op.opContext_),
+                               f.field("producers", op.producers_),
+                               f.field("consumers", op.consumers_),
+                               f.field("kernel2", op.kernel2_));
+  }
 };
 
 }

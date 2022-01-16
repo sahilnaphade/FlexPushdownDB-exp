@@ -23,30 +23,40 @@ class FileScanKernel {
 
 public:
   FileScanKernel(std::string path,
-				 FileType fileType,
 				 std::shared_ptr<FileReader> reader,
 				 unsigned long startPos,
 				 unsigned long finishPos);
+  FileScanKernel() = default;
+  FileScanKernel(const FileScanKernel&) = default;
+  FileScanKernel& operator=(const FileScanKernel&) = default;
 
-  static std::unique_ptr<FileScanKernel> make(const std::string &path,
-											  FileType fileType,
-											  unsigned long startPos,
-											  unsigned long finishPos);
+  static FileScanKernel make(const std::string &path,
+                             FileType fileType,
+                             unsigned long startPos,
+                             unsigned long finishPos);
 
   tl::expected<std::shared_ptr<TupleSet>, std::string> scan(const std::vector<std::string> &columnNames);
 
   [[nodiscard]] const std::string &getPath() const;
-  [[nodiscard]] const std::optional<FileType> &getFileType() const;
+  [[nodiscard]] FileType getFileType() const;
   [[nodiscard]] unsigned long getStartPos() const;
   [[nodiscard]] unsigned long getFinishPos() const;
 
 private:
   std::string path_;
-  std::optional<FileType> fileType_;
   std::shared_ptr<FileReader> reader_;
   unsigned long startPos_;
   unsigned long finishPos_;
 
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, FileScanKernel& kernel) {
+    return f.object(kernel).fields(f.field("path", kernel.path_),
+                                   f.field("reader", kernel.reader_),
+                                   f.field("startPos", kernel.startPos_),
+                                   f.field("finishPos", kernel.finishPos_));
+  }
 };
 
 }

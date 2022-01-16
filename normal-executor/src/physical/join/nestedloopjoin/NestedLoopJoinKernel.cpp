@@ -16,12 +16,11 @@ NestedLoopJoinKernel::NestedLoopJoinKernel(const optional<shared_ptr<expression:
   isLeft_(isLeft),
   isRight_(isRight) {}
 
-shared_ptr<NestedLoopJoinKernel>
-NestedLoopJoinKernel::make(const optional<shared_ptr<expression::gandiva::Expression>> &predicate,
-                           const set<string> &neededColumnNames,
-                           bool isLeft,
-                           bool isRight) {
-  return make_shared<NestedLoopJoinKernel>(predicate, neededColumnNames, isLeft, isRight);
+NestedLoopJoinKernel NestedLoopJoinKernel::make(const optional<shared_ptr<expression::gandiva::Expression>> &predicate,
+                                                const set<string> &neededColumnNames,
+                                                bool isLeft,
+                                                bool isRight) {
+  return {predicate, neededColumnNames, isLeft, isRight};
 }
 
 tl::expected<void, string> bufferInput(optional<shared_ptr<TupleSet>> &buffer,

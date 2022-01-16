@@ -23,8 +23,10 @@ public:
         const shared_ptr<format::Format>& format,
         const unordered_map<string, int> &apxColumnLengthMap,
         int apxRowLength,
-        const unordered_set<string> &zonemapColumnNames,
-        const shared_ptr<CatalogueEntry> &catalogueEntry);
+        const unordered_set<string> &zonemapColumnNames);
+  Table() = default;
+  Table(const Table&) = default;
+  Table& operator=(const Table&) = default;
 
   const string &getName() const;
   const shared_ptr<arrow::Schema> &getSchema() const;
@@ -32,16 +34,16 @@ public:
   vector<string> getColumnNames() const;
   int getApxColumnLength(const string &columnName) const;
   int getApxRowLength() const;
-  const weak_ptr<CatalogueEntry> getCatalogueEntry() const;
 
-private:
+  virtual CatalogueEntryType getCatalogueEntryType() = 0;
+
+protected:
   string name_;
   shared_ptr<arrow::Schema> schema_;
   shared_ptr<format::Format> format_;
   unordered_map<string, int> apxColumnLengthMap_;   // apx: approximate
   int apxRowLength_;
   unordered_set<string> zonemapColumnNames_;
-  weak_ptr<CatalogueEntry> catalogueEntry_;
 };
 
 }

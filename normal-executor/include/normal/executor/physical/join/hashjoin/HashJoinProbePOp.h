@@ -51,6 +51,19 @@ private:
   shared_ptr<HashJoinProbeAbstractKernel> kernel_;
   bool sentResult = false;
 
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, HashJoinProbePOp& op) {
+    return f.object(op).fields(f.field("name", op.name_),
+                               f.field("type", op.type_),
+                               f.field("projectColumnNames", op.projectColumnNames_),
+                               f.field("queryId", op.queryId_),
+                               f.field("opContext", op.opContext_),
+                               f.field("producers", op.producers_),
+                               f.field("consumers", op.consumers_),
+                               f.field("kernel", op.kernel_));
+  }
 };
 
 }

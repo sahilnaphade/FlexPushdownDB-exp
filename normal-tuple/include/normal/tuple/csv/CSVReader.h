@@ -21,6 +21,9 @@ class CSVReader : public FileReader {
 
 public:
   explicit CSVReader(std::string path);
+  CSVReader() = default;
+  CSVReader(const CSVReader&) = default;
+  CSVReader& operator=(const CSVReader&) = default;
 
   static tl::expected<std::shared_ptr<CSVReader>, std::string> make(const std::string &path);
 
@@ -30,6 +33,13 @@ public:
 private:
   std::string path_;
 
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, CSVReader& reader) {
+    return f.object(reader).fields(f.field("type", reader.type_),
+                                   f.field("path", reader.path_));
+  }
 };
 
 }

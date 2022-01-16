@@ -7,19 +7,16 @@
 
 using namespace normal::tuple;
 
-ParquetReader::ParquetReader(std::string Path) : path_(std::move(Path)) {}
+ParquetReader::ParquetReader(std::string Path) :
+  FileReader(FileType::Parquet),
+  path_(std::move(Path)) {}
 
 ParquetReader::~ParquetReader() {
   close();
 }
 
 tl::expected<std::shared_ptr<ParquetReader>, std::string> ParquetReader::make(const std::string &Path) {
-  auto reader = std::make_shared<ParquetReader>(Path);
-  auto result = reader->open();
-  if (!result) {
-	return tl::make_unexpected(result.error());
-  }
-  return reader;
+  return std::make_shared<ParquetReader>(Path);
 }
 
 tl::expected<void, std::string> ParquetReader::close() {
@@ -33,6 +30,11 @@ tl::expected<void, std::string> ParquetReader::close() {
 
 tl::expected<std::shared_ptr<TupleSet>, std::string>
 ParquetReader::read(const std::vector<std::string> &columnNames, unsigned long startPos, unsigned long finishPos) {
+
+  auto result = open();
+  if (!result) {
+    return tl::make_unexpected(result.error());
+  }
 
   ::arrow::Status status;
 

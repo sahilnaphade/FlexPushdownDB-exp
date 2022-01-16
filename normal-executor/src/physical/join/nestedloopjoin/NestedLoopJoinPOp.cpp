@@ -11,8 +11,13 @@ NestedLoopJoinPOp::NestedLoopJoinPOp(const string &name,
                                      const optional<shared_ptr<expression::gandiva::Expression>> &predicate,
                                      JoinType joinType,
                                      const vector<string> &projectColumnNames) :
-  PhysicalOp(name, "NestedLoopJoinPOp", projectColumnNames) {
+  PhysicalOp(name, "NestedLoopJoinPOp", projectColumnNames),
+  kernel_(makeKernel(predicate, joinType, projectColumnNames_)) {}
 
+NestedLoopJoinKernel
+NestedLoopJoinPOp::makeKernel(const optional<shared_ptr<expression::gandiva::Expression>> &predicate,
+                              JoinType joinType,
+                              const vector<string> &projectColumnNames) {
   set<string> neededColumnNames(getProjectColumnNames().begin(), getProjectColumnNames().end());
   if (predicate.has_value()) {
     const auto &predInvolvedColumnNames = (*predicate)->involvedColumnNames();
@@ -20,25 +25,21 @@ NestedLoopJoinPOp::NestedLoopJoinPOp(const string &name,
   }
   switch (joinType) {
     case INNER: {
-      kernel_ = NestedLoopJoinKernel::make(predicate, neededColumnNames, false, false);
-      break;
+      return NestedLoopJoinKernel::make(predicate, neededColumnNames, false, false);
     }
     case LEFT: {
-      kernel_ = NestedLoopJoinKernel::make(predicate, neededColumnNames, true, false);
-      break;
+      return NestedLoopJoinKernel::make(predicate, neededColumnNames, true, false);
     }
     case RIGHT: {
-      kernel_ = NestedLoopJoinKernel::make(predicate, neededColumnNames, false, true);
-      break;
+      return NestedLoopJoinKernel::make(predicate, neededColumnNames, false, true);
     }
     case FULL: {
-      kernel_ = NestedLoopJoinKernel::make(predicate, neededColumnNames, true, true);
-      break;
+      return NestedLoopJoinKernel::make(predicate, neededColumnNames, true, true);
     }
     default:
       throw runtime_error(fmt::format("Unsupported nested loop join type, {}", joinType));
   }
-}
+};
 
 void NestedLoopJoinPOp::onReceive(const Envelope &msg) {
   if (msg.message().type() == "StartMessage") {
@@ -62,7 +63,7 @@ void NestedLoopJoinPOp::onStart() {
 void NestedLoopJoinPOp::onComplete(const CompleteMessage &) {
   if (!ctx()->isComplete() && ctx()->operatorMap().allComplete(POpRelationshipType::Producer)) {
     // Finalize
-    auto result = kernel_->finalize();
+    auto result = kernel_.finalize();
     if (!result) {
       throw runtime_error(result.error());
     }
@@ -87,9 +88,9 @@ void NestedLoopJoinPOp::onTuple(const TupleMessage &message) {
   // incremental join immediately
   tl::expected<void, string> result;
   if (leftProducerNames_.find(sender) != leftProducerNames_.end()) {
-    result = kernel_->joinIncomingLeft(tupleSet);
+    result = kernel_.joinIncomingLeft(tupleSet);
   } else if (rightProducerName_.find(sender) != rightProducerName_.end()) {
-    result = kernel_->joinIncomingRight(tupleSet);
+    result = kernel_.joinIncomingRight(tupleSet);
   } else {
     throw runtime_error(fmt::format("Unknown sender '{}', neither left nor right producer", sender));
   }
@@ -112,7 +113,7 @@ void NestedLoopJoinPOp::addRightProducer(const shared_ptr<PhysicalOp> &rightProd
 }
 
 void NestedLoopJoinPOp::send(bool force) {
-  auto buffer = kernel_->getBuffer();
+  auto buffer = kernel_.getBuffer();
   if (buffer.has_value()) {
     auto numRows = buffer.value()->numRows();
     if (numRows >= DefaultBufferSize || (force && numRows > 0)) {
@@ -125,13 +126,13 @@ void NestedLoopJoinPOp::send(bool force) {
       shared_ptr<Message> tupleMessage = make_shared<TupleMessage>(expProjectTupleSet.value(), name());
       ctx()->tell(tupleMessage);
       sentResult = true;
-      kernel_->clearBuffer();
+      kernel_.clearBuffer();
     }
   }
 }
 
 void NestedLoopJoinPOp::sendEmpty() {
-  auto outputSchema = kernel_->getOutputSchema();
+  auto outputSchema = kernel_.getOutputSchema();
   if (!outputSchema.has_value()) {
     throw runtime_error("OutputSchema not set yet");
   }

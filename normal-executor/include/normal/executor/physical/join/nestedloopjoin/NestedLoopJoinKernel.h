@@ -23,11 +23,14 @@ public:
                        const set<string> &neededColumnNames,
                        bool isLeft,
                        bool isRight);
+  NestedLoopJoinKernel() = default;
+  NestedLoopJoinKernel(const NestedLoopJoinKernel&) = default;
+  NestedLoopJoinKernel& operator=(const NestedLoopJoinKernel&) = default;
 
-  static shared_ptr<NestedLoopJoinKernel> make(const optional<shared_ptr<expression::gandiva::Expression>> &predicate,
-                                               const set<string> &neededColumnNames,
-                                               bool isLeft,
-                                               bool isRight);
+  static NestedLoopJoinKernel make(const optional<shared_ptr<expression::gandiva::Expression>> &predicate,
+                                   const set<string> &neededColumnNames,
+                                   bool isLeft,
+                                   bool isRight);
 
   tl::expected<void, string> joinIncomingLeft(const shared_ptr<TupleSet> &incomingLeft);
   tl::expected<void, string> joinIncomingRight(const shared_ptr<TupleSet> &incomingRight);
@@ -60,7 +63,16 @@ private:
   bool isOuterJoinHelperCreated_ = false;
   optional<shared_ptr<OuterJoinHelper>> leftJoinHelper_;
   optional<shared_ptr<OuterJoinHelper>> rightJoinHelper_;
-  
+
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, NestedLoopJoinKernel& kernel) {
+    return f.object(kernel).fields(f.field("predicate", kernel.predicate_),
+                                   f.field("neededColumnNames", kernel.neededColumnNames_),
+                                   f.field("isLeft", kernel.isLeft_),
+                                   f.field("isRight", kernel.isRight_));
+  }
 };
 
 }

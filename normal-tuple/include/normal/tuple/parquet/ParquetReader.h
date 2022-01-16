@@ -21,6 +21,9 @@ class ParquetReader : public FileReader {
 
 public:
   explicit ParquetReader(std::string Path);
+  ParquetReader() = default;
+  ParquetReader(const ParquetReader&) = default;
+  ParquetReader& operator=(const ParquetReader&) = default;
   ~ParquetReader() override;
 
   static tl::expected<std::shared_ptr<ParquetReader>, std::string> make(const std::string &Path);
@@ -37,6 +40,13 @@ private:
 
   [[nodiscard]] tl::expected<void, std::string> open();
 
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, ParquetReader& reader) {
+    return f.object(reader).fields(f.field("type", reader.type_),
+                                   f.field("path", reader.path_));
+  }
 };
 
 }

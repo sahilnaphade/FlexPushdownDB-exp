@@ -42,6 +42,20 @@ private:
   std::shared_ptr<TupleSet> tuples_;
   std::vector<std::shared_ptr<arrow::Table>> tables_;
   size_t tablesCutoff_ = 20;
+
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, CollatePOp& op) {
+    return f.object(op).fields(f.field("name", op.name_),
+                               f.field("type", op.type_),
+                               f.field("projectColumnNames", op.projectColumnNames_),
+                               f.field("queryId", op.queryId_),
+                               f.field("opContext", op.opContext_),
+                               f.field("producers", op.producers_),
+                               f.field("consumers", op.consumers_),
+                               f.field("tablesCutoff", op.tablesCutoff_));
+  }
 };
 
 }

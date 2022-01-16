@@ -39,15 +39,33 @@ private:
   void onComplete(const CompleteMessage &);
   void onTuple(const TupleMessage &message);
 
+  NestedLoopJoinKernel makeKernel(const optional<shared_ptr<expression::gandiva::Expression>> &predicate,
+                                  JoinType joinType,
+                                  const vector<string> &projectColumnNames);
   void send(bool force);
   void sendEmpty();
 
   set<string> leftProducerNames_;
   set<string> rightProducerName_;
 
-  shared_ptr<NestedLoopJoinKernel> kernel_;
+  NestedLoopJoinKernel kernel_;
   bool sentResult = false;
 
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, NestedLoopJoinPOp& op) {
+    return f.object(op).fields(f.field("name", op.name_),
+                               f.field("type", op.type_),
+                               f.field("projectColumnNames", op.projectColumnNames_),
+                               f.field("queryId", op.queryId_),
+                               f.field("opContext", op.opContext_),
+                               f.field("producers", op.producers_),
+                               f.field("consumers", op.consumers_),
+                               f.field("leftProducerNames", op.leftProducerNames_),
+                               f.field("rightProducerName", op.rightProducerName_),
+                               f.field("kernel", op.kernel_));
+  }
 };
 
 }

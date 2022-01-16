@@ -12,21 +12,21 @@
 #include <normal/caf/CAFUtil.h>
 
 using namespace normal::executor::physical::aggregate;
-using AggregationFunctionPtr = std::shared_ptr<AggregateFunction>;
+using AggregateFunctionPtr = std::shared_ptr<AggregateFunction>;
 
 CAF_BEGIN_TYPE_ID_BLOCK(AggregateFunction, normal::caf::CAFUtil::AggregateFunction_first_custom_type_id)
-CAF_ADD_TYPE_ID(AggregateFunction, (AggregationFunctionPtr))
+CAF_ADD_TYPE_ID(AggregateFunction, (AggregateFunctionPtr))
 CAF_ADD_TYPE_ID(AggregateFunction, (Count))
 CAF_ADD_TYPE_ID(AggregateFunction, (MinMax))
 CAF_ADD_TYPE_ID(AggregateFunction, (Sum))
 CAF_END_TYPE_ID_BLOCK(AggregateFunction)
 
-// Variant-based approach on AggregationFunctionPtr
+// Variant-based approach on AggregateFunctionPtr
 namespace caf {
 
 template<>
-struct variant_inspector_traits<AggregationFunctionPtr> {
-  using value_type = AggregationFunctionPtr;
+struct variant_inspector_traits<AggregateFunctionPtr> {
+  using value_type = AggregateFunctionPtr;
 
   // Lists all allowed types and gives them a 0-based index.
   static constexpr type_id_t allowed_types[] = {
@@ -107,7 +107,7 @@ struct variant_inspector_traits<AggregationFunctionPtr> {
 };
 
 template <>
-struct inspector_access<AggregationFunctionPtr> : variant_inspector_access<AggregationFunctionPtr> {
+struct inspector_access<AggregateFunctionPtr> : variant_inspector_access<AggregateFunctionPtr> {
   // nop
 };
 

@@ -22,6 +22,9 @@ class HashJoinBuildKernel {
 
 public:
   explicit HashJoinBuildKernel(vector<string> columnNames);
+  HashJoinBuildKernel() = default;
+  HashJoinBuildKernel(const HashJoinBuildKernel&) = default;
+  HashJoinBuildKernel& operator=(const HashJoinBuildKernel&) = default;
   static HashJoinBuildKernel make(const vector<string> &columnNames);
 
   tl::expected<void, string> put(const shared_ptr<TupleSet> &tupleSet);
@@ -41,6 +44,12 @@ private:
    */
   optional<shared_ptr<TupleSetIndex>> tupleSetIndex_;
 
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, HashJoinBuildKernel& kernel) {
+    return f.apply(kernel.columnNames_);
+  }
 };
 
 }

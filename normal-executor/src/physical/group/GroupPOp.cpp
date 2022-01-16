@@ -13,7 +13,7 @@ GroupPOp::GroupPOp(const string &name,
                    const vector<shared_ptr<aggregate::AggregateFunction>> &aggregateFunctions,
                    const vector<string> &projectColumnNames) :
 	PhysicalOp(name, "GroupPOp", projectColumnNames),
-  kernel2_(make_unique<GroupKernel2>(groupColumnNames, aggregateFunctions)) {
+  kernel2_(groupColumnNames, aggregateFunctions) {
 }
 
 void GroupPOp::onReceive(const Envelope &msg) {
@@ -37,7 +37,7 @@ void GroupPOp::onStart() {
 
 void GroupPOp::onTuple(const TupleMessage &message) {
   const auto &tupleSet = message.tuples();
-  auto expectedGroupResult = kernel2_->group(*tupleSet);
+  auto expectedGroupResult = kernel2_.group(*tupleSet);
   if(!expectedGroupResult)
     throw runtime_error(expectedGroupResult.error());
 }
@@ -45,7 +45,7 @@ void GroupPOp::onTuple(const TupleMessage &message) {
 void GroupPOp::onComplete(const CompleteMessage &) {
   if (!ctx()->isComplete() && this->ctx()->operatorMap().allComplete(POpRelationshipType::Producer)) {
 
-    auto expectedGroupedTupleSet = kernel2_->finalise();
+    auto expectedGroupedTupleSet = kernel2_.finalise();
     if (!expectedGroupedTupleSet)
       throw runtime_error(expectedGroupedTupleSet.error());
 

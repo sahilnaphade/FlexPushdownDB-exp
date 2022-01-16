@@ -14,13 +14,16 @@ S3Table::S3Table(const string &name,
                  const unordered_map<string, int> &apxColumnLengthMap,
                  int apxRowLength,
                  const unordered_set<string> &zonemapColumnNames,
-                 const vector<shared_ptr<S3Partition>> &s3Partitions,
-                 const shared_ptr<CatalogueEntry> &catalogueEntry) :
-  Table(name, schema, format, apxColumnLengthMap, apxRowLength, zonemapColumnNames, catalogueEntry),
+                 const vector<shared_ptr<S3Partition>> &s3Partitions) :
+  Table(name, schema, format, apxColumnLengthMap, apxRowLength, zonemapColumnNames),
   s3Partitions_(s3Partitions) {}
 
 const vector<shared_ptr<S3Partition>> &S3Table::getS3Partitions() const {
   return s3Partitions_;
+}
+
+CatalogueEntryType S3Table::getCatalogueEntryType() {
+  return S3;
 }
 
 }

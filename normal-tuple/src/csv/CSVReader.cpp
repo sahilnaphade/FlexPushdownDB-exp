@@ -9,7 +9,9 @@
 using namespace normal::tuple;
 using namespace normal::tuple::csv;
 
-CSVReader::CSVReader(std::string path) : path_(std::move(path)) {}
+CSVReader::CSVReader(std::string path) :
+  FileReader(FileType::CSV),
+  path_(std::move(path)) {}
 
 tl::expected<std::shared_ptr<CSVReader>, std::string> CSVReader::make(const std::string &path) {
   auto absolutePath = std::filesystem::absolute(path);

@@ -23,6 +23,10 @@ shared_ptr<HashJoinProbeKernel> HashJoinProbeKernel::make(HashJoinPredicate pred
   return make_shared<HashJoinProbeKernel>(move(pred), move(neededColumnNames), isLeft, isRight);
 }
 
+bool HashJoinProbeKernel::isSemi() const {
+  return false;
+}
+
 tl::expected<shared_ptr<normal::tuple::TupleSet>, string>
 HashJoinProbeKernel::join(const shared_ptr<RecordBatchHashJoiner> &joiner,
                           const shared_ptr<TupleSet> &probeTupleSet,
