@@ -262,36 +262,55 @@ shape_ptr serialization_roundtrip(const shape_ptr& in) {
 #include <normal/tuple/serialization/ArrowSerializer.h>
 
 int main() {
-  auto fields = std::vector<std::shared_ptr<arrow::Field>>{
-          std::make_shared<arrow::Field>("a", arrow::int32()),
-          std::make_shared<arrow::Field>("b", arrow::int64()),
-          std::make_shared<arrow::Field>("c", arrow::float64()),
-          std::make_shared<arrow::Field>("d", arrow::boolean()),
-          std::make_shared<arrow::Field>("e", arrow::date64()),
-          std::make_shared<arrow::Field>("f", arrow::utf8()),
-  };
-  auto schema = std::make_shared<arrow::Schema>(fields);
-  std::cout << "Original schema: \n" << schema->ToString() << std::endl;
+//  // schema serialization
+//  auto fields = std::vector<std::shared_ptr<arrow::Field>>{
+//          std::make_shared<arrow::Field>("a", arrow::int32()),
+//          std::make_shared<arrow::Field>("b", arrow::int64()),
+//          std::make_shared<arrow::Field>("c", arrow::float64()),
+//          std::make_shared<arrow::Field>("d", arrow::boolean()),
+//          std::make_shared<arrow::Field>("e", arrow::date64()),
+//          std::make_shared<arrow::Field>("f", arrow::utf8()),
+//  };
+//  auto schema = std::make_shared<arrow::Schema>(fields);
+//  std::cout << "Original schema: \n" << schema->ToString() << std::endl;
+//
+//  auto bytes = normal::tuple::ArrowSerializer::schema_to_bytes(schema);
+//  auto copySchema = normal::tuple::ArrowSerializer::bytes_to_schema(bytes);
+//  std::cout << "Copy schema: \n" << copySchema->ToString() << std::endl;
+//
+//  // scalar serialization
+//  std::string str = "yyf";
+//  auto scalars = std::vector<std::shared_ptr<arrow::Scalar>>{
+//          arrow::MakeScalar(arrow::int32(), 1000).ValueOrDie(),
+//          arrow::MakeScalar(arrow::int64(), 100000000000).ValueOrDie(),
+//          arrow::MakeScalar(arrow::float64(), 123.456).ValueOrDie(),
+//          arrow::MakeScalar(arrow::boolean(), true).ValueOrDie(),
+//          arrow::MakeScalar(arrow::date64(), 100000000000).ValueOrDie(),
+//          arrow::MakeScalar(arrow::utf8(), str).ValueOrDie()
+//  };
+//  for (const auto &scalar: scalars) {
+//    std::cout << "Original scalar: \n" << scalar->ToString() << std::endl;
+//    bytes = normal::tuple::ArrowSerializer::scalar_to_bytes(scalar);
+//    auto copyScalar = normal::tuple::ArrowSerializer::bytes_to_scalar(bytes);
+//    std::cout << "Copy scalar: \n" << copyScalar->ToString() << std::endl;
+//  }
 
-  auto bytes = normal::tuple::ArrowSerializer::schema_to_bytes(schema);
-  auto copySchema = normal::tuple::ArrowSerializer::bytes_to_schema(bytes);
-  std::cout << "Copy schema: \n" << copySchema->ToString() << std::endl;
-
-  std::string str = "yyf";
-  auto scalars = std::vector<std::shared_ptr<arrow::Scalar>>{
-          arrow::MakeScalar(arrow::int32(), 1000).ValueOrDie(),
-          arrow::MakeScalar(arrow::int64(), 100000000000).ValueOrDie(),
-          arrow::MakeScalar(arrow::float64(), 123.456).ValueOrDie(),
-          arrow::MakeScalar(arrow::boolean(), true).ValueOrDie(),
-          arrow::MakeScalar(arrow::date64(), 100000000000).ValueOrDie(),
-          arrow::MakeScalar(arrow::utf8(), str).ValueOrDie()
+  // data type serialization
+  auto dataTypes = std::vector<std::shared_ptr<arrow::DataType>>{
+          arrow::int32(),
+          arrow::int64(),
+          arrow::float64(),
+          arrow::boolean(),
+          arrow::date64(),
+          arrow::utf8()
   };
-  for (const auto &scalar: scalars) {
-    std::cout << "Original scalar: \n" << scalar->ToString() << std::endl;
-    bytes = normal::tuple::ArrowSerializer::scalar_to_bytes(scalar);
-    auto copyScalar = normal::tuple::ArrowSerializer::bytes_to_scalar(bytes);
-    std::cout << "Copy scalar: \n" << copyScalar->ToString() << std::endl;
+  for (const auto &dataType: dataTypes) {
+    std::cout << "Original dataType ToString(): \n" << dataType->ToString() << std::endl;
+    auto bytes = normal::tuple::ArrowSerializer::dataType_to_bytes(dataType);
+    auto copyDataType = normal::tuple::ArrowSerializer::bytes_to_dataType(bytes);
+    std::cout << "Copy dataType ToString(): \n" << copyDataType->ToString() << std::endl;
   }
+
 
   return 0;
 }

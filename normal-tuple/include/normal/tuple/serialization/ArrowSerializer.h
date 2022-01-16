@@ -44,6 +44,13 @@ public:
   static std::shared_ptr<arrow::Scalar> bytes_to_scalar(const std::vector<std::uint8_t>& bytes_vec);
   static std::vector<std::uint8_t> scalar_to_bytes(const std::shared_ptr<arrow::Scalar>& scalar);
 
+  /**
+   * Serialization and deserialization methods of DataType
+   * Do this in a straightforward way (using name()) instead of using schema serialization
+   */
+  static std::shared_ptr<arrow::DataType> bytes_to_dataType(const std::vector<std::uint8_t>& bytes_vec);
+  static std::vector<std::uint8_t> dataType_to_bytes(const std::shared_ptr<arrow::DataType>& dataType);
+
 };
 
 }

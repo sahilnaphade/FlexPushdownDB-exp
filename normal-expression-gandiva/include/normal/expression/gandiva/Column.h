@@ -33,6 +33,13 @@ public:
 private:
   std::string columnName_;
 
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, Column& expr) {
+    return f.object(expr).fields(f.field("type", expr.type_),
+                                 f.field("columnName", expr.columnName_));
+  }
 };
 
 std::shared_ptr<Expression> col(const std::string& columnName);

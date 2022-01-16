@@ -96,6 +96,14 @@ private:
   std::optional<C_TYPE> value_;
   std::optional<DateIntervalType> intervalType_;    // denote whether this literal is used as an interval
 
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, NumericLiteral& expr) {
+    return f.object(exp).fields(f.field("type", expr.type_),
+                                f.field("value", expr.value_),
+                                f.field("intervalType", expr.intervalType_));
+  }
 };
 
 template<typename ARROW_TYPE, typename C_TYPE = typename ARROW_TYPE::c_type>

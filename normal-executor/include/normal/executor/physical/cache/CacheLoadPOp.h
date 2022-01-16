@@ -60,6 +60,27 @@ private:
 
   S3ClientType s3ClientType_;
 
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, CacheLoadPOp& op) {
+    return f.object(op).fields(f.field("name", op.name_),
+                               f.field("type", op.type_),
+                               f.field("projectColumnNames", op.projectColumnNames_),
+                               f.field("queryId", op.queryId_),
+                               f.field("opContext", op.opContext_),
+                               f.field("producers", op.producers_),
+                               f.field("consumers", op.consumers_),
+                               f.field("predicateColumnNames", op.predicateColumnNames_),
+                               f.field("columnNames", op.columnNames_),
+                               f.field("partition", op.partition_),
+                               f.field("startOffset", op.startOffset_),
+                               f.field("finishOffset", op.finishOffset_),
+                               f.field("hitOperator", op.hitOperator_),
+                               f.field("missOperatorToCache", op.missOperatorToCache_),
+                               f.field("missOperatorToPushdown", op.missOperatorToPushdown_),
+                               f.field("s3ClientType", op.s3ClientType_));
+  }
 };
 
 }

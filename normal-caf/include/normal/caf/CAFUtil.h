@@ -32,6 +32,7 @@ public:
   inline static constexpr ::caf::type_id_t Scalar_first_custom_type_id = ::caf::first_custom_type_id + 1700;
   inline static constexpr ::caf::type_id_t AggregateFunction_first_custom_type_id = ::caf::first_custom_type_id + 1800;
   inline static constexpr ::caf::type_id_t Expression_first_custom_type_id = ::caf::first_custom_type_id + 1900;
+  inline static constexpr ::caf::type_id_t DataType_first_custom_type_id = ::caf::first_custom_type_id + 2000;
 
 };
 

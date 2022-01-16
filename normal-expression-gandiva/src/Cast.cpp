@@ -10,9 +10,9 @@
 
 using namespace normal::expression::gandiva;
 
-Cast::Cast(std::shared_ptr<Expression> expr, std::shared_ptr<arrow::DataType> type) :
+Cast::Cast(std::shared_ptr<Expression> expr, std::shared_ptr<arrow::DataType> dataType) :
   Expression(CAST),
-	expr_(std::move(expr)), type_(std::move(type)) {}
+	expr_(std::move(expr)), dataType_(std::move(dataType)) {}
 
 ::gandiva::NodePtr Cast::buildGandivaExpression() {
 
@@ -22,7 +22,7 @@ Cast::Cast(std::shared_ptr<Expression> expr, std::shared_ptr<arrow::DataType> ty
   /**
    * NOTE: Some cast operations are not supported by Gandiva so we set up some special cases here
    */
-  if (fromArrowType->id() == arrow::utf8()->id() && type_->id() == arrow::float64()->id()) {
+  if (fromArrowType->id() == arrow::utf8()->id() && dataType_->id() == arrow::float64()->id()) {
 	// Not supported directly by Gandiva, need to cast string to decimal and then that to float64
 
 	auto castDecimalFunctionName = "castDECIMAL";
@@ -35,10 +35,10 @@ Cast::Cast(std::shared_ptr<Expression> expr, std::shared_ptr<arrow::DataType> ty
 
 	auto castFunction = ::gandiva::TreeExprBuilder::MakeFunction(castFunctionName,
 																 {castToDecimalFunction},
-																 type_);
+                                 dataType_);
 
 	return castFunction;
-  } else if (fromArrowType->id() == arrow::utf8()->id() && type_->id() == arrow::int64()->id()) {
+  } else if (fromArrowType->id() == arrow::utf8()->id() && dataType_->id() == arrow::int64()->id()) {
 	// Not supported directly by Gandiva, need to cast string to decimal and then that to int64
 
 	auto castDecimalFunctionName = "castDECIMAL";
@@ -51,11 +51,11 @@ Cast::Cast(std::shared_ptr<Expression> expr, std::shared_ptr<arrow::DataType> ty
 
 	auto castFunction = ::gandiva::TreeExprBuilder::MakeFunction(castFunctionName,
 																 {castToDecimalFunction},
-																 type_);
+                                 dataType_);
 
 	return castFunction;
   }
-  else if (fromArrowType->id() == arrow::utf8()->id() && type_->id() == arrow::int32()->id()) {
+  else if (fromArrowType->id() == arrow::utf8()->id() && dataType_->id() == arrow::int32()->id()) {
 	// Not supported directly by Gandiva, need to cast string to decimal to int64 and then that to int32
 
 	auto castDecimalFunctionName = "castDECIMAL";
@@ -72,7 +72,7 @@ Cast::Cast(std::shared_ptr<Expression> expr, std::shared_ptr<arrow::DataType> ty
 
 	auto castFunction = ::gandiva::TreeExprBuilder::MakeFunction(castFunctionName,
 																 {castToInt64Function},
-																 type_);
+                                 dataType_);
 
 	return castFunction;
   } else {
@@ -81,7 +81,7 @@ Cast::Cast(std::shared_ptr<Expression> expr, std::shared_ptr<arrow::DataType> ty
 
 	auto expressionNode = ::gandiva::TreeExprBuilder::MakeFunction(function,
                                                                  {paramGandivaExpression},
-                                                                 type_);
+                                                                 dataType_);
 
 	return expressionNode;
   }
@@ -91,7 +91,7 @@ void Cast::compile(const std::shared_ptr<arrow::Schema> &schema) {
   expr_->compile(schema);
 
   gandivaExpression_ = buildGandivaExpression();
-  returnType_ = type_;
+  returnType_ = dataType_;
 }
 
 std::string Cast::alias() {

@@ -28,6 +28,13 @@ public:
 private:
   shared_ptr<Expression> expr_;
 
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, IsNull& expr) {
+    return f.object(expr).fields(f.field("type", expr.type_),
+                                 f.field("expr", expr.expr_));
+  }
 };
 
 shared_ptr<Expression> isNull(const shared_ptr<Expression> &expr);

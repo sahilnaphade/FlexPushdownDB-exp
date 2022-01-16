@@ -32,6 +32,15 @@ private:
   shared_ptr<Expression> fromLit_;
   shared_ptr<Expression> forLit_;
 
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, Substr& expr) {
+    return f.object(expr).fields(f.field("type", expr.type_),
+                                 f.field("expr", expr.expr_),
+                                 f.field("fromLit", expr.fromLit_),
+                                 f.field("forLit", expr.forLit_));
+  }
 };
 
 shared_ptr<Expression> substr(const shared_ptr<Expression> &expr,

@@ -31,6 +31,15 @@ private:
   shared_ptr<Expression> thenExpr_;
   shared_ptr<Expression> elseExpr_;
 
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, If& expr) {
+    return f.object(expr).fields(f.field("type", expr.type_),
+                                 f.field("ifExpr", expr.ifExpr_),
+                                 f.field("thenExpr", expr.thenExpr_),
+                                 f.field("elseExpr", expr.elseExpr_));
+  }
 };
 
 shared_ptr<Expression> if_(const shared_ptr<Expression> &ifExpr,

@@ -33,6 +33,14 @@ public:
 
 private:
   std::optional<std::string> value_;
+
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, StringLiteral& expr) {
+    return f.object(expr).fields(f.field("type", expr.type_),
+                                 f.field("value", expr.value_));
+  }
 };
 
 std::shared_ptr<Expression> str_lit(const std::optional<std::string> &value);

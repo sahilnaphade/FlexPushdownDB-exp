@@ -11,6 +11,7 @@ add_library(normal-tuple STATIC
         src/Scalar.cpp include/normal/tuple/Scalar.h
         src/Column.cpp include/normal/tuple/Column.h
         src/Schema.cpp include/normal/tuple/Schema.h
+        src/DataType.cpp include/normal/tuple/DataType.h
         src/ColumnIterator.cpp include/normal/tuple/ColumnIterator.h
         src/ColumnIndex.cpp include/normal/tuple/ColumnIndex.h
         src/TupleSetShowOptions.cpp include/normal/tuple/TupleSetShowOptions.h

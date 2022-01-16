@@ -28,6 +28,14 @@ public:
   std::string alias() override;
   std::string getTypeString() override;
 
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, Subtract& expr) {
+    return f.object(expr).fields(f.field("type", expr.type_),
+                                 f.field("left", expr.left_),
+                                 f.field("right", expr.right_));
+  }
 };
 
 std::shared_ptr<Expression> minus(const std::shared_ptr<Expression>& left, const std::shared_ptr<Expression>& right);

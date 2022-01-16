@@ -208,4 +208,28 @@ std::vector<std::uint8_t> ArrowSerializer::scalar_to_bytes(const std::shared_ptr
   return recordBatch_to_bytes(recordBatch);
 }
 
+std::shared_ptr<arrow::DataType> ArrowSerializer::bytes_to_dataType(const std::vector<std::uint8_t>& bytes_vec) {
+  std::string typeName(bytes_vec.begin(), bytes_vec.end());
+  if (typeName == "int32") {
+    return arrow::int32();
+  } else if (typeName == "int64") {
+    return arrow::int64();
+  } else if (typeName == "double") {
+    return arrow::float64();
+  } else if (typeName == "bool") {
+    return arrow::boolean();
+  } else if (typeName == "date64") {
+    return arrow::date64();
+  } else if (typeName == "utf8") {
+    return arrow::utf8();
+  } else {
+    throw std::runtime_error(fmt::format("Error converting Arrow dataType to bytes  |  error: unsupported dataType, {}", typeName));
+  }
+}
+
+std::vector<std::uint8_t> ArrowSerializer::dataType_to_bytes(const std::shared_ptr<arrow::DataType>& dataType) {
+  auto typeName = dataType->name();
+  return {typeName.begin(), typeName.end()};
+}
+
 }

@@ -35,6 +35,13 @@ public:
 private:
   vector<shared_ptr<Expression>> exprs_;
 
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, Or& expr) {
+    return f.object(expr).fields(f.field("type", expr.type_),
+                                 f.field("exprs", expr.exprs_));
+  }
 };
 
 shared_ptr<Expression> or_(const shared_ptr<Expression>& left, const shared_ptr<Expression>& right);

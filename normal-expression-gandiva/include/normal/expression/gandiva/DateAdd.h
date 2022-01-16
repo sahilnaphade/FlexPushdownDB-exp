@@ -33,6 +33,15 @@ public:
 private:
   DateIntervalType intervalType_;
 
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, DateAdd& expr) {
+    return f.object(expr).fields(f.field("type", expr.type_),
+                                 f.field("left", expr.left_),
+                                 f.field("right", expr.right_),
+                                 f.field("intervalType", expr.intervalType_));
+  }
 };
 
 shared_ptr<Expression> datePlus(const shared_ptr<Expression>& left,

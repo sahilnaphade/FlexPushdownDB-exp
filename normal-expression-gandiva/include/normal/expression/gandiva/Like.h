@@ -22,6 +22,15 @@ public:
   void compile(const std::shared_ptr<arrow::Schema> &schema) override;
   std::string alias() override;
   std::string getTypeString() override;
+
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, Like& expr) {
+    return f.object(expr).fields(f.field("type", expr.type_),
+                                 f.field("left", expr.left_),
+                                 f.field("right", expr.right_));
+  }
 };
 
 shared_ptr<Expression> like(const shared_ptr<Expression>& left, const shared_ptr<Expression>& right);

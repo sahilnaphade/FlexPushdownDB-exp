@@ -44,6 +44,15 @@ public:
 private:
   shared_ptr<Expression> left_;
   unordered_set<C_TYPE> values_;
+
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, In& expr) {
+    return f.object(expr).fields(f.field("type", expr.type_),
+                                 f.field("left", expr.left_),
+                                 f.field("values", expr.values_));
+  }
 };
 
 template<typename ARROW_TYPE, typename C_TYPE>
