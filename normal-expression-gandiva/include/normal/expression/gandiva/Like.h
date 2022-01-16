@@ -15,6 +15,9 @@ class Like : public BinaryExpression {
 
 public:
   Like(const shared_ptr<Expression>& left, const shared_ptr<Expression>& right);
+  Like() = default;
+  Like(const Like&) = default;
+  Like& operator=(const Like&) = default;
 
   void compile(const std::shared_ptr<arrow::Schema> &schema) override;
   std::string alias() override;

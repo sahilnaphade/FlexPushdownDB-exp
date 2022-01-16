@@ -18,6 +18,9 @@ class EqualTo : public BinaryExpression {
 
 public:
   EqualTo(std::shared_ptr<Expression> Left, std::shared_ptr<Expression> Right);
+  EqualTo() = default;
+  EqualTo(const EqualTo&) = default;
+  EqualTo& operator=(const EqualTo&) = default;
 
   void compile(const std::shared_ptr<arrow::Schema> &schema) override;
   std::string alias() override;

@@ -10,12 +10,16 @@ using namespace normal::tuple;
 
 Scalar::Scalar(std::shared_ptr<::arrow::Scalar> scalar) : scalar_(std::move(scalar)) {}
 
+std::shared_ptr<Scalar> Scalar::make(const std::shared_ptr<::arrow::Scalar> &scalar) {
+  return std::make_shared<Scalar>(scalar);
+}
+
 std::shared_ptr<::arrow::DataType> Scalar::type() {
   return scalar_->type;
 }
 
-std::shared_ptr<Scalar> Scalar::make(const std::shared_ptr<::arrow::Scalar> &scalar) {
-  return std::make_shared<Scalar>(scalar);
+const std::shared_ptr<::arrow::Scalar> Scalar::getArrowScalar() const {
+  return scalar_;
 }
 
 size_t Scalar::hash() {

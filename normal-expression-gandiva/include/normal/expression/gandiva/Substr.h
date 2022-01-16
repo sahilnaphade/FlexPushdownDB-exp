@@ -18,6 +18,9 @@ public:
   Substr(const shared_ptr<Expression> &expr,
          const shared_ptr<Expression> &fromLit,
          const shared_ptr<Expression> &forLit);
+  Substr() = default;
+  Substr(const Substr&) = default;
+  Substr& operator=(const Substr&) = default;
 
   void compile(const shared_ptr<arrow::Schema> &schema) override;
   string alias() override;

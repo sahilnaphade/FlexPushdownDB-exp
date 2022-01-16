@@ -112,27 +112,27 @@ string In<arrow::Date64Type, int64_t>::alias() {
 // getTypeString()
 template<>
 string In<arrow::Int32Type, int32_t>::getTypeString() {
-  return "InInt32";
+  return "In<Int32>";
 }
 
 template<>
 string In<arrow::Int64Type, int64_t>::getTypeString() {
-  return "InInt64";
+  return "In<Int64>";
 }
 
 template<>
 string In<arrow::DoubleType, double>::getTypeString() {
-  return "InDouble";
+  return "In<Double>";
 }
 
 template<>
 string In<arrow::StringType, string>::getTypeString() {
-  return "InString";
+  return "In<String>";
 }
 
 template<>
 string In<arrow::Date64Type, int64_t>::getTypeString() {
-  return "InDate64";
+  return "In<Date64>";
 }
 
 }

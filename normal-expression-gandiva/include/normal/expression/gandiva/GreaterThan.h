@@ -17,6 +17,9 @@ class GreaterThan : public BinaryExpression {
 
 public:
   GreaterThan(std::shared_ptr<Expression> Left, std::shared_ptr<Expression> Right);
+  GreaterThan() = default;
+  GreaterThan(const GreaterThan&) = default;
+  GreaterThan& operator=(const GreaterThan&) = default;
 
   void compile(const std::shared_ptr<arrow::Schema> &schema) override;
   std::string alias() override;

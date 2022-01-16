@@ -18,6 +18,9 @@ class GreaterThanOrEqualTo : public BinaryExpression {
 
 public:
   GreaterThanOrEqualTo(std::shared_ptr<Expression> Left, std::shared_ptr<Expression> Right);
+  GreaterThanOrEqualTo() = default;
+  GreaterThanOrEqualTo(const GreaterThanOrEqualTo&) = default;
+  GreaterThanOrEqualTo& operator=(const GreaterThanOrEqualTo&) = default;
 
   void compile(const std::shared_ptr<arrow::Schema> &schema) override;
   std::string alias() override;

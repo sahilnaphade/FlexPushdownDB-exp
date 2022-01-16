@@ -18,6 +18,9 @@ class Expression : public normal::expression::Expression {
 
 public:
   Expression(ExpressionType type);
+  Expression() = default;
+  Expression(const Expression&) = default;
+  Expression& operator=(const Expression&) = default;
 
   virtual ~Expression() = default;
 

@@ -16,18 +16,14 @@ namespace normal::executor::physical {
  */
 class LocalPOpDirectoryEntry {
 
-private:
-  std::string name_;
-  ::caf::actor actor_;
-  POpRelationshipType relationshipType_;
-  bool complete_;
-
 public:
   LocalPOpDirectoryEntry(std::string name,
                          ::caf::actor actor,
                          POpRelationshipType relationshipType,
                          bool complete);
-
+  LocalPOpDirectoryEntry() = default;
+  LocalPOpDirectoryEntry(const LocalPOpDirectoryEntry&) = default;
+  LocalPOpDirectoryEntry& operator=(const LocalPOpDirectoryEntry&) = default;
 
   bool complete() const;
   void complete(bool complete);
@@ -39,6 +35,21 @@ public:
   POpRelationshipType relationshipType() const;
   void relationshipType(POpRelationshipType relationshipType);
 
+private:
+  std::string name_;
+  ::caf::actor actor_;
+  POpRelationshipType relationshipType_;
+  bool complete_;
+
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, LocalPOpDirectoryEntry& entry) {
+    return f.object(entry).fields(f.field("name", entry.name_),
+                                  f.field("actor", entry.actor_),
+                                  f.field("relationshipType", entry.relationshipType_),
+                                  f.field("complete", entry.complete_));
+  }
 };
 
 }

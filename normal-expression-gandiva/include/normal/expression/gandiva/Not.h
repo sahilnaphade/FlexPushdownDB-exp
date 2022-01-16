@@ -16,6 +16,9 @@ class Not : public Expression {
 
 public:
   Not(const shared_ptr<Expression> &expr);
+  Not() = default;
+  Not(const Not&) = default;
+  Not& operator=(const Not&) = default;
 
   void compile(const std::shared_ptr<arrow::Schema> &schema) override;
   std::string alias() override;

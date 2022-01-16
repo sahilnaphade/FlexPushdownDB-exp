@@ -17,6 +17,9 @@ public:
   If(const shared_ptr<Expression> &ifExpr,
      const shared_ptr<Expression> &thenExpr,
      const shared_ptr<Expression> &elseExpr);
+  If() = default;
+  If(const If&) = default;
+  If& operator=(const If&) = default;
 
   void compile(const shared_ptr<arrow::Schema> &schema) override;
   string alias() override;

@@ -20,6 +20,9 @@ class Divide : public BinaryExpression {
 
 public:
   Divide(std::shared_ptr<Expression> left, std::shared_ptr<Expression> right);
+  Divide() = default;
+  Divide(const Divide&) = default;
+  Divide& operator=(const Divide&) = default;
 
   void compile(const std::shared_ptr<arrow::Schema> &schema) override;
   std::string alias() override;

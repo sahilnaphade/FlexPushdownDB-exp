@@ -3,13 +3,14 @@
 //
 
 #include <normal/executor/physical/aggregate/function/Sum.h>
+#include <normal/executor/physical/aggregate/function/AggregateFunctionType.h>
 #include <arrow/compute/api_aggregate.h>
 
 namespace normal::executor::physical::aggregate {
 
 Sum::Sum(const string &outputColumnName,
          const shared_ptr<normal::expression::gandiva::Expression> &expression)
-  : AggregateFunction(outputColumnName, expression) {}
+  : AggregateFunction(SUM, outputColumnName, expression) {}
 
 shared_ptr<arrow::DataType> Sum::returnType() {
   return returnType_;

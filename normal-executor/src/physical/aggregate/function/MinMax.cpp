@@ -3,6 +3,7 @@
 //
 
 #include <normal/executor/physical/aggregate/function/MinMax.h>
+#include <normal/executor/physical/aggregate/function/AggregateFunctionType.h>
 #include <arrow/compute/api_aggregate.h>
 
 namespace normal::executor::physical::aggregate {
@@ -10,7 +11,7 @@ namespace normal::executor::physical::aggregate {
 MinMax::MinMax(bool isMin,
                const string &outputColumnName,
                const shared_ptr<normal::expression::gandiva::Expression> &expression):
-  AggregateFunction(outputColumnName, expression),
+  AggregateFunction(MIN_MAX, outputColumnName, expression),
   isMin_(isMin) {}
 
 

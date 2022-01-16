@@ -21,6 +21,9 @@ class And : public Expression {
 
 public:
   And(const vector<shared_ptr<Expression>>& exprs);
+  And() = default;
+  And(const And&) = default;
+  And& operator=(const And&) = default;
 
   void compile(const shared_ptr<arrow::Schema> &schema) override;
   string alias() override;

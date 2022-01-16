@@ -17,6 +17,9 @@ class LessThan : public BinaryExpression {
 
 public:
   LessThan(std::shared_ptr<Expression> Left, std::shared_ptr<Expression> Right);
+  LessThan() = default;
+  LessThan(const LessThan&) = default;
+  LessThan& operator=(const LessThan&) = default;
 
   void compile(const std::shared_ptr<arrow::Schema> &schema) override;
   std::string alias() override;

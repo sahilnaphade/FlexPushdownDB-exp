@@ -18,6 +18,9 @@ class LessThanOrEqualTo : public BinaryExpression {
 
 public:
   LessThanOrEqualTo(std::shared_ptr<Expression> Left, std::shared_ptr<Expression> Right);
+  LessThanOrEqualTo() = default;
+  LessThanOrEqualTo(const LessThanOrEqualTo&) = default;
+  LessThanOrEqualTo& operator=(const LessThanOrEqualTo&) = default;
 
   void compile(const std::shared_ptr<arrow::Schema> &schema) override;
   std::string alias() override;

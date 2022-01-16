@@ -25,6 +25,9 @@ public:
     Expression(NUMERIC_LITERAL),
     value_(value),
     intervalType_(intervalType) {}
+  NumericLiteral() = default;
+  NumericLiteral(const NumericLiteral&) = default;
+  NumericLiteral& operator=(const NumericLiteral&) = default;
 
   void compile(const std::shared_ptr<arrow::Schema> &) override {
     returnType_ = ::arrow::TypeTraits<ARROW_TYPE>::type_singleton();
@@ -66,23 +69,7 @@ public:
     }
   }
 
-  std::string getTypeString() override {
-    std::stringstream ss;
-    ss << "NumericLiteral";
-    const shared_ptr<arrow::DataType> &arrowType = ::arrow::TypeTraits<ARROW_TYPE>::type_singleton();
-    if (arrowType->id() == arrow::Type::INT32) {
-      ss << "<Int32>";
-    } else if (arrowType->id() == arrow::Type::INT64) {
-      ss << "<Int64>";
-    } else if (arrowType->id() == arrow::Type::DOUBLE) {
-      ss << "<Double>";
-    } else if (arrowType->id() == arrow::Type::DATE64) {
-      ss << "<Date64>";
-    } else {
-      throw std::runtime_error(fmt::format("Unsupported numeric literal type: {}", arrowType->name()));
-    }
-    return ss.str();
-  }
+  std::string getTypeString() override;
 
   std::set<std::string> involvedColumnNames() override{
     return {};

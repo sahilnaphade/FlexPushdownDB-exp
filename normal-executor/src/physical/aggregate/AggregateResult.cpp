@@ -5,11 +5,10 @@
 #include <normal/executor/physical/aggregate/AggregateResult.h>
 
 using namespace normal::executor::physical::aggregate;
-
-AggregateResult::AggregateResult() = default;
+using namespace normal::tuple;
 
 void AggregateResult::put(const string &key, const shared_ptr<arrow::Scalar> &value) {
-  this->resultMap_.insert_or_assign(key, value);
+  this->resultMap_.insert_or_assign(key, Scalar::make(value));
 }
 
 optional<shared_ptr<arrow::Scalar>> AggregateResult::get(const string &key) {
@@ -17,6 +16,6 @@ optional<shared_ptr<arrow::Scalar>> AggregateResult::get(const string &key) {
   if (resIt == this->resultMap_.end()) {
     return nullopt;
   } else {
-    return resIt->second;
+    return resIt->second->getArrowScalar();
   }
 }

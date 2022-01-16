@@ -17,6 +17,9 @@ class NotEqualTo : public BinaryExpression {
 
 public:
   NotEqualTo(shared_ptr<Expression> Left, shared_ptr<Expression> Right);
+  NotEqualTo() = default;
+  NotEqualTo(const NotEqualTo&) = default;
+  NotEqualTo& operator=(const NotEqualTo&) = default;
 
   void compile(const shared_ptr<arrow::Schema> &schema) override;
   string alias() override;

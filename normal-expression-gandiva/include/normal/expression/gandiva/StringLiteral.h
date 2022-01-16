@@ -20,6 +20,9 @@ class StringLiteral : public Expression {
 
 public:
   explicit StringLiteral(std::optional<std::string> value);
+  StringLiteral() = default;
+  StringLiteral(const StringLiteral&) = default;
+  StringLiteral& operator=(const StringLiteral&) = default;
 
   void compile(const std::shared_ptr<arrow::Schema> &schema) override;
   std::string alias() override;

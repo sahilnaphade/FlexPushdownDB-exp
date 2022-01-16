@@ -21,6 +21,9 @@ public:
     Expression(IN),
     left_(left),
     values_(values) {}
+  In() = default;
+  In(const In&) = default;
+  In& operator=(const In&) = default;
 
   void compile(const shared_ptr<arrow::Schema> &schema) override {
     left_->compile(schema);

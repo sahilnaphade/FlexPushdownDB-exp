@@ -39,6 +39,7 @@ add_library(normal-executor STATIC
         src/physical/limitsort/LimitSortPOp.cpp include/normal/executor/physical/limitsort/LimitSortPOp.h
         src/physical/aggregate/AggregatePOp.cpp include/normal/executor/physical/aggregate/AggregatePOp.h
         src/physical/aggregate/AggregateResult.cpp include/normal/executor/physical/aggregate/AggregateResult.h
+        include/normal/executor/physical/aggregate/function/AggregateFunctionType.h
         src/physical/aggregate/function/AggregateFunction.cpp include/normal/executor/physical/aggregate/function/AggregateFunction.h
         src/physical/aggregate/function/Sum.cpp include/normal/executor/physical/aggregate/function/Sum.h
         src/physical/aggregate/function/Count.cpp include/normal/executor/physical/aggregate/function/Count.h
@@ -87,6 +88,7 @@ add_library(normal-executor STATIC
 #        CAF serializer
         include/normal/executor/serialization/MessageSerializer.h
         include/normal/executor/serialization/POpSerializer.h
+        include/normal/executor/serialization/AggregateFunctionSerializer.h
 #        executor
         src/Executor.cpp include/normal/executor/Executor.h
         src/Execution.cpp include/normal/executor/Execution.h)

@@ -20,6 +20,9 @@ class Multiply : public BinaryExpression {
 
 public:
   Multiply(std::shared_ptr<Expression> left, std::shared_ptr<Expression> right);
+  Multiply() = default;
+  Multiply(const Multiply&) = default;
+  Multiply& operator=(const Multiply&) = default;
 
   void compile(const std::shared_ptr<arrow::Schema> &schema) override;
   std::string alias() override;

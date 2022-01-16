@@ -18,6 +18,9 @@ class DateExtract : public Expression {
 
 public:
   DateExtract(const shared_ptr<Expression> &dateExpr, DateIntervalType intervalType);
+  DateExtract() = default;
+  DateExtract(const DateExtract&) = default;
+  DateExtract& operator=(const DateExtract&) = default;
 
   void compile(const shared_ptr<arrow::Schema> &schema) override;
   string alias() override;

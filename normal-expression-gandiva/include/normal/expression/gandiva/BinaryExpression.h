@@ -20,6 +20,9 @@ public:
   BinaryExpression(shared_ptr<Expression> left,
                    shared_ptr<Expression> right,
                    ExpressionType type);
+  BinaryExpression() = default;
+  BinaryExpression(const BinaryExpression&) = default;
+  BinaryExpression& operator=(const BinaryExpression&) = default;
 
   /**
    * Deal with int32 vs int64, int64 vs double, int32 vs double

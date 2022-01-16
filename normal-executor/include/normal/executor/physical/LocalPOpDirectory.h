@@ -18,6 +18,10 @@ namespace normal::executor::physical {
 class LocalPOpDirectory {
 
 public:
+  LocalPOpDirectory() = default;
+  LocalPOpDirectory(const LocalPOpDirectory&) = default;
+  LocalPOpDirectory& operator=(const LocalPOpDirectory&) = default;
+  
   void insert(const LocalPOpDirectoryEntry &entry);
 
   void setComplete(const std::string &name);
@@ -38,6 +42,16 @@ private:
   int numProducersComplete = 0;
   int numConsumersComplete = 0;
 
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, LocalPOpDirectory& directory) {
+    return f.object(directory).fields(f.field("entries", directory.entries_),
+                                      f.field("numProducers", directory.numProducers),
+                                      f.field("numConsumers", directory.numConsumers),
+                                      f.field("numProducersComplete", directory.numProducersComplete),
+                                      f.field("numConsumersComplete", directory.numConsumersComplete));
+  }
 };
 
 }

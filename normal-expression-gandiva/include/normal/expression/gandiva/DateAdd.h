@@ -19,9 +19,12 @@ namespace normal::expression::gandiva {
 class DateAdd : public BinaryExpression {
 
 public:
-  DateAdd(const shared_ptr<Expression>& left, 
+  DateAdd(const shared_ptr<Expression>& left,
           const shared_ptr<Expression>& right,
           DateIntervalType intervalType);
+  DateAdd() = default;
+  DateAdd(const DateAdd&) = default;
+  DateAdd& operator=(const DateAdd&) = default;
 
   void compile(const shared_ptr<arrow::Schema> &schema) override;
   string alias() override;
@@ -29,7 +32,7 @@ public:
 
 private:
   DateIntervalType intervalType_;
-  
+
 };
 
 shared_ptr<Expression> datePlus(const shared_ptr<Expression>& left,

@@ -19,6 +19,9 @@ class Column : public Expression {
 
 public:
   explicit Column(std::string columnName);
+  Column() = default;
+  Column(const Column&) = default;
+  Column& operator=(const Column&) = default;
 
   void compile(const std::shared_ptr<arrow::Schema> &schema) override;
   std::string alias() override;

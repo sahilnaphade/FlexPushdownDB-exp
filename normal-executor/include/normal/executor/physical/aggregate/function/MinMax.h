@@ -18,6 +18,9 @@ public:
   MinMax(bool isMin,
          const string &outputColumnName,
          const shared_ptr<normal::expression::gandiva::Expression> &expression);
+  MinMax() = default;
+  MinMax(const MinMax&) = default;
+  MinMax& operator=(const MinMax&) = default;
 
   shared_ptr<arrow::DataType> returnType() override;
 
@@ -34,6 +37,15 @@ private:
 
   bool isMin_;
 
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, MinMax& func) {
+    return f.object(func).fields(f.field("type", func.type_),
+                                 f.field("outputColumnName", func.outputColumnName_),
+                                 f.field("expression", func.expression_),
+                                 f.field("isMin", func.isMin_));
+  }
 };
 
 }

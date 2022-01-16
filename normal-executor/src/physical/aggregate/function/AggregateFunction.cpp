@@ -9,10 +9,16 @@
 
 namespace normal::executor::physical::aggregate {
 
-AggregateFunction::AggregateFunction(string outputColumnName,
+AggregateFunction::AggregateFunction(AggregateFunctionType type,
+                                     string outputColumnName,
                                      shared_ptr<normal::expression::gandiva::Expression> expression) :
+  type_(type),
   outputColumnName_(move(outputColumnName)),
   expression_(move(expression)) {}
+
+AggregateFunctionType AggregateFunction::getType() const {
+  return type_;
+}
 
 const string &AggregateFunction::getOutputColumnName() const {
   return outputColumnName_;

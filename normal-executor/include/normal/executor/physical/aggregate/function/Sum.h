@@ -14,6 +14,9 @@ class Sum : public AggregateFunction {
 public:
   Sum(const string &outputColumnName,
       const shared_ptr<normal::expression::gandiva::Expression> &expression);
+  Sum() = default;
+  Sum(const Sum&) = default;
+  Sum& operator=(const Sum&) = default;
 
   shared_ptr<arrow::DataType> returnType() override;
 
@@ -27,6 +30,14 @@ public:
 private:
   constexpr static const char *const SUM_RESULT_KEY = "SUM";
 
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, Sum& func) {
+    return f.object(func).fields(f.field("type", func.type_),
+                                 f.field("outputColumnName", func.outputColumnName_),
+                                 f.field("expression", func.expression_));
+  }
 };
 
 }

@@ -19,6 +19,9 @@ class Cast : public Expression {
 
 public:
   Cast(std::shared_ptr<Expression> expr, std::shared_ptr<arrow::DataType> type);
+  Cast() = default;
+  Cast(const Cast&) = default;
+  Cast& operator=(const Cast&) = default;
 
   void compile(const std::shared_ptr<arrow::Schema> &schema) override;
   std::string alias() override;

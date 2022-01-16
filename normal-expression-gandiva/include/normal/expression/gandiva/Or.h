@@ -21,6 +21,9 @@ class Or : public Expression {
 
 public:
   Or(const vector<shared_ptr<Expression>>& exprs);
+  Or() = default;
+  Or(const Or&) = default;
+  Or& operator=(const Or&) = default;
 
   void compile(const shared_ptr<arrow::Schema> &schema) override;
   string alias() override;

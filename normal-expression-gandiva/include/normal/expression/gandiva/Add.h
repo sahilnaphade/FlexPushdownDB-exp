@@ -20,6 +20,9 @@ class Add : public BinaryExpression {
 
 public:
   Add(const std::shared_ptr<Expression>& left, const std::shared_ptr<Expression>& right);
+  Add() = default;
+  Add(const Add&) = default;
+  Add& operator=(const Add&) = default;
 
   void compile(const std::shared_ptr<arrow::Schema> &schema) override;
   std::string alias() override;

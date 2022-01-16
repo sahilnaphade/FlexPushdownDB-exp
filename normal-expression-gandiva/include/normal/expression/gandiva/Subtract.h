@@ -20,6 +20,9 @@ class Subtract : public BinaryExpression {
 
 public:
   Subtract(std::shared_ptr<Expression> left, std::shared_ptr<Expression> right);
+  Subtract() = default;
+  Subtract(const Subtract&) = default;
+  Subtract& operator=(const Subtract&) = default;
 
   void compile(const std::shared_ptr<arrow::Schema> &schema) override;
   std::string alias() override;

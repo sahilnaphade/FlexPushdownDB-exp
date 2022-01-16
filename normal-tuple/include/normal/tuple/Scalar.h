@@ -23,6 +23,8 @@ public:
 
   static std::shared_ptr<Scalar> make(const std::shared_ptr<::arrow::Scalar> &scalar);
 
+  const std::shared_ptr<::arrow::Scalar> getArrowScalar() const;
+
   std::shared_ptr<::arrow::DataType> type();
 
   size_t hash();

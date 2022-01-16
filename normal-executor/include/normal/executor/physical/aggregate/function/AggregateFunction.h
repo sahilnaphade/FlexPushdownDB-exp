@@ -6,6 +6,7 @@
 #define NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_AGGREGATE_AGGREGATEFUNCTION_H
 
 #include <normal/executor/physical/aggregate/AggregateResult.h>
+#include <normal/executor/physical/aggregate/function/AggregateFunctionType.h>
 #include <normal/expression/Projector.h>
 #include <normal/expression/gandiva/Expression.h>
 #include <normal/tuple/TupleSet.h>
@@ -22,10 +23,15 @@ namespace normal::executor::physical::aggregate {
 class AggregateFunction {
 
 public:
-  explicit AggregateFunction(string outputColumnName,
+  explicit AggregateFunction(AggregateFunctionType type,
+                             string outputColumnName,
                              shared_ptr<normal::expression::gandiva::Expression> expression);
+  AggregateFunction() = default;
+  AggregateFunction(const AggregateFunction&) = default;
+  AggregateFunction& operator=(const AggregateFunction&) = default;
   virtual ~AggregateFunction() = default;
-  
+
+  AggregateFunctionType getType() const;
   const string &getOutputColumnName() const;
   const shared_ptr<normal::expression::gandiva::Expression> &getExpression() const;
   virtual shared_ptr<arrow::DataType> returnType() = 0;
@@ -60,6 +66,11 @@ protected:
    */
   tl::expected<shared_ptr<arrow::Array>, string>
   buildFinalizeInputArray(const vector<shared_ptr<AggregateResult>> &aggregateResults, const string &key);
+
+  /*
+   * Aggregate function type
+   */
+  AggregateFunctionType type_;
 
   /**
    * Field name of aggregate result

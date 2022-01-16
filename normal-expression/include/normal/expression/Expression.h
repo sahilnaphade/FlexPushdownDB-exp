@@ -14,6 +14,9 @@ namespace normal::expression {
 class Expression {
 
 public:
+  Expression() = default;
+  Expression(const Expression&) = default;
+  Expression& operator=(const Expression&) = default;
   virtual ~Expression() = default;
 
   [[nodiscard]] const std::shared_ptr<arrow::DataType> &getReturnType() const;

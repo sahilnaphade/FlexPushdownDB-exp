@@ -16,6 +16,9 @@ class IsNull : public Expression {
 
 public:
   IsNull(const shared_ptr<Expression> &expr);
+  IsNull() = default;
+  IsNull(const IsNull&) = default;
+  IsNull& operator=(const IsNull&) = default;
 
   void compile(const std::shared_ptr<arrow::Schema> &schema) override;
   std::string alias() override;
