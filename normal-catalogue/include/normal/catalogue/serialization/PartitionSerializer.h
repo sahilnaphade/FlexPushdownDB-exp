@@ -16,6 +16,8 @@ CAF_BEGIN_TYPE_ID_BLOCK(Partition, normal::caf::CAFUtil::Partition_first_custom_
 CAF_ADD_TYPE_ID(Partition, (PartitionPtr))
 CAF_ADD_TYPE_ID(Partition, (normal::catalogue::s3::S3Partition))
 CAF_ADD_TYPE_ID(Partition, (normal::catalogue::local_fs::LocalFSPartition))
+CAF_ADD_TYPE_ID(Partition, (std::shared_ptr<normal::catalogue::s3::S3Partition>))
+CAF_ADD_TYPE_ID(Partition, (std::shared_ptr<normal::catalogue::local_fs::LocalFSPartition>))
 CAF_END_TYPE_ID_BLOCK(Partition)
 
 namespace caf {

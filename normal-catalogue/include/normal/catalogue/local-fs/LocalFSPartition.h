@@ -46,10 +46,6 @@ public:
 
 using LocalFSPartitionPtr = std::shared_ptr<normal::catalogue::local_fs::LocalFSPartition>;
 
-CAF_BEGIN_TYPE_ID_BLOCK(LocalFSPartition, normal::caf::CAFUtil::LocalFSPartition_first_custom_type_id)
-CAF_ADD_TYPE_ID(LocalFSPartition, (normal::catalogue::local_fs::LocalFSPartition))
-CAF_END_TYPE_ID_BLOCK(LocalFSPartition)
-
 namespace caf {
 template <>
 struct inspector_access<LocalFSPartitionPtr> : variant_inspector_access<LocalFSPartitionPtr> {

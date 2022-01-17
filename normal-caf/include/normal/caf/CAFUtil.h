@@ -32,14 +32,11 @@ public:
   inline static constexpr ::caf::type_id_t Scalar_first_custom_type_id = ::caf::first_custom_type_id + 1700;
   inline static constexpr ::caf::type_id_t AggregateFunction_first_custom_type_id = ::caf::first_custom_type_id + 1800;
   inline static constexpr ::caf::type_id_t Expression_first_custom_type_id = ::caf::first_custom_type_id + 1900;
-  inline static constexpr ::caf::type_id_t DataType_first_custom_type_id = ::caf::first_custom_type_id + 2000;
-  inline static constexpr ::caf::type_id_t POpContext_first_custom_type_id = ::caf::first_custom_type_id + 2100;
-  inline static constexpr ::caf::type_id_t FileReader_first_custom_type_id = ::caf::first_custom_type_id + 2200;
-  inline static constexpr ::caf::type_id_t Table_first_custom_type_id = ::caf::first_custom_type_id + 2300;
-  inline static constexpr ::caf::type_id_t Format_first_custom_type_id = ::caf::first_custom_type_id + 2400;
-  inline static constexpr ::caf::type_id_t S3Partition_first_custom_type_id = ::caf::first_custom_type_id + 2500;
-  inline static constexpr ::caf::type_id_t LocalFSPartition_first_custom_type_id = ::caf::first_custom_type_id + 2600;
-  inline static constexpr ::caf::type_id_t HashJoinProbeAbstractKernel_first_custom_type_id = ::caf::first_custom_type_id + 2700;
+  inline static constexpr ::caf::type_id_t POpContext_first_custom_type_id = ::caf::first_custom_type_id + 2000;
+  inline static constexpr ::caf::type_id_t FileReader_first_custom_type_id = ::caf::first_custom_type_id + 2100;
+  inline static constexpr ::caf::type_id_t Table_first_custom_type_id = ::caf::first_custom_type_id + 2200;
+  inline static constexpr ::caf::type_id_t Format_first_custom_type_id = ::caf::first_custom_type_id + 2300;
+  inline static constexpr ::caf::type_id_t HashJoinProbeAbstractKernel_first_custom_type_id = ::caf::first_custom_type_id + 2400;
 
 };
 
