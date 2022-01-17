@@ -8,8 +8,6 @@
 #include <normal/plan/prephysical/PrePhysicalOp.h>
 #include <normal/expression/gandiva/Expression.h>
 
-using namespace normal::expression::gandiva;
-
 namespace normal::plan::prephysical {
 
 class ProjectPrePOp: public PrePhysicalOp {
@@ -17,7 +15,7 @@ public:
   constexpr static const char *const DUMMY_COLUMN_PREFIX = "dummy";
 
   ProjectPrePOp(uint id,
-                const vector<shared_ptr<Expression>> &exprs,
+                const vector<shared_ptr<normal::expression::gandiva::Expression>> &exprs,
                 const vector<std::string> &exprNames,
                 const vector<pair<string, string>> &projectColumnNamePairs);
 
@@ -25,14 +23,14 @@ public:
 
   set<string> getUsedColumnNames() override;
 
-  const vector<shared_ptr<Expression>> &getExprs() const;
+  const vector<shared_ptr<normal::expression::gandiva::Expression>> &getExprs() const;
   const vector<std::string> &getExprNames() const;
   const vector<pair<string, string>> &getProjectColumnNamePairs() const;
 
   void updateProjectColumnNamePairs(const set<string> &projectColumnNames);
 
 private:
-  vector<shared_ptr<Expression>> exprs_;
+  vector<shared_ptr<normal::expression::gandiva::Expression>> exprs_;
   vector<string> exprNames_;
   vector<pair<string, string>> projectColumnNamePairs_;
 };

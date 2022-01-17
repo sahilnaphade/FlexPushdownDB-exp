@@ -91,12 +91,12 @@ vector<shared_ptr<PrePhysicalOp>> CalcitePlanJsonDeserializer::deserializeProduc
   return producers;
 }
 
-shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeInputRef(const json &jObj) {
+shared_ptr<normal::expression::gandiva::Expression> CalcitePlanJsonDeserializer::deserializeInputRef(const json &jObj) {
   const auto &columnName = ColumnName::canonicalize(jObj["inputRef"].get<string>());
-  return col(columnName);
+  return normal::expression::gandiva::col(columnName);
 }
 
-shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeLiteral(const json &jObj) {
+shared_ptr<normal::expression::gandiva::Expression> CalcitePlanJsonDeserializer::deserializeLiteral(const json &jObj) {
   const auto &literalJObj = jObj["literal"];
   const auto &type = literalJObj["type"].get<string>();
   const auto &valueJObj = literalJObj["value"];
@@ -106,40 +106,42 @@ shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeLiteral(const jso
 
   if (type == "CHAR" || type == "VARCHAR") {
     optional<string> value = isNull ? nullopt : optional<string>(valueJObj.get<string>());
-    return str_lit(value);
+    return normal::expression::gandiva::str_lit(value);
   } else if (type == "INTEGER") {
     optional<int> value = isNull ? nullopt : optional<int>(valueJObj.get<int>());
     // gandiva only supports binary expressions with same left, right and return type,
     // so to avoid casting we make all integer fields as int64, as well as scalars.
-    return num_lit<arrow::Int64Type>(value);
+    return normal::expression::gandiva::num_lit<arrow::Int64Type>(value);
   } else if (type == "BIGINT") {
     optional<long> value = isNull ? nullopt : optional<long>(valueJObj.get<long>());
-    return num_lit<arrow::Int64Type>(value);
+    return normal::expression::gandiva::num_lit<arrow::Int64Type>(value);
   } else if (type == "DOUBLE" || type == "DECIMAL") {
     optional<double> value = isNull ? nullopt : optional<double>(valueJObj.get<double>());
-    return num_lit<arrow::DoubleType>(value);
+    return normal::expression::gandiva::num_lit<arrow::DoubleType>(value);
   } else if (type == "BOOLEAN") {
     optional<bool> value = isNull ? nullopt : optional<bool>(valueJObj.get<bool>());
-    return num_lit<arrow::BooleanType>(value);
+    return normal::expression::gandiva::num_lit<arrow::BooleanType>(value);
   } else if (type == "DATE_MS") {
     optional<long> value = isNull ? nullopt : optional<long>(valueJObj.get<long>());
-    return num_lit<arrow::Date64Type>(value);
+    return normal::expression::gandiva::num_lit<arrow::Date64Type>(value);
   } else if (type == "INTERVAL_DAY") {
     optional<int> value = isNull ? nullopt : optional<int>(valueJObj.get<int>());
-    return num_lit<arrow::Int32Type>(value, DAY);
+    return normal::expression::gandiva::num_lit<arrow::Int32Type>(value,
+                                                                  normal::expression::gandiva::DateIntervalType::DAY);
   } else if (type == "INTERVAL_MONTH") {
     optional<int> value = isNull ? nullopt : optional<int>(valueJObj.get<int>());
-    return num_lit<arrow::Int32Type>(value, MONTH);
+    return normal::expression::gandiva::num_lit<arrow::Int32Type>(value,
+                                                                  normal::expression::gandiva::DateIntervalType::MONTH);
   }
   else {
     throw runtime_error(fmt::format("Unsupported literal type, {}, from: {}", type, to_string(literalJObj)));
   }
 }
 
-shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeAndOrNotOperation(const string &opName, const json &jObj) {
+shared_ptr<normal::expression::gandiva::Expression> CalcitePlanJsonDeserializer::deserializeAndOrNotOperation(const string &opName, const json &jObj) {
   if (opName == "AND" || opName == "OR") {
     const auto &exprsJArr = jObj["operands"].get<vector<json>>();
-    vector<shared_ptr<Expression>> operands;
+    vector<shared_ptr<normal::expression::gandiva::Expression>> operands;
     operands.reserve(exprsJArr.size());
     for (const auto &exprJObj: exprsJArr) {
       operands.emplace_back(deserializeExpression(exprJObj));
@@ -156,7 +158,7 @@ shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeAndOrNotOperation
   }
 }
 
-shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeBinaryOperation(const string &opName, const json &jObj) {
+shared_ptr<normal::expression::gandiva::Expression> CalcitePlanJsonDeserializer::deserializeBinaryOperation(const string &opName, const json &jObj) {
   const auto &leftExpr = deserializeExpression(jObj["operands"].get<vector<json>>()[0]);
   const auto &rightExpr = deserializeExpression(jObj["operands"].get<vector<json>>()[1]);
 
@@ -165,11 +167,11 @@ shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeBinaryOperation(c
     // handle date plus, minus
     if (leftExpr->getTypeString() == "NumericLiteral<Date64>" || rightExpr->getTypeString() == "NumericLiteral<Date64>") {
       // check interval type
-      optional<DateIntervalType> intervalType;
+      optional<normal::expression::gandiva::DateIntervalType> intervalType;
       if (leftExpr->getTypeString() == "NumericLiteral<Int32>") {
-        intervalType = static_pointer_cast<NumericLiteral<arrow::Int32Type>>(leftExpr)->getIntervalType();
+        intervalType = static_pointer_cast<normal::expression::gandiva::NumericLiteral<arrow::Int32Type>>(leftExpr)->getIntervalType();
       } else {
-        intervalType = static_pointer_cast<NumericLiteral<arrow::Int32Type>>(rightExpr)->getIntervalType();
+        intervalType = static_pointer_cast<normal::expression::gandiva::NumericLiteral<arrow::Int32Type>>(rightExpr)->getIntervalType();
       }
       if (!intervalType.has_value()) {
         throw runtime_error("Invalid date plus/minus operation, interval not found");
@@ -182,7 +184,7 @@ shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeBinaryOperation(c
           throw runtime_error(fmt::format("Invalid date minus operation, subtrahend is not an interval, but: {}",
                                           rightExpr->getTypeString()));
         }
-        static_pointer_cast<NumericLiteral<arrow::Int32Type>>(rightExpr)->makeOpposite();
+        static_pointer_cast<normal::expression::gandiva::NumericLiteral<arrow::Int32Type>>(rightExpr)->makeOpposite();
       }
       return datePlus(leftExpr, rightExpr, intervalType.value());
     }
@@ -222,7 +224,7 @@ shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeBinaryOperation(c
   throw runtime_error(fmt::format("Unsupported binary expression type, {}, from: {}", opName, to_string(jObj)));
 }
 
-shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeInOperation(const json &jObj) {
+shared_ptr<normal::expression::gandiva::Expression> CalcitePlanJsonDeserializer::deserializeInOperation(const json &jObj) {
   const auto &operandsJArr = jObj["operands"].get<vector<json>>();
   const auto &leftExpr = deserializeExpression(operandsJArr[0]);
   const auto &literalsJObj = operandsJArr[1]["literals"];
@@ -230,28 +232,28 @@ shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeInOperation(const
 
   if (type == "CHAR" || type == "VARCHAR") {
     const unordered_set<string> &values = literalsJObj["values"].get<unordered_set<string>>();
-    return in<arrow::StringType, string>(leftExpr, values);
+    return normal::expression::gandiva::in<arrow::StringType, string>(leftExpr, values);
   }
   else if (type == "INTEGER" || type == "BIGINT") {
     // gandiva only supports binary expressions with same left, right and return type,
     // so to avoid casting we make all integer fields as int64, as well as scalars.
     const unordered_set<int64_t> &values = literalsJObj["values"].get<unordered_set<int64_t>>();
-    return in<arrow::Int64Type, int64_t>(leftExpr, values);
+    return normal::expression::gandiva::in<arrow::Int64Type, int64_t>(leftExpr, values);
   }
   else if (type == "DECIMAL") {
     const unordered_set<double> &values = literalsJObj["values"].get<unordered_set<double>>();
-    return in<arrow::DoubleType, double>(leftExpr, values);
+    return normal::expression::gandiva::in<arrow::DoubleType, double>(leftExpr, values);
   }
   else if (type == "DATE_MS") {
     const unordered_set<int64_t> &values = literalsJObj["values"].get<unordered_set<int64_t>>();
-    return in<arrow::Date64Type, int64_t>(leftExpr, values);
+    return normal::expression::gandiva::in<arrow::Date64Type, int64_t>(leftExpr, values);
   }
   else {
     throw runtime_error(fmt::format("Unsupported literal type, {}, from: {}", type, to_string(literalsJObj)));
   }
 }
 
-shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeCaseOperation(const json &jObj) {
+shared_ptr<normal::expression::gandiva::Expression> CalcitePlanJsonDeserializer::deserializeCaseOperation(const json &jObj) {
   const auto &condJObj = jObj["condition"];
   const auto &ifExpr = deserializeExpression(condJObj["if"]);
   const auto &thenExpr = deserializeExpression(condJObj["then"]);
@@ -259,7 +261,7 @@ shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeCaseOperation(con
   return if_(ifExpr, thenExpr, elseExpr);
 }
 
-shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeExtractOperation(const json &jObj) {
+shared_ptr<normal::expression::gandiva::Expression> CalcitePlanJsonDeserializer::deserializeExtractOperation(const json &jObj) {
   const auto &operands = jObj["operands"].get<vector<json>>();
   // date expression
   const auto &dateExpr = deserializeExpression(operands[1]);
@@ -273,13 +275,13 @@ shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeExtractOperation(
     throw runtime_error("Unsupported extract, extract literal type is not symbol");
   }
   const auto &symbol = literalObj["value"].get<string>();
-  DateIntervalType intervalType;
+  normal::expression::gandiva::DateIntervalType intervalType;
   if (symbol == "DAY") {
-    intervalType = DAY;
+    intervalType = normal::expression::gandiva::DateIntervalType::DAY;
   } else if (symbol == "MONTH") {
-    intervalType = MONTH;
+    intervalType = normal::expression::gandiva::DateIntervalType::MONTH;
   } else if (symbol == "YEAR") {
-    intervalType = YEAR;
+    intervalType = normal::expression::gandiva::DateIntervalType::YEAR;
   } else {
     throw runtime_error(fmt::format("Unsupported extract literal symbol: {}", symbol));
   }
@@ -287,7 +289,7 @@ shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeExtractOperation(
   return dateExtract(dateExpr, intervalType);
 }
 
-shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeNullOperation(const string &opName, const json &jObj) {
+shared_ptr<normal::expression::gandiva::Expression> CalcitePlanJsonDeserializer::deserializeNullOperation(const string &opName, const json &jObj) {
   if (opName == "IS_NULL") {
     const auto &expr = deserializeExpression(jObj["operands"].get<vector<json>>()[0]);
     return isNull(expr);
@@ -296,7 +298,7 @@ shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeNullOperation(con
   }
 }
 
-shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeSubstrOperation(const json &jObj) {
+shared_ptr<normal::expression::gandiva::Expression> CalcitePlanJsonDeserializer::deserializeSubstrOperation(const json &jObj) {
   const auto &operandsJArr = jObj["operands"].get<vector<json>>();
   const auto &expr = deserializeExpression(operandsJArr[0]);
   const auto &fromLit = deserializeExpression(operandsJArr[1]);
@@ -304,7 +306,7 @@ shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeSubstrOperation(c
   return substr(expr, fromLit, forLit);
 }
 
-shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeOperation(const json &jObj) {
+shared_ptr<normal::expression::gandiva::Expression> CalcitePlanJsonDeserializer::deserializeOperation(const json &jObj) {
   const string &opName = jObj["op"].get<string>();
   // and, or
   if (opName == "AND" || opName == "OR" || opName == "NOT") {
@@ -341,7 +343,7 @@ shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeOperation(const j
   }
 }
 
-shared_ptr<Expression> CalcitePlanJsonDeserializer::deserializeExpression(const json &jObj) {
+shared_ptr<normal::expression::gandiva::Expression> CalcitePlanJsonDeserializer::deserializeExpression(const json &jObj) {
   // single column
   if (jObj.contains("inputRef")) {
     return deserializeInputRef(jObj);
@@ -428,7 +430,7 @@ void CalcitePlanJsonDeserializer::addProjectForJoinColumnRenames(shared_ptr<PreP
 
 
     shared_ptr<ProjectPrePOp> projectPrePOp = make_shared<ProjectPrePOp>(pOpIdGenerator_.fetch_add(1),
-                                                                         vector<shared_ptr<Expression>>(),
+                                                                         vector<shared_ptr<normal::expression::gandiva::Expression>>(),
                                                                          vector<string>(),
                                                                          projectColumnNamePairs);
     projectPrePOp->setProjectColumnNames(projectColumnNames);
@@ -456,7 +458,7 @@ void CalcitePlanJsonDeserializer::addProjectForJoinColumnRenames(shared_ptr<PreP
     }
 
     shared_ptr<ProjectPrePOp> projectPrePOp = make_shared<ProjectPrePOp>(pOpIdGenerator_.fetch_add(1),
-                                                                         vector<shared_ptr<Expression>>(),
+                                                                         vector<shared_ptr<normal::expression::gandiva::Expression>>(),
                                                                          vector<string>(),
                                                                          projectColumnNamePairs);
     projectPrePOp->setProjectColumnNames(projectColumnNames);
@@ -557,7 +559,7 @@ shared_ptr<PrePhysicalOp> CalcitePlanJsonDeserializer::deserializeAggregateOrGro
     }
 
     // aggregate expr if any (count may not have)
-    shared_ptr<Expression> aggFieldExpr;
+    shared_ptr<normal::expression::gandiva::Expression> aggFieldExpr;
     if (aggregationJObj.contains("aggInputField")) {
       const string &aggInputColumnName = ColumnName::canonicalize(aggregationJObj["aggInputField"].get<string>());
       if (aggInputColumnName.substr(0, 2) == "$f") {
@@ -577,7 +579,7 @@ shared_ptr<PrePhysicalOp> CalcitePlanJsonDeserializer::deserializeAggregateOrGro
         jObj["inputs"] = vector<json>{inputProjectJObj};
       } else {
         // it's just a column
-        aggFieldExpr = col(aggInputColumnName);
+        aggFieldExpr = normal::expression::gandiva::col(aggInputColumnName);
       }
     }
 
@@ -625,7 +627,7 @@ shared_ptr<prephysical::PrePhysicalOp> CalcitePlanJsonDeserializer::deserializeP
   // project columns (may need rename) and exprs
   set<string> usedColumnNames, projectColumnNames;
   vector<pair<string, string>> projectColumnNamePairs;
-  vector<shared_ptr<Expression>> exprs;
+  vector<shared_ptr<normal::expression::gandiva::Expression>> exprs;
   vector<string> exprNames;
   const auto &fieldsJArr = jObj["fields"].get<vector<json>>();
 
@@ -749,7 +751,7 @@ shared_ptr<prephysical::NestedLoopJoinPrePOp> CalcitePlanJsonDeserializer::deser
   }
 
   // deserialize join condition, if has
-  shared_ptr<Expression> predicate = nullptr;
+  shared_ptr<normal::expression::gandiva::Expression> predicate = nullptr;
   if (jObj.contains("condition")) {
     predicate = deserializeExpression(jObj["condition"]);
   }

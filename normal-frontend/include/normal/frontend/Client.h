@@ -37,6 +37,7 @@ private:
   shared_ptr<CatalogueEntry> getCatalogueEntry(const string &schemaName);
   shared_ptr<PhysicalPlan> plan(const string &query, const shared_ptr<CatalogueEntry> &catalogueEntry);
   pair<shared_ptr<TupleSet>, long> execute(const shared_ptr<PhysicalPlan> &physicalPlan);
+  void connect();
 
   // catalogue
   shared_ptr<Catalogue> catalogue_;
@@ -50,8 +51,12 @@ private:
   // config parameters
   shared_ptr<ExecConfig> execConfig_;
 
-  // client actor system config
+  // client actor system
   shared_ptr<ActorSystemConfig> actorSystemConfig_;
+  shared_ptr<::caf::actor_system> actorSystem_;
+
+  // distributed nodes (not including the current node)
+  vector<::caf::node_id> nodes_;
 
   // executor
   shared_ptr<Executor> executor_;

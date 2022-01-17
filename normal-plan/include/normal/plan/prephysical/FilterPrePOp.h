@@ -8,22 +8,20 @@
 #include <normal/plan/prephysical/PrePhysicalOp.h>
 #include <normal/expression/gandiva/Expression.h>
 
-using namespace normal::expression::gandiva;
-
 namespace normal::plan::prephysical {
 
 class FilterPrePOp: public PrePhysicalOp {
 public:
-  FilterPrePOp(uint id, const shared_ptr<Expression> &predicate);
+  FilterPrePOp(uint id, const shared_ptr<normal::expression::gandiva::Expression> &predicate);
 
   string getTypeString() override;
 
   set<string> getUsedColumnNames() override;
 
-  const shared_ptr<Expression> &getPredicate() const;
+  const shared_ptr<normal::expression::gandiva::Expression> &getPredicate() const;
 
 private:
-  shared_ptr<Expression> predicate_;
+  shared_ptr<normal::expression::gandiva::Expression> predicate_;
 };
 
 }

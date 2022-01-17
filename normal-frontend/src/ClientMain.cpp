@@ -82,10 +82,22 @@ bool execute(const std::string& command, const std::shared_ptr<Client>& client) 
   return false;
 }
 
+std::shared_ptr<Client> client;
+
 int main() {
+  // handle exit signals
+  auto exitAct = [](int) {
+    client->stop();
+    client.reset();
+    exit(0);
+  };
+  signal(SIGTERM, exitAct);
+  signal(SIGINT, exitAct);
+  signal(SIGABRT, exitAct);
+
   std::string line, appendLine;
   CMD_BEGIN(true)
-  std::shared_ptr<Client> client = std::make_shared<Client>();
+  client = std::make_shared<Client>();
   client->start();
 
   while (std::getline(std::cin, appendLine)) {
@@ -98,6 +110,7 @@ int main() {
       std::string command = line.substr(0, endIndex);
       if (execute(command, client)) {
         client->stop();
+        client.reset();
         break;
       }
       line = "";

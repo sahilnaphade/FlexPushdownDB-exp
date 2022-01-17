@@ -23,7 +23,7 @@ set<string> FilterableScanPrePOp::getUsedColumnNames() {
   return usedColumnNames;
 }
 
-const shared_ptr<Expression> &FilterableScanPrePOp::getPredicate() const {
+const shared_ptr<normal::expression::gandiva::Expression> &FilterableScanPrePOp::getPredicate() const {
   return predicate_;
 }
 
@@ -31,7 +31,7 @@ const shared_ptr<Table> &FilterableScanPrePOp::getTable() const {
   return table_;
 }
 
-void FilterableScanPrePOp::setPredicate(const shared_ptr<Expression> &predicate) {
+void FilterableScanPrePOp::setPredicate(const shared_ptr<normal::expression::gandiva::Expression> &predicate) {
   predicate_ = predicate;
 }
 

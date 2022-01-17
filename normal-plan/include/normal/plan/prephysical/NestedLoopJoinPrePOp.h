@@ -9,8 +9,6 @@
 #include <normal/plan/prephysical/JoinType.h>
 #include <normal/expression/gandiva/Expression.h>
 
-using namespace normal::expression::gandiva;
-
 namespace normal::plan::prephysical {
 
 class NestedLoopJoinPrePOp: public PrePhysicalOp {
@@ -18,18 +16,18 @@ class NestedLoopJoinPrePOp: public PrePhysicalOp {
 public:
   NestedLoopJoinPrePOp(uint id,
                        JoinType joinType,
-                       const shared_ptr<Expression> &predicate);
+                       const shared_ptr<normal::expression::gandiva::Expression> &predicate);
 
   string getTypeString() override;
 
   set<string> getUsedColumnNames() override;
 
   JoinType getJoinType() const;
-  const shared_ptr<Expression> &getPredicate() const;
+  const shared_ptr<normal::expression::gandiva::Expression> &getPredicate() const;
 
 private:
   JoinType joinType_;
-  shared_ptr<Expression> predicate_;
+  shared_ptr<normal::expression::gandiva::Expression> predicate_;
 
 };
 

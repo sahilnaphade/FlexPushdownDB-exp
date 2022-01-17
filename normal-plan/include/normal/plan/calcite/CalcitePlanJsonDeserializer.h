@@ -21,7 +21,6 @@
 #include <string>
 
 using namespace normal::plan::prephysical;
-using namespace normal::expression::gandiva;
 using json = nlohmann::json;
 using namespace std;
 
@@ -37,17 +36,17 @@ private:
   shared_ptr<PrePhysicalOp> deserializeDfs(json &jObj);
   vector<shared_ptr<PrePhysicalOp>> deserializeProducers(const json &jObj);
 
-  shared_ptr<Expression> deserializeInputRef(const json &jObj);
-  shared_ptr<Expression> deserializeLiteral(const json &jObj);
-  shared_ptr<Expression> deserializeOperation(const json &jObj);
-  shared_ptr<Expression> deserializeAndOrNotOperation(const string &opName, const json &jObj);
-  shared_ptr<Expression> deserializeBinaryOperation(const string &opName, const json &jObj);
-  shared_ptr<Expression> deserializeInOperation(const json &jObj);
-  shared_ptr<Expression> deserializeCaseOperation(const json &jObj);
-  shared_ptr<Expression> deserializeExtractOperation(const json &jObj);
-  shared_ptr<Expression> deserializeNullOperation(const string &opName, const json &jObj);
-  shared_ptr<Expression> deserializeSubstrOperation(const json &jObj);
-  shared_ptr<Expression> deserializeExpression(const json &jObj);
+  shared_ptr<normal::expression::gandiva::Expression> deserializeInputRef(const json &jObj);
+  shared_ptr<normal::expression::gandiva::Expression> deserializeLiteral(const json &jObj);
+  shared_ptr<normal::expression::gandiva::Expression> deserializeOperation(const json &jObj);
+  shared_ptr<normal::expression::gandiva::Expression> deserializeAndOrNotOperation(const string &opName, const json &jObj);
+  shared_ptr<normal::expression::gandiva::Expression> deserializeBinaryOperation(const string &opName, const json &jObj);
+  shared_ptr<normal::expression::gandiva::Expression> deserializeInOperation(const json &jObj);
+  shared_ptr<normal::expression::gandiva::Expression> deserializeCaseOperation(const json &jObj);
+  shared_ptr<normal::expression::gandiva::Expression> deserializeExtractOperation(const json &jObj);
+  shared_ptr<normal::expression::gandiva::Expression> deserializeNullOperation(const string &opName, const json &jObj);
+  shared_ptr<normal::expression::gandiva::Expression> deserializeSubstrOperation(const json &jObj);
+  shared_ptr<normal::expression::gandiva::Expression> deserializeExpression(const json &jObj);
 
   unordered_map<string, string> deserializeColumnRenames(const vector<json> &jArr);
   pair<vector<string>, vector<string>> deserializeHashJoinCondition(const json &jObj);

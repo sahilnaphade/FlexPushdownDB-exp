@@ -7,7 +7,7 @@
 
 #include <normal/executor/physical/POpActor.h>
 #include <normal/executor/physical/PhysicalOp.h>
-#include <caf/all.hpp>
+#include <normal/executor/serialization/POpSerializer.h>
 #include <caf/io/all.hpp>
 
 using namespace normal::executor::physical;
@@ -22,7 +22,7 @@ struct ActorSystemConfig: ::caf::actor_system_config {
     nodeIps_(nodeIps),
     isServer_(isServer) {
     load<::caf::io::middleman>();
-//    add_actor_type<POpActor, std::shared_ptr<PhysicalOp>&>("POpActor");
+    add_actor_type<POpActor, std::shared_ptr<PhysicalOp>&>("POpActor");
   }
 
   int port_;

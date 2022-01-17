@@ -6,7 +6,7 @@
 
 namespace normal::plan::prephysical {
 
-FilterPrePOp::FilterPrePOp(uint id, const shared_ptr<Expression> &predicate) :
+FilterPrePOp::FilterPrePOp(uint id, const shared_ptr<normal::expression::gandiva::Expression> &predicate) :
   PrePhysicalOp(id, FILTER),
   predicate_(predicate) {}
 
@@ -21,7 +21,7 @@ set<string> FilterPrePOp::getUsedColumnNames() {
   return usedColumnNames;
 }
 
-const shared_ptr<Expression> &FilterPrePOp::getPredicate() const {
+const shared_ptr<normal::expression::gandiva::Expression> &FilterPrePOp::getPredicate() const {
   return predicate_;
 }
 

@@ -8,7 +8,7 @@ namespace normal::plan::prephysical {
 
 NestedLoopJoinPrePOp::NestedLoopJoinPrePOp(uint id,
                                            JoinType joinType,
-                                           const shared_ptr<Expression> &predicate):
+                                           const shared_ptr<normal::expression::gandiva::Expression> &predicate):
   PrePhysicalOp(id, NESTED_LOOP_JOIN),
   joinType_(joinType),
   predicate_(predicate) {}
@@ -26,7 +26,7 @@ set<string> NestedLoopJoinPrePOp::getUsedColumnNames() {
   return usedColumnNames;
 }
 
-const shared_ptr<Expression> &NestedLoopJoinPrePOp::getPredicate() const {
+const shared_ptr<normal::expression::gandiva::Expression> &NestedLoopJoinPrePOp::getPredicate() const {
   return predicate_;
 }
 

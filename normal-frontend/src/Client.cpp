@@ -50,14 +50,19 @@ string Client::start() {
                                                       remoteIps,
                                                       false);
   CAFInit::initCAFGlobalMetaObjects();
+  actorSystem_ = make_shared<::caf::actor_system>(*actorSystemConfig_);
 
   // executor
   executor_ = make_shared<Executor>(execConfig_->getMode(),
                                     execConfig_->getCachingPolicy(),
                                     execConfig_->showOpTimes(),
-                                    execConfig_->showScanMetrics());
+                                    execConfig_->showScanMetrics(),
+                                    actorSystem_);
   executor_->start();
   SPDLOG_INFO("Executor started");
+
+  // connect to other nodes if any
+  connect();
 
   return "Client started";
 }
@@ -147,6 +152,24 @@ shared_ptr<PhysicalPlan> Client::plan(const string &query, const shared_ptr<Cata
 
 pair<shared_ptr<TupleSet>, long> Client::execute(const shared_ptr<PhysicalPlan> &physicalPlan) {
   return executor_->execute(physicalPlan);;
+}
+
+void Client::connect() {
+  if (actorSystemConfig_->nodeIps_.empty()) {
+    SPDLOG_INFO("No other nodes found, client runs in the single-node version");
+  } else {
+    for (const auto &nodeIp: actorSystemConfig_->nodeIps_) {
+      auto expectedNode = actorSystem_->middleman().connect(nodeIp, actorSystemConfig_->port_);
+      if (!expectedNode) {
+        nodes_.clear();
+        throw runtime_error(
+                fmt::format("Failed to connected to server {}: {}", nodeIp, to_string(expectedNode.error())));
+      }
+      SPDLOG_INFO("Connected to server {}", nodeIp);
+      nodes_.emplace_back(expectedNode.value());
+    }
+    SPDLOG_INFO("Connected to all servers, clients runs in the distributed version");
+  }
 }
 
 }

@@ -9,10 +9,6 @@ using namespace normal::frontend;
 std::shared_ptr<Server> server;
 
 int main() {
-  // start CAF server actor system
-  server = std::make_shared<Server>();
-  server->start();
-
   // handle exit signals
   auto exitAct = [](int) {
     server->stop();
@@ -22,6 +18,10 @@ int main() {
   signal(SIGTERM, exitAct);
   signal(SIGINT, exitAct);
   signal(SIGABRT, exitAct);
+
+  // start CAF server actor system
+  server = std::make_shared<Server>();
+  server->start();
 
   // wait to stop
   std::cout << "Press <Enter> to shutdown the server" << std::endl;

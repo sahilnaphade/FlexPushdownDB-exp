@@ -9,7 +9,6 @@
 #include <normal/expression/gandiva/Expression.h>
 #include <normal/catalogue/Table.h>
 
-using namespace normal::expression::gandiva;
 using namespace normal::catalogue;
 
 namespace normal::plan::prephysical {
@@ -22,14 +21,14 @@ public:
 
   set<string> getUsedColumnNames() override;
 
-  const shared_ptr<Expression> &getPredicate() const;
+  const shared_ptr<normal::expression::gandiva::Expression> &getPredicate() const;
   const shared_ptr<Table> &getTable() const;
 
-  void setPredicate(const shared_ptr<Expression> &predicate);
+  void setPredicate(const shared_ptr<normal::expression::gandiva::Expression> &predicate);
 
 
 private:
-  shared_ptr<Expression> predicate_;
+  shared_ptr<normal::expression::gandiva::Expression> predicate_;
   shared_ptr<Table> table_;
 };
 

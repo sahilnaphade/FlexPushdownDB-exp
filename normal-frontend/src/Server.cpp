@@ -25,8 +25,8 @@ void Server::start() {
   int CAFServerPort = ExecConfig::parseCAFServerPort();
 
   // create the actor system
-  CAFInit::initCAFGlobalMetaObjects();
   actorSystemConfig_ = std::make_shared<ActorSystemConfig>(CAFServerPort, remoteIps, true);
+  CAFInit::initCAFGlobalMetaObjects();
   actorSystem_ = std::make_shared<::caf::actor_system>(*actorSystemConfig_);
 
   // open the port

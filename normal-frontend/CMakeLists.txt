@@ -52,11 +52,7 @@ add_executable(normal-frontend-test
         test/SSBTest.cpp
         test/TPCHTest.cpp)
 
-target_link_libraries(normal-frontend-test PRIVATE normal-calcite)
-target_link_libraries(normal-frontend-test PRIVATE normal-plan)
-target_link_libraries(normal-frontend-test PRIVATE normal-executor)
-target_link_libraries(normal-frontend-test PRIVATE normal-util)
-target_link_libraries(normal-frontend-test PRIVATE ssl crypto)
+target_link_libraries(normal-frontend-test PRIVATE normal-frontend)
 target_link_libraries(normal-frontend-test PRIVATE doctest::doctest)
 # need to add and link libraries on mac
 if (${APPLE})

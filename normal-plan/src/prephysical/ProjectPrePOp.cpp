@@ -9,7 +9,7 @@ using namespace normal::plan;
 
 namespace normal::plan::prephysical {
 ProjectPrePOp::ProjectPrePOp(uint id,
-                             const vector<shared_ptr<Expression>> &exprs,
+                             const vector<shared_ptr<normal::expression::gandiva::Expression>> &exprs,
                              const vector<std::string> &exprNames,
                              const vector<pair<string, string>> &projectColumnNamePairs) :
   PrePhysicalOp(id, PROJECT),
@@ -34,7 +34,7 @@ set<string> ProjectPrePOp::getUsedColumnNames() {
   return usedColumnNames;
 }
 
-const vector<shared_ptr<Expression>> &ProjectPrePOp::getExprs() const {
+const vector<shared_ptr<normal::expression::gandiva::Expression>> &ProjectPrePOp::getExprs() const {
   return exprs_;
 }
 

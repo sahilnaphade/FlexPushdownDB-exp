@@ -3,6 +3,7 @@
 //
 
 #include "TestUtil.h"
+#include <normal/frontend/CAFInit.h>
 #include <normal/executor/Executor.h>
 #include <normal/executor/physical/transform/PrePToPTransformer.h>
 #include <normal/calcite/CalciteConfig.h>
@@ -15,6 +16,7 @@
 #include <normal/aws/AWSConfig.h>
 #include <normal/util/Util.h>
 
+using namespace normal::frontend;
 using namespace normal::executor;
 using namespace normal::executor::physical;
 using namespace normal::cache;
@@ -60,6 +62,7 @@ void TestUtil::e2eNoStartCalciteServer(const string &schemaName,
   const auto &mode = Mode::pullupMode();
   const auto &cachingPolicy = nullptr;
 
+  CAFInit::initCAFGlobalMetaObjects();
   const auto &executor = make_shared<Executor>(mode, cachingPolicy, true, false);
   executor->start();
 
