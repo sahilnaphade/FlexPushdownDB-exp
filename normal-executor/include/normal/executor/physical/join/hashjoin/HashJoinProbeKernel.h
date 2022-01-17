@@ -42,8 +42,8 @@ private:
   bool isLeft_;
   bool isRight_;
   bool isOuterJoinHelperCreated_ = false;
-  optional<shared_ptr<OuterJoinHelper>> leftJoinHelper_;
-  optional<shared_ptr<OuterJoinHelper>> rightJoinHelper_;
+  std::optional<shared_ptr<OuterJoinHelper>> leftJoinHelper_;
+  std::optional<shared_ptr<OuterJoinHelper>> rightJoinHelper_;
 
 // caf inspect
 public:

@@ -28,7 +28,7 @@ public:
   static tl::expected<std::shared_ptr<CSVReader>, std::string> make(const std::string &path);
 
   [[nodiscard]] tl::expected<std::shared_ptr<TupleSet>, std::string>
-  read(const std::vector<std::string> &columnNames, unsigned long startPos, unsigned long finishPos) override;
+  read(const std::vector<std::string> &columnNames, int64_t startPos, int64_t finishPos) override;
 
 private:
   std::string path_;

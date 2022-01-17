@@ -40,7 +40,7 @@ private:
   void clear();
 
   vector<string> consumerVec_;
-  optional<shared_ptr<TupleSet>> inputTupleSet_;
+  std::optional<shared_ptr<TupleSet>> inputTupleSet_;
 
 // caf inspect
 public:

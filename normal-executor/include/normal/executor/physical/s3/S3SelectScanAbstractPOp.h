@@ -89,6 +89,11 @@ protected:
    */
   bool scanOnStart_;
   bool toCache_;
+
+  // Used for collecting all results for split requests that are run in parallel, and for having a
+  // locks on shared variables when requests are split.
+  std::shared_ptr<std::mutex> splitReqLock_;
+  std::map<int, std::shared_ptr<arrow::Table>> splitReqNumToTable_;
 };
 
 }

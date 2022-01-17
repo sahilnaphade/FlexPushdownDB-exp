@@ -7,7 +7,7 @@
 
 namespace normal::executor::physical::join {
 
-NestedLoopJoinKernel::NestedLoopJoinKernel(const optional<shared_ptr<expression::gandiva::Expression>> &predicate,
+NestedLoopJoinKernel::NestedLoopJoinKernel(const std::optional<shared_ptr<expression::gandiva::Expression>> &predicate,
                                            const set<string> &neededColumnNames,
                                            bool isLeft,
                                            bool isRight):
@@ -16,14 +16,14 @@ NestedLoopJoinKernel::NestedLoopJoinKernel(const optional<shared_ptr<expression:
   isLeft_(isLeft),
   isRight_(isRight) {}
 
-NestedLoopJoinKernel NestedLoopJoinKernel::make(const optional<shared_ptr<expression::gandiva::Expression>> &predicate,
+NestedLoopJoinKernel NestedLoopJoinKernel::make(const std::optional<shared_ptr<expression::gandiva::Expression>> &predicate,
                                                 const set<string> &neededColumnNames,
                                                 bool isLeft,
                                                 bool isRight) {
   return {predicate, neededColumnNames, isLeft, isRight};
 }
 
-tl::expected<void, string> bufferInput(optional<shared_ptr<TupleSet>> &buffer,
+tl::expected<void, string> bufferInput(std::optional<shared_ptr<TupleSet>> &buffer,
                                        const shared_ptr<TupleSet> &incomingTupleSet) {
   if (!buffer.has_value()) {
     buffer = incomingTupleSet;
@@ -200,7 +200,7 @@ tl::expected<void, string> NestedLoopJoinKernel::buffer(const shared_ptr<TupleSe
   return {};
 }
 
-const optional<shared_ptr<TupleSet>> &NestedLoopJoinKernel::getBuffer() const {
+const std::optional<shared_ptr<TupleSet>> &NestedLoopJoinKernel::getBuffer() const {
   return buffer_;
 }
 
@@ -242,7 +242,7 @@ void NestedLoopJoinKernel::bufferOutputSchema(const shared_ptr<TupleSet> &leftTu
   }
 }
 
-const optional<shared_ptr<::arrow::Schema>> &NestedLoopJoinKernel::getOutputSchema() const {
+const std::optional<shared_ptr<::arrow::Schema>> &NestedLoopJoinKernel::getOutputSchema() const {
   return outputSchema_;
 }
 

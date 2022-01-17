@@ -11,7 +11,7 @@ void AggregateResult::put(const string &key, const shared_ptr<arrow::Scalar> &va
   this->resultMap_.insert_or_assign(key, Scalar::make(value));
 }
 
-optional<shared_ptr<arrow::Scalar>> AggregateResult::get(const string &key) {
+std::optional<shared_ptr<arrow::Scalar>> AggregateResult::get(const string &key) {
   auto resIt = this->resultMap_.find(key);
   if (resIt == this->resultMap_.end()) {
     return nullopt;

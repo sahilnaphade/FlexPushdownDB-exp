@@ -6,6 +6,7 @@
 #define NORMAL_NORMAL_TUPLE_INCLUDE_NORMAL_TUPLE_FILEREADER_H
 
 #include <normal/tuple/FileType.h>
+#include <normal/tuple/TupleSet.h>
 #include <tl/expected.hpp>
 #include <memory>
 
@@ -23,7 +24,7 @@ public:
   FileType getType() const;
 
   virtual tl::expected<std::shared_ptr<TupleSet>, std::string>
-  read(const std::vector<std::string> &columnNames, unsigned long startPos, unsigned long finishPos) = 0;
+  read(const std::vector<std::string> &columnNames, int64_t startPos, int64_t finishPos) = 0;
 
 protected:
   FileType type_;

@@ -22,7 +22,7 @@ namespace normal::executor::physical::join {
 class NestedLoopJoinPOp : public PhysicalOp {
 public:
   NestedLoopJoinPOp(const string &name,
-                    const optional<shared_ptr<expression::gandiva::Expression>> &predicate,
+                    const std::optional<shared_ptr<expression::gandiva::Expression>> &predicate,
                     JoinType joinType,
                     const vector<string> &projectColumnNames);
   NestedLoopJoinPOp() = default;
@@ -39,9 +39,8 @@ private:
   void onComplete(const CompleteMessage &);
   void onTuple(const TupleMessage &message);
 
-  NestedLoopJoinKernel makeKernel(const optional<shared_ptr<expression::gandiva::Expression>> &predicate,
-                                  JoinType joinType,
-                                  const vector<string> &projectColumnNames);
+  NestedLoopJoinKernel makeKernel(const std::optional<shared_ptr<expression::gandiva::Expression>> &predicate,
+                                  JoinType joinType);
   void send(bool force);
   void sendEmpty();
 

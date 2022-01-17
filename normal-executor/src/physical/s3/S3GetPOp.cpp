@@ -163,18 +163,18 @@ std::shared_ptr<TupleSet> S3GetPOp::s3GetFullRequest() {
   }
   std::chrono::steady_clock::time_point stopTransferTime = std::chrono::steady_clock::now();
   auto transferTime = std::chrono::duration_cast<std::chrono::nanoseconds>(stopTransferTime - startTransferTime).count();
-  splitReqLock_.lock();
+  splitReqLock_->lock();
   s3SelectScanStats_.getTransferTimeNS += transferTime;
   s3SelectScanStats_.numRequests++;
-  splitReqLock_.unlock();
+  splitReqLock_->unlock();
 
   std::shared_ptr<TupleSet> tupleSet;
   auto getResult = getObjectOutcome.GetResultWithOwnership();
   int64_t resultSize = getResult.GetContentLength();
-  splitReqLock_.lock();
+  splitReqLock_->lock();
   s3SelectScanStats_.processedBytes += resultSize;
   s3SelectScanStats_.returnedBytes += resultSize;
-  splitReqLock_.unlock();
+  splitReqLock_->unlock();
   std::vector<std::shared_ptr<arrow::Field>> fields;
   for (const auto& column : getProjectColumnNames()) {
     fields.emplace_back(::arrow::field(column, table_->getSchema()->GetFieldByName(column)->type()));
@@ -236,9 +236,9 @@ std::shared_ptr<TupleSet> S3GetPOp::s3GetFullRequest() {
   GetConvertLock.unlock();
   std::chrono::steady_clock::time_point stopConversionTime = std::chrono::steady_clock::now();
   auto conversionTime = std::chrono::duration_cast<std::chrono::nanoseconds>(stopConversionTime - startConversionTime).count();
-  splitReqLock_.lock();
+  splitReqLock_->lock();
   s3SelectScanStats_.getConvertTimeNS += conversionTime;
-  splitReqLock_.unlock();
+  splitReqLock_->unlock();
   return tupleSet;
 }
 
@@ -275,12 +275,12 @@ GetObjectResult S3GetPOp::s3GetRequestOnly(const std::string &s3Object, uint64_t
   std::shared_ptr<TupleSet> tupleSet;
   auto getResult = getObjectOutcome.GetResultWithOwnership();
   int64_t resultSize = getResult.GetContentLength();
-  splitReqLock_.lock();
+  splitReqLock_->lock();
   s3SelectScanStats_.getTransferTimeNS += transferTime;
   s3SelectScanStats_.numRequests++;
   s3SelectScanStats_.processedBytes += resultSize;
   s3SelectScanStats_.returnedBytes += resultSize;
-  splitReqLock_.unlock();
+  splitReqLock_->unlock();
   return getResult;
 }
 
@@ -299,10 +299,10 @@ void S3GetPOp::s3GetIndividualReq(int reqNum, const std::string &s3Object, uint6
     }
     if (reqNum != 1) {
       int reqNumNeedingPartialResult = reqNum - 1;
-      splitReqLock_.lock();
+      splitReqLock_->lock();
       reqNumToAdditionalOutput_.insert(
               std::pair<int, std::vector<char>>(reqNumNeedingPartialResult, prevPartialResult));
-      splitReqLock_.unlock();
+      splitReqLock_->unlock();
     }
     // FIXME: Now process the rest of the file, for now we are only worrying about SIMD CSV
     //        we will add in more robust support later
@@ -337,10 +337,10 @@ void S3GetPOp::s3GetIndividualReq(int reqNum, const std::string &s3Object, uint6
     activeGetConversions--;
     GetConvertLock.unlock();
     auto conversionTime = std::chrono::duration_cast<std::chrono::nanoseconds>(stopConversionTime - startConversionTime).count();
-    splitReqLock_.lock();
+    splitReqLock_->lock();
     reqNumToParser_.insert(std::pair<int, std::shared_ptr<CSVToArrowSIMDChunkParser>>(reqNum, parser));
     s3SelectScanStats_.getConvertTimeNS += conversionTime;
-    splitReqLock_.unlock();
+    splitReqLock_->unlock();
   } else {
     throw std::runtime_error(fmt::format("Splitting up requests that need a concatenated output not supported yet."));
   }
@@ -435,9 +435,9 @@ std::shared_ptr<TupleSet> S3GetPOp::s3GetParallelReqs(bool tempFixForAirmettleCS
     }
     std::chrono::steady_clock::time_point stopConversionTime = std::chrono::steady_clock::now();
     auto conversionTime = std::chrono::duration_cast<std::chrono::nanoseconds>(stopConversionTime - startConversionTime).count();
-    splitReqLock_.lock();
+    splitReqLock_->lock();
     s3SelectScanStats_.getConvertTimeNS += conversionTime;
-    splitReqLock_.unlock();
+    splitReqLock_->unlock();
     return readTupleSet;
   } else {
     throw std::runtime_error(fmt::format("Splitting up requests that need a concatenated output not supported yet."));

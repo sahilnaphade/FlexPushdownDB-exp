@@ -53,11 +53,13 @@ S3SelectScanAbstractPOp::S3SelectScanAbstractPOp(std::string name,
 	awsClient_(std::move(awsClient)),
 	columnsReadFromS3_(getProjectColumnNames().size()),
 	scanOnStart_(scanOnStart),
-	toCache_(toCache) {
+	toCache_(toCache),
+  splitReqLock_(std::make_shared<std::mutex>()) {
 }
 
 S3SelectScanAbstractPOp::S3SelectScanAbstractPOp() :
-  awsClient_(normal::aws::AWSClient::daemonClient_) {}
+  awsClient_(normal::aws::AWSClient::daemonClient_),
+  splitReqLock_(std::make_shared<std::mutex>()) {}
 
 void S3SelectScanAbstractPOp::onStart() {
   SPDLOG_DEBUG("Starting operator  |  name: '{}'", this->name());

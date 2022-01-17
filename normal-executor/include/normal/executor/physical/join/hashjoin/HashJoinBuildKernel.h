@@ -30,7 +30,7 @@ public:
   tl::expected<void, string> put(const shared_ptr<TupleSet> &tupleSet);
   size_t size();
   void clear();
-  optional<shared_ptr<TupleSetIndex>> getTupleSetIndex();
+  std::optional<shared_ptr<TupleSetIndex>> getTupleSetIndex();
 
 private:
 
@@ -42,7 +42,7 @@ private:
   /**
    * The hashtable as an indexed tupleset
    */
-  optional<shared_ptr<TupleSetIndex>> tupleSetIndex_;
+  std::optional<shared_ptr<TupleSetIndex>> tupleSetIndex_;
 
 // caf inspect
 public:

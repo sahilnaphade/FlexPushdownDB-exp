@@ -39,7 +39,7 @@ private:
   shared_ptr<TupleSet> selectK(const shared_ptr<TupleSet> &tupleSet);
 
   arrow::compute::SelectKOptions selectKOptions_;
-  optional<shared_ptr<TupleSet>> result_;
+  std::optional<shared_ptr<TupleSet>> result_;
 
 // caf inspect
 public:

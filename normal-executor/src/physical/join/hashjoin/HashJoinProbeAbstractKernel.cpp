@@ -82,11 +82,11 @@ void HashJoinProbeAbstractKernel::bufferOutputSchema(const shared_ptr<TupleSetIn
   }
 }
 
-const optional<shared_ptr<::arrow::Schema>> &HashJoinProbeAbstractKernel::getOutputSchema() const {
+const std::optional<shared_ptr<::arrow::Schema>> &HashJoinProbeAbstractKernel::getOutputSchema() const {
   return outputSchema_;
 }
 
-const optional<shared_ptr<normal::tuple::TupleSet>> &HashJoinProbeAbstractKernel::getBuffer() const {
+const std::optional<shared_ptr<normal::tuple::TupleSet>> &HashJoinProbeAbstractKernel::getBuffer() const {
   return buffer_;
 }
 

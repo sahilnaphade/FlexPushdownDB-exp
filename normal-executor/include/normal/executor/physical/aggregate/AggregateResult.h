@@ -31,7 +31,7 @@ public:
   AggregateResult& operator=(const AggregateResult&) = default;
 
   void put(const string &key, const shared_ptr<arrow::Scalar> &value);
-  optional<shared_ptr<arrow::Scalar>> get(const string &key);
+  std::optional<shared_ptr<arrow::Scalar>> get(const string &key);
 
 private:
   // use normal::tuple::Scalar instead of arrow::Scalar for ease of serialization

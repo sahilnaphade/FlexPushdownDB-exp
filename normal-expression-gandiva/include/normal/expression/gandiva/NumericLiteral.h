@@ -9,7 +9,6 @@
 #include "DateIntervalType.h"
 #include <arrow/api.h>
 #include <gandiva/node.h>
-#include <gandiva/tree_expr_builder.h>
 #include <fmt/format.h>
 #include <string>
 #include <memory>
@@ -29,22 +28,7 @@ public:
   NumericLiteral(const NumericLiteral&) = default;
   NumericLiteral& operator=(const NumericLiteral&) = default;
 
-  void compile(const std::shared_ptr<arrow::Schema> &) override {
-    returnType_ = ::arrow::TypeTraits<ARROW_TYPE>::type_singleton();
-
-    ::gandiva::NodePtr literal;
-    if (value_.has_value()) {
-      literal = ::gandiva::TreeExprBuilder::MakeLiteral(*value_);
-    } else {
-      literal = ::gandiva::TreeExprBuilder::MakeNull(returnType_);
-    }
-    // if the type is date64, the initial literal made from value_ will be int64, so we need to cast
-    if (returnType_->id() == arrow::Type::DATE64) {
-      literal = ::gandiva::TreeExprBuilder::MakeFunction("castDate", {literal}, returnType_);
-    }
-
-    gandivaExpression_ = literal;
-  }
+  void compile(const std::shared_ptr<arrow::Schema> &) override;
 
   std::string alias() override {
     const shared_ptr<arrow::DataType> &arrowType = ::arrow::TypeTraits<ARROW_TYPE>::type_singleton();
@@ -79,7 +63,7 @@ public:
     return value_;
   }
 
-  const optional<DateIntervalType> &getIntervalType() const {
+  const std::optional<DateIntervalType> &getIntervalType() const {
     return intervalType_;
   }
 
@@ -100,9 +84,9 @@ private:
 public:
   template <class Inspector>
   friend bool inspect(Inspector& f, NumericLiteral& expr) {
-    return f.object(exp).fields(f.field("type", expr.type_),
-                                f.field("value", expr.value_),
-                                f.field("intervalType", expr.intervalType_));
+    return f.object(expr).fields(f.field("type", expr.type_),
+                                 f.field("value", expr.value_),
+                                 f.field("intervalType", expr.intervalType_));
   }
 };
 

@@ -42,7 +42,7 @@ private:
   bool isLeft_;
   shared_ptr<arrow::Schema> outputSchema_;
   vector<shared_ptr<pair<bool, int>>> neededColumnIndice_;
-  optional<unordered_set<int64_t>> rowMatchIndexes_;
+  std::optional<unordered_set<int64_t>> rowMatchIndexes_;
 
 };
 

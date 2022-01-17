@@ -19,7 +19,7 @@ namespace normal::executor::physical::join {
 class NestedLoopJoinKernel {
 
 public:
-  NestedLoopJoinKernel(const optional<shared_ptr<expression::gandiva::Expression>> &predicate,
+  NestedLoopJoinKernel(const std::optional<shared_ptr<expression::gandiva::Expression>> &predicate,
                        const set<string> &neededColumnNames,
                        bool isLeft,
                        bool isRight);
@@ -27,7 +27,7 @@ public:
   NestedLoopJoinKernel(const NestedLoopJoinKernel&) = default;
   NestedLoopJoinKernel& operator=(const NestedLoopJoinKernel&) = default;
 
-  static NestedLoopJoinKernel make(const optional<shared_ptr<expression::gandiva::Expression>> &predicate,
+  static NestedLoopJoinKernel make(const std::optional<shared_ptr<expression::gandiva::Expression>> &predicate,
                                    const set<string> &neededColumnNames,
                                    bool isLeft,
                                    bool isRight);
@@ -35,8 +35,8 @@ public:
   tl::expected<void, string> joinIncomingLeft(const shared_ptr<TupleSet> &incomingLeft);
   tl::expected<void, string> joinIncomingRight(const shared_ptr<TupleSet> &incomingRight);
 
-  const optional<shared_ptr<TupleSet>> &getBuffer() const;
-  const optional<shared_ptr<::arrow::Schema>> &getOutputSchema() const;
+  const std::optional<shared_ptr<TupleSet>> &getBuffer() const;
+  const std::optional<shared_ptr<::arrow::Schema>> &getOutputSchema() const;
   tl::expected<void, string> finalize();
   void clearBuffer();
 
@@ -50,19 +50,19 @@ private:
   tl::expected<void, string> makeOuterJoinHelpers();
   tl::expected<void, string> computeOuterJoin();
 
-  optional<shared_ptr<expression::gandiva::Expression>> predicate_;
-  optional<shared_ptr<TupleSet>> leftTupleSet_;
-  optional<shared_ptr<TupleSet>> rightTupleSet_;
+  std::optional<shared_ptr<expression::gandiva::Expression>> predicate_;
+  std::optional<shared_ptr<TupleSet>> leftTupleSet_;
+  std::optional<shared_ptr<TupleSet>> rightTupleSet_;
   set<string> neededColumnNames_;
-  optional<shared_ptr<::arrow::Schema>> outputSchema_;
+  std::optional<shared_ptr<::arrow::Schema>> outputSchema_;
   vector<shared_ptr<pair<bool, int>>> neededColumnIndice_;   // <true/false, i> -> ith column in left/right table
-  optional<shared_ptr<TupleSet>> buffer_;
+  std::optional<shared_ptr<TupleSet>> buffer_;
 
   bool isLeft_;
   bool isRight_;
   bool isOuterJoinHelperCreated_ = false;
-  optional<shared_ptr<OuterJoinHelper>> leftJoinHelper_;
-  optional<shared_ptr<OuterJoinHelper>> rightJoinHelper_;
+  std::optional<shared_ptr<OuterJoinHelper>> leftJoinHelper_;
+  std::optional<shared_ptr<OuterJoinHelper>> rightJoinHelper_;
 
 // caf inspect
 public:

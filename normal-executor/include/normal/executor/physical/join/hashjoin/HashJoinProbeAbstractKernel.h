@@ -33,8 +33,8 @@ public:
   virtual tl::expected<void, string> joinProbeTupleSet(const shared_ptr<TupleSet>& tupleSet) = 0;
   virtual tl::expected<void, string> finalize() = 0;
 
-  const optional<shared_ptr<normal::tuple::TupleSet>> &getBuffer() const;
-  const optional<shared_ptr<::arrow::Schema>> &getOutputSchema() const;
+  const std::optional<shared_ptr<normal::tuple::TupleSet>> &getBuffer() const;
+  const std::optional<shared_ptr<::arrow::Schema>> &getOutputSchema() const;
 
   void clearBuffer();
 
@@ -51,10 +51,10 @@ protected:
   set<string> neededColumnNames_;
 
   vector<shared_ptr<pair<bool, int>>> neededColumnIndice_;   // <true/false, i> -> ith column in build/probe table
-  optional<shared_ptr<::arrow::Schema>> outputSchema_;
-  optional<shared_ptr<TupleSetIndex>> buildTupleSetIndex_;
-  optional<shared_ptr<TupleSet>> probeTupleSet_;
-  optional<shared_ptr<normal::tuple::TupleSet>> buffer_;
+  std::optional<shared_ptr<::arrow::Schema>> outputSchema_;
+  std::optional<shared_ptr<TupleSetIndex>> buildTupleSetIndex_;
+  std::optional<shared_ptr<TupleSet>> probeTupleSet_;
+  std::optional<shared_ptr<normal::tuple::TupleSet>> buffer_;
 
 };
 

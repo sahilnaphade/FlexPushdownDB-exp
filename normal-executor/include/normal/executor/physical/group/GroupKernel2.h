@@ -77,8 +77,8 @@ private:
 
   vector<int> groupColumnIndices_;
   vector<int> aggregateColumnIndices_;
-  optional<shared_ptr<arrow::Schema>> inputSchema_;
-  optional<shared_ptr<arrow::Schema>> aggregateInputSchema_;
+  std::optional<shared_ptr<arrow::Schema>> inputSchema_;
+  std::optional<shared_ptr<arrow::Schema>> aggregateInputSchema_;
 
   GroupArrayAppenderVectorMap groupArrayAppenderVectorMap_;
   GroupArrayVectorMap groupArrayVectorMap_;

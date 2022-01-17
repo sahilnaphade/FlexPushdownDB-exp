@@ -199,9 +199,9 @@ std::shared_ptr<TupleSet> S3SelectPOp::s3Select(uint64_t startOffset, uint64_t e
     if (!payload.empty()) {
       // Airmettle doesn't trigger StatsEvent callback, so add up returned bytes here.
       if (awsClient_->getAwsConfig()->getS3ClientType() == AIRMETTLE) {
-        splitReqLock_.lock();
+        splitReqLock_->lock();
         s3SelectScanStats_.returnedBytes += payload.size();
-        splitReqLock_.unlock();
+        splitReqLock_->unlock();
       }
       while (true) {
         if (SelectConvertLock.try_lock()) {
@@ -227,10 +227,10 @@ std::shared_ptr<TupleSet> S3SelectPOp::s3Select(uint64_t startOffset, uint64_t e
       SelectConvertLock.lock();
       activeSelectConversions--;
       SelectConvertLock.unlock();
-      splitReqLock_.lock();
+      splitReqLock_->lock();
       s3SelectScanStats_.selectConvertTimeNS += conversionTime;
       s3SelectScanStats_.selectTransferTimeNS -= conversionTime;
-      splitReqLock_.unlock();
+      splitReqLock_->unlock();
     }
   });
   handler.SetStatsEventCallback([&](const StatsEvent &statsEvent) {
@@ -239,12 +239,12 @@ std::shared_ptr<TupleSet> S3SelectPOp::s3Select(uint64_t startOffset, uint64_t e
                  statsEvent.GetDetails().GetBytesScanned(),
                  statsEvent.GetDetails().GetBytesProcessed(),
                  statsEvent.GetDetails().GetBytesReturned());
-    splitReqLock_.lock();
+    splitReqLock_->lock();
     s3SelectScanStats_.processedBytes += statsEvent.GetDetails().GetBytesProcessed();
     if (awsClient_->getAwsConfig()->getS3ClientType() != AIRMETTLE) {
       s3SelectScanStats_.returnedBytes += statsEvent.GetDetails().GetBytesReturned();
     }
-    splitReqLock_.unlock();
+    splitReqLock_->unlock();
   });
 
   handler.SetEndEventCallback([&]() {
@@ -276,10 +276,10 @@ std::shared_ptr<TupleSet> S3SelectPOp::s3Select(uint64_t startOffset, uint64_t e
     std::chrono::steady_clock::time_point startTransferTime = std::chrono::steady_clock::now();
     auto selectObjectContentOutcome = awsClient_->getS3Client()->SelectObjectContent(selectObjectContentRequest);
     std::chrono::steady_clock::time_point stopTransferTime = std::chrono::steady_clock::now();
-    splitReqLock_.lock();
+    splitReqLock_->lock();
     s3SelectScanStats_.selectTransferTimeNS += std::chrono::duration_cast<std::chrono::nanoseconds>(
             stopTransferTime - startTransferTime).count();
-    splitReqLock_.unlock();
+    splitReqLock_->unlock();
     if (selectObjectContentOutcome.IsSuccess()) {
       break;
     }
@@ -290,9 +290,9 @@ std::shared_ptr<TupleSet> S3SelectPOp::s3Select(uint64_t startOffset, uint64_t e
   // messages to S3 (some internal AWS CPP SDK event most likely causes this).
   // This sometimes occurs when sending many S3 Select requests in parallel from our machine, though setting
   // maxConnections in AWSClient to a safe value mitigates this issue.
-  splitReqLock_.lock();
+  splitReqLock_->lock();
   s3SelectScanStats_.numRequests++;
-  splitReqLock_.unlock();
+  splitReqLock_->unlock();
 
   std::chrono::steady_clock::time_point startConversionTime = std::chrono::steady_clock::now();
   std::shared_ptr<TupleSet> tupleSet;
@@ -309,9 +309,9 @@ std::shared_ptr<TupleSet> S3SelectPOp::s3Select(uint64_t startOffset, uint64_t e
   std::chrono::steady_clock::time_point stopConversionTime = std::chrono::steady_clock::now();
   auto conversionTime = std::chrono::duration_cast<std::chrono::nanoseconds>(
           stopConversionTime - startConversionTime).count();
-  splitReqLock_.lock();
+  splitReqLock_->lock();
   s3SelectScanStats_.selectConvertTimeNS += conversionTime;
-  splitReqLock_.unlock();
+  splitReqLock_->unlock();
   if (optionalErrorMessage.has_value()) {
     throw std::runtime_error(fmt::format("{}, {}", optionalErrorMessage.value(), name()));
   }
@@ -321,9 +321,9 @@ std::shared_ptr<TupleSet> S3SelectPOp::s3Select(uint64_t startOffset, uint64_t e
 
 void S3SelectPOp::s3SelectIndividualReq(int reqNum, uint64_t startOffset, uint64_t endOffset) {
   std::shared_ptr<TupleSet> readTupleSet = s3Select(startOffset, endOffset);
-  splitReqLock_.lock();
+  splitReqLock_->lock();
   splitReqNumToTable_.insert(std::pair<int, std::shared_ptr<arrow::Table>>(reqNum, readTupleSet->table()));
-  splitReqLock_.unlock();
+  splitReqLock_->unlock();
 }
 
 std::shared_ptr<TupleSet> S3SelectPOp::s3SelectParallelReqs() {

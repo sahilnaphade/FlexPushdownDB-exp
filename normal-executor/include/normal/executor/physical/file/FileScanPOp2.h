@@ -84,7 +84,7 @@ private:
   unsigned long finishOffset_;
   bool scanOnStart_ = false;
 
-  std::unique_ptr<FileScanKernel> kernel_;
+  FileScanKernel kernel_;
 
 protected:
 
@@ -136,7 +136,7 @@ private:
 	assert(startOffset_ >= 0);
 	assert(finishOffset_ > startOffset_);
 
-	auto partition = std::make_shared<catalogue::local_fs::LocalFSPartition>(kernel_->getPath());
+	auto partition = std::make_shared<catalogue::local_fs::LocalFSPartition>(kernel_.getPath());
 
 	std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>> segmentsToStore;
 	for (int64_t c = 0; c < tupleSet->numColumns(); ++c) {
@@ -167,7 +167,7 @@ private:
 	if (columnNames.empty()) {
 	  readTupleSet = TupleSet::makeWithEmptyTable();
 	} else {
-	  auto expectedReadTupleSet = kernel_->scan(columnNames);
+	  auto expectedReadTupleSet = kernel_.scan(columnNames);
 	  readTupleSet = expectedReadTupleSet.value();
 
 	  // Store the read columns in the cache

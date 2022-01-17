@@ -13,15 +13,13 @@ Table::Table(string name,
              const shared_ptr<format::Format>& format,
              const unordered_map<string, int> &apxColumnLengthMap,
              int apxRowLength,
-             const unordered_set<string> &zonemapColumnNames,
-             const shared_ptr<CatalogueEntry> &catalogueEntry) :
+             const unordered_set<string> &zonemapColumnNames) :
   name_(std::move(name)),
   schema_(schema),
   format_(format),
   apxColumnLengthMap_(apxColumnLengthMap),
   apxRowLength_(apxRowLength),
-  zonemapColumnNames_(zonemapColumnNames),
-  catalogueEntry_(catalogueEntry) {}
+  zonemapColumnNames_(zonemapColumnNames) {}
 
 const string &Table::getName() const {
   return name_;
@@ -49,10 +47,6 @@ int Table::getApxColumnLength(const string &columnName) const {
 
 int Table::getApxRowLength() const {
   return apxRowLength_;
-}
-
-const weak_ptr<CatalogueEntry> Table::getCatalogueEntry() const {
-  return catalogueEntry_;
 }
 
 }

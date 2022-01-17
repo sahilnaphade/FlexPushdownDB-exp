@@ -37,7 +37,7 @@ private:
   shared_ptr<TupleSet> sort();
 
   arrow::compute::SortOptions sortOptions_;
-  optional<shared_ptr<TupleSet>> buffer_;
+  std::optional<shared_ptr<TupleSet>> buffer_;
 
 // caf inspect
 public:

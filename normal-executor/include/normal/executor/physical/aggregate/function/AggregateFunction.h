@@ -86,12 +86,12 @@ protected:
    * The schema of received tuples, sometimes cannot be known up front (e.g. when input source is a CSV file, the
    * columns aren't known until the file is read) so needs to be extracted from the first batch of tuples received
    */
-  optional<shared_ptr<arrow::Schema>> inputSchema_;
+  std::optional<shared_ptr<arrow::Schema>> inputSchema_;
   
   /**
    * The expression projector, created and cached when input schema is extracted from first tuple received
    */
-  optional<shared_ptr<normal::expression::Projector>> projector_;
+  std::optional<shared_ptr<normal::expression::Projector>> projector_;
 
   /**
    * Data type of aggregate output column

@@ -8,17 +8,16 @@
 namespace normal::executor::physical::join {
 
 NestedLoopJoinPOp::NestedLoopJoinPOp(const string &name,
-                                     const optional<shared_ptr<expression::gandiva::Expression>> &predicate,
+                                     const std::optional<shared_ptr<expression::gandiva::Expression>> &predicate,
                                      JoinType joinType,
                                      const vector<string> &projectColumnNames) :
   PhysicalOp(name, "NestedLoopJoinPOp", projectColumnNames),
-  kernel_(makeKernel(predicate, joinType, projectColumnNames_)) {}
+  kernel_(makeKernel(predicate, joinType)) {}
 
 NestedLoopJoinKernel
-NestedLoopJoinPOp::makeKernel(const optional<shared_ptr<expression::gandiva::Expression>> &predicate,
-                              JoinType joinType,
-                              const vector<string> &projectColumnNames) {
-  set<string> neededColumnNames(getProjectColumnNames().begin(), getProjectColumnNames().end());
+NestedLoopJoinPOp::makeKernel(const std::optional<shared_ptr<expression::gandiva::Expression>> &predicate,
+                              JoinType joinType) {
+  set<string> neededColumnNames(projectColumnNames_.begin(), projectColumnNames_.end());
   if (predicate.has_value()) {
     const auto &predInvolvedColumnNames = (*predicate)->involvedColumnNames();
     neededColumnNames.insert(predInvolvedColumnNames.begin(), predInvolvedColumnNames.end());

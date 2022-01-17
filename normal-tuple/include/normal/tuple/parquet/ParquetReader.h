@@ -24,21 +24,17 @@ public:
   ParquetReader() = default;
   ParquetReader(const ParquetReader&) = default;
   ParquetReader& operator=(const ParquetReader&) = default;
-  ~ParquetReader() override;
+  ~ParquetReader() = default;
 
   static tl::expected<std::shared_ptr<ParquetReader>, std::string> make(const std::string &Path);
 
-  tl::expected<void, std::string> close();
-  [[nodiscard]] tl::expected<std::shared_ptr<TupleSet>, std::string>
-  read(const std::vector<std::string> &columnNames, unsigned long startPos, unsigned long finishPos) override;
+  tl::expected<std::shared_ptr<TupleSet>, std::string>
+  read(const std::vector<std::string> &columnNames, int64_t startPos, int64_t finishPos) override;
 
 private:
-  std::string path_;
-  std::shared_ptr<arrow::io::ReadableFile> inputStream_;
-  std::unique_ptr<::parquet::arrow::FileReader> arrowReader_;
-  std::shared_ptr<parquet::FileMetaData> metadata_;
+  tl::expected<void, std::string> close(const std::shared_ptr<arrow::io::ReadableFile> &inputStream);
 
-  [[nodiscard]] tl::expected<void, std::string> open();
+  std::string path_;
 
 // caf inspect
 public:

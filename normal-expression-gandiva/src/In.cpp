@@ -3,6 +3,7 @@
 //
 
 #include <normal/expression/gandiva/In.h>
+#include <gandiva/tree_expr_builder.h>
 #include <fmt/format.h>
 #include <sstream>
 

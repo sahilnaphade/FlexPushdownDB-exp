@@ -6,7 +6,6 @@
 #define NORMAL_NORMAL_EXPRESSION_GANDIVA_INCLUDE_NORMAL_EXPRESSION_GANDIVA_IN_H
 
 #include "Expression.h"
-#include <gandiva/tree_expr_builder.h>
 #include <unordered_set>
 
 using namespace std;

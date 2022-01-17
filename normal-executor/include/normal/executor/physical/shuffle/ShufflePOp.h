@@ -76,7 +76,7 @@ private:
 
   vector<string> columnNames_;
   vector<string> consumerVec_;
-  vector<optional<shared_ptr<TupleSet>>> buffers_;
+  vector<std::optional<shared_ptr<TupleSet>>> buffers_;
 
 // caf inspect
 public:

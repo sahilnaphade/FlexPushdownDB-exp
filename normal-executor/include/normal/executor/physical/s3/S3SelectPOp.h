@@ -62,11 +62,6 @@ private:
   std::string filterSql_;   // "where ...."
   std::shared_ptr<S3CSVParser> parser_;
 
-  // Used for collecting all results for split requests that are run in parallel, and for having a
-  // locks on shared variables when requests are split.
-  std::mutex splitReqLock_;
-  std::map<int, std::shared_ptr<arrow::Table>> splitReqNumToTable_;
-
   /**
    * used to compute filter weight
    */
