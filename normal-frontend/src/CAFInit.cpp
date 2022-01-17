@@ -46,6 +46,7 @@ void CAFInit::initCAFGlobalMetaObjects() {
   ::caf::init_global_meta_objects<::caf::id_block::Table>();
   ::caf::init_global_meta_objects<::caf::id_block::Format>();
   ::caf::init_global_meta_objects<::caf::id_block::HashJoinProbeAbstractKernel>();
+  ::caf::init_global_meta_objects<::caf::id_block::AggregateResult>();
 
   ::caf::core::init_global_meta_objects();
   ::caf::io::middleman::init_global_meta_objects();
