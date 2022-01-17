@@ -123,7 +123,7 @@ PrePToPTransformer::transformSort(const shared_ptr<SortPrePOp> &sortPrePOp) {
                                     sortPrePOp->getProjectColumnNames().end()};
 
   shared_ptr<PhysicalOp> sortPOp = make_shared<sort::SortPOp>(fmt::format("Sort[{}]", prePOpId),
-                                                              sortPrePOp->getSortOptions(),
+                                                              sortPrePOp->getSortKeys(),
                                                               projectColumnNames);
   allPOps.emplace_back(sortPOp);
 
@@ -155,7 +155,8 @@ PrePToPTransformer::transformLimitSort(const shared_ptr<LimitSortPrePOp> &limitS
 
   shared_ptr<PhysicalOp> limitSortPOp = make_shared<limitsort::LimitSortPOp>(
           fmt::format("LimitSort[{}]", prePOpId),
-          limitSortPrePOp->getSelectKOptions(),
+          limitSortPrePOp->getK(),
+          limitSortPrePOp->getSortKeys(),
           projectColumnNames);
   allPOps.emplace_back(limitSortPOp);
 

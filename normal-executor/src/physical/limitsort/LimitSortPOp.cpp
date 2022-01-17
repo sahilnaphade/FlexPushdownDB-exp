@@ -7,10 +7,12 @@
 namespace normal::executor::physical::limitsort {
 
 LimitSortPOp::LimitSortPOp(const string &name,
-                           const arrow::compute::SelectKOptions &selectKOptions,
+                           int64_t k,
+                           const vector<SortKey> &sortKeys,
                            const vector<string> &projectColumnNames):
   PhysicalOp(name, "LimitSortPOp", projectColumnNames),
-  selectKOptions_(selectKOptions) {}
+  k_(k),
+  sortKeys_(sortKeys) {}
 
 void LimitSortPOp::onReceive(const Envelope &message) {
   if (message.message().type() == "StartMessage") {
@@ -28,6 +30,15 @@ void LimitSortPOp::onReceive(const Envelope &message) {
 }
 
 void LimitSortPOp::onStart() {
+  vector<arrow::compute::SortKey> arrowSortKeys;
+  for (const auto &sortKey: sortKeys_) {
+    const auto &name = sortKey.getName();
+    auto direction = sortKey.getOrder() == plan::prephysical::ASCENDING ?
+                     arrow::compute::SortOrder::Ascending : arrow::compute::SortOrder::Descending;
+    arrowSortKeys.emplace_back(arrow::compute::SortKey(name, direction));
+  }
+  arrowSelectKOptions_ = arrow::compute::SelectKOptions(k_, arrowSortKeys);
+
   SPDLOG_DEBUG("Starting operator  |  name: '{}'", this->name());
 }
 
@@ -68,7 +79,10 @@ shared_ptr<TupleSet> LimitSortPOp::makeInput(const shared_ptr<TupleSet> &tupleSe
 shared_ptr<TupleSet> LimitSortPOp::selectK(const shared_ptr<TupleSet> &tupleSet) {
   // Compute selectK indices
   const auto table = tupleSet->table();
-  const auto &expSelectKIndices = arrow::compute::SelectKUnstable(table, selectKOptions_);
+  if (!arrowSelectKOptions_.has_value()) {
+    throw runtime_error("Arrow SelectKOptions not set yet");
+  }
+  const auto &expSelectKIndices = arrow::compute::SelectKUnstable(table, *arrowSelectKOptions_);
   if (!expSelectKIndices.ok()) {
     throw runtime_error(expSelectKIndices.status().message());
   }

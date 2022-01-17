@@ -28,7 +28,7 @@ public:
   HashJoinProbeAbstractKernel& operator=(const HashJoinProbeAbstractKernel&) = default;
   virtual ~HashJoinProbeAbstractKernel() = default;
 
-  virtual bool isSemi() const;
+  virtual bool isSemi() const = 0;
   virtual tl::expected<void, string> joinBuildTupleSetIndex(const shared_ptr<TupleSetIndex>& tupleSetIndex) = 0;
   virtual tl::expected<void, string> joinProbeTupleSet(const shared_ptr<TupleSet>& tupleSet) = 0;
   virtual tl::expected<void, string> finalize() = 0;

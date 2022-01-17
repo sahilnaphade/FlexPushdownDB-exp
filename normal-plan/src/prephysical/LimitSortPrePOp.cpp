@@ -7,20 +7,31 @@
 
 namespace normal::plan::prephysical {
 
-LimitSortPrePOp::LimitSortPrePOp(uint id, const arrow::compute::SelectKOptions &selectKOptions):
+LimitSortPrePOp::LimitSortPrePOp(uint id,
+                                 int64_t k,
+                                 const vector<SortKey> &sortKeys):
   PrePhysicalOp(id, LIMIT_SORT),
-  selectKOptions_(selectKOptions) {}
+  k_(k),
+  sortKeys_(sortKeys) {}
 
 string LimitSortPrePOp::getTypeString() {
   return "LimitSortPrePOp";
 }
 
 set<string> LimitSortPrePOp::getUsedColumnNames() {
-  return getProjectColumnNames();
+  auto usedColumnNames = getProjectColumnNames();
+  for (const auto &sortKey: sortKeys_) {
+    usedColumnNames.emplace(sortKey.getName());
+  }
+  return usedColumnNames;
 }
 
-const arrow::compute::SelectKOptions &LimitSortPrePOp::getSelectKOptions() const {
-  return selectKOptions_;
+int64_t LimitSortPrePOp::getK() const {
+  return k_;
+}
+
+const vector<SortKey> &LimitSortPrePOp::getSortKeys() const {
+  return sortKeys_;
 }
 
 }

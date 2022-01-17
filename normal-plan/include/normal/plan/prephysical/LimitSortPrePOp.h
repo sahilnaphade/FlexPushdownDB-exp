@@ -6,7 +6,7 @@
 #define NORMAL_NORMAL_PLAN_INCLUDE_NORMAL_PLAN_PREPHYSICAL_LIMITSORTPREPOP_H
 
 #include <normal/plan/prephysical/PrePhysicalOp.h>
-#include <arrow/compute/api.h>
+#include <normal/plan/prephysical/SortKey.h>
 
 using namespace std;
 
@@ -14,16 +14,20 @@ namespace normal::plan::prephysical {
 
 class LimitSortPrePOp: public PrePhysicalOp {
 public:
-  LimitSortPrePOp(uint id, const arrow::compute::SelectKOptions &selectKOptions);
+  LimitSortPrePOp(uint id,
+                  int64_t k,
+                  const vector<SortKey> &sortKeys);
 
   string getTypeString() override;
 
   set<string> getUsedColumnNames() override;
 
-  const arrow::compute::SelectKOptions &getSelectKOptions() const;
+  int64_t getK() const;
+  const vector<SortKey> &getSortKeys() const;
 
 private:
-  arrow::compute::SelectKOptions selectKOptions_;
+  int64_t k_;
+  vector<SortKey> sortKeys_;
 };
 
 }

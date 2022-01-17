@@ -23,6 +23,7 @@
 #include <normal/executor/physical/shuffle/ShufflePOp.h>
 #include <normal/executor/physical/sort/SortPOp.h>
 #include <normal/executor/physical/split/SplitPOp.h>
+#include <normal/tuple/serialization/ArrowSerializer.h>
 #include <normal/caf/CAFUtil.h>
 
 using namespace normal::executor::physical;

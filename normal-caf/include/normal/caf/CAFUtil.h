@@ -37,6 +37,7 @@ public:
   inline static constexpr ::caf::type_id_t Table_first_custom_type_id = ::caf::first_custom_type_id + 2200;
   inline static constexpr ::caf::type_id_t Format_first_custom_type_id = ::caf::first_custom_type_id + 2300;
   inline static constexpr ::caf::type_id_t HashJoinProbeAbstractKernel_first_custom_type_id = ::caf::first_custom_type_id + 2400;
+  inline static constexpr ::caf::type_id_t AggregateResult_first_custom_type_id = ::caf::first_custom_type_id + 2500;
 
 };
 

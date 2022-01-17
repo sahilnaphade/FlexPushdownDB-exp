@@ -8,10 +8,12 @@
 #include <normal/executor/physical/PhysicalOp.h>
 #include <normal/executor/message/CompleteMessage.h>
 #include <normal/executor/message/TupleMessage.h>
+#include <normal/plan/prephysical/SortKey.h>
 #include <normal/tuple/serialization/ArrowSerializer.h>
 #include <arrow/compute/api.h>
 
 using namespace normal::executor::message;
+using namespace normal::plan::prephysical;
 using namespace std;
 
 namespace normal::executor::physical::sort {
@@ -20,7 +22,7 @@ class SortPOp : public PhysicalOp {
 
 public:
   SortPOp(const string &name,
-          const arrow::compute::SortOptions &sortOptions,
+          const vector<SortKey> &sortKeys,
           const vector<string> &projectColumnNames);
   SortPOp() = default;
   SortPOp(const SortPOp&) = default;
@@ -36,7 +38,8 @@ private:
   void buffer(const shared_ptr<TupleSet> &tupleSet);
   shared_ptr<TupleSet> sort();
 
-  arrow::compute::SortOptions sortOptions_;
+  vector<SortKey> sortKeys_;
+  std::optional<arrow::compute::SortOptions> arrowSortOptions_;
   std::optional<shared_ptr<TupleSet>> buffer_;
 
 // caf inspect
@@ -50,7 +53,7 @@ public:
                                f.field("opContext", op.opContext_),
                                f.field("producers", op.producers_),
                                f.field("consumers", op.consumers_),
-                               f.field("sortOptions", op.sortOptions_));
+                               f.field("sortKeys", op.sortKeys_));
   }
 };
 

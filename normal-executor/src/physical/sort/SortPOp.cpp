@@ -7,10 +7,10 @@
 namespace normal::executor::physical::sort {
 
 SortPOp::SortPOp(const string &name,
-                 const arrow::compute::SortOptions &sortOptions,
+                 const vector<SortKey> &sortKeys,
                  const vector<string> &projectColumnNames) :
   PhysicalOp(name, "SortPOp", projectColumnNames),
-  sortOptions_(sortOptions) {}
+  sortKeys_(sortKeys) {}
 
 void SortPOp::onReceive(const Envelope &message) {
   if (message.message().type() == "StartMessage") {
@@ -28,6 +28,15 @@ void SortPOp::onReceive(const Envelope &message) {
 }
 
 void SortPOp::onStart() {
+  vector<arrow::compute::SortKey> arrowSortKeys;
+  for (const auto &sortKey: sortKeys_) {
+    const auto &name = sortKey.getName();
+    auto direction = sortKey.getOrder() == plan::prephysical::ASCENDING ?
+            arrow::compute::SortOrder::Ascending : arrow::compute::SortOrder::Descending;
+    arrowSortKeys.emplace_back(arrow::compute::SortKey(name, direction));
+  }
+  arrowSortOptions_ = arrow::compute::SortOptions(arrowSortKeys);
+
   SPDLOG_DEBUG("Starting operator  |  name: '{}'", this->name());
 }
 
@@ -70,7 +79,10 @@ shared_ptr<TupleSet> SortPOp::sort() {
 
   // Compute sort indices
   const auto table = buffer_.value()->table();
-  const auto &expSortIndices = arrow::compute::SortIndices(table, sortOptions_);
+  if (!arrowSortOptions_.has_value()) {
+    throw runtime_error("Arrow SortOptions not set yet");
+  }
+  const auto &expSortIndices = arrow::compute::SortIndices(table, *arrowSortOptions_);
   if (!expSortIndices.ok()) {
     throw runtime_error(expSortIndices.status().message());
   }

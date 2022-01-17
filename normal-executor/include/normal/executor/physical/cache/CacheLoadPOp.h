@@ -54,9 +54,9 @@ private:
   int64_t startOffset_;
   int64_t finishOffset_;
 
-  std::weak_ptr<PhysicalOp> hitOperator_;
-  std::weak_ptr<PhysicalOp> missOperatorToCache_;
-  std::weak_ptr<PhysicalOp> missOperatorToPushdown_;
+  std::optional<std::string> hitOperatorName_;
+  std::optional<std::string> missOperatorToCacheName_;
+  std::optional<std::string> missOperatorToPushdownName_;
 
   S3ClientType s3ClientType_;
 
@@ -76,9 +76,9 @@ public:
                                f.field("partition", op.partition_),
                                f.field("startOffset", op.startOffset_),
                                f.field("finishOffset", op.finishOffset_),
-                               f.field("hitOperator", op.hitOperator_),
-                               f.field("missOperatorToCache", op.missOperatorToCache_),
-                               f.field("missOperatorToPushdown", op.missOperatorToPushdown_),
+                               f.field("hitOperator", op.hitOperatorName_),
+                               f.field("missOperatorToCache", op.missOperatorToCacheName_),
+                               f.field("missOperatorToPushdown", op.missOperatorToPushdownName_),
                                f.field("s3ClientType", op.s3ClientType_));
   }
 };

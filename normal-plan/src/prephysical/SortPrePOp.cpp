@@ -9,20 +9,24 @@ using namespace std;
 
 namespace normal::plan::prephysical {
 
-SortPrePOp::SortPrePOp(uint id, const arrow::compute::SortOptions &sortOptions) :
+SortPrePOp::SortPrePOp(uint id, const vector<SortKey> &sortKeys) :
   PrePhysicalOp(id, SORT),
-  sortOptions_(sortOptions) {}
+  sortKeys_(sortKeys) {}
 
 string SortPrePOp::getTypeString() {
   return "SortPrePOp";
 }
 
 set<string> SortPrePOp::getUsedColumnNames() {
-  return getProjectColumnNames();
+  auto usedColumnNames = getProjectColumnNames();
+  for (const auto &sortKey: sortKeys_) {
+    usedColumnNames.emplace(sortKey.getName());
+  }
+  return usedColumnNames;
 }
 
-const arrow::compute::SortOptions &SortPrePOp::getSortOptions() const {
-  return sortOptions_;
+const vector<SortKey> &SortPrePOp::getSortKeys() const {
+  return sortKeys_;
 }
 
 }

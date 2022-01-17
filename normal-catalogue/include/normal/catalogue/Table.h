@@ -27,6 +27,7 @@ public:
   Table() = default;
   Table(const Table&) = default;
   Table& operator=(const Table&) = default;
+  virtual ~Table() = default;
 
   const string &getName() const;
   const shared_ptr<arrow::Schema> &getSchema() const;

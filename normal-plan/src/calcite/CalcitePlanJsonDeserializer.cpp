@@ -469,14 +469,13 @@ void CalcitePlanJsonDeserializer::addProjectForJoinColumnRenames(shared_ptr<PreP
   op->setProducers(calibratedProducers);
 }
 
-vector<arrow::compute::SortKey> CalcitePlanJsonDeserializer::deserializeSortKeys(const json &jObj) {
-  vector<arrow::compute::SortKey> sortKeys;
+vector<SortKey> CalcitePlanJsonDeserializer::deserializeSortKeys(const json &jObj) {
+  vector<SortKey> sortKeys;
   for (const auto &sortFieldJObj: jObj) {
     const string &columnName = ColumnName::canonicalize(sortFieldJObj["field"].get<string>());
     const string &directionStr = sortFieldJObj["direction"].get<string>();
-    auto direction = (directionStr == "ASCENDING") ?
-                     arrow::compute::SortOrder::Ascending : arrow::compute::SortOrder::Descending;
-    sortKeys.emplace_back(arrow::compute::SortKey(columnName, direction));
+    auto direction = (directionStr == "ASCENDING") ? ASCENDING : DESCENDING;
+    sortKeys.emplace_back(SortKey(columnName, direction));
   }
   return sortKeys;
 }
@@ -485,8 +484,7 @@ shared_ptr<SortPrePOp> CalcitePlanJsonDeserializer::deserializeSort(const json &
   // deserialize sort fields
   const auto &sortFieldsJArr = jObj["sortFields"].get<vector<json>>();
   const auto &sortKeys = deserializeSortKeys(sortFieldsJArr);
-  arrow::compute::SortOptions sortOptions(sortKeys);
-  shared_ptr<SortPrePOp> sortPrePOp = make_shared<SortPrePOp>(pOpIdGenerator_.fetch_add(1), sortOptions);
+  shared_ptr<SortPrePOp> sortPrePOp = make_shared<SortPrePOp>(pOpIdGenerator_.fetch_add(1), sortKeys);
 
   // deserialize producers
   sortPrePOp->setProducers(deserializeProducers(jObj));
@@ -509,9 +507,9 @@ shared_ptr<LimitSortPrePOp> CalcitePlanJsonDeserializer::deserializeLimitSort(co
                                     to_string(limitLiteralJObj)));
   }
   int64_t limitVal = limitLiteralJObj["value"].get<int64_t>();
-  arrow::compute::SelectKOptions selectKOptions(limitVal, sortKeys);
   shared_ptr<LimitSortPrePOp> limitSortPrePOp = make_shared<LimitSortPrePOp>(pOpIdGenerator_.fetch_add(1),
-                                                                             selectKOptions);
+                                                                             limitVal,
+                                                                             sortKeys);
 
   // deserialize producers
   limitSortPrePOp->setProducers(deserializeProducers(jObj));

@@ -11,6 +11,8 @@ add_library(normal-plan STATIC
         src/prephysical/PrePhysicalPlan.cpp include/normal/plan/prephysical/PrePhysicalPlan.h
         src/prephysical/PrePhysicalOp.cpp include/normal/plan/prephysical/PrePhysicalOp.h
         src/prephysical/SortPrePOp.cpp include/normal/plan/prephysical/SortPrePOp.h
+        include/normal/plan/prephysical/SortOrder.h
+        src/prephysical/SortKey.cpp include/normal/plan/prephysical/SortKey.h
         src/prephysical/LimitSortPrePOp.cpp include/normal/plan/prephysical/LimitSortPrePOp.h
         include/normal/plan/prephysical/AggregatePrePFunctionType.h
         src/prephysical/AggregatePrePFunction.cpp include/normal/plan/prephysical/AggregatePrePFunction.h

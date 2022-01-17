@@ -54,7 +54,7 @@ private:
   void addProjectForJoinColumnRenames(shared_ptr<PrePhysicalOp> &op,
                                       const vector<shared_ptr<PrePhysicalOp>> &producers,
                                       const json &jObj);
-  vector<arrow::compute::SortKey> deserializeSortKeys(const json &jObj);
+  vector<SortKey> deserializeSortKeys(const json &jObj);
 
   shared_ptr<SortPrePOp> deserializeSort(const json &jObj);
   shared_ptr<LimitSortPrePOp> deserializeLimitSort(const json &jObj);

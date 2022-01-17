@@ -47,4 +47,17 @@ public:
 
 }
 
+using AggregateResultPtr = std::shared_ptr<normal::executor::physical::aggregate::AggregateResult>;
+
+CAF_BEGIN_TYPE_ID_BLOCK(AggregateResult, normal::caf::CAFUtil::AggregateResult_first_custom_type_id)
+CAF_ADD_TYPE_ID(AggregateResult, (normal::executor::physical::aggregate::AggregateResult))
+CAF_END_TYPE_ID_BLOCK(AggregateResult)
+
+namespace caf {
+template <>
+struct inspector_access<AggregateResultPtr> : variant_inspector_access<AggregateResultPtr> {
+  // nop
+};
+} // namespace caf
+
 #endif //NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_AGGREGATE_AGGREGATERESULT_H

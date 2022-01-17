@@ -8,11 +8,13 @@
 #include <normal/executor/physical/PhysicalOp.h>
 #include <normal/executor/message/CompleteMessage.h>
 #include <normal/executor/message/TupleMessage.h>
+#include <normal/plan/prephysical/SortKey.h>
 #include <normal/tuple/serialization/ArrowSerializer.h>
 #include <arrow/compute/api.h>
 #include <memory>
 
 using namespace normal::executor::message;
+using namespace normal::plan::prephysical;
 using namespace std;
 
 namespace normal::executor::physical::limitsort {
@@ -21,7 +23,8 @@ class LimitSortPOp : public PhysicalOp {
 
 public:
   LimitSortPOp(const string &name,
-               const arrow::compute::SelectKOptions &selectKOptions,
+               int64_t k,
+               const vector<SortKey> &sortKeys,
                const vector<string> &projectColumnNames);
   LimitSortPOp() = default;
   LimitSortPOp(const LimitSortPOp&) = default;
@@ -35,10 +38,11 @@ private:
   void onTuple(const TupleMessage &message);
 
   shared_ptr<TupleSet> makeInput(const shared_ptr<TupleSet> &tupleSet);
-
   shared_ptr<TupleSet> selectK(const shared_ptr<TupleSet> &tupleSet);
 
-  arrow::compute::SelectKOptions selectKOptions_;
+  int64_t k_;
+  vector<SortKey> sortKeys_;
+  std::optional<arrow::compute::SelectKOptions> arrowSelectKOptions_;
   std::optional<shared_ptr<TupleSet>> result_;
 
 // caf inspect
@@ -52,7 +56,8 @@ public:
                                f.field("opContext", op.opContext_),
                                f.field("producers", op.producers_),
                                f.field("consumers", op.consumers_),
-                               f.field("selectKOptions", op.selectKOptions_));
+                               f.field("k", op.k_),
+                               f.field("sortKeys", op.sortKeys_));
   }
 };
 
