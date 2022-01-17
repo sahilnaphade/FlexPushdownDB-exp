@@ -17,7 +17,7 @@ public:
   AWSConfig(S3ClientType s3ClientType,
             size_t networkLimit);
 
-  static shared_ptr<AWSConfig> parseExecConfig();
+  static shared_ptr<AWSConfig> parseAWSConfig();
 
   S3ClientType getS3ClientType() const;
   size_t getNetworkLimit() const;

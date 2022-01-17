@@ -36,12 +36,26 @@ private:
 
   void merge();
 
-  std::weak_ptr<PhysicalOp> leftProducer_;
-  std::weak_ptr<PhysicalOp> rightProducer_;
+  std::string leftProducerName_;
+  std::string rightProducerName_;
 
   std::list<std::shared_ptr<TupleSet>> leftTupleSets_;
   std::list<std::shared_ptr<TupleSet>> rightTupleSets_;
 
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, MergePOp& op) {
+    return f.object(op).fields(f.field("name", op.name_),
+                               f.field("type", op.type_),
+                               f.field("projectColumnNames", op.projectColumnNames_),
+                               f.field("queryId", op.queryId_),
+                               f.field("opContext", op.opContext_),
+                               f.field("producers", op.producers_),
+                               f.field("consumers", op.consumers_),
+                               f.field("leftProducerName", op.leftProducerName_),
+                               f.field("rightProducerName", op.rightProducerName_));
+  }
 };
 
 }

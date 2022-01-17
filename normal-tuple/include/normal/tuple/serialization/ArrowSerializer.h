@@ -6,6 +6,7 @@
 #define NORMAL_NORMAL_TUPLE_INCLUDE_NORMAL_TUPLE_SERIALIZATION_ARROWSERIALIZER_H
 
 #include <arrow/api.h>
+#include <arrow/compute/api.h>
 
 namespace normal::tuple {
 
@@ -51,6 +52,23 @@ public:
   static std::shared_ptr<arrow::DataType> bytes_to_dataType(const std::vector<std::uint8_t>& bytes_vec);
   static std::vector<std::uint8_t> dataType_to_bytes(const std::shared_ptr<arrow::DataType>& dataType);
 
+  template <class Inspector>
+  friend bool inspect(Inspector& f, arrow::compute::SelectKOptions& option) {
+    return f.object(option).fields(f.field("k", option.k),
+                                   f.field("sort_keys", option.sort_keys));
+  }
+
+  template <class Inspector>
+  friend bool inspect(Inspector& f, arrow::compute::SortOptions& option) {
+    return f.object(option).fields(f.field("sort_keys", option.sort_keys),
+                                   f.field("null_placement", option.null_placement));
+  }
+
+  template <class Inspector>
+  friend bool inspect(Inspector& f, arrow::compute::SortKey& sortKey) {
+    return f.object(sortKey).fields(f.field("name", sortKey.name),
+                                    f.field("order", sortKey.order));
+  }
 };
 
 }

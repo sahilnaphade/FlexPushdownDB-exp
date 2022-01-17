@@ -27,7 +27,7 @@ void SplitPOp::onReceive(const Envelope &msg) {
 }
 
 void SplitPOp::onStart() {
-  SPDLOG_DEBUG("Starting '{}'  |  numConsumers: {}", name(), consumers_.size());
+  SPDLOG_DEBUG("Starting '{}'  |  numConsumers: {}", name(), consumerVec_.size());
 }
 
 void SplitPOp::onTuple(const TupleMessage &message) {
@@ -44,7 +44,7 @@ void SplitPOp::onTuple(const TupleMessage &message) {
   }
 
   // send if buffer is large enough
-  if (inputTupleSet_.has_value() && inputTupleSet_.value()->numRows() >= DefaultBufferSize * (int) consumers_.size()) {
+  if (inputTupleSet_.has_value() && inputTupleSet_.value()->numRows() >= DefaultBufferSize * (int) consumerVec_.size()) {
     splitAndSend();
   }
 }
@@ -61,7 +61,7 @@ void SplitPOp::onComplete(const CompleteMessage &) {
 
 void SplitPOp::produce(const shared_ptr<PhysicalOp> &op) {
   PhysicalOp::produce(op);
-  consumers_.emplace_back(op->name());
+  consumerVec_.emplace_back(op->name());
 }
 
 tl::expected<void, string> SplitPOp::bufferInput(const shared_ptr<TupleSet>& tupleSet) {
@@ -114,32 +114,32 @@ tl::expected<vector<shared_ptr<TupleSet>>, string> SplitPOp::split() {
   const auto &combinedTable = expCombinedTable.ValueOrDie();
 
   // split
-  vector<arrow::ArrayVector> outputArrayVectors{consumers_.size()};
+  vector<arrow::ArrayVector> outputArrayVectors{consumerVec_.size()};
   for (const auto &column: combinedTable->columns()) {
     const auto &inputArray = column->chunk(0);
-    const auto &expSplitArrays = splitArray(inputArray, consumers_.size());
+    const auto &expSplitArrays = splitArray(inputArray, consumerVec_.size());
     if (!expSplitArrays.has_value()) {
       return tl::make_unexpected(expSplitArrays.error());
     }
     const auto &splitArrays = expSplitArrays.value();
 
-    for (uint i = 0; i < consumers_.size(); ++i) {
+    for (uint i = 0; i < consumerVec_.size(); ++i) {
       outputArrayVectors[i].emplace_back(splitArrays[i]);
     }
   }
 
   // make tables
-  vector<shared_ptr<TupleSet>> outputTupleSets{consumers_.size()};
+  vector<shared_ptr<TupleSet>> outputTupleSets{consumerVec_.size()};
   const auto &schema = inputTupleSet_.value()->schema();
-  for (uint i = 0; i < consumers_.size(); ++i) {
+  for (uint i = 0; i < consumerVec_.size(); ++i) {
     outputTupleSets[i] = TupleSet::make(schema, outputArrayVectors[i]);
   }
   return outputTupleSets;
 }
 
 void SplitPOp::send(const vector<shared_ptr<TupleSet>> &tupleSets) {
-  for (uint i = 0; i < consumers_.size(); ++i) {
-    const auto &consumer = consumers_[i];
+  for (uint i = 0; i < consumerVec_.size(); ++i) {
+    const auto &consumer = consumerVec_[i];
     const auto &tupleSet = tupleSets[i];
     shared_ptr<Message> tupleMessage = make_shared<TupleMessage>(tupleSet, name());
     ctx()->send(tupleMessage, consumer);

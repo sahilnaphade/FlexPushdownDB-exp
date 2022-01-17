@@ -35,12 +35,12 @@ void ShufflePOp::onReceive(const Envelope &msg) {
 
 void ShufflePOp::produce(const shared_ptr<PhysicalOp> &operator_) {
   PhysicalOp::produce(operator_);
-  consumers_.emplace_back(operator_->name());
+  consumerVec_.emplace_back(operator_->name());
 }
 
 void ShufflePOp::onStart() {
-  SPDLOG_DEBUG("Starting '{}'  |  numConsumers: {}", name(), consumers_.size());
-  buffers_.resize(consumers_.size(), nullopt);
+  SPDLOG_DEBUG("Starting '{}'  |  numConsumers: {}", name(), consumerVec_.size());
+  buffers_.resize(consumerVec_.size(), nullopt);
 }
 
 void ShufflePOp::onComplete(const CompleteMessage &) {
@@ -82,7 +82,7 @@ tl::expected<void, string> ShufflePOp::send(int partitionIndex, bool force) {
   if (buffers_[partitionIndex].has_value() && (force || buffers_[partitionIndex].value()->numRows() >= DefaultBufferSize)) {
 	shared_ptr<Message> tupleMessage = make_shared<TupleMessage>(
 	        TupleSet::make(buffers_[partitionIndex].value()->table()), name());
-	ctx()->send(tupleMessage, consumers_[partitionIndex]);
+	ctx()->send(tupleMessage, consumerVec_[partitionIndex]);
 	buffers_[partitionIndex] = nullopt;
   }
 
@@ -96,14 +96,14 @@ void ShufflePOp::onTuple(const TupleMessage &message) {
 
   // Check empty
   if(tupleSet->numRows() == 0){
-    for (size_t s = 0; s < consumers_.size(); ++s) {
+    for (size_t s = 0; s < consumerVec_.size(); ++s) {
       shuffledTupleSets.emplace_back(tupleSet);
     }
   }
 
   else {
     // Shuffle the tuple set
-    auto expectedShuffledTupleSets = ShuffleKernel2::shuffle(columnNames_, consumers_.size(), *tupleSet);
+    auto expectedShuffledTupleSets = ShuffleKernel2::shuffle(columnNames_, consumerVec_.size(), *tupleSet);
     if (!expectedShuffledTupleSets.has_value()) {
       throw runtime_error(fmt::format("{}, {}", expectedShuffledTupleSets.error(), name()));
     }

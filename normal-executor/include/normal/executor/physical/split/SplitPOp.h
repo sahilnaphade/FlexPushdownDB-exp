@@ -26,12 +26,12 @@ public:
   SplitPOp& operator=(const SplitPOp&) = default;
 
   void onReceive(const Envelope &msg) override;
+  void produce(const shared_ptr<PhysicalOp> &op) override;
 
 private:
   void onStart();
   void onComplete(const CompleteMessage &);
   void onTuple(const TupleMessage &message);
-  void produce(const shared_ptr<PhysicalOp> &op) override;
 
   tl::expected<void, string> splitAndSend();
   tl::expected<void, string> bufferInput(const shared_ptr<TupleSet>& tupleSet);
@@ -39,9 +39,22 @@ private:
   void send(const vector<shared_ptr<TupleSet>> &tupleSets);
   void clear();
 
-  vector<string> consumers_;
+  vector<string> consumerVec_;
   optional<shared_ptr<TupleSet>> inputTupleSet_;
 
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, SplitPOp& op) {
+    return f.object(op).fields(f.field("name", op.name_),
+                               f.field("type", op.type_),
+                               f.field("projectColumnNames", op.projectColumnNames_),
+                               f.field("queryId", op.queryId_),
+                               f.field("opContext", op.opContext_),
+                               f.field("producers", op.producers_),
+                               f.field("consumers", op.consumers_),
+                               f.field("consumerVec", op.consumerVec_));
+  }
 };
 
 }

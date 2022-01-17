@@ -7,7 +7,6 @@
 #include <fmt/format.h>
 #include <unordered_map>
 #include <string>
-#include <sstream>
 
 using namespace normal::util;
 
@@ -18,7 +17,7 @@ AWSConfig::AWSConfig(S3ClientType s3ClientType,
   s3ClientType_(s3ClientType),
   networkLimit_(networkLimit) {}
 
-shared_ptr<AWSConfig> AWSConfig::parseExecConfig() {
+shared_ptr<AWSConfig> AWSConfig::parseAWSConfig() {
   unordered_map<string, string> configMap = readConfig("aws.conf");
   auto s3ClientType = parseS3ClientType(configMap["S3_CLIENT_TYPE"]);
   auto networkLimit = stoul(configMap["NETWORK_LIMIT"]);

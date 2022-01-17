@@ -106,6 +106,21 @@ private:
    */
   std::optional<std::shared_ptr<normal::expression::Projector>> projector_;
 
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, ProjectPOp& op) {
+    return f.object(op).fields(f.field("name", op.name_),
+                               f.field("type", op.type_),
+                               f.field("projectColumnNames", op.projectColumnNames_),
+                               f.field("queryId", op.queryId_),
+                               f.field("opContext", op.opContext_),
+                               f.field("producers", op.producers_),
+                               f.field("consumers", op.consumers_),
+                               f.field("exprs", op.exprs_),
+                               f.field("exprNames", op.exprNames_),
+                               f.field("projectColumnNamePairs", op.projectColumnNamePairs_));
+  }
 };
 
 }

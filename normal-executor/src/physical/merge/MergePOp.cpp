@@ -28,11 +28,10 @@ void MergePOp::onReceive(const Envelope &msg) {
 }
 
 void MergePOp::onStart() {
-
   SPDLOG_DEBUG("Starting operator  |  name: '{}', leftProducer: {}, rightProducer: {}",
-			   name(),
-			   leftProducer_.lock()->name(),
-			   rightProducer_.lock()->name());
+               name(),
+               leftProducerName_,
+               rightProducerName_);
 }
 
 void MergePOp::merge() {
@@ -48,7 +47,7 @@ void MergePOp::merge() {
 
     if (!expectedMergedTupleSet.has_value()) {
       throw std::runtime_error(fmt::format("{}.\n leftOp: {}\n rightOp: {}",
-                                expectedMergedTupleSet.error(), leftProducer_.lock()->name(), rightProducer_.lock()->name()));
+                                expectedMergedTupleSet.error(), leftProducerName_, rightProducerName_));
     } else {
       // Send merged tupleset
       auto mergedTupleSet = expectedMergedTupleSet.value();
@@ -80,13 +79,13 @@ void MergePOp::onTuple(const TupleMessage &message) {
   const auto &tupleSet = message.tuples();
 
   // Add the tupleset to a slot in left or right producers tuple queue
-  if (message.sender() == leftProducer_.lock()->name()) {
+  if (message.sender() == leftProducerName_) {
 	leftTupleSets_.emplace_back(tupleSet);
-  } else if (message.sender() == rightProducer_.lock()->name()) {
+  } else if (message.sender() == rightProducerName_) {
 	rightTupleSets_.emplace_back(tupleSet);
   } else {
 	throw std::runtime_error(fmt::format("Unrecognized producer {}, left: {}, right: {}",
-	        message.sender(), leftProducer_.lock()->name(), rightProducer_.lock()->name()));
+	        message.sender(), leftProducerName_, rightProducerName_));
   }
 
   // Merge
@@ -94,11 +93,11 @@ void MergePOp::onTuple(const TupleMessage &message) {
 }
 
 void MergePOp::setLeftProducer(const std::shared_ptr<PhysicalOp> &leftProducer) {
-  leftProducer_ = leftProducer;
+  leftProducerName_ = leftProducer->name();
   consume(leftProducer);
 }
 
 void MergePOp::setRightProducer(const std::shared_ptr<PhysicalOp> &rightProducer) {
-  rightProducer_ = rightProducer;
+  rightProducerName_ = rightProducer->name();
   consume(rightProducer);
 }

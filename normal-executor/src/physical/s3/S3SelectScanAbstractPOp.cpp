@@ -56,6 +56,9 @@ S3SelectScanAbstractPOp::S3SelectScanAbstractPOp(std::string name,
 	toCache_(toCache) {
 }
 
+S3SelectScanAbstractPOp::S3SelectScanAbstractPOp() :
+  awsClient_(normal::aws::AWSClient::daemonClient_) {}
+
 void S3SelectScanAbstractPOp::onStart() {
   SPDLOG_DEBUG("Starting operator  |  name: '{}'", this->name());
   if (scanOnStart_) {

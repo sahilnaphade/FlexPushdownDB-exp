@@ -20,7 +20,12 @@ using namespace std;
 namespace normal::aws {
 
 class AWSClient {
+
 public:
+  // A global AWSClient used for slave nodes in distributed node,
+  // because we want all S3 operators to share the same copy of AWSClient.
+  inline static shared_ptr<AWSClient> daemonClient_ = nullptr;
+
   AWSClient(const shared_ptr<AWSConfig> &awsConfig);
 
   void init();

@@ -35,6 +35,12 @@ public:
    */
   void onReceive(const Envelope &msg) override;
 
+  /**
+   * Set the producer operator
+   * @param operator_
+   */
+  void produce(const shared_ptr<PhysicalOp> &operator_) override;
+
 private:
   /**
    * Start message handler
@@ -53,12 +59,6 @@ private:
   void onTuple(const TupleMessage &message);
 
   /**
-   * Set the producer operator
-   * @param operator_
-   */
-  void produce(const shared_ptr<PhysicalOp> &operator_) override;
-
-  /**
    * Adds the tuple set to the outbound buffer for the given slot
    * @param tupleSet
    * @param partitionIndex
@@ -75,8 +75,23 @@ private:
   [[nodiscard]] tl::expected<void, string> send(int partitionIndex, bool force);
 
   vector<string> columnNames_;
-  vector<string> consumers_;
+  vector<string> consumerVec_;
   vector<optional<shared_ptr<TupleSet>>> buffers_;
+
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, ShufflePOp& op) {
+    return f.object(op).fields(f.field("name", op.name_),
+                               f.field("type", op.type_),
+                               f.field("projectColumnNames", op.projectColumnNames_),
+                               f.field("queryId", op.queryId_),
+                               f.field("opContext", op.opContext_),
+                               f.field("producers", op.producers_),
+                               f.field("consumers", op.consumers_),
+                               f.field("columnNames", op.columnNames_),
+                               f.field("consumerVec", op.consumerVec_));
+  }
 };
 
 }

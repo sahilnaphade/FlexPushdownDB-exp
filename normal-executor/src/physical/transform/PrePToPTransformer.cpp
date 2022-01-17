@@ -422,21 +422,33 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
   } else {
     vector<shared_ptr<PhysicalOp>> shuffleLeftPOps, shuffleRightPOps;
     for (const auto &upLeftConnPOp: leftTransRes.first) {
-      shuffleLeftPOps.emplace_back(make_shared<shuffle::ShufflePOp>(
+      shared_ptr<shuffle::ShufflePOp> shufflePOp = make_shared<shuffle::ShufflePOp>(
               fmt::format("Shuffle[{}]-{}", prePOpId, upLeftConnPOp->name()),
               leftColumnNames,
-              upLeftConnPOp->getProjectColumnNames()));
+              upLeftConnPOp->getProjectColumnNames());
+      shuffleLeftPOps.emplace_back(shufflePOp);
+
+      // ShufflePOp's produce() overrides the base one, so we cannot use connectManyToMany() here
+      for (const auto &hashJoinBuildPOp: hashJoinBuildPOps) {
+        shufflePOp->produce(hashJoinBuildPOp);
+        hashJoinBuildPOp->consume(shufflePOp);
+      }
     }
     for (const auto &upRightConnPOp: rightTransRes.first) {
-      shuffleRightPOps.emplace_back(make_shared<shuffle::ShufflePOp>(
+      shared_ptr<shuffle::ShufflePOp> shufflePOp = make_shared<shuffle::ShufflePOp>(
               fmt::format("Shuffle[{}]-{}", prePOpId, upRightConnPOp->name()),
               rightColumnNames,
-              upRightConnPOp->getProjectColumnNames()));
+              upRightConnPOp->getProjectColumnNames());
+      shuffleRightPOps.emplace_back(shufflePOp);
+
+      // ShufflePOp's produce() overrides the base one, so we cannot use connectManyToMany() here
+      for (const auto &hashJoinProbePOp: hashJoinProbePOps) {
+        shufflePOp->produce(hashJoinProbePOp);
+        hashJoinProbePOp->consume(shufflePOp);
+      }
     }
     allPOps.insert(allPOps.end(), shuffleLeftPOps.begin(), shuffleLeftPOps.end());
     allPOps.insert(allPOps.end(), shuffleRightPOps.begin(), shuffleRightPOps.end());
-    connectManyToMany(shuffleLeftPOps, hashJoinBuildPOps);
-    connectManyToMany(shuffleRightPOps, hashJoinProbePOps);
 
     // connect to upstream
     connectOneToOne(leftTransRes.first, shuffleLeftPOps);
@@ -498,18 +510,21 @@ PrePToPTransformer::transformNestedLoopJoin(const shared_ptr<NestedLoopJoinPrePO
   } else {
     vector<shared_ptr<PhysicalOp>> splitPOps;
     for (const auto &upRightConnPOp: rightTransRes.first) {
-      splitPOps.emplace_back(make_shared<split::SplitPOp>(fmt::format("Split[{}]-{}", prePOpId, upRightConnPOp->name()),
-                                                                 upRightConnPOp->getProjectColumnNames()));
-    }
-    allPOps.insert(allPOps.end(), splitPOps.begin(), splitPOps.end());
-    connectOneToOne(rightTransRes.first, splitPOps);
+      shared_ptr<split::SplitPOp> splitPOp = make_shared<split::SplitPOp>(
+              fmt::format("Split[{}]-{}", prePOpId, upRightConnPOp->name()),
+              upRightConnPOp->getProjectColumnNames());
+      splitPOps.emplace_back(splitPOp);
 
-    for (const auto &upRightConnPOp: rightTransRes.first) {
+      // SplitPOp's produce() overrides the base one, so we cannot use connectManyToMany() here
       for (const auto &nestedLoopJoinPOp: nestedLoopJoinPOps) {
-        upRightConnPOp->produce(nestedLoopJoinPOp);
-        static_pointer_cast<join::NestedLoopJoinPOp>(nestedLoopJoinPOp)->addRightProducer(upRightConnPOp);
+        splitPOp->produce(nestedLoopJoinPOp);
+        static_pointer_cast<join::NestedLoopJoinPOp>(nestedLoopJoinPOp)->addRightProducer(splitPOp);
       }
     }
+    allPOps.insert(allPOps.end(), splitPOps.begin(), splitPOps.end());
+
+    // connect to upstream
+    connectOneToOne(rightTransRes.first, splitPOps);
   }
 
   return make_pair(nestedLoopJoinPOps, allPOps);

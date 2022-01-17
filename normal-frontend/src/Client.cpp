@@ -28,7 +28,7 @@ string Client::start() {
   catalogue_ = make_shared<Catalogue>(getDefaultCatalogueName(), getDefaultMetadataPath());
 
   // AWS client
-  const auto &awsConfig = AWSConfig::parseExecConfig();
+  const auto &awsConfig = AWSConfig::parseAWSConfig();
   awsClient_ = make_shared<AWSClient>(awsConfig);
   awsClient_->init();
   SPDLOG_INFO("AWS client started");

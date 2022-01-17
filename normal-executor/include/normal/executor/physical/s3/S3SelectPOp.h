@@ -71,6 +71,28 @@ private:
    * used to compute filter weight
    */
   std::vector<std::shared_ptr<normal::cache::SegmentKey>> weightedSegmentKeys_;
+
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, S3SelectPOp& op) {
+    return f.object(op).fields(f.field("name", op.name_),
+                               f.field("type", op.type_),
+                               f.field("projectColumnNames", op.projectColumnNames_),
+                               f.field("queryId", op.queryId_),
+                               f.field("opContext", op.opContext_),
+                               f.field("producers", op.producers_),
+                               f.field("consumers", op.consumers_),
+                               f.field("s3Bucket", op.s3Bucket_),
+                               f.field("s3Object", op.s3Object_),
+                               f.field("filterSql", op.filterSql_),
+                               f.field("startOffset", op.startOffset_),
+                               f.field("finishOffset", op.finishOffset_),
+                               f.field("table", op.table_),
+                               f.field("scanOnStart", op.scanOnStart_),
+                               f.field("toCache", op.toCache_),
+                               f.field("weightedSegmentKeys", op.weightedSegmentKeys_));
+  }
 };
 
 }
