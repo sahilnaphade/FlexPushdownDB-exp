@@ -31,7 +31,8 @@ using namespace Aws::S3;
 namespace normal::frontend::test {
 
 void TestUtil::e2eNoStartCalciteServer(const string &schemaName,
-                                       const vector<string> &queryFileNames) {
+                                       const vector<string> &queryFileNames,
+                                       int parallelDegree) {
 //  spdlog::set_level(spdlog::level::debug);
 
   // AWS client
@@ -94,7 +95,11 @@ void TestUtil::e2eNoStartCalciteServer(const string &schemaName,
     prePhysicalPlan->populateAndTrimProjectColumns();
 
     // transform prephysical plan to physical plan
-    auto prePToPTransformer = make_shared<PrePToPTransformer>(prePhysicalPlan, awsClient, mode, 1, 1);
+    auto prePToPTransformer = make_shared<PrePToPTransformer>(prePhysicalPlan,
+                                                              awsClient,
+                                                              mode,
+                                                              parallelDegree,
+                                                              1);
     const auto &physicalPlan = prePToPTransformer->transform();
 
     // execute

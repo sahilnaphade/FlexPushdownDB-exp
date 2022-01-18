@@ -19,9 +19,11 @@ public:
    * Test with calcite server already started, using pullup by default
    * @param schemaName
    * @param queryFileNames
+   * @param parallelDegree
    */
   static void e2eNoStartCalciteServer(const string &schemaName,
-                                      const vector<string> &queryFileNames);
+                                      const vector<string> &queryFileNames,
+                                      int parallelDegree);
 
 };
 

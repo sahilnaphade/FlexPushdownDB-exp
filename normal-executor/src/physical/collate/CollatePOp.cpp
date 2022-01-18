@@ -38,9 +38,6 @@ void CollatePOp::onReceive(const normal::executor::message::Envelope &message) {
 
 void CollatePOp::onStart() {
   SPDLOG_DEBUG("Starting operator  |  name: '{}'", this->name());
-
-  // FIXME: Not the best way to reset the tuples structure
-  this->tuples_.reset();
 }
 
 void CollatePOp::onComplete(const normal::executor::message::CompleteMessage &) {

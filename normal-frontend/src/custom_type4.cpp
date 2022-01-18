@@ -260,6 +260,8 @@ shape_ptr serialization_roundtrip(const shape_ptr& in) {
 //CAF_MAIN(caf::id_block::custom_types_4)
 
 #include <normal/tuple/serialization/ArrowSerializer.h>
+#include <normal/tuple/TupleSet.h>
+#include <arrow/compute/api.h>
 
 int main() {
 //  // schema serialization
@@ -295,22 +297,41 @@ int main() {
 //    std::cout << "Copy scalar: \n" << copyScalar->ToString() << std::endl;
 //  }
 
-  // data type serialization
-  auto dataTypes = std::vector<std::shared_ptr<arrow::DataType>>{
-          arrow::int32(),
-          arrow::int64(),
-          arrow::float64(),
-          arrow::boolean(),
-          arrow::date64(),
-          arrow::utf8()
-  };
-  for (const auto &dataType: dataTypes) {
-    std::cout << "Original dataType ToString(): \n" << dataType->ToString() << std::endl;
-    auto bytes = normal::tuple::ArrowSerializer::dataType_to_bytes(dataType);
-    auto copyDataType = normal::tuple::ArrowSerializer::bytes_to_dataType(bytes);
-    std::cout << "Copy dataType ToString(): \n" << copyDataType->ToString() << std::endl;
-  }
+//  // data type serialization
+//  auto dataTypes = std::vector<std::shared_ptr<arrow::DataType>>{
+//          arrow::int32(),
+//          arrow::int64(),
+//          arrow::float64(),
+//          arrow::boolean(),
+//          arrow::date64(),
+//          arrow::utf8()
+//  };
+//  for (const auto &dataType: dataTypes) {
+//    std::cout << "Original dataType ToString(): \n" << dataType->ToString() << std::endl;
+//    auto bytes = normal::tuple::ArrowSerializer::dataType_to_bytes(dataType);
+//    auto copyDataType = normal::tuple::ArrowSerializer::bytes_to_dataType(bytes);
+//    std::cout << "Copy dataType ToString(): \n" << copyDataType->ToString() << std::endl;
+//  }
 
+  auto fields = std::vector<std::shared_ptr<arrow::Field>>{
+          std::make_shared<arrow::Field>("a", arrow::int32())
+  };
+  auto schema = std::make_shared<arrow::Schema>(fields);
+  auto builder = std::make_shared<arrow::Int32Builder>();
+  builder->AppendValues({9, 8, 7});
+  auto array = builder->Finish().ValueOrDie();
+
+  auto tupleSet = normal::tuple::TupleSet::make(schema);
+//  auto tupleSet = normal::tuple::TupleSet::make(schema, {array});
+
+  auto sortKeys = std::vector<arrow::compute::SortKey>{
+          arrow::compute::SortKey("a", arrow::compute::SortOrder::Ascending)
+  };
+  auto sortOptions = arrow::compute::SortOptions(sortKeys);
+  auto selectKOptions = arrow::compute::SelectKOptions(5, sortKeys);
+  auto expSortIndices = arrow::compute::SortIndices(tupleSet->table(), sortOptions);
+//  auto expSelectKIndices = arrow::compute::SelectKUnstable(tupleSet->table(), selectKOptions);
+  int l = expSortIndices.ValueOrDie()->length();
 
   return 0;
 }
