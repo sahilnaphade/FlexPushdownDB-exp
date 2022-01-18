@@ -134,9 +134,9 @@ void Execution::boot() {
   // already utilizes the full network bandwidth with #cores requests whereas S3Select does not when
   // selectivity is low.
   if (op->getType() == POpType::S3_SELECT || op->getType() == POpType::S3_GET) {
-    args= make_shared<::caf::message>(make_message(op));
-  } else {
     args = make_shared<::caf::message>(make_message(op, detached));
+  } else {
+    args = make_shared<::caf::message>(make_message(op));
   }
 
   auto expectedActorHandle = actorSystem_->middleman().remote_spawn<::caf::actor>(nodes_[nodeId - 1],
