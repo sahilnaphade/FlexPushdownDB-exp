@@ -9,11 +9,16 @@ using namespace normal::tuple;
 namespace normal::executor::physical::group {
 
 GroupPOp::GroupPOp(const string &name,
+                   const vector<string> &projectColumnNames,
+                   int nodeId,
                    const vector<string> &groupColumnNames,
-                   const vector<shared_ptr<aggregate::AggregateFunction>> &aggregateFunctions,
-                   const vector<string> &projectColumnNames) :
-	PhysicalOp(name, "GroupPOp", projectColumnNames),
+                   const vector<shared_ptr<aggregate::AggregateFunction>> &aggregateFunctions) :
+	PhysicalOp(name, GROUP, projectColumnNames, nodeId),
   kernel2_(groupColumnNames, aggregateFunctions) {
+}
+
+std::string GroupPOp::getTypeString() const {
+  return "GroupPOp";
 }
 
 void GroupPOp::onReceive(const Envelope &msg) {

@@ -23,6 +23,15 @@ set<string> FilterableScanPrePOp::getUsedColumnNames() {
   return usedColumnNames;
 }
 
+void FilterableScanPrePOp::setProjectColumnNames(const set<string> &projectColumnNames) {
+  // scan operator shouldn't scan no columns
+  if (projectColumnNames.empty()) {
+    PrePhysicalOp::setProjectColumnNames({table_->getColumnNames()[0]});
+  } else {
+    PrePhysicalOp::setProjectColumnNames(projectColumnNames);
+  }
+}
+
 const shared_ptr<normal::expression::gandiva::Expression> &FilterableScanPrePOp::getPredicate() const {
   return predicate_;
 }

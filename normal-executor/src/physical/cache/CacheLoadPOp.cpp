@@ -13,19 +13,24 @@ using namespace normal::executor::physical::cache;
 
 CacheLoadPOp::CacheLoadPOp(std::string name,
            std::vector<std::string> projectColumnNames,
+           int nodeId,
            std::vector<std::string> predicateColumnNames,
            std::vector<std::string> columnNames,
 					 std::shared_ptr<Partition> Partition,
 					 int64_t StartOffset,
 					 int64_t FinishOffset,
            S3ClientType s3ClientType) :
-					 PhysicalOp(std::move(name), "CacheLoadPOp", std::move(projectColumnNames)),
-					 predicateColumnNames_(std::move(predicateColumnNames)),
-					 columnNames_(std::move(columnNames)),
-					 partition_(std::move(Partition)),
-					 startOffset_(StartOffset),
-					 finishOffset_(FinishOffset),
-					 s3ClientType_(s3ClientType) {}
+  PhysicalOp(std::move(name), CACHE_LOAD, std::move(projectColumnNames), nodeId),
+  predicateColumnNames_(std::move(predicateColumnNames)),
+  columnNames_(std::move(columnNames)),
+  partition_(std::move(Partition)),
+  startOffset_(StartOffset),
+  finishOffset_(FinishOffset),
+  s3ClientType_(s3ClientType) {}
+
+std::string CacheLoadPOp::getTypeString() const {
+  return "CacheLoadPOp";
+}
 
 void CacheLoadPOp::onReceive(const Envelope &message) {
   if (message.message().type() == "StartMessage") {

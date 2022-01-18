@@ -8,8 +8,13 @@
 namespace normal::executor::physical::split {
 
 SplitPOp::SplitPOp(const string &name,
-                   const vector<string> &projectColumnNames):
-  PhysicalOp(name, "SplitPOp", projectColumnNames) {}
+                   const vector<string> &projectColumnNames,
+                   int nodeId):
+  PhysicalOp(name, SPLIT, projectColumnNames, nodeId) {}
+
+std::string SplitPOp::getTypeString() const {
+  return "SplitPOp";
+}
 
 void SplitPOp::onReceive(const Envelope &msg) {
   if (msg.message().type() == "StartMessage") {

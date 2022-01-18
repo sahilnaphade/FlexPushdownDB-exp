@@ -10,14 +10,15 @@
 namespace normal::executor::physical {
 
 PhysicalOp::PhysicalOp(std::string name,
-                       std::string type,
-                       std::vector<std::string> projectColumnNames) :
+                       POpType type,
+                       std::vector<std::string> projectColumnNames,
+                       int nodeId) :
   name_(std::move(name)),
-  type_(std::move(type)),
-  projectColumnNames_(std::move(projectColumnNames)) {
-}
+  type_(type),
+  projectColumnNames_(std::move(projectColumnNames)),
+  nodeId_(nodeId) {}
 
-const std::string &PhysicalOp::getType() const {
+POpType PhysicalOp::getType() const {
   return type_;
 }
 
@@ -27,6 +28,10 @@ std::string &PhysicalOp::name() {
 
 const std::vector<std::string> &PhysicalOp::getProjectColumnNames() const {
   return projectColumnNames_;
+}
+
+int PhysicalOp::getNodeId() const {
+  return nodeId_;
 }
 
 void PhysicalOp::produce(const std::shared_ptr<PhysicalOp> &op) {

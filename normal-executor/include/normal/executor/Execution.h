@@ -30,6 +30,7 @@ class Execution {
 public:
   Execution(long queryId,
             const shared_ptr<::caf::actor_system> &actorSystem,
+            const vector<::caf::node_id> &nodes,
             const ::caf::actor &segmentCacheActor,
             const shared_ptr<PhysicalPlan> &physicalPlan);
   ~Execution();
@@ -52,8 +53,12 @@ private:
   void join();
   void close();
 
+  ::caf::actor localSpawn(const shared_ptr<PhysicalOp> &op);
+  ::caf::actor remoteSpawn(const shared_ptr<PhysicalOp> &op, int nodeId);
+
   long queryId_;
   shared_ptr<::caf::actor_system> actorSystem_;
+  vector<::caf::node_id> nodes_;
   shared_ptr<::caf::scoped_actor> rootActor_;
   ::caf::actor segmentCacheActor_;
   shared_ptr<PhysicalPlan> physicalPlan_;

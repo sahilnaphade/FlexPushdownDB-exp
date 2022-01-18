@@ -33,6 +33,7 @@ add_library(normal-executor STATIC
         include/normal/executor/physical/POpActor2.h
         src/physical/POpContext.cpp include/normal/executor/physical/POpContext.h
         src/physical/PhysicalOp.cpp include/normal/executor/physical/PhysicalOp.h
+        include/normal/executor/physical/POpType.h
 #        physical operators
         include/normal/executor/physical/Globals.h
         src/physical/sort/SortPOp.cpp include/normal/executor/physical/sort/SortPOp.h

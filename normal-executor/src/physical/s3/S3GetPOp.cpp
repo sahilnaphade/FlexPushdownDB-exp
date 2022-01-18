@@ -49,9 +49,10 @@ std::mutex GetConvertLock;
 int activeGetConversions = 0;
 
 S3GetPOp::S3GetPOp(std::string name,
+               std::vector<std::string> projectColumnNames,
+               int nodeId,
 						   std::string s3Bucket,
 						   std::string s3Object,
-						   std::vector<std::string> projectColumnNames,
 						   int64_t startOffset,
 						   int64_t finishOffset,
                std::shared_ptr<Table> table,
@@ -59,16 +60,21 @@ S3GetPOp::S3GetPOp(std::string name,
 						   bool scanOnStart,
                bool toCache) :
   S3SelectScanAbstractPOp(std::move(name),
-                          "S3GetPOp",
+                          S3_GET,
+                          std::move(projectColumnNames),
+                          nodeId,
                           std::move(s3Bucket),
                           std::move(s3Object),
-                          std::move(projectColumnNames),
                           startOffset,
                           finishOffset,
                           std::move(table),
                           std::move(awsClient),
                           scanOnStart,
                           toCache) {
+}
+
+std::string S3GetPOp::getTypeString() const {
+  return "S3GetPOp";
 }
 
 bool S3GetPOp::parallelTuplesetCreationSupported() {

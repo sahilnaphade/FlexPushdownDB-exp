@@ -22,14 +22,16 @@ class AggregatePOp : public normal::executor::physical::PhysicalOp {
 
 public:
   AggregatePOp(string name,
-               vector<shared_ptr<AggregateFunction>> functions,
-               vector<string> projectColumnNames);
+               vector<string> projectColumnNames,
+               int nodeId,
+               vector<shared_ptr<AggregateFunction>> functions);
   AggregatePOp() = default;
   AggregatePOp(const AggregatePOp&) = default;
   AggregatePOp& operator=(const AggregatePOp&) = default;
   ~AggregatePOp() override = default;
 
   void onReceive(const Envelope &message) override;
+  std::string getTypeString() const override;
 
 private:
   void onStart();
@@ -52,6 +54,7 @@ public:
     return f.object(op).fields(f.field("name", op.name_),
                                f.field("type", op.type_),
                                f.field("projectColumnNames", op.projectColumnNames_),
+                               f.field("nodeId", op.nodeId_),
                                f.field("queryId", op.queryId_),
                                f.field("opContext", op.opContext_),
                                f.field("producers", op.producers_),

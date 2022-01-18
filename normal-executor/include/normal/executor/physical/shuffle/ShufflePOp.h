@@ -23,8 +23,9 @@ class ShufflePOp : public PhysicalOp {
 
 public:
   ShufflePOp(string name,
-             vector<string> columnNames,
-             vector<string> projectColumnNames);
+             vector<string> projectColumnNames,
+             int nodeId,
+             vector<string> shuffleColumnNames);
   ShufflePOp() = default;
   ShufflePOp(const ShufflePOp&) = default;
   ShufflePOp& operator=(const ShufflePOp&) = default;
@@ -34,6 +35,8 @@ public:
    * @param msg
    */
   void onReceive(const Envelope &msg) override;
+
+  std::string getTypeString() const override;
 
   /**
    * Set the producer operator
@@ -74,7 +77,7 @@ private:
    */
   [[nodiscard]] tl::expected<void, string> send(int partitionIndex, bool force);
 
-  vector<string> columnNames_;
+  vector<string> shuffleColumnNames_;
   vector<string> consumerVec_;
   vector<std::optional<shared_ptr<TupleSet>>> buffers_;
 
@@ -85,11 +88,12 @@ public:
     return f.object(op).fields(f.field("name", op.name_),
                                f.field("type", op.type_),
                                f.field("projectColumnNames", op.projectColumnNames_),
+                               f.field("nodeId", op.nodeId_),
                                f.field("queryId", op.queryId_),
                                f.field("opContext", op.opContext_),
                                f.field("producers", op.producers_),
                                f.field("consumers", op.consumers_),
-                               f.field("columnNames", op.columnNames_),
+                               f.field("shuffleColumnNames", op.shuffleColumnNames_),
                                f.field("consumerVec", op.consumerVec_));
   }
 };

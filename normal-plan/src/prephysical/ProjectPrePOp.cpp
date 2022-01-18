@@ -46,6 +46,12 @@ const vector<pair<string, string>> &ProjectPrePOp::getProjectColumnNamePairs() c
   return projectColumnNamePairs_;
 }
 
+void ProjectPrePOp::setProjectColumnNames(const set<string> &projectColumnNames) {
+  // also need to update projectColumnNamePairs
+  updateProjectColumnNamePairs(projectColumnNames);
+  PrePhysicalOp::setProjectColumnNames(projectColumnNames);
+}
+
 void ProjectPrePOp::updateProjectColumnNamePairs(const set<string> &projectColumnNames) {
   // check if additional projectColumnNames are added
   set<string> columnFromNamePairsAndExprs(exprNames_.begin(), exprNames_.end());

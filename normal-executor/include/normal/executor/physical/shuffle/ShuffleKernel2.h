@@ -23,7 +23,7 @@ class ShuffleKernel2 {
 
 public:
   static tl::expected<vector<shared_ptr<TupleSet>>, string>
-  shuffle(const vector<string> &columnName, size_t numSlots, const TupleSet &tupleSet);
+  shuffle(const vector<string> &columnNames, size_t numSlots, const TupleSet &tupleSet);
 
 };
 

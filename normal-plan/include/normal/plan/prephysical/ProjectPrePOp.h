@@ -22,14 +22,15 @@ public:
   string getTypeString() override;
 
   set<string> getUsedColumnNames() override;
+  void setProjectColumnNames(const set<string> &projectColumnNames) override;
 
   const vector<shared_ptr<normal::expression::gandiva::Expression>> &getExprs() const;
   const vector<std::string> &getExprNames() const;
   const vector<pair<string, string>> &getProjectColumnNamePairs() const;
 
+private:
   void updateProjectColumnNamePairs(const set<string> &projectColumnNames);
 
-private:
   vector<shared_ptr<normal::expression::gandiva::Expression>> exprs_;
   vector<string> exprNames_;
   vector<pair<string, string>> projectColumnNamePairs_;

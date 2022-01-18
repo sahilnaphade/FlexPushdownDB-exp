@@ -49,6 +49,7 @@ CAF_ADD_TYPE_ID(POp, (normal::executor::physical::s3::S3SelectPOp))
 CAF_ADD_TYPE_ID(POp, (shuffle::ShufflePOp))
 CAF_ADD_TYPE_ID(POp, (sort::SortPOp))
 CAF_ADD_TYPE_ID(POp, (split::SplitPOp))
+CAF_ADD_TYPE_ID(POp, (caf::spawn_options))
 CAF_END_TYPE_ID_BLOCK(POp)
 
 // Variant-based approach on POpPtr
@@ -84,39 +85,39 @@ struct variant_inspector_traits<POpPtr> {
   static auto type_index(const value_type &x) {
     if (!x)
       return 0;
-    else if (x->getType() == "AggregatePOp")
+    else if (x->getType() == POpType::AGGREGATE)
       return 1;
-    else if (x->getType() == "CacheLoadPOp")
+    else if (x->getType() == POpType::CACHE_LOAD)
       return 2;
-    else if (x->getType() == "CollatePOp")
+    else if (x->getType() == POpType::COLLATE)
       return 3;
-    else if (x->getType() == "FileScanPOp")
+    else if (x->getType() == POpType::FILE_SCAN)
       return 4;
-    else if (x->getType() == "FilterPOp")
+    else if (x->getType() == POpType::FILTER)
       return 5;
-    else if (x->getType() == "GroupPOp")
+    else if (x->getType() == POpType::GROUP)
       return 6;
-    else if (x->getType() == "HashJoinBuildPOp")
+    else if (x->getType() == POpType::HASH_JOIN_BUILD)
       return 7;
-    else if (x->getType() == "HashJoinProbePOp")
+    else if (x->getType() == POpType::HASH_JOIN_PROBE)
       return 8;
-    else if (x->getType() == "NestedLoopJoinPOp")
+    else if (x->getType() == POpType::NESTED_LOOP_JOIN)
       return 9;
-    else if (x->getType() == "LimitSortPOp")
+    else if (x->getType() == POpType::LIMIT_SORT)
       return 10;
-    else if (x->getType() == "MergePOp")
+    else if (x->getType() == POpType::MERGE)
       return 11;
-    else if (x->getType() == "ProjectPOp")
+    else if (x->getType() == POpType::PROJECT)
       return 12;
-    else if (x->getType() == "S3GetPOp")
+    else if (x->getType() == POpType::S3_GET)
       return 13;
-    else if (x->getType() == "S3SelectPOp")
+    else if (x->getType() == POpType::S3_SELECT)
       return 14;
-    else if (x->getType() == "ShufflePOp")
+    else if (x->getType() == POpType::SHUFFLE)
       return 15;
-    else if (x->getType() == "SortPOp")
+    else if (x->getType() == POpType::SORT)
       return 16;
-    else if (x->getType() == "SplitPOp")
+    else if (x->getType() == POpType::SPLIT)
       return 17;
     else
       return -1;

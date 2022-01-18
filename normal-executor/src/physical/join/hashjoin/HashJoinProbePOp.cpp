@@ -13,10 +13,11 @@
 using namespace normal::executor::physical::join;
 
 HashJoinProbePOp::HashJoinProbePOp(string name,
+                                   vector<string> projectColumnNames,
+                                   int nodeId,
                                    HashJoinPredicate pred,
-                                   JoinType joinType,
-                                   vector<string> projectColumnNames) :
-	PhysicalOp(move(name), "HashJoinProbePOp", move(projectColumnNames)) {
+                                   JoinType joinType) :
+	PhysicalOp(move(name), HASH_JOIN_PROBE, move(projectColumnNames), nodeId) {
 
   set<string> neededColumnNames(getProjectColumnNames().begin(), getProjectColumnNames().end());
   switch (joinType) {
@@ -43,6 +44,10 @@ HashJoinProbePOp::HashJoinProbePOp(string name,
     default:
       throw runtime_error(fmt::format("Unsupported hash join type, {}", joinType));
   }
+}
+
+std::string HashJoinProbePOp::getTypeString() const {
+  return "HashJoinProbePOp";
 }
 
 void HashJoinProbePOp::onReceive(const Envelope &msg) {

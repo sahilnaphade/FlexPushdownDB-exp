@@ -23,15 +23,17 @@ namespace normal::executor::physical::filter {
 class FilterPOp : public PhysicalOp {
 public:
   explicit FilterPOp(std::string name,
+                  std::vector<std::string> projectColumnNames,
+                  int nodeId,
                   std::shared_ptr<normal::expression::gandiva::Expression> predicate,
                   std::shared_ptr<Table> table,
-                  std::vector<std::string> projectColumnNames,
                   std::vector<std::shared_ptr<normal::cache::SegmentKey>> weightedSegmentKeys = {});
   FilterPOp() = default;
   FilterPOp(const FilterPOp&) = default;
   FilterPOp& operator=(const FilterPOp&) = default;
 
   void onReceive(const Envelope &Envelope) override;
+  std::string getTypeString() const override;
 
   [[nodiscard]] size_t getFilterTimeNS() const;
   [[nodiscard]] size_t getFilterInputBytes() const;
@@ -88,6 +90,7 @@ public:
     return f.object(op).fields(f.field("name", op.name_),
                                f.field("type", op.type_),
                                f.field("projectColumnNames", op.projectColumnNames_),
+                               f.field("nodeId", op.nodeId_),
                                f.field("queryId", op.queryId_),
                                f.field("opContext", op.opContext_),
                                f.field("producers", op.producers_),

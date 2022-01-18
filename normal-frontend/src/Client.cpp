@@ -53,11 +53,12 @@ string Client::start() {
   actorSystem_ = make_shared<::caf::actor_system>(*actorSystemConfig_);
 
   // executor
-  executor_ = make_shared<Executor>(execConfig_->getMode(),
+  executor_ = make_shared<Executor>(actorSystem_,
+                                    nodes_,
+                                    execConfig_->getMode(),
                                     execConfig_->getCachingPolicy(),
                                     execConfig_->showOpTimes(),
-                                    execConfig_->showScanMetrics(),
-                                    actorSystem_);
+                                    execConfig_->showScanMetrics());
   executor_->start();
   SPDLOG_INFO("Executor started");
 
@@ -144,7 +145,8 @@ shared_ptr<PhysicalPlan> Client::plan(const string &query, const shared_ptr<Cata
   auto prePToPTransformer = make_shared<PrePToPTransformer>(prePhysicalPlan,
                                                             awsClient_,
                                                             execConfig_->getMode(),
-                                                            execConfig_->getParallelDegree());
+                                                            execConfig_->getParallelDegree(),
+                                                            nodes_.size() + 1);
   const auto &physicalPlan = prePToPTransformer->transform();
 
   return physicalPlan;
@@ -166,7 +168,7 @@ void Client::connect() {
                 fmt::format("Failed to connected to server {}: {}", nodeIp, to_string(expectedNode.error())));
       }
       SPDLOG_INFO("Connected to server {}", nodeIp);
-      nodes_.emplace_back(expectedNode.value());
+      nodes_.emplace_back(*expectedNode);
     }
     SPDLOG_INFO("Connected to all servers, clients runs in the distributed version");
   }

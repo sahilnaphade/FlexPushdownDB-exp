@@ -12,10 +12,15 @@ using namespace normal::executor::physical::join;
 using namespace normal::tuple;
 
 HashJoinBuildPOp::HashJoinBuildPOp(const string &name,
-                                   const vector<string> &columnNames,
-                                   const vector<string> &projectColumnNames) :
-	PhysicalOp(name, "HashJoinBuildPOp", projectColumnNames),
-	kernel_(HashJoinBuildKernel::make(columnNames)){
+                                   const vector<string> &projectColumnNames,
+                                   int nodeId,
+                                   const vector<string> &predColumnNames) :
+	PhysicalOp(name, HASH_JOIN_BUILD, projectColumnNames, nodeId),
+	kernel_(HashJoinBuildKernel::make(predColumnNames)){
+}
+
+std::string HashJoinBuildPOp::getTypeString() const {
+  return "HashJoinBuildPOp";
 }
 
 void HashJoinBuildPOp::onReceive(const Envelope &msg) {

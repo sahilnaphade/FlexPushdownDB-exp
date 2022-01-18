@@ -7,10 +7,15 @@
 namespace normal::executor::physical::sort {
 
 SortPOp::SortPOp(const string &name,
-                 const vector<SortKey> &sortKeys,
-                 const vector<string> &projectColumnNames) :
-  PhysicalOp(name, "SortPOp", projectColumnNames),
+                 const vector<string> &projectColumnNames,
+                 int nodeId,
+                 const vector<SortKey> &sortKeys) :
+  PhysicalOp(name, SORT, projectColumnNames, nodeId),
   sortKeys_(sortKeys) {}
+
+std::string SortPOp::getTypeString() const {
+  return "SortPOp";
+}
 
 void SortPOp::onReceive(const Envelope &message) {
   if (message.message().type() == "StartMessage") {

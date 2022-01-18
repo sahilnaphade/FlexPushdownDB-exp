@@ -24,7 +24,8 @@ class CollatePOp : public PhysicalOp {
 
 public:
   explicit CollatePOp(std::string name,
-                      std::vector<std::string> projectColumnNames);
+                      std::vector<std::string> projectColumnNames,
+                      int nodeId);
   CollatePOp() = default;
   CollatePOp(const CollatePOp&) = default;
   CollatePOp& operator=(const CollatePOp&) = default;
@@ -33,6 +34,7 @@ public:
   std::shared_ptr<TupleSet> tuples();
 
   void onReceive(const normal::executor::message::Envelope &message) override;
+  std::string getTypeString() const override;
 
 private:
   void onStart();
@@ -50,6 +52,7 @@ public:
     return f.object(op).fields(f.field("name", op.name_),
                                f.field("type", op.type_),
                                f.field("projectColumnNames", op.projectColumnNames_),
+                               f.field("nodeId", op.nodeId_),
                                f.field("queryId", op.queryId_),
                                f.field("opContext", op.opContext_),
                                f.field("producers", op.producers_),

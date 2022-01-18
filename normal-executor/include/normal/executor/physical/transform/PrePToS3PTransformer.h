@@ -23,7 +23,8 @@ class PrePToS3PTransformer {
 public:
   PrePToS3PTransformer(uint prePOpId,
                        const shared_ptr<AWSClient> &awsClient,
-                       const shared_ptr<Mode> &mode);
+                       const shared_ptr<Mode> &mode,
+                       int numNodes);
 
   /**
    * Transform filterable scan prephysical op to physical op
@@ -64,6 +65,7 @@ private:
   uint prePOpId_;
   shared_ptr<AWSClient> awsClient_;
   shared_ptr<Mode> mode_;
+  int numNodes_;
 };
 
 }

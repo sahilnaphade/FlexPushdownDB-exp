@@ -30,14 +30,16 @@ class HashJoinProbePOp : public PhysicalOp {
 
 public:
   HashJoinProbePOp(string name,
+                   vector<string> projectColumnNames,
+                   int nodeId,
                    HashJoinPredicate pred,
-                   JoinType joinType,
-                   vector<string> projectColumnNames);
+                   JoinType joinType);
   HashJoinProbePOp() = default;
   HashJoinProbePOp(const HashJoinProbePOp&) = default;
   HashJoinProbePOp& operator=(const HashJoinProbePOp&) = default;
 
   void onReceive(const Envelope &msg) override;
+  std::string getTypeString() const override;
 
 private:
   void onStart();
@@ -58,6 +60,7 @@ public:
     return f.object(op).fields(f.field("name", op.name_),
                                f.field("type", op.type_),
                                f.field("projectColumnNames", op.projectColumnNames_),
+                               f.field("nodeId", op.nodeId_),
                                f.field("queryId", op.queryId_),
                                f.field("opContext", op.opContext_),
                                f.field("producers", op.producers_),

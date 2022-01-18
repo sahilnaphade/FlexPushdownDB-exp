@@ -18,14 +18,13 @@ public:
   FilterableScanPrePOp(uint id, const shared_ptr<Table> &table);
 
   string getTypeString() override;
-
   set<string> getUsedColumnNames() override;
+  void setProjectColumnNames(const set<string> &projectColumnNames) override;
 
   const shared_ptr<normal::expression::gandiva::Expression> &getPredicate() const;
   const shared_ptr<Table> &getTable() const;
 
   void setPredicate(const shared_ptr<normal::expression::gandiva::Expression> &predicate);
-
 
 private:
   shared_ptr<normal::expression::gandiva::Expression> predicate_;

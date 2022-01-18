@@ -22,14 +22,16 @@ namespace normal::executor::physical::join {
 class NestedLoopJoinPOp : public PhysicalOp {
 public:
   NestedLoopJoinPOp(const string &name,
+                    const vector<string> &projectColumnNames,
+                    int nodeId,
                     const std::optional<shared_ptr<expression::gandiva::Expression>> &predicate,
-                    JoinType joinType,
-                    const vector<string> &projectColumnNames);
+                    JoinType joinType);
   NestedLoopJoinPOp() = default;
   NestedLoopJoinPOp(const NestedLoopJoinPOp&) = default;
   NestedLoopJoinPOp& operator=(const NestedLoopJoinPOp&) = default;
 
   void onReceive(const Envelope &msg) override;
+  std::string getTypeString() const override;
 
   void addLeftProducer(const shared_ptr<PhysicalOp> &leftProducer);
   void addRightProducer(const shared_ptr<PhysicalOp> &rightProducer);
@@ -57,6 +59,7 @@ public:
     return f.object(op).fields(f.field("name", op.name_),
                                f.field("type", op.type_),
                                f.field("projectColumnNames", op.projectColumnNames_),
+                               f.field("nodeId", op.nodeId_),
                                f.field("queryId", op.queryId_),
                                f.field("opContext", op.opContext_),
                                f.field("producers", op.producers_),

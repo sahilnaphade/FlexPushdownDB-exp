@@ -39,13 +39,6 @@ set<string> PrePhysicalPlan::populateProjectColumnsDfs(const shared_ptr<PrePhysi
   const auto &projectColumnNames = op->getProjectColumnNames();
   if (projectColumnNames.empty()) {
     op->setProjectColumnNames(upProjectColumns);
-
-    // for ProjectPrePOp, also need to update projectColumnNamePairs
-    if (op->getType() == PROJECT) {
-      const auto &projectPrePOp = static_pointer_cast<ProjectPrePOp>(op);
-      projectPrePOp->updateProjectColumnNamePairs(upProjectColumns);
-    }
-
     return upProjectColumns;
   } else {
     return projectColumnNames;
@@ -78,19 +71,6 @@ void PrePhysicalPlan::trimProjectColumnsDfs(const shared_ptr<PrePhysicalOp>& op,
       }
     }
 
-    // scan operator shouldn't scan no columns
-    if (projectColumns.empty() && op->getType() == FILTERABLE_SCAN) {
-      const auto &filterableScanPrePOp = static_pointer_cast<FilterableScanPrePOp>(op);
-      projectColumns = {filterableScanPrePOp->getTable()->getColumnNames()[0]};
-    }
-
-    // for ProjectPrePOp, also need to update projectColumnNamePairs
-    if (op->getType() == PROJECT) {
-      const auto &projectPrePOp = static_pointer_cast<ProjectPrePOp>(op);
-      projectPrePOp->updateProjectColumnNamePairs(projectColumns);
-    }
-
-    // set it finally
     op->setProjectColumnNames(projectColumns);
   }
 

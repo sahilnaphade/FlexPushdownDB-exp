@@ -22,6 +22,7 @@ class CacheLoadPOp : public PhysicalOp {
 public:
   explicit CacheLoadPOp(std::string name,
 					 std::vector<std::string> projectColumnNames,
+           int nodeId,
 					 std::vector<std::string> predicateColumnNames,
            std::vector<std::string> columnNames,
 					 std::shared_ptr<Partition> partition,
@@ -34,6 +35,7 @@ public:
   ~CacheLoadPOp() override = default;
 
   void onReceive(const Envelope &msg) override;
+  std::string getTypeString() const override;
 
   void setHitOperator(const std::shared_ptr<PhysicalOp> &op);
   void setMissOperatorToCache(const std::shared_ptr<PhysicalOp> &op);
@@ -67,6 +69,7 @@ public:
     return f.object(op).fields(f.field("name", op.name_),
                                f.field("type", op.type_),
                                f.field("projectColumnNames", op.projectColumnNames_),
+                               f.field("nodeId", op.nodeId_),
                                f.field("queryId", op.queryId_),
                                f.field("opContext", op.opContext_),
                                f.field("producers", op.producers_),

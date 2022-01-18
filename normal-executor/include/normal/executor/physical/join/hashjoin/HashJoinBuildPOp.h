@@ -28,13 +28,15 @@ class HashJoinBuildPOp : public PhysicalOp {
 
 public:
   explicit HashJoinBuildPOp(const string &name,
-                            const vector<string> &columnNames,
-                            const vector<string> &projectColumnNames);
+                            const vector<string> &projectColumnNames,
+                            int nodeId,
+                            const vector<string> &predColumnNames);
   HashJoinBuildPOp() = default;
   HashJoinBuildPOp(const HashJoinBuildPOp&) = default;
   HashJoinBuildPOp& operator=(const HashJoinBuildPOp&) = default;
 
   void onReceive(const Envelope &msg) override;
+  std::string getTypeString() const override;
 
 private:
   void onStart();
@@ -53,6 +55,7 @@ public:
     return f.object(op).fields(f.field("name", op.name_),
                                f.field("type", op.type_),
                                f.field("projectColumnNames", op.projectColumnNames_),
+                               f.field("nodeId", op.nodeId_),
                                f.field("queryId", op.queryId_),
                                f.field("opContext", op.opContext_),
                                f.field("producers", op.producers_),

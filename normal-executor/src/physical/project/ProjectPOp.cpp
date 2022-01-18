@@ -13,14 +13,19 @@
 namespace normal::executor::physical::project {
 
 ProjectPOp::ProjectPOp(std::string name,
+                 std::vector<std::string> projectColumnNames,
+                 int nodeId,
                  std::vector<std::shared_ptr<normal::expression::gandiva::Expression>> exprs,
                  std::vector<std::string> exprNames,
-                 std::vector<std::pair<std::string, std::string>> projectColumnNamePairs,
-                 std::vector<std::string> projectColumnNames)
-    : PhysicalOp(std::move(name), "ProjectPOp", std::move(projectColumnNames)),
-      exprs_(std::move(exprs)),
-      exprNames_(std::move(exprNames)),
-      projectColumnNamePairs_(std::move(projectColumnNamePairs)) {}
+                 std::vector<std::pair<std::string, std::string>> projectColumnNamePairs):
+  PhysicalOp(std::move(name), PROJECT, std::move(projectColumnNames), nodeId),
+  exprs_(std::move(exprs)),
+  exprNames_(std::move(exprNames)),
+  projectColumnNamePairs_(std::move(projectColumnNamePairs)) {}
+
+std::string ProjectPOp::getTypeString() const {
+  return "ProjectPOp";
+}
 
 void ProjectPOp::onStart() {
   SPDLOG_DEBUG("Starting operator  |  name: '{}'", this->name());

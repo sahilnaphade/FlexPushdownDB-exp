@@ -22,13 +22,15 @@ class SortPOp : public PhysicalOp {
 
 public:
   SortPOp(const string &name,
-          const vector<SortKey> &sortKeys,
-          const vector<string> &projectColumnNames);
+          const vector<string> &projectColumnNames,
+          int nodeId,
+          const vector<SortKey> &sortKeys);
   SortPOp() = default;
   SortPOp(const SortPOp&) = default;
   SortPOp& operator=(const SortPOp&) = default;
 
   void onReceive(const Envelope &msg) override;
+  std::string getTypeString() const override;
 
 private:
   void onStart();
@@ -49,6 +51,7 @@ public:
     return f.object(op).fields(f.field("name", op.name_),
                                f.field("type", op.type_),
                                f.field("projectColumnNames", op.projectColumnNames_),
+                               f.field("nodeId", op.nodeId_),
                                f.field("queryId", op.queryId_),
                                f.field("opContext", op.opContext_),
                                f.field("producers", op.producers_),

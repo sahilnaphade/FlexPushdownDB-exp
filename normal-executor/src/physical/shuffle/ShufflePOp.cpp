@@ -13,10 +13,15 @@ using namespace normal::executor::physical::shuffle;
 using namespace normal::tuple;
 
 ShufflePOp::ShufflePOp(string name,
-                       vector<string> columnNames,
-                       vector<string> projectColumnNames) :
-	PhysicalOp(move(name), "ShufflePOp", move(projectColumnNames)),
-	columnNames_(move(columnNames)) {}
+                       vector<string> projectColumnNames,
+                       int nodeId,
+                       vector<string> shuffleColumnNames) :
+	PhysicalOp(move(name), SHUFFLE, move(projectColumnNames), nodeId),
+	shuffleColumnNames_(move(shuffleColumnNames)) {}
+
+std::string ShufflePOp::getTypeString() const {
+  return "ShufflePOp";
+}
 
 void ShufflePOp::onReceive(const Envelope &msg) {
   if (msg.message().type() == "StartMessage") {
@@ -103,7 +108,7 @@ void ShufflePOp::onTuple(const TupleMessage &message) {
 
   else {
     // Shuffle the tuple set
-    auto expectedShuffledTupleSets = ShuffleKernel2::shuffle(columnNames_, consumerVec_.size(), *tupleSet);
+    auto expectedShuffledTupleSets = ShuffleKernel2::shuffle(shuffleColumnNames_, consumerVec_.size(), *tupleSet);
     if (!expectedShuffledTupleSets.has_value()) {
       throw runtime_error(fmt::format("{}, {}", expectedShuffledTupleSets.error(), name()));
     }

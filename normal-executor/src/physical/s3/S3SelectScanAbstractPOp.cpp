@@ -34,17 +34,18 @@ using namespace normal::catalogue::s3;
 namespace normal::executor::physical::s3 {
 
 S3SelectScanAbstractPOp::S3SelectScanAbstractPOp(std::string name,
-			   std::string type,
+         POpType type,
+         std::vector<std::string> projectColumnNames,
+         int nodeId,
 			   std::string s3Bucket,
 			   std::string s3Object,
-			   std::vector<std::string> projectColumnNames,
 			   int64_t startOffset,
 			   int64_t finishOffset,
          std::shared_ptr<Table> table,
          std::shared_ptr<normal::aws::AWSClient> awsClient,
 			   bool scanOnStart,
 			   bool toCache) :
-	PhysicalOp(std::move(name), std::move(type), std::move(projectColumnNames)),
+	PhysicalOp(std::move(name), type, std::move(projectColumnNames), nodeId),
 	s3Bucket_(std::move(s3Bucket)),
 	s3Object_(std::move(s3Object)),
 	startOffset_(startOffset),

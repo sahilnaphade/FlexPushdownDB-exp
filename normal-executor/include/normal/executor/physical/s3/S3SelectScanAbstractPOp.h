@@ -42,10 +42,11 @@ typedef struct S3SelectScanStats {
 class S3SelectScanAbstractPOp : public PhysicalOp {
 public:
   S3SelectScanAbstractPOp(std::string name,
-			   std::string type,
+         POpType type,
+         std::vector<std::string> projectColumnNames,
+         int nodeId,
 			   std::string s3Bucket,
 			   std::string s3Object,
-			   std::vector<std::string> projectColumnNames,
 			   int64_t startOffset,
 			   int64_t finishOffset,
          std::shared_ptr<Table> table,

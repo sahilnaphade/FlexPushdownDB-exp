@@ -22,9 +22,10 @@ extern int activeGetConversions;
 class S3GetPOp : public S3SelectScanAbstractPOp {
 public:
   S3GetPOp(std::string name,
+           std::vector<std::string> projectColumnNames,
+           int nodeId,
            std::string s3Bucket,
            std::string s3Object,
-           std::vector<std::string> projectColumnNames,
            int64_t startOffset,
            int64_t finishOffset,
            std::shared_ptr<Table> table,
@@ -34,6 +35,8 @@ public:
   S3GetPOp() = default;
   S3GetPOp(const S3GetPOp&) = default;
   S3GetPOp& operator=(const S3GetPOp&) = default;
+
+  std::string getTypeString() const override;
 
 private:
   void processScanMessage(const ScanMessage &message) override;
@@ -67,6 +70,7 @@ public:
     return f.object(op).fields(f.field("name", op.name_),
                                f.field("type", op.type_),
                                f.field("projectColumnNames", op.projectColumnNames_),
+                               f.field("nodeId", op.nodeId_),
                                f.field("queryId", op.queryId_),
                                f.field("opContext", op.opContext_),
                                f.field("producers", op.producers_),

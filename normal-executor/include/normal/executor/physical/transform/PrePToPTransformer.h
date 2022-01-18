@@ -32,7 +32,8 @@ public:
   PrePToPTransformer(const shared_ptr<PrePhysicalPlan> &prePhysicalPlan,
                      const shared_ptr<AWSClient> &awsClient,
                      const shared_ptr<Mode> &mode,
-                     int parallelDegree);
+                     int parallelDegree,
+                     int numNodes);
 
   shared_ptr<PhysicalPlan> transform();
 
@@ -102,6 +103,7 @@ private:
   shared_ptr<AWSClient> awsClient_;
   shared_ptr<Mode> mode_;
   int parallelDegree_;
+  int numNodes_;
 };
 
 }

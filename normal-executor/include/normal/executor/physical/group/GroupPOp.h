@@ -34,14 +34,16 @@ class GroupPOp : public PhysicalOp {
 
 public:
   GroupPOp(const string &name,
+           const vector<string> &projectColumnNames,
+           int nodeId,
            const vector<string> &groupColumnNames,
-           const vector<shared_ptr<aggregate::AggregateFunction>> &aggregateFunctions,
-           const vector<string> &projectColumnNames);
+           const vector<shared_ptr<aggregate::AggregateFunction>> &aggregateFunctions);
   GroupPOp() = default;
   GroupPOp(const GroupPOp&) = default;
   GroupPOp& operator=(const GroupPOp&) = default;
 
   void onReceive(const Envelope &msg) override;
+  std::string getTypeString() const override;
 
 private:
   void onStart();
@@ -57,6 +59,7 @@ public:
     return f.object(op).fields(f.field("name", op.name_),
                                f.field("type", op.type_),
                                f.field("projectColumnNames", op.projectColumnNames_),
+                               f.field("nodeId", op.nodeId_),
                                f.field("queryId", op.queryId_),
                                f.field("opContext", op.opContext_),
                                f.field("producers", op.producers_),

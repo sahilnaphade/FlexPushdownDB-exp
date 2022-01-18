@@ -29,7 +29,7 @@ public:
   virtual set<string> getUsedColumnNames() = 0;
 
   void setProducers(const vector<shared_ptr<PrePhysicalOp>> &producers);
-  void setProjectColumnNames(const set<string> &projectColumnNames);
+  virtual void setProjectColumnNames(const set<string> &projectColumnNames);
 
 private:
   uint id_;

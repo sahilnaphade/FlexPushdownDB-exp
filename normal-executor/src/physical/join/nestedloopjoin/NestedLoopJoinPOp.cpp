@@ -8,10 +8,11 @@
 namespace normal::executor::physical::join {
 
 NestedLoopJoinPOp::NestedLoopJoinPOp(const string &name,
+                                     const vector<string> &projectColumnNames,
+                                     int nodeId,
                                      const std::optional<shared_ptr<expression::gandiva::Expression>> &predicate,
-                                     JoinType joinType,
-                                     const vector<string> &projectColumnNames) :
-  PhysicalOp(name, "NestedLoopJoinPOp", projectColumnNames),
+                                     JoinType joinType) :
+  PhysicalOp(name, NESTED_LOOP_JOIN, projectColumnNames, nodeId),
   kernel_(makeKernel(predicate, joinType)) {}
 
 NestedLoopJoinKernel
@@ -39,6 +40,10 @@ NestedLoopJoinPOp::makeKernel(const std::optional<shared_ptr<expression::gandiva
       throw runtime_error(fmt::format("Unsupported nested loop join type, {}", joinType));
   }
 };
+
+std::string NestedLoopJoinPOp::getTypeString() const {
+  return "NestedLoopJoinPOp";
+}
 
 void NestedLoopJoinPOp::onReceive(const Envelope &msg) {
   if (msg.message().type() == "StartMessage") {

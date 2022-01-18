@@ -49,10 +49,11 @@ std::mutex SelectConvertLock;
 int activeSelectConversions = 0;
 
 S3SelectPOp::S3SelectPOp(std::string name,
+               std::vector<std::string> projectColumnNames,
+               int nodeId,
 						   std::string s3Bucket,
 						   std::string s3Object,
 						   std::string filterSql,
-						   std::vector<std::string> projectColumnNames,
 						   int64_t startOffset,
 						   int64_t finishOffset,
                std::shared_ptr<Table> table,
@@ -61,10 +62,11 @@ S3SelectPOp::S3SelectPOp(std::string name,
                bool toCache,
                std::vector<std::shared_ptr<normal::cache::SegmentKey>> weightedSegmentKeys) :
   S3SelectScanAbstractPOp(std::move(name),
-                          "S3SelectPOp",
+                          S3_SELECT,
+                          std::move(projectColumnNames),
+                          nodeId,
                           std::move(s3Bucket),
                           std::move(s3Object),
-                          std::move(projectColumnNames),
                           startOffset,
                           finishOffset,
                           std::move(table),
@@ -73,6 +75,10 @@ S3SelectPOp::S3SelectPOp(std::string name,
                           toCache),
 	filterSql_(std::move(filterSql)),
 	weightedSegmentKeys_(std::move(weightedSegmentKeys)) {
+}
+
+std::string S3SelectPOp::getTypeString() const {
+  return "S3SelectPOp";
 }
 
 #ifdef __AVX2__

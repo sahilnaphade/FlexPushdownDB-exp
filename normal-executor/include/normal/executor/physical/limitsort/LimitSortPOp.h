@@ -23,14 +23,16 @@ class LimitSortPOp : public PhysicalOp {
 
 public:
   LimitSortPOp(const string &name,
+               const vector<string> &projectColumnNames,
+               int nodeId,
                int64_t k,
-               const vector<SortKey> &sortKeys,
-               const vector<string> &projectColumnNames);
+               const vector<SortKey> &sortKeys);
   LimitSortPOp() = default;
   LimitSortPOp(const LimitSortPOp&) = default;
   LimitSortPOp& operator=(const LimitSortPOp&) = default;
 
   void onReceive(const Envelope &msg) override;
+  std::string getTypeString() const override;
 
 private:
   void onStart();
@@ -52,6 +54,7 @@ public:
     return f.object(op).fields(f.field("name", op.name_),
                                f.field("type", op.type_),
                                f.field("projectColumnNames", op.projectColumnNames_),
+                               f.field("nodeId", op.nodeId_),
                                f.field("queryId", op.queryId_),
                                f.field("opContext", op.opContext_),
                                f.field("producers", op.producers_),

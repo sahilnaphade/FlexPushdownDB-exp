@@ -26,10 +26,11 @@ public:
    * @param Expressions Expressions to evaluate to produce the attributes in the projection
    */
   ProjectPOp(std::string name,
+          std::vector<std::string> projectColumnNames,
+          int nodeId,
           std::vector<std::shared_ptr<normal::expression::gandiva::Expression>> exprs,
           std::vector<std::string> exprNames,
-          std::vector<std::pair<std::string, std::string>> projectColumnNamePairs,
-          std::vector<std::string> projectColumnNames);
+          std::vector<std::pair<std::string, std::string>> projectColumnNamePairs);
   ProjectPOp() = default;
   ProjectPOp(const ProjectPOp&) = default;
   ProjectPOp& operator=(const ProjectPOp&) = default;
@@ -44,6 +45,8 @@ public:
    * @param msg
    */
   void onReceive(const Envelope &msg) override;
+
+  std::string getTypeString() const override;
 
 private:
   /**
@@ -113,6 +116,7 @@ public:
     return f.object(op).fields(f.field("name", op.name_),
                                f.field("type", op.type_),
                                f.field("projectColumnNames", op.projectColumnNames_),
+                               f.field("nodeId", op.nodeId_),
                                f.field("queryId", op.queryId_),
                                f.field("opContext", op.opContext_),
                                f.field("producers", op.producers_),

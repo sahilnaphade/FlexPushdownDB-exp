@@ -16,15 +16,20 @@
 namespace normal::executor::physical::aggregate {
 
 AggregatePOp::AggregatePOp(string name,
-                           vector<shared_ptr<aggregate::AggregateFunction>> functions,
-                           vector<string> projectColumnNames):
-  PhysicalOp(move(name), "AggregatePOp", move(projectColumnNames)),
+                           vector<string> projectColumnNames,
+                           int nodeId,
+                           vector<shared_ptr<aggregate::AggregateFunction>> functions):
+  PhysicalOp(move(name), AGGREGATE, move(projectColumnNames), nodeId),
   functions_(move(functions)) {
 
   // initialize aggregate results
   for (uint i = 0; i < functions_.size(); ++i) {
     aggregateResults_.emplace_back(vector<shared_ptr<AggregateResult>>{});
   }
+}
+
+std::string AggregatePOp::getTypeString() const {
+  return "AggregatePOp";
 }
 
 void AggregatePOp::onStart() {

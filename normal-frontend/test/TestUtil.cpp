@@ -62,8 +62,16 @@ void TestUtil::e2eNoStartCalciteServer(const string &schemaName,
   const auto &mode = Mode::pullupMode();
   const auto &cachingPolicy = nullptr;
 
+  // create the actor system and then the executor
   CAFInit::initCAFGlobalMetaObjects();
-  const auto &executor = make_shared<Executor>(mode, cachingPolicy, true, false);
+  ::caf::actor_system_config actorSystemConfig;
+  auto actorSystem = make_shared<::caf::actor_system>(actorSystemConfig);
+  const auto &executor = make_shared<Executor>(actorSystem,
+                                               vector<::caf::node_id>{},
+                                               mode,
+                                               cachingPolicy,
+                                               true,
+                                               false);
   executor->start();
 
   for (const auto &queryFileName: queryFileNames) {
@@ -86,7 +94,7 @@ void TestUtil::e2eNoStartCalciteServer(const string &schemaName,
     prePhysicalPlan->populateAndTrimProjectColumns();
 
     // transform prephysical plan to physical plan
-    auto prePToPTransformer = make_shared<PrePToPTransformer>(prePhysicalPlan, awsClient, mode, 1);
+    auto prePToPTransformer = make_shared<PrePToPTransformer>(prePhysicalPlan, awsClient, mode, 1, 1);
     const auto &physicalPlan = prePToPTransformer->transform();
 
     // execute

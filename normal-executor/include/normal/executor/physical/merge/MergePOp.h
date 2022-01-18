@@ -19,12 +19,14 @@ class MergePOp : public PhysicalOp {
 
 public:
   explicit MergePOp(const std::string &name,
-                    const std::vector<std::string> &projectColumnNames);
+                    const std::vector<std::string> &projectColumnNames,
+                    int nodeId);
   MergePOp() = default;
   MergePOp(const MergePOp&) = default;
   MergePOp& operator=(const MergePOp&) = default;
 
   void onReceive(const Envelope &msg) override;
+  std::string getTypeString() const override;
 
   void setLeftProducer(const std::shared_ptr<PhysicalOp> &leftProducer);
   void setRightProducer(const std::shared_ptr<PhysicalOp> &rightProducer);
@@ -49,6 +51,7 @@ public:
     return f.object(op).fields(f.field("name", op.name_),
                                f.field("type", op.type_),
                                f.field("projectColumnNames", op.projectColumnNames_),
+                               f.field("nodeId", op.nodeId_),
                                f.field("queryId", op.queryId_),
                                f.field("opContext", op.opContext_),
                                f.field("producers", op.producers_),

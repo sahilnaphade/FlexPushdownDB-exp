@@ -8,16 +8,20 @@
 #include <normal/executor/physical/POpConnection.h>
 #include <normal/executor/physical/POpRelationshipType.h>
 #include <normal/executor/physical/filter/FilterPOp.h>
+#include <normal/executor/serialization/POpSerializer.h>
+#include <caf/io/all.hpp>
 #include <graphviz/gvc.h>
 
 namespace normal::executor {
 
 Execution::Execution(long queryId, 
                      const shared_ptr<::caf::actor_system> &actorSystem,
+                     const vector<::caf::node_id> &nodes,
                      const ::caf::actor &segmentCacheActor,
                      const shared_ptr<PhysicalPlan> &physicalPlan) :
   queryId_(queryId),
   actorSystem_(actorSystem),
+  nodes_(nodes),
   segmentCacheActor_(segmentCacheActor),
   physicalPlan_(physicalPlan) {
   rootActor_ = make_shared<::caf::scoped_actor>(*actorSystem_);
@@ -49,65 +53,102 @@ void Execution::boot() {
     opDirectory_.insert(POpDirectoryEntry(op, nullptr, false));
   }
 
-  // Create the operator actors
+  // Spawn actors locally/remotely according to nodeId assigned
   for (auto &element: opDirectory_) {
     auto op = element.second.getDef();
-    // TODO: After POpActor2 is generally finished we may use this
-//    if(op->getType() == "FileScan"){
-//      auto fileScanOp = static_pointer_cast<FileScan>(op);
-//      auto actorHandle = operatorManager_.lock()->getActorSystem()->spawn(FileScanFunctor,
-//                                                                          fileScanOp->name(),
-//                                                                          fileScanOp->getKernel()->getPath(),
-//                                                                          fileScanOp->getKernel()->getFileType().value(),
-//                                                                          fileScanOp->getColumnNames(),
-//                                                                          fileScanOp->getKernel()->getStartPos(),
-//                                                                          fileScanOp->getKernel()->getFinishPos(),
-//                                                                          fileScanOp->getQueryId(),
-//                                                                          *rootActor_,
-//                                                                          operatorManager_.lock()->getSegmentCacheActor(),
-//                                                                          fileScanOp->isScanOnStart()
-//      );
-//      if (!actorHandle)
-//        throw runtime_error(fmt::format("Failed to spawn operator actor '{}'", op->name()));
-//      element.second.setActorHandle(::caf::actor_cast<::caf::actor>(actorHandle));
-//    }
-//    else if(op->getType() == "Collate"){
-//      legacyCollateOperator_ = static_pointer_cast<Collate>(op);
-//      collateActorHandle_  = operatorManager_.lock()->getActorSystem()->spawn(CollateFunctor,
-//                                          legacyCollateOperator_->name(),
-//                                          legacyCollateOperator_->getQueryId(),
-//                                        *rootActor_,
-//                                        operatorManager_.lock()->getSegmentCacheActor()
-//      );
-//      if (!collateActorHandle_)
-//      throw runtime_error(fmt::format("Failed to spawn operator actor '{}'", op->name()));
-//      element.second.setActorHandle(::caf::actor_cast<::caf::actor>(collateActorHandle_));
-//    }
+    int nodeId = op->getNodeId();
 
     auto ctx = make_shared<POpContext>(*rootActor_, segmentCacheActor_);
     op->create(ctx);
-    
-    // Need s3 operators to be "detached" to not block others while loading data.
-    // Don't run more S3Get requests in parallel than # cores, earlier testing showed this did not help as S3Get
-    // already utilizes the full network bandwidth with #cores requests whereas S3Select does not when
-    // selectivity is low.
-    if (op->getType() == "S3SelectPOp" || op->getType() == "S3GetPOp") {
-      auto actorHandle = actorSystem_->spawn<POpActor, detached>(op);
-      if (!actorHandle)
-        throw runtime_error(fmt::format("Failed to spawn operator actor '{}'", op->name()));
-      element.second.setActorHandle(::caf::actor_cast<::caf::actor>(actorHandle));
-    } 
-    
-    else {
-      if(op->getType() == "CollatePOp"){
-        legacyCollateOperator_ = static_pointer_cast<physical::collate::CollatePOp>(op);
-      }
-      auto actorHandle = actorSystem_->spawn<POpActor>(op);
-      if (!actorHandle)
-        throw runtime_error(fmt::format("Failed to spawn operator actor '{}'", op->name()));
-      element.second.setActorHandle(::caf::actor_cast<::caf::actor>(actorHandle));
+
+    if (nodeId == 0) {
+      element.second.setActorHandle(localSpawn(op));
+    } else {
+      element.second.setActorHandle(remoteSpawn(op, nodeId));
     }
   }
+}
+
+::caf::actor Execution::localSpawn(const shared_ptr<PhysicalOp> &op) {
+  // TODO: After POpActor2 is generally finished we may use this
+//  if(op->getType() == "FileScan"){
+//    auto fileScanOp = static_pointer_cast<FileScan>(op);
+//    auto actorHandle = operatorManager_.lock()->getActorSystem()->spawn(FileScanFunctor,
+//                                                                        fileScanOp->name(),
+//                                                                        fileScanOp->getKernel()->getPath(),
+//                                                                        fileScanOp->getKernel()->getFileType().value(),
+//                                                                        fileScanOp->getColumnNames(),
+//                                                                        fileScanOp->getKernel()->getStartPos(),
+//                                                                        fileScanOp->getKernel()->getFinishPos(),
+//                                                                        fileScanOp->getQueryId(),
+//                                                                        *rootActor_,
+//                                                                        operatorManager_.lock()->getSegmentCacheActor(),
+//                                                                        fileScanOp->isScanOnStart()
+//    );
+//    if (!actorHandle)
+//      throw runtime_error(fmt::format("Failed to spawn operator actor '{}'", op->name()));
+//    element.second.setActorHandle(::caf::actor_cast<::caf::actor>(actorHandle));
+//  }
+//  else if(op->getType() == "Collate"){
+//    legacyCollateOperator_ = static_pointer_cast<Collate>(op);
+//    collateActorHandle_  = operatorManager_.lock()->getActorSystem()->spawn(CollateFunctor,
+//                                        legacyCollateOperator_->name(),
+//                                        legacyCollateOperator_->getQueryId(),
+//                                      *rootActor_,
+//                                      operatorManager_.lock()->getSegmentCacheActor()
+//    );
+//    if (!collateActorHandle_)
+//    throw runtime_error(fmt::format("Failed to spawn operator actor '{}'", op->name()));
+//    element.second.setActorHandle(::caf::actor_cast<::caf::actor>(collateActorHandle_));
+//  }
+
+
+  // Need s3 operators to be "detached" to not block others while loading data.
+  // Don't run more S3Get requests in parallel than # cores, earlier testing showed this did not help as S3Get
+  // already utilizes the full network bandwidth with #cores requests whereas S3Select does not when
+  // selectivity is low.
+  if (op->getType() == POpType::S3_SELECT || op->getType() == POpType::S3_GET) {
+    auto actorHandle = actorSystem_->spawn<POpActor, detached>(op);
+    if (!actorHandle)
+      throw runtime_error(fmt::format("Failed to spawn operator actor '{}'", op->name()));
+    return ::caf::actor_cast<::caf::actor>(actorHandle);
+  }
+
+  else {
+    if(op->getType() == POpType::COLLATE){
+      legacyCollateOperator_ = static_pointer_cast<physical::collate::CollatePOp>(op);
+    }
+    auto actorHandle = actorSystem_->spawn<POpActor>(op);
+    if (!actorHandle)
+      throw runtime_error(fmt::format("Failed to spawn operator actor '{}': {}", op->name()));
+    return ::caf::actor_cast<::caf::actor>(actorHandle);
+  }
+}
+
+::caf::actor Execution::remoteSpawn(const shared_ptr<PhysicalOp> &op, int nodeId) {
+  auto remoteSpawnTout = std::chrono::seconds(10);
+  shared_ptr<::caf::message> args;
+
+  // Need s3 operators to be "detached" to not block others while loading data.
+  // Don't run more S3Get requests in parallel than # cores, earlier testing showed this did not help as S3Get
+  // already utilizes the full network bandwidth with #cores requests whereas S3Select does not when
+  // selectivity is low.
+  if (op->getType() == POpType::S3_SELECT || op->getType() == POpType::S3_GET) {
+    args= make_shared<::caf::message>(make_message(op));
+  } else {
+    args = make_shared<::caf::message>(make_message(op, detached));
+  }
+
+  auto expectedActorHandle = actorSystem_->middleman().remote_spawn<::caf::actor>(nodes_[nodeId - 1],
+                                                                                  "POpActor",
+                                                                                  *args,
+                                                                                  remoteSpawnTout);
+  if (!expectedActorHandle) {
+    throw std::runtime_error(fmt::format("Failed to remote-spawn operator actor '{}': {}",
+                                         op->name(),
+                                         to_string(expectedActorHandle.error())));
+  }
+  return *expectedActorHandle;
 }
 
 void Execution::start() {
@@ -200,7 +241,7 @@ void Execution::write_graph(const string &file) {
     agset(node, const_cast<char *>("shape"), const_cast<char *>("plaintext"));
 
     string nodeLabel = "<table border='1' cellborder='0' cellpadding='5'>"
-                            "<tr><td align='left'><b>" + op.second.getDef()->getType() + "</b></td></tr>"
+                            "<tr><td align='left'><b>" + op.second.getDef()->getTypeString() + "</b></td></tr>"
                                                                                          "<tr><td align='left'>"
                             + op.second.getDef()->name() + "</td></tr>"
                                                            "</table>";
@@ -263,7 +304,7 @@ physical::s3::S3SelectScanStats Execution::getAggregateS3SelectScanStats() {
   physical::s3::S3SelectScanStats aggregateS3SelectScanStats = {0, 0, 0, 0 , 0, 0 ,0, 0}; // initialize all fields to 0
   for (const auto &entry: opDirectory_) {
     const auto op = entry.second.getDef();
-    if (op->getType() == "S3GetPOp" || op->getType() == "S3SelectPOp") {
+    if (op->getType() == POpType::S3_GET || op->getType() == POpType::S3_SELECT) {
       auto s3SelectScanOp = static_pointer_cast<physical::s3::S3SelectScanAbstractPOp>(op);
       physical::s3::S3SelectScanStats currentS3SelectScanStats = s3SelectScanOp->getS3SelectScanStats();
 
@@ -287,7 +328,7 @@ std::tuple<size_t, size_t, size_t> Execution::getFilterTimeNSInputOutputBytes() 
   size_t outputBytes = 0;
   for (const auto &entry: opDirectory_) {
     const auto op = entry.second.getDef();
-    if (op->getType() == "FilterPOp") {
+    if (op->getType() == POpType::FILTER) {
       auto filterOp = static_pointer_cast<filter::FilterPOp>(entry.second.getDef());
 
       timeNS += filterOp->getFilterTimeNS();
@@ -356,11 +397,11 @@ string Execution::showMetrics(bool showOpTimes, bool showScanMetrics) {
               });
 
       auto op = entry.second.getDef();
-      string type = op->getType();
-      if (opTypeToRuntime.find(type) == opTypeToRuntime.end()) {
-        opTypeToRuntime.emplace(type, processingTime);
+      string typeString = op->getTypeString();
+      if (opTypeToRuntime.find(typeString) == opTypeToRuntime.end()) {
+        opTypeToRuntime.emplace(typeString, processingTime);
       } else {
-        opTypeToRuntime[type] = opTypeToRuntime[type] + processingTime;
+        opTypeToRuntime[typeString] = opTypeToRuntime[typeString] + processingTime;
       }
 
       auto processingFraction = (double) processingTime / (double) totalProcessingTime;

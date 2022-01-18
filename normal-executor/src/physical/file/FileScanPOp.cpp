@@ -24,15 +24,20 @@ namespace arrow { class MemoryPool; }
 namespace normal::executor::physical::file {
 
 FileScanPOp::FileScanPOp(std::string name,
+           std::vector<std::string> columnNames,
+           int nodeId,
 				   const std::string& filePath,
 				   FileType fileType,
-				   std::vector<std::string> columnNames,
 				   unsigned long startOffset,
 				   unsigned long finishOffset,
 				   bool scanOnStart) :
-	PhysicalOp(std::move(name), "FileScanPOp", std::move(columnNames)),
+	PhysicalOp(std::move(name), FILE_SCAN, std::move(columnNames), nodeId),
 	scanOnStart_(scanOnStart),
 	kernel_(FileScanKernel::make(filePath, fileType, startOffset, finishOffset)){}
+
+std::string FileScanPOp::getTypeString() const {
+  return "FileScanPOp";
+}
 
 void FileScanPOp::onReceive(const Envelope &message) {
   if (message.message().type() == "StartMessage") {

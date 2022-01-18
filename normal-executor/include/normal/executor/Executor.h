@@ -26,15 +26,12 @@ namespace normal::executor {
 class Executor {
 
 public:
-  Executor(const shared_ptr<Mode> &mode,
+  Executor(const shared_ptr<::caf::actor_system> &actorSystem,
+           const vector<::caf::node_id> &nodes,
+           const shared_ptr<Mode> &mode,
            const shared_ptr<CachingPolicy> &cachingPolicy,
            bool showOpTimes,
            bool showScanMetrics);
-  Executor(const shared_ptr<Mode> &mode,
-           const shared_ptr<CachingPolicy> &cachingPolicy,
-           bool showOpTimes,
-           bool showScanMetrics,
-           const shared_ptr<::caf::actor_system> &actorSystem);
   ~Executor();
 
   /**
@@ -65,8 +62,8 @@ private:
   bool isCacheUsed();
   long nextQueryId();
 
-  ::caf::actor_system_config actorSystemConfig_;
   shared_ptr<::caf::actor_system> actorSystem_;
+  vector<::caf::node_id> nodes_;
   unique_ptr<::caf::scoped_actor> rootActor_;
   ::caf::actor segmentCacheActor_;
   shared_ptr<CachingPolicy> cachingPolicy_;

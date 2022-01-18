@@ -27,11 +27,13 @@ namespace normal::executor::physical {
 PrePToPTransformer::PrePToPTransformer(const shared_ptr<PrePhysicalPlan> &prePhysicalPlan,
                                        const shared_ptr<AWSClient> &awsClient,
                                        const shared_ptr<Mode> &mode,
-                                       int parallelDegree) :
+                                       int parallelDegree,
+                                       int numNodes) :
   prePhysicalPlan_(prePhysicalPlan),
   awsClient_(awsClient),
   mode_(mode),
-  parallelDegree_(parallelDegree) {}
+  parallelDegree_(parallelDegree),
+  numNodes_(numNodes) {}
 
 shared_ptr<PhysicalPlan> PrePToPTransformer::transform() {
   // transform from root in dfs
@@ -41,7 +43,9 @@ shared_ptr<PhysicalPlan> PrePToPTransformer::transform() {
 
   // make a collate operator
   shared_ptr<PhysicalOp> collatePOp = make_shared<collate::CollatePOp>(
-          "collate", ColumnName::canonicalize(prePhysicalPlan_->getOutputColumnNames()));
+          "collate",
+          ColumnName::canonicalize(prePhysicalPlan_->getOutputColumnNames()),
+          0);
   allPOps.emplace_back(collatePOp);
   connectManyToOne(upConnPOps, collatePOp);
 
@@ -51,39 +55,39 @@ shared_ptr<PhysicalPlan> PrePToPTransformer::transform() {
 pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
 PrePToPTransformer::transformDfs(const shared_ptr<PrePhysicalOp> &prePOp) {
   switch (prePOp->getType()) {
-    case SORT: {
+    case PrePOpType::SORT: {
       const auto &sortPrePOp = std::static_pointer_cast<SortPrePOp>(prePOp);
       return transformSort(sortPrePOp);
     }
-    case LIMIT_SORT: {
+    case PrePOpType::LIMIT_SORT: {
       const auto &limitSortPrePOp = std::static_pointer_cast<LimitSortPrePOp>(prePOp);
       return transformLimitSort(limitSortPrePOp);
     }
-    case AGGREGATE: {
+    case PrePOpType::AGGREGATE: {
       const auto &aggregatePrePOp = std::static_pointer_cast<AggregatePrePOp>(prePOp);
       return transformAggregate(aggregatePrePOp);
     }
-    case GROUP: {
+    case PrePOpType::GROUP: {
       const auto &groupPrePOp = std::static_pointer_cast<GroupPrePOp>(prePOp);
       return transformGroup(groupPrePOp);
     }
-    case PROJECT: {
+    case PrePOpType::PROJECT: {
       const auto &projectPrePOp = std::static_pointer_cast<ProjectPrePOp>(prePOp);
       return transformProject(projectPrePOp);
     }
-    case FILTER: {
+    case PrePOpType::FILTER: {
       const auto &filterPrePOp = std::static_pointer_cast<FilterPrePOp>(prePOp);
       return transformFilter(filterPrePOp);
     }
-    case HASH_JOIN: {
+    case PrePOpType::HASH_JOIN: {
       const auto &hashJoinPrePOp = std::static_pointer_cast<HashJoinPrePOp>(prePOp);
       return transformHashJoin(hashJoinPrePOp);
     }
-    case NESTED_LOOP_JOIN: {
+    case PrePOpType::NESTED_LOOP_JOIN: {
       const auto &nestedLoopJoinPrePOp = std::static_pointer_cast<NestedLoopJoinPrePOp>(prePOp);
       return transformNestedLoopJoin(nestedLoopJoinPrePOp);
     }
-    case FILTERABLE_SCAN: {
+    case PrePOpType::FILTERABLE_SCAN: {
       const auto &filterableScanPrePOp = std::static_pointer_cast<FilterableScanPrePOp>(prePOp);
       return transformFilterableScan(filterableScanPrePOp);
     }
@@ -123,8 +127,9 @@ PrePToPTransformer::transformSort(const shared_ptr<SortPrePOp> &sortPrePOp) {
                                     sortPrePOp->getProjectColumnNames().end()};
 
   shared_ptr<PhysicalOp> sortPOp = make_shared<sort::SortPOp>(fmt::format("Sort[{}]", prePOpId),
-                                                              sortPrePOp->getSortKeys(),
-                                                              projectColumnNames);
+                                                              projectColumnNames,
+                                                              0,
+                                                              sortPrePOp->getSortKeys());
   allPOps.emplace_back(sortPOp);
 
   // connect to upstream
@@ -155,9 +160,10 @@ PrePToPTransformer::transformLimitSort(const shared_ptr<LimitSortPrePOp> &limitS
 
   shared_ptr<PhysicalOp> limitSortPOp = make_shared<limitsort::LimitSortPOp>(
           fmt::format("LimitSort[{}]", prePOpId),
+          projectColumnNames,
+          0,
           limitSortPrePOp->getK(),
-          limitSortPrePOp->getSortKeys(),
-          projectColumnNames);
+          limitSortPrePOp->getSortKeys());
   allPOps.emplace_back(limitSortPOp);
 
   // connect to upstream
@@ -197,11 +203,12 @@ PrePToPTransformer::transformAggregate(const shared_ptr<AggregatePrePOp> &aggreg
 
     selfPOps.emplace_back(make_shared<aggregate::AggregatePOp>(
             fmt::format("Aggregate[{}]-{}", prePOpId, i),
-            aggFunctions,
-            projectColumnNames));
+            projectColumnNames,
+            upConnPOps[i]->getNodeId(),
+            aggFunctions));
   }
 
-  // if num > 1, then we need a aggregate reduce operator
+  // if num > 1, then we need an aggregate reduce operator
   if (upConnPOps.size() == 1) {
     selfConnUpPOps = selfPOps;
     selfConnDownPOps = selfPOps;
@@ -216,8 +223,9 @@ PrePToPTransformer::transformAggregate(const shared_ptr<AggregatePrePOp> &aggreg
 
     shared_ptr<PhysicalOp> aggReducePOp = make_shared<aggregate::AggregatePOp>(
             fmt::format("AggregateReduce[{}]", prePOpId),
-            aggReduceFunctions,
-            projectColumnNames);
+            projectColumnNames,
+            0,
+            aggReduceFunctions);
     connectManyToOne(selfPOps, aggReducePOp);
     selfConnUpPOps = selfPOps;
     selfConnDownPOps.emplace_back(aggReducePOp);
@@ -263,9 +271,10 @@ PrePToPTransformer::transformGroup(const shared_ptr<GroupPrePOp> &groupPrePOp) {
     }
 
     selfPOps.emplace_back(make_shared<group::GroupPOp>(fmt::format("Group[{}]-{}", prePOpId, i),
+                                                       projectColumnNames,
+                                                       upConnPOps[i]->getNodeId(),
                                                        groupPrePOp->getGroupColumnNames(),
-                                                       aggFunctions,
-                                                       projectColumnNames));
+                                                       aggFunctions));
   }
 
   // if num > 1, then we need a group reduce operator
@@ -282,9 +291,10 @@ PrePToPTransformer::transformGroup(const shared_ptr<GroupPrePOp> &groupPrePOp) {
     }
 
     shared_ptr<PhysicalOp> groupReducePOp = make_shared<group::GroupPOp>(fmt::format("GroupReduce[{}]", prePOpId),
+                                                                         projectColumnNames,
+                                                                         0,
                                                                          groupPrePOp->getGroupColumnNames(),
-                                                                         aggReduceFunctions,
-                                                                         projectColumnNames);
+                                                                         aggReduceFunctions);
     connectManyToOne(selfPOps, groupReducePOp);
     selfConnUpPOps = selfPOps;
     selfConnDownPOps.emplace_back(groupReducePOp);
@@ -322,10 +332,11 @@ PrePToPTransformer::transformProject(const shared_ptr<ProjectPrePOp> &projectPre
                                     projectPrePOp->getProjectColumnNames().end()};
   for (size_t i = 0; i < upConnPOps.size(); ++i) {
     selfPOps.emplace_back(make_shared<project::ProjectPOp>(fmt::format("Project[{}]-{}", prePOpId, i),
+                                                           projectColumnNames,
+                                                           upConnPOps[i]->getNodeId(),
                                                            projectPrePOp->getExprs(),
                                                            projectPrePOp->getExprNames(),
-                                                           projectPrePOp->getProjectColumnNamePairs(),
-                                                           projectColumnNames));
+                                                           projectPrePOp->getProjectColumnNamePairs()));
   }
 
   // connect to upstream
@@ -359,9 +370,10 @@ PrePToPTransformer::transformFilter(const shared_ptr<FilterPrePOp> &filterPrePOp
                                     filterPrePOp->getProjectColumnNames().end()};
   for (size_t i = 0; i < upConnPOps.size(); ++i) {
     selfPOps.emplace_back(make_shared<filter::FilterPOp>(fmt::format("Filter[{}]-{}", prePOpId, i),
+                                                         projectColumnNames,
+                                                         upConnPOps[i]->getNodeId(),
                                                          filterPrePOp->getPredicate(),
-                                                         nullptr,
-                                                         projectColumnNames));
+                                                         nullptr));
   }
 
   // connect to upstream
@@ -400,16 +412,18 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
   const auto &hashJoinPredicateStr = hashJoinPredicate.toString();
 
   vector<shared_ptr<PhysicalOp>> hashJoinBuildPOps, hashJoinProbePOps;
-  for (int i = 0; i < parallelDegree_; ++i) {
+  for (int i = 0; i < parallelDegree_ * numNodes_; ++i) {
     hashJoinBuildPOps.emplace_back(make_shared<join::HashJoinBuildPOp>(
             fmt::format("HashJoinBuild[{}]-{}-{}", prePOpId, hashJoinPredicateStr, i),
-            leftColumnNames,
-            projectColumnNames));
+            projectColumnNames,
+            i % numNodes_,
+            leftColumnNames));
     hashJoinProbePOps.emplace_back(make_shared<join::HashJoinProbePOp>(
             fmt::format("HashJoinProbe[{}]-{}-{}", prePOpId, hashJoinPredicateStr, i),
+            projectColumnNames,
+            i % numNodes_,
             hashJoinPredicate,
-            joinType,
-            projectColumnNames));
+            joinType));
   }
   allPOps.insert(allPOps.end(), hashJoinBuildPOps.begin(), hashJoinBuildPOps.end());
   allPOps.insert(allPOps.end(), hashJoinProbePOps.begin(), hashJoinProbePOps.end());
@@ -422,32 +436,24 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
     connectManyToOne(rightTransRes.first, hashJoinProbePOps[0]);
   } else {
     vector<shared_ptr<PhysicalOp>> shuffleLeftPOps, shuffleRightPOps;
-    for (const auto &upLeftConnPOp: leftTransRes.first) {
-      shared_ptr<shuffle::ShufflePOp> shufflePOp = make_shared<shuffle::ShufflePOp>(
+    for (uint i = 0; i < leftTransRes.first.size(); ++i) {
+      const auto &upLeftConnPOp = leftTransRes.first[i];
+      shuffleLeftPOps.emplace_back(make_shared<shuffle::ShufflePOp>(
               fmt::format("Shuffle[{}]-{}", prePOpId, upLeftConnPOp->name()),
-              leftColumnNames,
-              upLeftConnPOp->getProjectColumnNames());
-      shuffleLeftPOps.emplace_back(shufflePOp);
-
-      // ShufflePOp's produce() overrides the base one, so we cannot use connectManyToMany() here
-      for (const auto &hashJoinBuildPOp: hashJoinBuildPOps) {
-        shufflePOp->produce(hashJoinBuildPOp);
-        hashJoinBuildPOp->consume(shufflePOp);
-      }
+              upLeftConnPOp->getProjectColumnNames(),
+              upLeftConnPOp->getNodeId(),
+              leftColumnNames));
     }
-    for (const auto &upRightConnPOp: rightTransRes.first) {
-      shared_ptr<shuffle::ShufflePOp> shufflePOp = make_shared<shuffle::ShufflePOp>(
+    for (uint i = 0; i < rightTransRes.first.size(); ++i) {
+      const auto &upRightConnPOp = rightTransRes.first[i];
+      shuffleRightPOps.emplace_back(make_shared<shuffle::ShufflePOp>(
               fmt::format("Shuffle[{}]-{}", prePOpId, upRightConnPOp->name()),
-              rightColumnNames,
-              upRightConnPOp->getProjectColumnNames());
-      shuffleRightPOps.emplace_back(shufflePOp);
-
-      // ShufflePOp's produce() overrides the base one, so we cannot use connectManyToMany() here
-      for (const auto &hashJoinProbePOp: hashJoinProbePOps) {
-        shufflePOp->produce(hashJoinProbePOp);
-        hashJoinProbePOp->consume(shufflePOp);
-      }
+              upRightConnPOp->getProjectColumnNames(),
+              upRightConnPOp->getNodeId(),
+              rightColumnNames));
     }
+    connectManyToMany(shuffleLeftPOps, hashJoinBuildPOps);
+    connectManyToMany(shuffleRightPOps, hashJoinProbePOps);
     allPOps.insert(allPOps.end(), shuffleLeftPOps.begin(), shuffleLeftPOps.end());
     allPOps.insert(allPOps.end(), shuffleRightPOps.begin(), shuffleRightPOps.end());
 
@@ -486,13 +492,13 @@ PrePToPTransformer::transformNestedLoopJoin(const shared_ptr<NestedLoopJoinPrePO
   }
 
   vector<shared_ptr<PhysicalOp>> nestedLoopJoinPOps;
-  nestedLoopJoinPOps.reserve(parallelDegree_);
-  for (int i = 0; i < parallelDegree_; ++i) {
+  for (int i = 0; i < parallelDegree_ * numNodes_; ++i) {
     shared_ptr<join::NestedLoopJoinPOp> nestedLoopJoinPOp =
             make_shared<join::NestedLoopJoinPOp>(fmt::format("NestedLoopJoin[{}]-{}", prePOpId, i),
+                                                 projectColumnNames,
+                                                 i % numNodes_,
                                                  predicate,
-                                                 joinType,
-                                                 projectColumnNames);
+                                                 joinType);
     // connect to left inputs
     for (const auto &upLeftConnPOp: leftTransRes.first) {
       upLeftConnPOp->produce(nestedLoopJoinPOp);
@@ -510,13 +516,15 @@ PrePToPTransformer::transformNestedLoopJoin(const shared_ptr<NestedLoopJoinPrePO
     }
   } else {
     vector<shared_ptr<PhysicalOp>> splitPOps;
-    for (const auto &upRightConnPOp: rightTransRes.first) {
+    for (uint i = 0; i < rightTransRes.first.size(); ++i) {
+      const auto &upRightConnPOp = rightTransRes.first[i];
       shared_ptr<split::SplitPOp> splitPOp = make_shared<split::SplitPOp>(
               fmt::format("Split[{}]-{}", prePOpId, upRightConnPOp->name()),
-              upRightConnPOp->getProjectColumnNames());
+              upRightConnPOp->getProjectColumnNames(),
+              upRightConnPOp->getNodeId());
       splitPOps.emplace_back(splitPOp);
 
-      // SplitPOp's produce() overrides the base one, so we cannot use connectManyToMany() here
+      // Connect splitPOp with all nestedLoopJoinPOps
       for (const auto &nestedLoopJoinPOp: nestedLoopJoinPOps) {
         splitPOp->produce(nestedLoopJoinPOp);
         static_pointer_cast<join::NestedLoopJoinPOp>(nestedLoopJoinPOp)->addRightProducer(splitPOp);
@@ -535,7 +543,8 @@ pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
 PrePToPTransformer::transformFilterableScan(const shared_ptr<FilterableScanPrePOp> &filterableScanPrePOp) {
   const auto s3PTransformer = make_shared<PrePToS3PTransformer>(filterableScanPrePOp->getId(),
                                                                 awsClient_,
-                                                                mode_);
+                                                                mode_,
+                                                                numNodes_);
   return s3PTransformer->transformFilterableScan(filterableScanPrePOp);
 }
 

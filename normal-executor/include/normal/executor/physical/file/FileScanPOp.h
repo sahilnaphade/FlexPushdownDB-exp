@@ -21,9 +21,10 @@ class FileScanPOp : public PhysicalOp {
 
 public:
   FileScanPOp(std::string name,
+       std::vector<std::string> columnNames,
+       int nodeId,
 		   const std::string &filePath,
 		   FileType fileType,
-		   std::vector<std::string> columnNames,
 		   unsigned long startOffset,
 		   unsigned long finishOffset,
 		   bool scanOnStart = false);
@@ -35,6 +36,7 @@ public:
   [[nodiscard]] bool isScanOnStart() const;
 
   void onReceive(const Envelope &message) override;
+  std::string getTypeString() const override;
 
 private:
   void onStart();
@@ -53,6 +55,7 @@ public:
     return f.object(op).fields(f.field("name", op.name_),
                                f.field("type", op.type_),
                                f.field("projectColumnNames", op.projectColumnNames_),
+                               f.field("nodeId", op.nodeId_),
                                f.field("queryId", op.queryId_),
                                f.field("opContext", op.opContext_),
                                f.field("producers", op.producers_),

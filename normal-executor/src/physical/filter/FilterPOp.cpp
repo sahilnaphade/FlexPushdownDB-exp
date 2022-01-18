@@ -17,16 +17,21 @@ using namespace normal::cache;
 using namespace normal::expression::gandiva;
 
 FilterPOp::FilterPOp(std::string name,
+               std::vector<std::string> projectColumnNames,
+               int nodeId,
                std::shared_ptr<Expression> predicate,
                std::shared_ptr<Table> table,
-               std::vector<std::string> projectColumnNames,
                std::vector<std::shared_ptr<SegmentKey>> weightedSegmentKeys) :
-	PhysicalOp(std::move(name), "FilterPOp", std::move(projectColumnNames)),
+	PhysicalOp(std::move(name), FILTER, std::move(projectColumnNames), nodeId),
   predicate_(std::move(predicate)),
 	received_(normal::tuple::TupleSet::makeWithNullTable()),
 	filtered_(normal::tuple::TupleSet::makeWithNullTable()),
   table_(std::move(table)),
 	weightedSegmentKeys_(std::move(weightedSegmentKeys)) {}
+
+std::string FilterPOp::getTypeString() const {
+  return "FilterPOp";
+}
 
 void FilterPOp::onReceive(const Envelope &Envelope) {
   const auto& message = Envelope.message();

@@ -11,16 +11,14 @@
 
 namespace normal::executor::physical::collate {
 
-void CollatePOp::onStart() {
-  SPDLOG_DEBUG("Starting operator  |  name: '{}'", this->name());
-
-  // FIXME: Not the best way to reset the tuples structure
-  this->tuples_.reset();
+CollatePOp::CollatePOp(std::string name,
+                       std::vector<std::string> projectColumnNames,
+                       int nodeId) :
+  PhysicalOp(std::move(name), COLLATE, std::move(projectColumnNames), nodeId) {
 }
 
-CollatePOp::CollatePOp(std::string name,
-                       std::vector<std::string> projectColumnNames) :
-  PhysicalOp(std::move(name), "CollatePOp", std::move(projectColumnNames)) {
+std::string CollatePOp::getTypeString() const {
+  return "CollatePOp";
 }
 
 void CollatePOp::onReceive(const normal::executor::message::Envelope &message) {
@@ -36,6 +34,13 @@ void CollatePOp::onReceive(const normal::executor::message::Envelope &message) {
 	// FIXME: Propagate error properly
 	throw std::runtime_error("Unrecognized message type " + message.message().type());
   }
+}
+
+void CollatePOp::onStart() {
+  SPDLOG_DEBUG("Starting operator  |  name: '{}'", this->name());
+
+  // FIXME: Not the best way to reset the tuples structure
+  this->tuples_.reset();
 }
 
 void CollatePOp::onComplete(const normal::executor::message::CompleteMessage &) {

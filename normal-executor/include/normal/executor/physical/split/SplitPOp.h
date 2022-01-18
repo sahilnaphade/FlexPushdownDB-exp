@@ -20,12 +20,14 @@ class SplitPOp : public PhysicalOp {
 
 public:
   SplitPOp(const string &name,
-           const vector<string> &projectColumnNames);
+           const vector<string> &projectColumnNames,
+           int nodeId);
   SplitPOp() = default;
   SplitPOp(const SplitPOp&) = default;
   SplitPOp& operator=(const SplitPOp&) = default;
 
   void onReceive(const Envelope &msg) override;
+  std::string getTypeString() const override;
   void produce(const shared_ptr<PhysicalOp> &op) override;
 
 private:
@@ -49,6 +51,7 @@ public:
     return f.object(op).fields(f.field("name", op.name_),
                                f.field("type", op.type_),
                                f.field("projectColumnNames", op.projectColumnNames_),
+                               f.field("nodeId", op.nodeId_),
                                f.field("queryId", op.queryId_),
                                f.field("opContext", op.opContext_),
                                f.field("producers", op.producers_),

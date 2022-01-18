@@ -10,25 +10,14 @@ using namespace normal::executor::cache;
 
 namespace normal::executor {
 
-Executor::Executor(const shared_ptr<Mode> &mode,
+Executor::Executor(const shared_ptr<::caf::actor_system> &actorSystem,
+                   const vector<::caf::node_id> &nodes,
+                   const shared_ptr<Mode> &mode,
                    const shared_ptr<CachingPolicy> &cachingPolicy,
                    bool showOpTimes,
                    bool showScanMetrics) :
-  cachingPolicy_(cachingPolicy),
-  mode_(mode),
-  queryCounter_(0),
-  running_(false),
-  showOpTimes_(showOpTimes),
-  showScanMetrics_(showScanMetrics) {
-  actorSystem_ = make_shared<::caf::actor_system>(actorSystemConfig_);
-}
-
-Executor::Executor(const shared_ptr<Mode> &mode,
-         const shared_ptr<CachingPolicy> &cachingPolicy,
-         bool showOpTimes,
-         bool showScanMetrics,
-         const shared_ptr<::caf::actor_system> &actorSystem) :
   actorSystem_(actorSystem),
+  nodes_(nodes),
   cachingPolicy_(cachingPolicy),
   mode_(mode),
   queryCounter_(0),
@@ -71,6 +60,7 @@ void Executor::stop() {
 pair<shared_ptr<TupleSet>, long> Executor::execute(const shared_ptr<PhysicalPlan> &physicalPlan) {
   const auto &execution = make_shared<Execution>(nextQueryId(),
                                                  actorSystem_,
+                                                 nodes_,
                                                  segmentCacheActor_,
                                                  physicalPlan);
   const auto &result = execution->execute();

@@ -7,12 +7,17 @@
 namespace normal::executor::physical::limitsort {
 
 LimitSortPOp::LimitSortPOp(const string &name,
+                           const vector<string> &projectColumnNames,
+                           int nodeId,
                            int64_t k,
-                           const vector<SortKey> &sortKeys,
-                           const vector<string> &projectColumnNames):
-  PhysicalOp(name, "LimitSortPOp", projectColumnNames),
+                           const vector<SortKey> &sortKeys):
+  PhysicalOp(name, LIMIT_SORT, projectColumnNames, nodeId),
   k_(k),
   sortKeys_(sortKeys) {}
+
+std::string LimitSortPOp::getTypeString() const {
+  return "LimitSortPOp";
+}
 
 void LimitSortPOp::onReceive(const Envelope &message) {
   if (message.message().type() == "StartMessage") {
