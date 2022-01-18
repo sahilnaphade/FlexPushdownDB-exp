@@ -79,6 +79,8 @@ HashJoinProbeKernel::join(const shared_ptr<RecordBatchHashJoiner> &joiner,
 }
 
 tl::expected<void, string> HashJoinProbeKernel::joinBuildTupleSetIndex(const shared_ptr<TupleSetIndex> &tupleSetIndex) {
+  // Get offset before buffering the input
+  int64_t buildRowOffset = buildTupleSetIndex_.has_value() ? buildTupleSetIndex_.value()->size() : 0;
 
   // Buffer tupleSetIndex
   auto putResult = putBuildTupleSetIndex(tupleSetIndex);
@@ -100,7 +102,6 @@ tl::expected<void, string> HashJoinProbeKernel::joinBuildTupleSetIndex(const sha
   }
 
   // Create joiner
-  int64_t buildRowOffset = buildTupleSetIndex_.has_value() ? buildTupleSetIndex_.value()->size() : 0;
   auto expectedJoiner = RecordBatchHashJoiner::make(tupleSetIndex,
                                                     pred_.getRightColumnNames(),
                                                     outputSchema_.value(),
@@ -124,6 +125,8 @@ tl::expected<void, string> HashJoinProbeKernel::joinBuildTupleSetIndex(const sha
 }
 
 tl::expected<void, string> HashJoinProbeKernel::joinProbeTupleSet(const shared_ptr<TupleSet> &tupleSet) {
+  // Get offset before buffering the input
+  int64_t probeRowOffset = probeTupleSet_.has_value() ? probeTupleSet_.value()->numRows() : 0;
 
   // Buffer tupleSet
   auto putResult = putProbeTupleSet(tupleSet);
@@ -155,7 +158,6 @@ tl::expected<void, string> HashJoinProbeKernel::joinProbeTupleSet(const shared_p
   }
 
   // Join
-  int64_t probeRowOffset = probeTupleSet_.has_value() ? probeTupleSet_.value()->numRows() : 0;
   auto expectedJoinedTupleSet = join(expectedJoiner.value(), tupleSet, probeRowOffset);
   if (!expectedJoinedTupleSet.has_value())
     return tl::make_unexpected(expectedJoinedTupleSet.error());
