@@ -37,6 +37,7 @@ private:
   void onComplete(const CompleteMessage &);
   void onTuple(const TupleMessage &message);
 
+  void makeArrowSortOptions();
   void buffer(const shared_ptr<TupleSet> &tupleSet);
   shared_ptr<TupleSet> sort();
 

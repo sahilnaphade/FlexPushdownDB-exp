@@ -39,6 +39,7 @@ private:
   void onComplete(const CompleteMessage &);
   void onTuple(const TupleMessage &message);
 
+  void makeArrowSelectKOptions();
   shared_ptr<TupleSet> makeInput(const shared_ptr<TupleSet> &tupleSet);
   shared_ptr<TupleSet> selectK(const shared_ptr<TupleSet> &tupleSet);
 

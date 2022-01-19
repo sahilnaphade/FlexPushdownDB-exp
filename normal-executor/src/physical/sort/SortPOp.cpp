@@ -33,15 +33,6 @@ void SortPOp::onReceive(const Envelope &message) {
 }
 
 void SortPOp::onStart() {
-  vector<arrow::compute::SortKey> arrowSortKeys;
-  for (const auto &sortKey: sortKeys_) {
-    const auto &name = sortKey.getName();
-    auto direction = sortKey.getOrder() == plan::prephysical::ASCENDING ?
-            arrow::compute::SortOrder::Ascending : arrow::compute::SortOrder::Descending;
-    arrowSortKeys.emplace_back(arrow::compute::SortKey(name, direction));
-  }
-  arrowSortOptions_ = arrow::compute::SortOptions(arrowSortKeys);
-
   SPDLOG_DEBUG("Starting operator  |  name: '{}'", this->name());
 }
 
@@ -65,6 +56,19 @@ void SortPOp::onTuple(const TupleMessage &message) {
   buffer(message.tuples());
 }
 
+void SortPOp::makeArrowSortOptions() {
+  if (!arrowSortOptions_.has_value()) {
+    vector<arrow::compute::SortKey> arrowSortKeys;
+    for (const auto &sortKey: sortKeys_) {
+      const auto &name = sortKey.getName();
+      auto direction = sortKey.getOrder() == plan::prephysical::ASCENDING ?
+                       arrow::compute::SortOrder::Ascending : arrow::compute::SortOrder::Descending;
+      arrowSortKeys.emplace_back(arrow::compute::SortKey(name, direction));
+    }
+    arrowSortOptions_ = arrow::compute::SortOptions(arrowSortKeys);
+  }
+}
+
 void SortPOp::buffer(const shared_ptr<TupleSet> &tupleSet) {
   if (!buffer_.has_value()) {
     buffer_ = tupleSet;
@@ -81,6 +85,9 @@ shared_ptr<TupleSet> SortPOp::sort() {
   if (!buffer_.has_value()) {
     return TupleSet::makeWithEmptyTable();
   }
+
+  // Make sortOptions if not yet
+  makeArrowSortOptions();
 
   // Compute sort indices
   const auto table = buffer_.value()->table();

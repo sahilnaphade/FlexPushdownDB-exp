@@ -32,8 +32,11 @@ tl::expected<shared_ptr<AggregateResult>, string> Count::compute(const shared_pt
 
   if (expression_) {
     // if has expr, then evaluate it and call arrow api to count
-    const auto &aggChunkedArray = evaluateExpr(tupleSet);
-    const auto &expResultDatum = arrow::compute::Count(aggChunkedArray);
+    const auto &expAggChunkedArray = evaluateExpr(tupleSet);
+    if (!expAggChunkedArray.has_value()) {
+      return tl::make_unexpected(expAggChunkedArray.error());
+    }
+    const auto &expResultDatum = arrow::compute::Count(*expAggChunkedArray);
     if (!expResultDatum.ok()) {
       return tl::make_unexpected(expResultDatum.status().message());
     }

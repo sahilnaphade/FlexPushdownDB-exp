@@ -51,13 +51,13 @@ public:
   virtual tl::expected<shared_ptr<arrow::Scalar>, string>
   finalize(const vector<shared_ptr<AggregateResult>> &aggregateResults) = 0;
 
-  void compile(const shared_ptr<arrow::Schema> &schema);
+  tl::expected<void, string> compile(const shared_ptr<arrow::Schema> &schema);
 
 protected:
   /**
    * Used to evaluate input tupleSet using expression_
    */
-  shared_ptr<arrow::ChunkedArray> evaluateExpr(const shared_ptr<TupleSet> &tupleSet);
+  tl::expected<shared_ptr<arrow::ChunkedArray>, string> evaluateExpr(const shared_ptr<TupleSet> &tupleSet);
   void cacheInputSchema(const shared_ptr<arrow::Schema> &schema);
   void buildAndCacheProjector();
 

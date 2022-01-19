@@ -37,6 +37,7 @@ add_library(normal-tuple STATIC
         src/FileReaderBuilder.cpp include/normal/tuple/FileReaderBuilder.h
         src/csv/CSVReader.cpp include/normal/tuple/csv/CSVReader.h
         src/ArrayAppenderWrapper.cpp include/normal/tuple/ArrayAppenderWrapper.h
+        src/Util.cpp include/normal/tuple/Util.h
         src/arrow/ArrowAWSInputStream.cpp include/normal/tuple/arrow/ArrowAWSInputStream.h
         src/arrow/ArrowAWSGZIPInputStream.cpp include/normal/tuple/arrow/ArrowAWSGZIPInputStream.h
         src/arrow/ArrowAWSGZIPInputStream2.cpp include/normal/tuple/arrow/ArrowAWSGZIPInputStream2.h

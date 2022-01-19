@@ -37,7 +37,10 @@ tl::expected<void, string> GroupKernel2::group(const TupleSet &tupleSet) {
 	  return groupedArraysResult;
 
   // Compute aggregate results for this tupleSet
-  computeGroupAggregates();
+  auto computeResult = computeGroupAggregates();
+  if (!computeResult) {
+    return computeResult;
+  }
 
   // Clear computed grouped tupleSet
   groupArrayAppenderVectorMap_.clear();
@@ -239,7 +242,10 @@ tl::expected<shared_ptr<TupleSet>, string> GroupKernel2::finaliseEmpty() {
 
   // Obtain returnType of aggregate functions
   for (const auto &function: aggregateFunctions_) {
-    function->compile(aggregateInputSchema_.value());
+    auto compileResult = function->compile(aggregateInputSchema_.value());
+    if (!compileResult.has_value()) {
+      return tl::make_unexpected(compileResult.error());
+    }
   }
 
   // Make output schema

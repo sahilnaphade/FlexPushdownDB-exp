@@ -28,7 +28,17 @@ const shared_ptr<normal::expression::gandiva::Expression> &AggregateFunction::ge
   return expression_;
 }
 
-void AggregateFunction::compile(const shared_ptr<arrow::Schema> &schema) {
+tl::expected<void, string> AggregateFunction::compile(const shared_ptr<arrow::Schema> &schema) {
+  // check if no expression and the function type is count, which means count(*)
+  if (!expression_) {
+    if (type_ == COUNT) {
+      returnType_ = arrow::int64();
+      return {};
+    } else {
+      return tl::make_unexpected("Aggregate function has no expression, neither it is count");
+    }
+  }
+
   // just column projection, no need to use gandiva projector
   if (expression_->getType() == expression::gandiva::COLUMN) {
     const auto &columnName = static_pointer_cast<expression::gandiva::Column>(expression_)->getColumnName();
@@ -41,12 +51,18 @@ void AggregateFunction::compile(const shared_ptr<arrow::Schema> &schema) {
     cacheInputSchema(schema);
     buildAndCacheProjector();
   }
+
+  return {};
 }
 
-shared_ptr<arrow::ChunkedArray> AggregateFunction::evaluateExpr(const shared_ptr<TupleSet> &tupleSet) {
+tl::expected<shared_ptr<arrow::ChunkedArray>, string>
+AggregateFunction::evaluateExpr(const shared_ptr<TupleSet> &tupleSet) {
   // compile if not yet
   if (!returnType_) {
-    compile(tupleSet->schema());
+    auto compileResult = compile(tupleSet->schema());
+    if (!compileResult.has_value()) {
+      return tl::make_unexpected(compileResult.error());
+    }
   }
 
   // just column projection, no need to use gandiva projector

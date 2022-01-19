@@ -26,10 +26,13 @@ set<string> Sum::involvedColumnNames() {
 
 tl::expected<shared_ptr<AggregateResult>, string> Sum::compute(const shared_ptr<TupleSet> &tupleSet) {
   // evaluate the expression to get input of aggregation
-  const auto &aggChunkedArray = evaluateExpr(tupleSet);
+  const auto &expAggChunkedArray = evaluateExpr(tupleSet);
+  if (!expAggChunkedArray.has_value()) {
+    return tl::make_unexpected(expAggChunkedArray.error());
+  }
 
   // compute the aggregation
-  const auto &expResultDatum = arrow::compute::Sum(aggChunkedArray);
+  const auto &expResultDatum = arrow::compute::Sum(*expAggChunkedArray);
   if (!expResultDatum.ok()) {
     return tl::make_unexpected(expResultDatum.status().message());
   }

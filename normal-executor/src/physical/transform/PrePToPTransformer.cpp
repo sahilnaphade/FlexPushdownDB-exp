@@ -192,6 +192,10 @@ PrePToPTransformer::transformAggregate(const shared_ptr<AggregatePrePOp> &aggreg
   vector<shared_ptr<PhysicalOp>> selfPOps, selfConnUpPOps, selfConnDownPOps;
   vector<string> projectColumnNames{aggregatePrePOp->getProjectColumnNames().begin(),
                                     aggregatePrePOp->getProjectColumnNames().end()};
+  vector<string> reducePOpUsedColumnNames{aggregatePrePOp->getAggOutputColumnNames().begin(),
+                                          aggregatePrePOp->getAggOutputColumnNames().end()};
+  const auto &parallelAggProjectColumnNames = upConnPOps.size() > 1 ? reducePOpUsedColumnNames : projectColumnNames;
+
   for (size_t i = 0; i < upConnPOps.size(); ++i) {
     // aggregate functions, better to let each operator has its own copy of aggregate functions
     vector<shared_ptr<aggregate::AggregateFunction>> aggFunctions;
@@ -203,7 +207,7 @@ PrePToPTransformer::transformAggregate(const shared_ptr<AggregatePrePOp> &aggreg
 
     selfPOps.emplace_back(make_shared<aggregate::AggregatePOp>(
             fmt::format("Aggregate[{}]-{}", prePOpId, i),
-            projectColumnNames,
+            parallelAggProjectColumnNames,
             upConnPOps[i]->getNodeId(),
             aggFunctions));
   }
@@ -261,6 +265,13 @@ PrePToPTransformer::transformGroup(const shared_ptr<GroupPrePOp> &groupPrePOp) {
   vector<shared_ptr<PhysicalOp>> selfPOps, selfConnUpPOps, selfConnDownPOps;
   vector<string> projectColumnNames{groupPrePOp->getProjectColumnNames().begin(),
                                     groupPrePOp->getProjectColumnNames().end()};
+  vector<string> reducePOpUsedColumnNames{groupPrePOp->getGroupColumnNames().begin(),
+                                          groupPrePOp->getGroupColumnNames().end()};
+  reducePOpUsedColumnNames.insert(reducePOpUsedColumnNames.end(),
+                                  groupPrePOp->getAggOutputColumnNames().begin(),
+                                  groupPrePOp->getAggOutputColumnNames().end());
+  const auto &parallelGroupProjectColumnNames = upConnPOps.size() > 1 ? reducePOpUsedColumnNames : projectColumnNames;
+
   for (size_t i = 0; i < upConnPOps.size(); ++i) {
     // aggregate functions, better to let each operator has its own copy of aggregate functions
     vector<shared_ptr<aggregate::AggregateFunction>> aggFunctions;
@@ -271,7 +282,7 @@ PrePToPTransformer::transformGroup(const shared_ptr<GroupPrePOp> &groupPrePOp) {
     }
 
     selfPOps.emplace_back(make_shared<group::GroupPOp>(fmt::format("Group[{}]-{}", prePOpId, i),
-                                                       projectColumnNames,
+                                                       parallelGroupProjectColumnNames,
                                                        upConnPOps[i]->getNodeId(),
                                                        groupPrePOp->getGroupColumnNames(),
                                                        aggFunctions));
@@ -430,22 +441,20 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
   connectOneToOne(hashJoinBuildPOps, hashJoinProbePOps);
 
   // if num > 1, then we need shuffle operators
-  if (parallelDegree_ == 1) {
+  if (parallelDegree_ * numNodes_ == 1) {
     // connect to upstream
     connectManyToOne(leftTransRes.first, hashJoinBuildPOps[0]);
     connectManyToOne(rightTransRes.first, hashJoinProbePOps[0]);
   } else {
     vector<shared_ptr<PhysicalOp>> shuffleLeftPOps, shuffleRightPOps;
-    for (uint i = 0; i < leftTransRes.first.size(); ++i) {
-      const auto &upLeftConnPOp = leftTransRes.first[i];
+    for (const auto &upLeftConnPOp: leftTransRes.first) {
       shuffleLeftPOps.emplace_back(make_shared<shuffle::ShufflePOp>(
               fmt::format("Shuffle[{}]-{}", prePOpId, upLeftConnPOp->name()),
               upLeftConnPOp->getProjectColumnNames(),
               upLeftConnPOp->getNodeId(),
               leftColumnNames));
     }
-    for (uint i = 0; i < rightTransRes.first.size(); ++i) {
-      const auto &upRightConnPOp = rightTransRes.first[i];
+    for (const auto &upRightConnPOp : rightTransRes.first) {
       shuffleRightPOps.emplace_back(make_shared<shuffle::ShufflePOp>(
               fmt::format("Shuffle[{}]-{}", prePOpId, upRightConnPOp->name()),
               upRightConnPOp->getProjectColumnNames(),
@@ -509,15 +518,14 @@ PrePToPTransformer::transformNestedLoopJoin(const shared_ptr<NestedLoopJoinPrePO
   allPOps.insert(allPOps.end(), nestedLoopJoinPOps.begin(), nestedLoopJoinPOps.end());
 
   // connect to right inputs, if num > 1, then we need split operators for right producers
-  if (parallelDegree_ == 1) {
+  if (parallelDegree_ * numNodes_ == 1) {
     for (const auto &upRightConnPOp: rightTransRes.first) {
       upRightConnPOp->produce(nestedLoopJoinPOps[0]);
       static_pointer_cast<join::NestedLoopJoinPOp>(nestedLoopJoinPOps[0])->addRightProducer(upRightConnPOp);
     }
   } else {
     vector<shared_ptr<PhysicalOp>> splitPOps;
-    for (uint i = 0; i < rightTransRes.first.size(); ++i) {
-      const auto &upRightConnPOp = rightTransRes.first[i];
+    for (const auto &upRightConnPOp : rightTransRes.first) {
       shared_ptr<split::SplitPOp> splitPOp = make_shared<split::SplitPOp>(
               fmt::format("Split[{}]-{}", prePOpId, upRightConnPOp->name()),
               upRightConnPOp->getProjectColumnNames(),
@@ -575,11 +583,9 @@ shared_ptr<aggregate::AggregateFunction>
 PrePToPTransformer::transformAggReduceFunction(const string &outputColumnName,
                                                const shared_ptr<AggregatePrePFunction> &prePFunction) {
   switch (prePFunction->getType()) {
-    case plan::prephysical::SUM: {
-      return make_shared<aggregate::Sum>(outputColumnName, normal::expression::gandiva::col(outputColumnName));
-    }
+    case plan::prephysical::SUM:
     case plan::prephysical::COUNT: {
-      return make_shared<aggregate::Count>(outputColumnName, normal::expression::gandiva::col(outputColumnName));
+      return make_shared<aggregate::Sum>(outputColumnName, normal::expression::gandiva::col(outputColumnName));
     }
     case plan::prephysical::MIN: {
       return make_shared<aggregate::MinMax>(true, outputColumnName, normal::expression::gandiva::col(outputColumnName));

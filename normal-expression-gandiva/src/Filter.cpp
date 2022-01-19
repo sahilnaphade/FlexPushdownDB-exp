@@ -2,13 +2,12 @@
 // Created by matt on 6/5/20.
 //
 
-#include <gandiva/tree_expr_builder.h>
-
-#include <utility>
+#include <normal/expression/gandiva/Filter.h>
+#include <normal/expression/gandiva/Globals.h>
 #include <normal/tuple/Globals.h>
-
-#include "normal/expression/gandiva/Filter.h"
-#include "normal/expression/gandiva/Globals.h"
+#include <normal/tuple/Util.h>
+#include <gandiva/tree_expr_builder.h>
+#include <utility>
 
 using namespace normal::expression::gandiva;
 
@@ -49,10 +48,12 @@ arrow::ArrayVector Filter::evaluateBySelectionVectorStatic(const arrow::RecordBa
     }
   }
   else{
-    auto columns = Schema::make(recordBatch.schema())->makeColumns();
-    auto outputChunkedArrays = Column::columnVectorToArrowChunkedArrayVector(columns);
-    for (const auto &chunkedArray: outputChunkedArrays) {
-      outputs.emplace_back(chunkedArray->chunk(0));
+    for (const auto &field: recordBatch.schema()->fields()) {
+      const auto &expArray = normal::tuple::Util::makeEmptyArray(field->type());
+      if (!expArray) {
+        throw std::runtime_error(expArray.error());
+      }
+      outputs.emplace_back(*expArray);
     }
   }
   return outputs;
@@ -184,10 +185,12 @@ arrow::ArrayVector Filter::evaluateBySelectionVector(const arrow::RecordBatch &r
     }
   }
   else{
-    auto columns = Schema::make(recordBatch.schema())->makeColumns();
-    auto outputChunkedArrays = Column::columnVectorToArrowChunkedArrayVector(columns);
-    for (const auto &chunkedArray: outputChunkedArrays) {
-      outputs.emplace_back(chunkedArray->chunk(0));
+    for (const auto &field: recordBatch.schema()->fields()) {
+      const auto &expArray = normal::tuple::Util::makeEmptyArray(field->type());
+      if (!expArray) {
+        throw std::runtime_error(expArray.error());
+      }
+      outputs.emplace_back(*expArray);
     }
   }
   return outputs;

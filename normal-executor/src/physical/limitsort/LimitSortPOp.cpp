@@ -35,15 +35,6 @@ void LimitSortPOp::onReceive(const Envelope &message) {
 }
 
 void LimitSortPOp::onStart() {
-  vector<arrow::compute::SortKey> arrowSortKeys;
-  for (const auto &sortKey: sortKeys_) {
-    const auto &name = sortKey.getName();
-    auto direction = sortKey.getOrder() == plan::prephysical::ASCENDING ?
-                     arrow::compute::SortOrder::Ascending : arrow::compute::SortOrder::Descending;
-    arrowSortKeys.emplace_back(arrow::compute::SortKey(name, direction));
-  }
-  arrowSelectKOptions_ = arrow::compute::SelectKOptions(k_, arrowSortKeys);
-
   SPDLOG_DEBUG("Starting operator  |  name: '{}'", this->name());
 }
 
@@ -69,6 +60,19 @@ void LimitSortPOp::onTuple(const TupleMessage &message) {
   result_ = selectK(inputTupleSet);
 }
 
+void LimitSortPOp::makeArrowSelectKOptions() {
+  if (!arrowSelectKOptions_.has_value()) {
+    vector<arrow::compute::SortKey> arrowSortKeys;
+    for (const auto &sortKey: sortKeys_) {
+      const auto &name = sortKey.getName();
+      auto direction = sortKey.getOrder() == plan::prephysical::ASCENDING ?
+                       arrow::compute::SortOrder::Ascending : arrow::compute::SortOrder::Descending;
+      arrowSortKeys.emplace_back(arrow::compute::SortKey(name, direction));
+    }
+    arrowSelectKOptions_ = arrow::compute::SelectKOptions(k_, arrowSortKeys);
+  }
+}
+
 shared_ptr<TupleSet> LimitSortPOp::makeInput(const shared_ptr<TupleSet> &tupleSet) {
   if (!result_.has_value()) {
     return tupleSet;
@@ -82,6 +86,14 @@ shared_ptr<TupleSet> LimitSortPOp::makeInput(const shared_ptr<TupleSet> &tupleSe
 }
 
 shared_ptr<TupleSet> LimitSortPOp::selectK(const shared_ptr<TupleSet> &tupleSet) {
+  // arrow api will crash if table has no rows, so we need a check
+  if (tupleSet->numRows() == 0) {
+    return tupleSet;
+  }
+
+  // Make selectKOptions if not yet
+  makeArrowSelectKOptions();
+
   // Compute selectK indices
   const auto table = tupleSet->table();
   if (!arrowSelectKOptions_.has_value()) {
