@@ -83,7 +83,7 @@ private:
   std::shared_ptr<Table> table_;
   std::vector<std::shared_ptr<normal::cache::SegmentKey>> weightedSegmentKeys_;
 
-  // caf inspect
+// caf inspect
 public:
   template <class Inspector>
   friend bool inspect(Inspector& f, FilterPOp& op) {
@@ -97,6 +97,7 @@ public:
                                f.field("consumers", op.consumers_),
                                f.field("predicate", op.predicate_),
                                f.field("received", op.received_),
+                               f.field("filtered", op.filtered_),
                                f.field("table", op.table_),
                                f.field("weightedSegmentKeys", op.weightedSegmentKeys_));
   }

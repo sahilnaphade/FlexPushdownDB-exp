@@ -10,6 +10,10 @@
 namespace normal::tuple {
 
 std::shared_ptr<arrow::Table> ArrowSerializer::bytes_to_table(const std::vector<std::uint8_t>& bytes_vec) {
+  if (bytes_vec.empty()) {
+    return nullptr;
+  }
+
   arrow::Status status;
 
   // Create a view over the given byte vector, but then get a copy because the vector ref eventually disappears
@@ -36,6 +40,10 @@ std::shared_ptr<arrow::Table> ArrowSerializer::bytes_to_table(const std::vector<
 }
 
 std::vector<std::uint8_t> ArrowSerializer::table_to_bytes(const std::shared_ptr<arrow::Table>& table) {
+  if (!table) {
+    return {};
+  }
+
   arrow::Status status;
 
   auto maybe_output_stream = arrow::io::BufferOutputStream::Create();
@@ -67,6 +75,10 @@ std::vector<std::uint8_t> ArrowSerializer::table_to_bytes(const std::shared_ptr<
 }
 
 std::shared_ptr<arrow::RecordBatch> ArrowSerializer::bytes_to_recordBatch(const std::vector<std::uint8_t>& bytes_vec) {
+  if (bytes_vec.empty()) {
+    return nullptr;
+  }
+
   arrow::Status status;
 
   // Create a view over the given byte vector, but then get a copy because the vector ref eventually disappears
@@ -93,6 +105,10 @@ std::shared_ptr<arrow::RecordBatch> ArrowSerializer::bytes_to_recordBatch(const 
 }
 
 std::vector<std::uint8_t> ArrowSerializer::recordBatch_to_bytes(const std::shared_ptr<arrow::RecordBatch>& recordBatch) {
+  if (!recordBatch) {
+    return {};
+  }
+
   arrow::Status status;
 
   auto maybe_output_stream = arrow::io::BufferOutputStream::Create();
@@ -124,6 +140,10 @@ std::vector<std::uint8_t> ArrowSerializer::recordBatch_to_bytes(const std::share
 }
 
 std::shared_ptr<arrow::Schema> ArrowSerializer::bytes_to_schema(const std::vector<std::uint8_t>& bytes_vec) {
+  if (bytes_vec.empty()) {
+    return nullptr;
+  }
+
   arrow::Status status;
 
   // Create a view over the given byte vector, but then get a copy because the vector ref eventually disappears
@@ -145,6 +165,10 @@ std::shared_ptr<arrow::Schema> ArrowSerializer::bytes_to_schema(const std::vecto
 }
 
 std::vector<std::uint8_t> ArrowSerializer::schema_to_bytes(const std::shared_ptr<arrow::Schema>& schema) {
+  if (!schema) {
+    return {};
+  }
+
   auto expBuffer = ::arrow::ipc::SerializeSchema(*schema);
   if (!expBuffer.ok()) {
     throw std::runtime_error(fmt::format("Error converting Arrow schema to bytes  |  error: {}", expBuffer.status().message()));
@@ -158,11 +182,19 @@ std::vector<std::uint8_t> ArrowSerializer::schema_to_bytes(const std::shared_ptr
 }
 
 std::shared_ptr<arrow::ChunkedArray> ArrowSerializer::bytes_to_chunkedArray(const std::vector<std::uint8_t> &bytes_vec) {
+  if (bytes_vec.empty()) {
+    return nullptr;
+  }
+
   auto table = bytes_to_table(bytes_vec);
   return table->column(0);
 }
 
 std::vector<std::uint8_t> ArrowSerializer::chunkedArray_to_bytes(const std::shared_ptr<arrow::ChunkedArray> &chunkedArray) {
+  if (!chunkedArray) {
+    return {};
+  }
+
   // prepare the Table, as arrow only supports RecordBatch/Table level serialization
   auto field = std::make_shared<arrow::Field>("", chunkedArray->type());
   auto fields = std::vector<std::shared_ptr<arrow::Field>>{field};
@@ -174,6 +206,10 @@ std::vector<std::uint8_t> ArrowSerializer::chunkedArray_to_bytes(const std::shar
 }
 
 std::shared_ptr<arrow::Scalar> ArrowSerializer::bytes_to_scalar(const std::vector<std::uint8_t>& bytes_vec) {
+  if (bytes_vec.empty()) {
+    return nullptr;
+  }
+
   auto recordBatch = bytes_to_recordBatch(bytes_vec);
   auto expScalar = recordBatch->column(0)->GetScalar(0);
   if (!expScalar.ok()) {
@@ -183,6 +219,10 @@ std::shared_ptr<arrow::Scalar> ArrowSerializer::bytes_to_scalar(const std::vecto
 }
 
 std::vector<std::uint8_t> ArrowSerializer::scalar_to_bytes(const std::shared_ptr<arrow::Scalar>& scalar) {
+  if (!scalar) {
+    return {};
+  }
+
   // prepare the RecordBatch
   auto field = std::make_shared<arrow::Field>("", scalar->type);
   auto fields = std::vector<std::shared_ptr<arrow::Field>>{field};
@@ -209,6 +249,10 @@ std::vector<std::uint8_t> ArrowSerializer::scalar_to_bytes(const std::shared_ptr
 }
 
 std::shared_ptr<arrow::DataType> ArrowSerializer::bytes_to_dataType(const std::vector<std::uint8_t>& bytes_vec) {
+  if (bytes_vec.empty()) {
+    return nullptr;
+  }
+
   std::string typeName(bytes_vec.begin(), bytes_vec.end());
   if (typeName == "int32") {
     return arrow::int32();
@@ -228,6 +272,10 @@ std::shared_ptr<arrow::DataType> ArrowSerializer::bytes_to_dataType(const std::v
 }
 
 std::vector<std::uint8_t> ArrowSerializer::dataType_to_bytes(const std::shared_ptr<arrow::DataType>& dataType) {
+  if (!dataType) {
+    return {};
+  }
+
   auto typeName = dataType->name();
   return {typeName.begin(), typeName.end()};
 }

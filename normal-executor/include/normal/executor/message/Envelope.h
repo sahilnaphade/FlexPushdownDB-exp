@@ -32,6 +32,12 @@ public:
 private:
   std::shared_ptr<Message> message_;
 
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, Envelope& env) {
+    return f.apply(env.message_);
+  };
 };
 
 }
@@ -39,7 +45,5 @@ private:
 CAF_BEGIN_TYPE_ID_BLOCK(Envelope, normal::caf::CAFUtil::Envelope_first_custom_type_id)
 CAF_ADD_TYPE_ID(Envelope, (normal::executor::message::Envelope))
 CAF_END_TYPE_ID_BLOCK(Envelope)
-
-CAF_ALLOW_UNSAFE_MESSAGE_TYPE(normal::executor::message::Envelope)
 
 #endif //NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_MESSAGE_ENVELOPE_H

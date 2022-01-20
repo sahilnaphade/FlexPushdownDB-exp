@@ -18,7 +18,7 @@ void Server::start() {
   const auto &awsConfig = AWSConfig::parseAWSConfig();
   normal::aws::AWSClient::daemonClient_ = make_shared<AWSClient>(awsConfig);
   normal::aws::AWSClient::daemonClient_->init();
-  SPDLOG_INFO("Daemon AWS client started");
+  std::cout << "Daemon AWS client started" << std::endl;
 
   // read remote Ips and server port
   const auto &remoteIps = readRemoteIps();
@@ -43,7 +43,7 @@ void Server::start() {
 void Server::stop() {
   // stop the daemon AWS client
   normal::aws::AWSClient::daemonClient_->shutdown();
-  SPDLOG_INFO("Daemon AWS client stopped");
+  std::cout << "Daemon AWS client stopped" << std::endl;
 
   if (actorSystem_) {
     auto res = actorSystem_->middleman().close(actorSystemConfig_->port_);

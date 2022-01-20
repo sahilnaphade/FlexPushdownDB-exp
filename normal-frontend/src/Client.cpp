@@ -52,6 +52,9 @@ string Client::start() {
   CAFInit::initCAFGlobalMetaObjects();
   actorSystem_ = make_shared<::caf::actor_system>(*actorSystemConfig_);
 
+  // connect to other nodes if any
+  connect();
+
   // executor
   executor_ = make_shared<Executor>(actorSystem_,
                                     nodes_,
@@ -61,9 +64,6 @@ string Client::start() {
                                     execConfig_->showScanMetrics());
   executor_->start();
   SPDLOG_INFO("Executor started");
-
-  // connect to other nodes if any
-  connect();
 
   return "Client started";
 }

@@ -127,21 +127,10 @@ void Execution::boot() {
 
 ::caf::actor Execution::remoteSpawn(const shared_ptr<PhysicalOp> &op, int nodeId) {
   auto remoteSpawnTout = std::chrono::seconds(10);
-  shared_ptr<::caf::message> args;
-
-  // Need s3 operators to be "detached" to not block others while loading data.
-  // Don't run more S3Get requests in parallel than # cores, earlier testing showed this did not help as S3Get
-  // already utilizes the full network bandwidth with #cores requests whereas S3Select does not when
-  // selectivity is low.
-  if (op->getType() == POpType::S3_SELECT || op->getType() == POpType::S3_GET) {
-    args = make_shared<::caf::message>(make_message(op, detached));
-  } else {
-    args = make_shared<::caf::message>(make_message(op));
-  }
-
+  auto args = make_message(op);
   auto expectedActorHandle = actorSystem_->middleman().remote_spawn<::caf::actor>(nodes_[nodeId - 1],
                                                                                   "POpActor",
-                                                                                  *args,
+                                                                                  args,
                                                                                   remoteSpawnTout);
   if (!expectedActorHandle) {
     throw std::runtime_error(fmt::format("Failed to remote-spawn operator actor '{}': {}",
