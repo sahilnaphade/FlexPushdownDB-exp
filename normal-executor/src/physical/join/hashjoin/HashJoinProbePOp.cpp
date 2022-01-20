@@ -15,30 +15,30 @@ using namespace normal::executor::physical::join;
 HashJoinProbePOp::HashJoinProbePOp(string name,
                                    vector<string> projectColumnNames,
                                    int nodeId,
-                                   HashJoinPredicate pred,
+                                   const HashJoinPredicate& pred,
                                    JoinType joinType) :
 	PhysicalOp(move(name), HASH_JOIN_PROBE, move(projectColumnNames), nodeId) {
 
   set<string> neededColumnNames(getProjectColumnNames().begin(), getProjectColumnNames().end());
   switch (joinType) {
     case INNER: {
-      kernel_ = HashJoinProbeKernel::make(move(pred), move(neededColumnNames), false, false);
+      kernel_ = HashJoinProbeKernel::make(pred, move(neededColumnNames), false, false);
       break;
     }
     case LEFT: {
-      kernel_ = HashJoinProbeKernel::make(move(pred), move(neededColumnNames), true, false);
+      kernel_ = HashJoinProbeKernel::make(pred, move(neededColumnNames), true, false);
       break;
     }
     case RIGHT: {
-      kernel_ = HashJoinProbeKernel::make(move(pred), move(neededColumnNames), false, true);
+      kernel_ = HashJoinProbeKernel::make(pred, move(neededColumnNames), false, true);
       break;
     }
     case FULL: {
-      kernel_ = HashJoinProbeKernel::make(move(pred), move(neededColumnNames), true, true);
+      kernel_ = HashJoinProbeKernel::make(pred, move(neededColumnNames), true, true);
       break;
     }
     case SEMI: {
-      kernel_ = HashSemiJoinProbeKernel::make(move(pred), move(neededColumnNames));
+      kernel_ = HashSemiJoinProbeKernel::make(pred, move(neededColumnNames));
       break;
     }
     default:

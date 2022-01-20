@@ -226,7 +226,7 @@ PrePToPTransformer::transformAggregate(const shared_ptr<AggregatePrePOp> &aggreg
     }
 
     shared_ptr<PhysicalOp> aggReducePOp = make_shared<aggregate::AggregatePOp>(
-            fmt::format("AggregateReduce[{}]", prePOpId),
+            fmt::format("Aggregate[{}]-Reduce", prePOpId),
             projectColumnNames,
             0,
             aggReduceFunctions);
@@ -301,7 +301,7 @@ PrePToPTransformer::transformGroup(const shared_ptr<GroupPrePOp> &groupPrePOp) {
       aggReduceFunctions.emplace_back(transformAggReduceFunction(alias, prepFunction));
     }
 
-    shared_ptr<PhysicalOp> groupReducePOp = make_shared<group::GroupPOp>(fmt::format("GroupReduce[{}]", prePOpId),
+    shared_ptr<PhysicalOp> groupReducePOp = make_shared<group::GroupPOp>(fmt::format("Group[{}]-reduce", prePOpId),
                                                                          projectColumnNames,
                                                                          0,
                                                                          groupPrePOp->getGroupColumnNames(),

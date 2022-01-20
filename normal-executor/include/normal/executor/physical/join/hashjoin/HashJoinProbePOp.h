@@ -32,7 +32,7 @@ public:
   HashJoinProbePOp(string name,
                    vector<string> projectColumnNames,
                    int nodeId,
-                   HashJoinPredicate pred,
+                   const HashJoinPredicate& pred,
                    JoinType joinType);
   HashJoinProbePOp() = default;
   HashJoinProbePOp(const HashJoinProbePOp&) = default;

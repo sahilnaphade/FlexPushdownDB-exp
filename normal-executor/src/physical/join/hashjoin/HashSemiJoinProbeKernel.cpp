@@ -58,24 +58,23 @@ join(const shared_ptr<RecordBatchHashSemiJoiner> &joiner, const shared_ptr<Tuple
 }
 
 tl::expected<void, string> HashSemiJoinProbeKernel::joinBuildTupleSetIndex(const shared_ptr<TupleSetIndex> &tupleSetIndex) {
-
-  // Get rowIndexOffset
+  // Get rowIndexOffset before buffering the input
   int64_t rowIndexOffset = buildTupleSetIndex_.has_value() ? buildTupleSetIndex_.value()->size() : 0;
 
-  // Buffer tupleSetIndex if having tuples
-  if(tupleSetIndex->size() > 0) {
-    auto result = putBuildTupleSetIndex(tupleSetIndex);
-    if (!result)
-      return tl::make_unexpected(result.error());
+  // Buffer tupleSetIndex
+  auto putResult = putBuildTupleSetIndex(tupleSetIndex);
+  if (!putResult)
+    return tl::make_unexpected(putResult.error());
+
+  // Create output schema
+  if (probeTupleSet_.has_value()) {
+    bufferOutputSchema(tupleSetIndex, probeTupleSet_.value());
   }
 
   // Check empty
   if (!probeTupleSet_.has_value() || probeTupleSet_.value()->numRows() == 0 || tupleSetIndex->size() == 0) {
     return {};
   }
-
-  // Create output schema
-  bufferOutputSchema(tupleSetIndex, probeTupleSet_.value());
 
   // Create joiner
   const auto &joiner = RecordBatchHashSemiJoiner::make(tupleSetIndex,
@@ -96,21 +95,20 @@ tl::expected<void, string> HashSemiJoinProbeKernel::joinBuildTupleSetIndex(const
 }
 
 tl::expected<void, string> HashSemiJoinProbeKernel::joinProbeTupleSet(const shared_ptr<TupleSet> &tupleSet) {
+  // Buffer tupleSet
+  auto putResult = putProbeTupleSet(tupleSet);
+  if (!putResult)
+    return tl::make_unexpected(putResult.error());
 
-  // Buffer tupleSet if having tuples
-  if (tupleSet->numRows() > 0) {
-    auto result = putProbeTupleSet(tupleSet);
-    if (!result)
-      return tl::make_unexpected(result.error());
+  // Create output schema
+  if (buildTupleSetIndex_.has_value()) {
+    bufferOutputSchema(buildTupleSetIndex_.value(), tupleSet);
   }
 
   // Check empty
   if (!buildTupleSetIndex_.has_value() || buildTupleSetIndex_.value()->size() == 0 || tupleSet->numRows() == 0) {
     return {};
   }
-
-  // Create output schema
-  bufferOutputSchema(buildTupleSetIndex_.value(), tupleSet);
 
   // Create joiner
   const auto &joiner = RecordBatchHashSemiJoiner::make(buildTupleSetIndex_.value(),
@@ -146,7 +144,7 @@ tl::expected<void, string> HashSemiJoinProbeKernel::finalize() {
     }
   }
 
-  if (!outputSchema_.value()) {
+  if (!outputSchema_.has_value()) {
     return tl::make_unexpected("Output schema not set yet during finalize");
   }
   const auto &recordBatch = arrow::RecordBatch::Make(outputSchema_.value(),
