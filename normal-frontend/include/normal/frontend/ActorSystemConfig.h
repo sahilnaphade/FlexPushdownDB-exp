@@ -22,7 +22,8 @@ struct ActorSystemConfig: ::caf::actor_system_config {
     nodeIps_(nodeIps),
     isServer_(isServer) {
     load<::caf::io::middleman>();
-    add_actor_type<POpActor, std::shared_ptr<PhysicalOp>&>("POpActor");
+    add_actor_type<POpActor, ::caf::no_spawn_options, std::shared_ptr<PhysicalOp>&>("POpActor");
+    add_actor_type<POpActor, ::caf::detached, std::shared_ptr<PhysicalOp>&>("POpActor-detached");
   }
 
   int port_;

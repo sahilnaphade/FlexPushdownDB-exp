@@ -1,7 +1,7 @@
 # CAF
 
-set(CAF_VERSION "0.18.5")
-set(CAF_GIT_URL "https://github.com/actor-framework/actor-framework.git")
+set(CAF_VERSION "0.18.5-remote_spawn_option")
+set(CAF_GIT_URL "https://github.com/Yifei-yang7/actor-framework.git")
 
 
 include(ExternalProject)
