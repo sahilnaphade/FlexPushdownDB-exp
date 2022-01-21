@@ -1,5 +1,7 @@
 # CAF
 
+# This repo is forked from CAF repo, with support added for remote spawning actors with spawn_options
+# A pull request will be made, and after it's get merged I will switch back to CAF repo
 set(CAF_VERSION "0.18.5-remote_spawn_option")
 set(CAF_GIT_URL "https://github.com/Yifei-yang7/actor-framework.git")
 
