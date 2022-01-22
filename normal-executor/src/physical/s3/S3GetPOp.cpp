@@ -111,13 +111,17 @@ std::shared_ptr<TupleSet> S3GetPOp::readCSVFile(std::shared_ptr<arrow::io::Input
 														parse_options,
 														convert_options);
   if (!makeReaderResult.ok())
-	throw std::runtime_error(fmt::format(
-		"Cannot parse S3 payload  |  Could not create a table reader, error: '{}'",
-		makeReaderResult.status().message()));
+	  ctx()->notifyError(fmt::format(
+            "Cannot parse S3 payload  |  Could not create a table reader, error: '{}'",
+            makeReaderResult.status().message()));
   auto tableReader = *makeReaderResult;
 
   // Parse the payload and create the tupleset
-  return TupleSet::make(tableReader);
+  auto expTupleSet = TupleSet::make(tableReader);
+  if (!expTupleSet.has_value()) {
+    ctx()->notifyError(expTupleSet.error());
+  }
+  return *expTupleSet;
 }
 
 std::shared_ptr<TupleSet> S3GetPOp::readParquetFile(std::basic_iostream<char, std::char_traits<char>> &retrievedFile) {
@@ -130,7 +134,7 @@ std::shared_ptr<TupleSet> S3GetPOp::readParquetFile(std::basic_iostream<char, st
   arrow_reader->set_use_threads(false);
 
   if (!st.ok()) {
-    SPDLOG_ERROR("Error opening file for {}\nError: {}", name(), st.message());
+    ctx()->notifyError(fmt::format("Error opening file for {}\nError: {}", name(), st.message()));
   }
   std::shared_ptr<arrow::Table> table;
   // only read the needed columns from the file
@@ -140,7 +144,7 @@ std::shared_ptr<TupleSet> S3GetPOp::readParquetFile(std::basic_iostream<char, st
   }
   st = arrow_reader->ReadTable(neededColumnIndices, &table);
   if (!st.ok()) {
-    SPDLOG_ERROR("Error reading parquet data for {}\nError: {}", name(), st.message());
+    ctx()->notifyError(fmt::format("Error reading parquet data for {}\nError: {}", name(), st.message()));
   }
   return TupleSet::make(table);
 }
@@ -162,7 +166,7 @@ std::shared_ptr<TupleSet> S3GetPOp::s3GetFullRequest() {
     }
     if (attempts > maxRetryAttempts) {
       const auto& err = getObjectOutcome.GetError();
-      throw std::runtime_error(fmt::format("{}, {} after {} retries", err.GetMessage(), name(), maxRetryAttempts));
+      ctx()->notifyError(fmt::format("{}, {} after {} retries", err.GetMessage(), name(), maxRetryAttempts));
     }
     // Something went wrong with AWS API on our end or remotely, wait and try again
     std::this_thread::sleep_for (std::chrono::milliseconds(minimumSleepRetryTimeMS));
@@ -213,7 +217,11 @@ std::shared_ptr<TupleSet> S3GetPOp::s3GetFullRequest() {
                                                outputSchema,
                                                true,
                                                csvTableFormat->getFieldDelimiter());
-      tupleSet = parser.constructTupleSet();
+      try {
+        tupleSet = parser.constructTupleSet();
+      } catch (const std::runtime_error &err) {
+        ctx()->notifyError(err.what());
+      }
 #else
       inputStream = std::make_shared<ArrowAWSGZIPInputStream2>(retrievedFile, resultSize);
       tupleSet = readCSVFile(inputStream);
@@ -228,7 +236,11 @@ std::shared_ptr<TupleSet> S3GetPOp::s3GetFullRequest() {
                                                outputSchema,
                                                false,
                                                csvTableFormat->getFieldDelimiter());
-      tupleSet = parser.constructTupleSet();
+      try {
+        tupleSet = parser.constructTupleSet();
+      } catch (const std::runtime_error &err) {
+        ctx()->notifyError(err.what());
+      }
 #else
       inputStream = std::make_shared<ArrowAWSInputStream>(retrievedFile);
       tupleSet = readCSVFile(inputStream);
@@ -270,7 +282,7 @@ GetObjectResult S3GetPOp::s3GetRequestOnly(const std::string &s3Object, uint64_t
     }
     if (attempts > maxRetryAttempts) {
       const auto& err = getObjectOutcome.GetError();
-      throw std::runtime_error(fmt::format("{}, {} after {} retries", err.GetMessage(), name(), maxRetryAttempts));
+      ctx()->notifyError(fmt::format("{}, {} after {} retries", err.GetMessage(), name(), maxRetryAttempts));
     }
     // Something went wrong with AWS API on our end or remotely, wait and try again
     std::this_thread::sleep_for (std::chrono::milliseconds(minimumSleepRetryTimeMS));
@@ -337,7 +349,11 @@ void S3GetPOp::s3GetIndividualReq(int reqNum, const std::string &s3Object, uint6
             table_->getSchema(),
             outputSchema,
             csvTableFormat->getFieldDelimiter());
-    parser->parseChunk(std::make_shared<ArrowAWSInputStream>(retrievedFile));
+    try {
+      parser->parseChunk(std::make_shared<ArrowAWSInputStream>(retrievedFile));
+    } catch (const std::runtime_error &err) {
+      ctx()->notifyError(err.what());
+    }
     std::chrono::steady_clock::time_point stopConversionTime = std::chrono::steady_clock::now();
     GetConvertLock.lock();
     activeGetConversions--;
@@ -348,7 +364,7 @@ void S3GetPOp::s3GetIndividualReq(int reqNum, const std::string &s3Object, uint6
     s3SelectScanStats_.getConvertTimeNS += conversionTime;
     splitReqLock_->unlock();
   } else {
-    throw std::runtime_error(fmt::format("Splitting up requests that need a concatenated output not supported yet."));
+    ctx()->notifyError(fmt::format("Splitting up requests that need a concatenated output not supported yet."));
   }
 }
 
@@ -417,10 +433,19 @@ std::shared_ptr<TupleSet> S3GetPOp::s3GetParallelReqs(bool tempFixForAirmettleCS
       if (i < totalReqs) {
         std::vector<char> remainingData = reqNumToAdditionalOutput_[i];
         if (!remainingData.empty()) {
-          parser->parseChunk(remainingData.data(), remainingData.size());
+          try {
+            parser->parseChunk(remainingData.data(), remainingData.size());
+          } catch (const std::runtime_error &err) {
+            ctx()->notifyError(err.what());
+          }
         }
       }
-      std::shared_ptr<TupleSet> currentTupleSet = parser->outputCompletedTupleSet();
+      std::shared_ptr<TupleSet> currentTupleSet;
+      try {
+        currentTupleSet = parser->outputCompletedTupleSet();
+      } catch (const std::runtime_error &err) {
+        ctx()->notifyError(err.what());
+      }
       std::shared_ptr<arrow::Table> currentTable = currentTupleSet->table();
       // Don't need to concatenate empty tables
       if (currentTable->num_rows() > 0) {
@@ -446,7 +471,8 @@ std::shared_ptr<TupleSet> S3GetPOp::s3GetParallelReqs(bool tempFixForAirmettleCS
     splitReqLock_->unlock();
     return readTupleSet;
   } else {
-    throw std::runtime_error(fmt::format("Splitting up requests that need a concatenated output not supported yet."));
+    ctx()->notifyError(fmt::format("Splitting up requests that need a concatenated output not supported yet."));
+    return nullptr;
   }
 }
 #endif

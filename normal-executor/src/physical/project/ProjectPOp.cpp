@@ -32,17 +32,16 @@ void ProjectPOp::onStart() {
 }
 
 void ProjectPOp::onReceive(const Envelope &message) {
-  if (message.message().type() == "StartMessage") {
+  if (message.message().type() == MessageType::START) {
     this->onStart();
-  } else if (message.message().type() == "TupleMessage") {
+  } else if (message.message().type() == MessageType::TUPLE) {
     auto tupleMessage = dynamic_cast<const TupleMessage &>(message.message());
     this->onTuple(tupleMessage);
-  } else if (message.message().type() == "CompleteMessage") {
+  } else if (message.message().type() == MessageType::COMPLETE) {
     auto completeMessage = dynamic_cast<const CompleteMessage &>(message.message());
     this->onComplete(completeMessage);
   } else {
-    // FIXME: Propagate error properly
-    throw std::runtime_error("Unrecognized message type " + message.message().type());
+    ctx()->notifyError("Unrecognized message type " + message.message().getTypeString());
   }
 }
 
@@ -84,7 +83,7 @@ void ProjectPOp::bufferTuples(const TupleMessage &message) {
     auto tables = {tuples_->table(), message.tuples()->table()};
     auto expTable = arrow::ConcatenateTables(tables);
     if (!expTable.ok()) {
-      throw std::runtime_error(expTable.status().message());
+      ctx()->notifyError(expTable.status().message());
     }
     tuples_->table(*expTable);
   }
@@ -101,7 +100,7 @@ void ProjectPOp::projectAndSendTuples() {
       const auto &outputColumnName = projectColumnPair.second;
       const auto &expColumn = tuples_->getColumnByName(inputColumnName);
       if (!expColumn.has_value()) {
-        throw std::runtime_error(expColumn.error());
+        ctx()->notifyError(expColumn.error());
       }
       const auto &column = expColumn.value();
       column->setName(outputColumnName);
@@ -111,19 +110,23 @@ void ProjectPOp::projectAndSendTuples() {
     // Columns from project exprs
     if (!exprs_.empty()) {
       // Evaluate
-      auto projExprTuples = projector_.value()->evaluate(*tuples_);
+      const auto &expProjExprTuples = projector_.value()->evaluate(*tuples_);
+      if (!expProjExprTuples.has_value()) {
+        ctx()->notifyError(expProjExprTuples.error());
+      }
+      const auto &projExprTuples = *expProjExprTuples;
 
       // Rename
       auto renameRes = projExprTuples->renameColumns(exprNames_);
       if (!renameRes.has_value()) {
-        throw std::runtime_error(renameRes.error());
+        ctx()->notifyError(renameRes.error());
       }
 
       // Add columns
       for (int c = 0; c < projExprTuples->numColumns(); ++c) {
         const auto &expColumn = projExprTuples->getColumnByIndex(c);
         if (!expColumn.has_value()) {
-          throw std::runtime_error(expColumn.error());
+          ctx()->notifyError(expColumn.error());
         }
         columns.emplace_back(expColumn.value());
       }

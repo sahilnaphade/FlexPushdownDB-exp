@@ -8,8 +8,11 @@
 using namespace normal::executor::message;
 
 TupleSetIndexMessage::TupleSetIndexMessage(std::shared_ptr<TupleSetIndex> tupleSetIndex, const std::string &sender) :
-	Message("TupleSetIndexMessage", sender),
-	tupleSetIndex_(std::move(tupleSetIndex)) {
+	Message(TUPLESET_INDEX, sender),
+	tupleSetIndex_(std::move(tupleSetIndex)) {}
+
+std::string TupleSetIndexMessage::getTypeString() const {
+  return "TupleSetIndexMessage";
 }
 
 const std::shared_ptr<TupleSetIndex> &TupleSetIndexMessage::getTupleSetIndex() const {

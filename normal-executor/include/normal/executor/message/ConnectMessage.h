@@ -24,6 +24,8 @@ public:
   ConnectMessage(const ConnectMessage&) = default;
   ConnectMessage& operator=(const ConnectMessage&) = default;
 
+  std::string getTypeString() const override;
+
   const std::vector<POpConnection> &connections() const;
 
 private:

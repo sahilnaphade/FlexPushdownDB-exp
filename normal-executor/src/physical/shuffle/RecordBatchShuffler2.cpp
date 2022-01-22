@@ -14,23 +14,13 @@ using namespace normal::util;
 RecordBatchShuffler2::RecordBatchShuffler2(vector<int> shuffleColumnIndices,
                                            size_t numSlots,
                                            shared_ptr<::arrow::Schema> schema,
-                                           size_t numRows) :
+                                           vector<vector<shared_ptr<ArrayAppender>>> shuffledAppendersVector) :
   shuffleColumnIndices_(move(shuffleColumnIndices)),
   numSlots_(numSlots),
   schema_(move(schema)),
-  shuffledAppendersVector_{numSlots} {
+  shuffledAppendersVector_(move(shuffledAppendersVector)) {
+//  shuffledAppendersVector_{numSlots} {
 
-  // Create appenders
-  for (size_t s = 0; s < numSlots_; ++s) {
-    shuffledAppendersVector_[s] = vector<shared_ptr<ArrayAppender>>{static_cast<size_t>(schema_->num_fields())};
-    for (int c = 0; c < schema_->num_fields(); ++c) {
-      auto expectedAppender = ArrayAppenderBuilder::make(schema_->field(c)->type(), numRows);
-      if (!expectedAppender.has_value()) {
-        throw runtime_error(fmt::format("{}, RecordBatchShuffler", expectedAppender.error()));
-      }
-      shuffledAppendersVector_[s][c] = expectedAppender.value();
-    }
-  }
 }
 
 tl::expected<shared_ptr<RecordBatchShuffler2>, string>
@@ -49,7 +39,20 @@ RecordBatchShuffler2::make(const vector<string> &columnNames,
     shuffleColumnIndices.emplace_back(shuffleColumnIndex);
   }
 
-  return make_shared<RecordBatchShuffler2>(shuffleColumnIndices, numSlots, schema, numRows);
+  vector<vector<shared_ptr<ArrayAppender>>> shuffledAppendersVector{numSlots};
+  // Create appenders
+  for (size_t s = 0; s < numSlots; ++s) {
+    shuffledAppendersVector[s] = vector<shared_ptr<ArrayAppender>>{static_cast<size_t>(schema->num_fields())};
+    for (int c = 0; c < schema->num_fields(); ++c) {
+      auto expectedAppender = ArrayAppenderBuilder::make(schema->field(c)->type(), numRows);
+      if (!expectedAppender.has_value()) {
+        return tl::make_unexpected(fmt::format("{}, RecordBatchShuffler", expectedAppender.error()));
+      }
+      shuffledAppendersVector[s][c] = expectedAppender.value();
+    }
+  }
+
+  return make_shared<RecordBatchShuffler2>(shuffleColumnIndices, numSlots, schema, shuffledAppendersVector);
 }
 
 tl::expected<void, string> RecordBatchShuffler2::shuffle(const shared_ptr<::arrow::RecordBatch> &recordBatch) {

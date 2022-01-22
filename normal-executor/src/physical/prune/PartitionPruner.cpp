@@ -223,13 +223,33 @@ bool PartitionPruner::checkValid(const shared_ptr<Scalar> &predMin, const shared
 
 bool PartitionPruner::lt(const shared_ptr<Scalar> &v1, const shared_ptr<Scalar> &v2) {
   if (v1->type()->id() == arrow::int32()->id()) {
-    return v1->value<int>() < v2->value<int>();
+    auto expV1 = v1->value<int>();
+    auto expV2 = v2->value<int>();
+    if (!expV1.has_value() || !expV2.has_value()) {
+      throw runtime_error(expV1.has_value() ? expV2.error() : expV1.error());
+    }
+    return *expV1 < *expV2;
   } else if (v1->type()->id() == arrow::int64()->id()) {
-    return v1->value<long>() < v2->value<long>();
+    auto expV1 = v1->value<long>();
+    auto expV2 = v2->value<long>();
+    if (!expV1.has_value() || !expV2.has_value()) {
+      throw runtime_error(expV1.has_value() ? expV2.error() : expV1.error());
+    }
+    return *expV1 < *expV2;
   } else if (v1->type()->id() == arrow::float64()->id()) {
-    return v1->value<double>() < v2->value<double>();
+    auto expV1 = v1->value<double>();
+    auto expV2 = v2->value<double>();
+    if (!expV1.has_value() || !expV2.has_value()) {
+      throw runtime_error(expV1.has_value() ? expV2.error() : expV1.error());
+    }
+    return *expV1 < *expV2;
   } else if (v1->type()->id() == arrow::utf8()->id()) {
-    return v1->value<string>() < v2->value<string>();
+    auto expV1 = v1->value<string>();
+    auto expV2 = v2->value<string>();
+    if (!expV1.has_value() || !expV2.has_value()) {
+      throw runtime_error(expV1.has_value() ? expV2.error() : expV1.error());
+    }
+    return *expV1 < *expV2;
   } else {
     throw runtime_error(fmt::format("Unsupported data type: {}", v1->type()->name()));
   }
@@ -237,13 +257,33 @@ bool PartitionPruner::lt(const shared_ptr<Scalar> &v1, const shared_ptr<Scalar> 
 
 bool PartitionPruner::lte(const shared_ptr<Scalar> &v1, const shared_ptr<Scalar> &v2) {
   if (v1->type()->id() == arrow::int32()->id()) {
-    return v1->value<int>() <= v2->value<int>();
+    auto expV1 = v1->value<int>();
+    auto expV2 = v2->value<int>();
+    if (!expV1.has_value() || !expV2.has_value()) {
+      throw runtime_error(expV1.has_value() ? expV2.error() : expV1.error());
+    }
+    return *expV1 <= *expV2;
   } else if (v1->type()->id() == arrow::int64()->id()) {
-    return v1->value<long>() <= v2->value<long>();
+    auto expV1 = v1->value<long>();
+    auto expV2 = v2->value<long>();
+    if (!expV1.has_value() || !expV2.has_value()) {
+      throw runtime_error(expV1.has_value() ? expV2.error() : expV1.error());
+    }
+    return *expV1 <= *expV2;
   } else if (v1->type()->id() == arrow::float64()->id()) {
-    return v1->value<double>() <= v2->value<double>();
+    auto expV1 = v1->value<double>();
+    auto expV2 = v2->value<double>();
+    if (!expV1.has_value() || !expV2.has_value()) {
+      throw runtime_error(expV1.has_value() ? expV2.error() : expV1.error());
+    }
+    return *expV1 <= *expV2;
   } else if (v1->type()->id() == arrow::utf8()->id()) {
-    return v1->value<string>() <= v2->value<string>();
+    auto expV1 = v1->value<string>();
+    auto expV2 = v2->value<string>();
+    if (!expV1.has_value() || !expV2.has_value()) {
+      throw runtime_error(expV1.has_value() ? expV2.error() : expV1.error());
+    }
+    return *expV1 <= *expV2;
   } else {
     throw runtime_error(fmt::format("Unsupported data type: {}", v1->type()->name()));
   }

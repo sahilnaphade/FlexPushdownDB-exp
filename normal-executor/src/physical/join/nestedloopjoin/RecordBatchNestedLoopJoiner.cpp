@@ -55,7 +55,14 @@ tl::expected<void, string> RecordBatchNestedLoopJoiner::join(const shared_ptr<::
   // filter using predicate
   arrow::ArrayVector outputArrayVector;
   if (predicate_.has_value()) {
-    outputArrayVector = filter(cartesianBatch, leftRecordBatch->num_rows(), leftRowOffset, rightRowOffset);
+    const auto &expOutputArrayVector = filter(cartesianBatch,
+                                              leftRecordBatch->num_rows(),
+                                              leftRowOffset,
+                                              rightRowOffset);
+    if (!expOutputArrayVector.has_value()) {
+      return tl::make_unexpected(expOutputArrayVector.error());
+    }
+    outputArrayVector = *expOutputArrayVector;
   } else {
     outputArrayVector = cartesianBatch->columns();
   }
@@ -166,7 +173,7 @@ RecordBatchNestedLoopJoiner::cartesian(const shared_ptr<::arrow::RecordBatch> &l
   return arrow::RecordBatch::Make(outputSchema_, outputNumRows.value(), outputArrays);
 }
 
-arrow::ArrayVector RecordBatchNestedLoopJoiner::filter(const shared_ptr<arrow::RecordBatch> &recordBatch,
+tl::expected<arrow::ArrayVector, string> RecordBatchNestedLoopJoiner::filter(const shared_ptr<arrow::RecordBatch> &recordBatch,
                                                        int64_t leftBatchNumRows,
                                                        int64_t leftRowOffset,
                                                        int64_t rightRowOffset) {
@@ -178,7 +185,12 @@ arrow::ArrayVector RecordBatchNestedLoopJoiner::filter(const shared_ptr<arrow::R
 
   // filter the record batch, here we don't do it in one call, we first compute selection vector then project using it,
   // because we need the selection vector to compute left/right row match indexes for outer join
-  const auto &selectionVector = filter_.value()->computeSelectionVector(*recordBatch);
+  const auto &expSelectionVector = filter_.value()->computeSelectionVector(*recordBatch);
+  if (!expSelectionVector.has_value()) {
+    return tl::make_unexpected(expSelectionVector.error());
+  }
+  const auto &selectionVector = *expSelectionVector;
+
   const auto &inputRowMatchIndexes = computeInputRowMatchIndexes(selectionVector,
                                                                  leftBatchNumRows,
                                                                  leftRowOffset,

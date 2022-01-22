@@ -33,14 +33,13 @@ std::string CacheLoadPOp::getTypeString() const {
 }
 
 void CacheLoadPOp::onReceive(const Envelope &message) {
-  if (message.message().type() == "StartMessage") {
-	this->onStart();
-  } else if (message.message().type() == "LoadResponseMessage") {
-	auto loadResponseMessage = dynamic_cast<const LoadResponseMessage &>(message.message());
-	this->onCacheLoadResponse(loadResponseMessage);
+  if (message.message().type() == MessageType::START) {
+	  this->onStart();
+  } else if (message.message().type() == MessageType::LOAD_RESPONSE) {
+    auto loadResponseMessage = dynamic_cast<const LoadResponseMessage &>(message.message());
+    this->onCacheLoadResponse(loadResponseMessage);
   } else {
-	// FIXME: Propagate error properly
-	throw std::runtime_error("Unrecognized message type " + message.message().type());
+    ctx()->notifyError("Unrecognized message type " + message.message().getTypeString());
   }
 }
 
@@ -51,10 +50,10 @@ void CacheLoadPOp::onStart() {
    */
 
   if (!hitOperatorName_.has_value())
-	throw std::runtime_error("Hit consumer not set ");
+	ctx()->notifyError("Hit consumer not set ");
 
   if (!missOperatorToCacheName_.has_value())
-	throw std::runtime_error("Miss caching consumer not set");
+	ctx()->notifyError("Miss caching consumer not set");
 
   if (missOperatorToPushdownName_.has_value()) {
     SPDLOG_DEBUG("Starting operator  |  name: '{}', hitOperator: '{}', missOperatorToCache: '{}', missOperatorToPushdown: '{}'",
@@ -219,8 +218,7 @@ void CacheLoadPOp::onCacheLoadResponse(const LoadResponseMessage &Message) {
       missNum = columnNames_.size();
     }
   }
-  ctx()->send(CacheMetricsMessage::make(hitNum, missNum, shardHitNum, shardMissNum, this->name()), "SegmentCache")
-          .map_error([](auto err) { throw std::runtime_error(err); });
+  ctx()->send(CacheMetricsMessage::make(hitNum, missNum, shardHitNum, shardMissNum, this->name()), "SegmentCache");
 
   /**
    * 5. Complete

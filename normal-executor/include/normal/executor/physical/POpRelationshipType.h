@@ -12,8 +12,7 @@ namespace normal::executor::physical {
  */
 enum class POpRelationshipType {
   Producer,
-  Consumer,
-  None
+  Consumer
 };
 
 }

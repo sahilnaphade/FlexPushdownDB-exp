@@ -18,17 +18,16 @@ std::string MergePOp::getTypeString() const {
 }
 
 void MergePOp::onReceive(const Envelope &msg) {
-  if (msg.message().type() == "StartMessage") {
-	this->onStart();
-  } else if (msg.message().type() == "TupleMessage") {
-	auto tupleMessage = dynamic_cast<const TupleMessage &>(msg.message());
-	this->onTuple(tupleMessage);
-  } else if (msg.message().type() == "CompleteMessage") {
-	auto completeMessage = dynamic_cast<const CompleteMessage &>(msg.message());
-	this->onComplete(completeMessage);
+  if (msg.message().type() == MessageType::START) {
+	  this->onStart();
+  } else if (msg.message().type() == MessageType::TUPLE) {
+    auto tupleMessage = dynamic_cast<const TupleMessage &>(msg.message());
+    this->onTuple(tupleMessage);
+  } else if (msg.message().type() == MessageType::COMPLETE) {
+    auto completeMessage = dynamic_cast<const CompleteMessage &>(msg.message());
+    this->onComplete(completeMessage);
   } else {
-	// FIXME: Propagate error properly
-	throw std::runtime_error("Unrecognized message type " + msg.message().type());
+  	ctx()->notifyError("Unrecognized message type " + msg.message().getTypeString());
   }
 }
 
@@ -51,7 +50,7 @@ void MergePOp::merge() {
     auto expectedMergedTupleSet = MergeKernel::merge(leftTupleSet, rightTupleSet);
 
     if (!expectedMergedTupleSet.has_value()) {
-      throw std::runtime_error(fmt::format("{}.\n leftOp: {}\n rightOp: {}",
+      ctx()->notifyError(fmt::format("{}.\n leftOp: {}\n rightOp: {}",
                                 expectedMergedTupleSet.error(), leftProducerName_, rightProducerName_));
     } else {
       // Send merged tupleset
@@ -60,7 +59,7 @@ void MergePOp::merge() {
       // Project using projectColumnNames
       auto expProjectTupleSet = mergedTupleSet->projectExist(getProjectColumnNames());
       if (!expProjectTupleSet) {
-        throw std::runtime_error(expProjectTupleSet.error());
+        ctx()->notifyError(expProjectTupleSet.error());
       }
 
       std::shared_ptr<Message> tupleMessage = std::make_shared<TupleMessage>(expProjectTupleSet.value(), name());
@@ -89,7 +88,7 @@ void MergePOp::onTuple(const TupleMessage &message) {
   } else if (message.sender() == rightProducerName_) {
 	rightTupleSets_.emplace_back(tupleSet);
   } else {
-	throw std::runtime_error(fmt::format("Unrecognized producer {}, left: {}, right: {}",
+	ctx()->notifyError(fmt::format("Unrecognized producer {}, left: {}, right: {}",
 	        message.sender(), leftProducerName_, rightProducerName_));
   }
 

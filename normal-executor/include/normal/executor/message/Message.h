@@ -5,6 +5,7 @@
 #ifndef NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_MESSAGE_MESSAGE_H
 #define NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_MESSAGE_MESSAGE_H
 
+#include <normal/executor/message/MessageType.h>
 #include <string>
 
 namespace normal::executor::message {
@@ -15,18 +16,18 @@ namespace normal::executor::message {
 class Message {
 
 public:
-
-  explicit Message(std::string type, std::string sender);
+  explicit Message(MessageType type, std::string sender);
   Message() = default;
   Message(const Message&) = default;
   Message& operator=(const Message&) = default;
   virtual ~Message() = default;
 
-  const std::string& type() const;
+  MessageType type() const;
   const std::string& sender() const;
+  virtual std::string getTypeString() const = 0;
 
 protected:
-  std::string type_;
+  MessageType type_;
   std::string sender_;
 
 };

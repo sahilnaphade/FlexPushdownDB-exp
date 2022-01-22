@@ -21,6 +21,8 @@ public:
   TupleSetIndexMessage(const TupleSetIndexMessage&) = default;
   TupleSetIndexMessage& operator=(const TupleSetIndexMessage&) = default;
 
+  std::string getTypeString() const override;
+
   [[nodiscard]] const std::shared_ptr<TupleSetIndex> &getTupleSetIndex() const;
 
 private:

@@ -19,6 +19,8 @@ public:
   CompleteMessage(const CompleteMessage&) = default;
   CompleteMessage& operator=(const CompleteMessage&) = default;
 
+  std::string getTypeString() const override;
+
 // caf inspect
 public:
   template <class Inspector>

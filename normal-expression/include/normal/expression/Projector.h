@@ -20,10 +20,10 @@ public:
 
   virtual std::shared_ptr<arrow::Schema> getResultSchema() = 0;
 
-  virtual std::shared_ptr<TupleSet> evaluate(const TupleSet &tupleSet) = 0;
-  virtual arrow::ArrayVector evaluate(const arrow::RecordBatch &recordBatch) = 0;
+  virtual tl::expected<std::shared_ptr<TupleSet>, std::string> evaluate(const TupleSet &tupleSet) = 0;
+  virtual tl::expected<arrow::ArrayVector, std::string> evaluate(const arrow::RecordBatch &recordBatch) = 0;
 
-  virtual void compile(const std::shared_ptr<arrow::Schema> &schema) = 0;
+  virtual tl::expected<void, std::string> compile(const std::shared_ptr<arrow::Schema> &schema) = 0;
 
 };
 

@@ -8,16 +8,20 @@
 
 using namespace normal::executor::message;
 
-StoreRequestMessage::StoreRequestMessage(
-	std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>> segments,
-	const std::string &sender) :
-	Message("StoreRequestMessage", sender),
+StoreRequestMessage::StoreRequestMessage(std::unordered_map<std::shared_ptr<SegmentKey>,
+        std::shared_ptr<SegmentData>> segments,
+        const std::string &sender) :
+	Message(STORE_REQUEST, sender),
 	segments_(std::move(segments)) {}
 
 std::shared_ptr<StoreRequestMessage>
 StoreRequestMessage::make(const std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>>& segments,
 						  const std::string &sender) {
   return std::make_shared<StoreRequestMessage>(segments, sender);
+}
+
+std::string StoreRequestMessage::getTypeString() const {
+  return "StoreRequestMessage";
 }
 
 const std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>> &

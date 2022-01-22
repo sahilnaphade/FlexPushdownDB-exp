@@ -17,17 +17,16 @@ std::string SplitPOp::getTypeString() const {
 }
 
 void SplitPOp::onReceive(const Envelope &msg) {
-  if (msg.message().type() == "StartMessage") {
+  if (msg.message().type() == MessageType::START) {
     this->onStart();
-  } else if (msg.message().type() == "TupleMessage") {
+  } else if (msg.message().type() == MessageType::TUPLE) {
     auto tupleMessage = dynamic_cast<const TupleMessage &>(msg.message());
     this->onTuple(tupleMessage);
-  } else if (msg.message().type() == "CompleteMessage") {
+  } else if (msg.message().type() == MessageType::COMPLETE) {
     auto completeMessage = dynamic_cast<const CompleteMessage &>(msg.message());
     this->onComplete(completeMessage);
   } else {
-    // FIXME: Propagate error properly
-    throw runtime_error(fmt::format("Unrecognized message type: {}, {}" + msg.message().type(), name()));
+    ctx()->notifyError(fmt::format("Unrecognized message type: {}, {}" + msg.message().getTypeString(), name()));
   }
 }
 
@@ -45,7 +44,7 @@ void SplitPOp::onTuple(const TupleMessage &message) {
   // buffer
   const auto &result = bufferInput(tupleSet);
   if (!result.has_value()) {
-    throw runtime_error(result.error());
+    ctx()->notifyError(result.error());
   }
 
   // send if buffer is large enough
@@ -81,7 +80,7 @@ tl::expected<void, string> SplitPOp::bufferInput(const shared_ptr<TupleSet>& tup
   return {};
 }
 
-tl::expected<arrow::ArrayVector, string> splitArray(const shared_ptr<arrow::Array> &array, uint n) {
+arrow::ArrayVector splitArray(const shared_ptr<arrow::Array> &array, uint n) {
   int64_t splitSize = array->length() / n;
   arrow::ArrayVector splitArrays{n};
   for (uint i = 0; i < n; ++i) {
@@ -122,12 +121,7 @@ tl::expected<vector<shared_ptr<TupleSet>>, string> SplitPOp::split() {
   vector<arrow::ArrayVector> outputArrayVectors{consumerVec_.size()};
   for (const auto &column: combinedTable->columns()) {
     const auto &inputArray = column->chunk(0);
-    const auto &expSplitArrays = splitArray(inputArray, consumerVec_.size());
-    if (!expSplitArrays.has_value()) {
-      return tl::make_unexpected(expSplitArrays.error());
-    }
-    const auto &splitArrays = expSplitArrays.value();
-
+    const auto &splitArrays = splitArray(inputArray, consumerVec_.size());
     for (uint i = 0; i < consumerVec_.size(); ++i) {
       outputArrayVectors[i].emplace_back(splitArrays[i]);
     }

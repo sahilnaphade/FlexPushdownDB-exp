@@ -21,17 +21,23 @@ public:
 
   static std::shared_ptr<Filter> make(const std::shared_ptr<Expression> &Pred);
 
-  static arrow::ArrayVector evaluateBySelectionVectorStatic(const arrow::RecordBatch &recordBatch,
-                                                            const std::shared_ptr<::gandiva::SelectionVector> &selectionVector);
+  static tl::expected<arrow::ArrayVector, std::string>
+  evaluateBySelectionVectorStatic(const arrow::RecordBatch &recordBatch,
+                                  const std::shared_ptr<::gandiva::SelectionVector> &selectionVector);
 
-  std::shared_ptr<normal::tuple::TupleSet> evaluate(const normal::tuple::TupleSet &TupleSet) override;
-  arrow::ArrayVector evaluate(const arrow::RecordBatch &recordBatch) override;
+  tl::expected<std::shared_ptr<normal::tuple::TupleSet>, std::string>
+  evaluate(const normal::tuple::TupleSet &TupleSet) override;
 
-  std::shared_ptr<::gandiva::SelectionVector> computeSelectionVector(const arrow::RecordBatch &recordBatch);
-  arrow::ArrayVector evaluateBySelectionVector(const arrow::RecordBatch &recordBatch,
-                                               const std::shared_ptr<::gandiva::SelectionVector> &selectionVector);
+  tl::expected<arrow::ArrayVector, std::string> evaluate(const arrow::RecordBatch &recordBatch) override;
 
-  void compile(const std::shared_ptr<normal::tuple::Schema> &schema) override;
+  tl::expected<std::shared_ptr<::gandiva::SelectionVector>, std::string>
+  computeSelectionVector(const arrow::RecordBatch &recordBatch);
+
+  tl::expected<arrow::ArrayVector, std::string>
+  evaluateBySelectionVector(const arrow::RecordBatch &recordBatch,
+                            const std::shared_ptr<::gandiva::SelectionVector> &selectionVector);
+
+  tl::expected<void, std::string> compile(const std::shared_ptr<normal::tuple::Schema> &schema) override;
 
 private:
   std::shared_ptr<Expression> pred_;

@@ -36,19 +36,18 @@ std::string FilterPOp::getTypeString() const {
 void FilterPOp::onReceive(const Envelope &Envelope) {
   const auto& message = Envelope.message();
 
-  if (message.type() == "StartMessage") {
+  if (message.type() == MessageType::START) {
 	  this->onStart();
-  } else if (message.type() == "TupleMessage") {
+  } else if (message.type() == MessageType::TUPLE) {
     auto tupleMessage = dynamic_cast<const TupleMessage &>(message);
     this->onTuple(tupleMessage);
-  } else if (message.type() == "CompleteMessage") {
+  } else if (message.type() == MessageType::COMPLETE) {
     if (*applicable_) {
       auto completeMessage = dynamic_cast<const CompleteMessage &>(message);
       this->onComplete(completeMessage);
     }
   } else {
-    // FIXME: Propagate error properly
-    throw std::runtime_error("Unrecognized message type " + message.type());
+    ctx()->notifyError("Unrecognized message type " + message.getTypeString());
   }
 }
 
@@ -112,7 +111,7 @@ void FilterPOp::bufferTuples(const std::shared_ptr<normal::tuple::TupleSet>& tup
   } else {
     auto result = received_->append(tupleSet);
     if (!result.has_value()) {
-      throw std::runtime_error(result.error());
+      ctx()->notifyError(result.error());
     }
     assert(received_->validate());
   }
@@ -150,7 +149,13 @@ void FilterPOp::filterTuples() {
 
   // do filter
   std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now();
-  filtered_ = filter_.value()->evaluate(*received_);
+
+  const auto &expFiltered = filter_.value()->evaluate(*received_);
+  if (!expFiltered.has_value()) {
+    ctx()->notifyError(expFiltered.error());
+  }
+  filtered_ = *expFiltered;
+
   assert(filtered_->validate());
   std::chrono::steady_clock::time_point stopTime = std::chrono::steady_clock::now();
   filterTimeNS_ += std::chrono::duration_cast<std::chrono::nanoseconds>(stopTime - startTime).count();
@@ -167,7 +172,7 @@ void FilterPOp::sendTuples() {
   // Project using projectColumnNames
   auto expProjectTupleSet = TupleSet::make(filtered_->table())->projectExist(getProjectColumnNames());
   if (!expProjectTupleSet) {
-    throw std::runtime_error(expProjectTupleSet.error());
+    ctx()->notifyError(expProjectTupleSet.error());
   }
 
   std::shared_ptr<Message> tupleMessage = std::make_shared<TupleMessage>(expProjectTupleSet.value(),name());
@@ -203,8 +208,7 @@ void FilterPOp::sendSegmentWeight() {
     weightMap.emplace(segmentKey, weight);
   }
 
-  ctx()->send(WeightRequestMessage::make(weightMap, name()), "SegmentCache")
-          .map_error([](auto err) { throw std::runtime_error(err); });
+  ctx()->send(WeightRequestMessage::make(weightMap, name()), "SegmentCache");
 }
 
 size_t FilterPOp::getFilterTimeNS() const {

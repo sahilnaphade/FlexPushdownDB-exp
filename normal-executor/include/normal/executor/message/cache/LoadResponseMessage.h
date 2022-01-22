@@ -33,6 +33,8 @@ public:
 												                           const std::string &sender,
                                                    std::vector<std::shared_ptr<SegmentKey>> segmentKeysToCache);
 
+  std::string getTypeString() const override;
+
   [[maybe_unused]] [[nodiscard]] const std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>, SegmentKeyPointerHash, SegmentKeyPointerPredicate> &getSegments() const;
   [[nodiscard]] const std::vector<std::shared_ptr<SegmentKey>> &getSegmentKeysToCache() const;
 

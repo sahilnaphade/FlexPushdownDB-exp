@@ -14,12 +14,11 @@ LoadResponseMessage::LoadResponseMessage(std::unordered_map<std::shared_ptr<Segm
 															SegmentKeyPointerPredicate> segments,
 										 const std::string &sender,
 										 std::vector<std::shared_ptr<SegmentKey>> segmentKeysToCache) :
-	Message("LoadResponseMessage", sender),
+	Message(LOAD_RESPONSE, sender),
 	segments_(std::move(segments)),
 	segmentKeysToCache_(std::move(segmentKeysToCache)) {}
 
 std::shared_ptr<LoadResponseMessage>
-
 LoadResponseMessage::make(std::unordered_map<std::shared_ptr<SegmentKey>,
 											 std::shared_ptr<SegmentData>,
 											 SegmentKeyPointerHash,
@@ -27,6 +26,10 @@ LoadResponseMessage::make(std::unordered_map<std::shared_ptr<SegmentKey>,
 						  const std::string &sender,
 						  std::vector<std::shared_ptr<SegmentKey>> segmentKeysToCache) {
   return std::make_shared<LoadResponseMessage>(std::move(segments), sender, std::move(segmentKeysToCache));
+}
+
+std::string LoadResponseMessage::getTypeString() const {
+  return "LoadResponseMessage";
 }
 
 const std::unordered_map<std::shared_ptr<SegmentKey>,

@@ -9,6 +9,7 @@
 #include <normal/caf/CAFUtil.h>
 #include <arrow/visitor_inline.h>
 #include <arrow/scalar.h>
+#include <tl/expected.hpp>
 #include <memory>
 
 namespace normal::tuple {
@@ -36,59 +37,56 @@ public:
   std::string toString();
 
   template<typename T>
-  T value() {
-	if (scalar_->type->id() == ::arrow::Int32Type::type_id) {
-	  auto typedScalar = std::static_pointer_cast<::arrow::Int32Scalar>(scalar_);
-	  auto typedValue = typedScalar->value;
-	  return typedValue;
-	} else if (scalar_->type->id() == ::arrow::Int64Type::type_id) {
-	  auto typedScalar = std::static_pointer_cast<::arrow::Int64Scalar>(scalar_);
-	  auto typedValue = typedScalar->value;
-	  return typedValue;
-	} else if (scalar_->type->id() == ::arrow::FloatType::type_id) {
-	  auto typedScalar = std::static_pointer_cast<::arrow::FloatScalar>(scalar_);
-	  auto typedValue = typedScalar->value;
-	  return typedValue;
-	} else if (scalar_->type->id() == ::arrow::DoubleType::type_id) {
-	  auto typedScalar = std::static_pointer_cast<::arrow::DoubleScalar>(scalar_);
-	  auto typedValue = typedScalar->value;
-	  return typedValue;
-	} else if (scalar_->type->id() == ::arrow::Date64Type::type_id) {
-    auto typedScalar = std::static_pointer_cast<::arrow::Date64Scalar>(scalar_);
-    auto typedValue = typedScalar->value;
-    return typedValue;
-  } else if (scalar_->type->id() == ::arrow::BooleanType::type_id) {
-	  auto typedScalar = std::static_pointer_cast<::arrow::BooleanScalar>(scalar_);
-	  auto typedValue = typedScalar->value;
-	  return typedValue;
-	} else {
-	  throw std::runtime_error(
-		  "Scalar type '" + scalar_->type->ToString() + "' not implemented yet");
-	}
+  tl::expected<T, std::string> value() {
+    if (scalar_->type->id() == ::arrow::Int32Type::type_id) {
+      auto typedScalar = std::static_pointer_cast<::arrow::Int32Scalar>(scalar_);
+      auto typedValue = typedScalar->value;
+      return typedValue;
+    } else if (scalar_->type->id() == ::arrow::Int64Type::type_id) {
+      auto typedScalar = std::static_pointer_cast<::arrow::Int64Scalar>(scalar_);
+      auto typedValue = typedScalar->value;
+      return typedValue;
+    } else if (scalar_->type->id() == ::arrow::FloatType::type_id) {
+      auto typedScalar = std::static_pointer_cast<::arrow::FloatScalar>(scalar_);
+      auto typedValue = typedScalar->value;
+      return typedValue;
+    } else if (scalar_->type->id() == ::arrow::DoubleType::type_id) {
+      auto typedScalar = std::static_pointer_cast<::arrow::DoubleScalar>(scalar_);
+      auto typedValue = typedScalar->value;
+      return typedValue;
+    } else if (scalar_->type->id() == ::arrow::Date64Type::type_id) {
+      auto typedScalar = std::static_pointer_cast<::arrow::Date64Scalar>(scalar_);
+      auto typedValue = typedScalar->value;
+      return typedValue;
+    } else if (scalar_->type->id() == ::arrow::BooleanType::type_id) {
+      auto typedScalar = std::static_pointer_cast<::arrow::BooleanScalar>(scalar_);
+      auto typedValue = typedScalar->value;
+      return typedValue;
+    } else {
+      return tl::make_unexpected("Scalar type '" + scalar_->type->ToString() + "' not implemented yet");
+    }
   }
 
   template<>
-  std::string value<std::string>() {
-	if (scalar_->type->id() == ::arrow::StringType::type_id) {
-	  auto typedScalar = std::static_pointer_cast<::arrow::StringScalar>(scalar_);
-	  auto typedValue = typedScalar->ToString();
-	  return typedValue;
-	} else {
-	  throw std::runtime_error(
-		  "Scalar type '" + scalar_->type->ToString() + "' not implemented yet");
-	}
+  tl::expected<std::string, std::string> value<std::string>() {
+    if (scalar_->type->id() == ::arrow::StringType::type_id) {
+      auto typedScalar = std::static_pointer_cast<::arrow::StringScalar>(scalar_);
+      auto typedValue = typedScalar->ToString();
+      return typedValue;
+    } else {
+      return tl::make_unexpected("Scalar type '" + scalar_->type->ToString() + "' not implemented yet");
+    }
   }
 
   template<>
-  ::arrow::Decimal128 value<::arrow::Decimal128>() {
-	if (scalar_->type->id() == ::arrow::Decimal128Type::type_id) {
-	  auto typedScalar = std::static_pointer_cast<::arrow::Decimal128Scalar>(scalar_);
-	  auto typedValue = typedScalar->value;
-	  return typedValue;
-	} else {
-	  throw std::runtime_error(
-		  "Scalar type '" + scalar_->type->ToString() + "' not implemented yet");
-	}
+  tl::expected<::arrow::Decimal128, std::string> value<::arrow::Decimal128>() {
+    if (scalar_->type->id() == ::arrow::Decimal128Type::type_id) {
+      auto typedScalar = std::static_pointer_cast<::arrow::Decimal128Scalar>(scalar_);
+      auto typedValue = typedScalar->value;
+      return typedValue;
+    } else {
+      return tl::make_unexpected("Scalar type '" + scalar_->type->ToString() + "' not implemented yet");
+    }
   }
 
 private:

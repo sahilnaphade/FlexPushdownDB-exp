@@ -17,11 +17,10 @@ using namespace normal::executor::message;
 namespace normal::executor::physical {
 
 void POpContext::tell(std::shared_ptr<Message> &msg) {
-
   assert(this);
 
   if(complete_)
-	throw std::runtime_error(fmt::format("Cannot tell message to consumers, operator {} ('{}') is complete", this->operatorActor()->id(), this->operatorActor()->operator_()->name()));
+    notifyError(fmt::format("Cannot tell message to consumers, operator {} ('{}') is complete", this->operatorActor()->id(), this->operatorActor()->operator_()->name()));
 
   message::Envelope e(msg);
 
@@ -32,68 +31,48 @@ void POpContext::tell(std::shared_ptr<Message> &msg) {
   }
 }
 
-tl::expected<void, std::string> POpContext::send(const std::shared_ptr<message::Message> &msg, const std::string& recipientId) {
-
+void POpContext::send(const std::shared_ptr<message::Message> &msg, const std::string& recipientId) {
   message::Envelope e(msg);
 
   if(recipientId == "SegmentCache"){
-    if(msg->type() == "LoadRequestMessage"){
+    if(msg->type() == MessageType::LOAD_REQUEST){
       operatorActor_->request(segmentCacheActor_, infinite, LoadAtom_v, std::static_pointer_cast<normal::executor::message::LoadRequestMessage>(msg))
       .then([=](const std::shared_ptr<normal::executor::message::LoadResponseMessage>& response){
       operatorActor_->anon_send(this->operatorActor(), Envelope(response));
       });
     }
-    else if(msg->type() == "StoreRequestMessage"){
+    else if(msg->type() == MessageType::STORE_REQUEST){
       operatorActor_->anon_send(segmentCacheActor_, StoreAtom_v, std::static_pointer_cast<normal::executor::message::StoreRequestMessage>(msg));
     }
-    else if(msg->type() == "WeightRequestMessage"){
+    else if(msg->type() == MessageType::WEIGHT_REQUEST){
       operatorActor_->anon_send(segmentCacheActor_, WeightAtom_v, std::static_pointer_cast<normal::executor::message::WeightRequestMessage>(msg));
     }
-    else if(msg->type() == "CacheMetricsMessage"){
+    else if(msg->type() == MessageType::CACHE_METRICS){
       operatorActor_->anon_send(segmentCacheActor_, MetricsAtom_v, std::static_pointer_cast<normal::executor::message::CacheMetricsMessage>(msg));
     }
     else{
-      throw std::runtime_error("Unrecognized message " + msg->type());
+      notifyError("Unrecognized message " + msg->getTypeString());
     }
 
-	return {};
+    return;
   }
 
   auto expectedOperator = operatorMap_.get(recipientId);
   if(expectedOperator.has_value()){
     auto recipientOperator = expectedOperator.value();
-	operatorActor_->anon_send(recipientOperator.getActor(), e);
-	return {};
+    operatorActor_->anon_send(recipientOperator.getActor(), e);
+  } else{
+  	notifyError(fmt::format("Actor with id '{}' not found", recipientId));
   }
-  else{
-  	return tl::unexpected(fmt::format("Actor with id '{}' not found", recipientId));
-  }
-}
-
-POpContext::POpContext(::caf::actor rootActor, ::caf::actor segmentCacheActor):
-    operatorActor_(nullptr),
-    rootActor_(std::move(rootActor)),
-    segmentCacheActor_(std::move(segmentCacheActor))
-{}
-
-LocalPOpDirectory &POpContext::operatorMap() {
-  return operatorMap_;
-}
-POpActor* POpContext::operatorActor() {
-  return operatorActor_;
-}
-void POpContext::operatorActor(POpActor *operatorActor) {
-  operatorActor_ = operatorActor;
 }
 
 /**
- * Sends a CompleteMessage to all consumers and the root actor
+ * Send a CompleteMessage to all consumers and the root actor
  */
 void POpContext::notifyComplete() {
-
   SPDLOG_DEBUG("Completing operator  |  source: {} ('{}')", this->operatorActor()->id(), this->operatorActor()->operator_()->name());
   if(complete_)
-    throw std::runtime_error(fmt::format("Cannot complete already completed operator {} ('{}')", this->operatorActor()->id(), this->operatorActor()->operator_()->name()));
+    notifyError(fmt::format("Cannot complete already completed operator {} ('{}')", this->operatorActor()->id(), this->operatorActor()->operator_()->name()));
 
   POpActor* operatorActor = this->operatorActor();
 
@@ -110,6 +89,32 @@ void POpContext::notifyComplete() {
   operatorActor->anon_send(rootActor_, e);
 
   complete_ = true;
+}
+
+/**
+ * Send error to the root actor
+ */
+void POpContext::notifyError(const std::string &content) {
+  std::shared_ptr<Message> errorMsg = std::make_shared<ErrorMessage>(content, operatorActor_->name());
+  message::Envelope e(errorMsg);
+  operatorActor_->anon_send(rootActor_, e);
+  operatorActor_->on_exit();
+}
+
+POpContext::POpContext(::caf::actor rootActor, ::caf::actor segmentCacheActor):
+    operatorActor_(nullptr),
+    rootActor_(std::move(rootActor)),
+    segmentCacheActor_(std::move(segmentCacheActor))
+{}
+
+LocalPOpDirectory &POpContext::operatorMap() {
+  return operatorMap_;
+}
+POpActor* POpContext::operatorActor() {
+  return operatorActor_;
+}
+void POpContext::operatorActor(POpActor *operatorActor) {
+  operatorActor_ = operatorActor;
 }
 
 bool POpContext::isComplete() const {

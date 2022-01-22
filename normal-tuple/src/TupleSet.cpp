@@ -57,10 +57,11 @@ std::shared_ptr<TupleSet> TupleSet::make(const std::shared_ptr<arrow::Schema>& s
   return std::make_shared<TupleSet>(arrowTable);
 }
 
-std::shared_ptr<TupleSet> TupleSet::make(const std::shared_ptr<arrow::csv::TableReader> &tableReader) {
+tl::expected<std::shared_ptr<TupleSet>, std::string>
+TupleSet::make(const std::shared_ptr<arrow::csv::TableReader> &tableReader) {
   auto result = tableReader->Read();
   if (!result.ok()) {
-    throw std::runtime_error(result.status().message());
+    return tl::make_unexpected(result.status().message());
   }
 
   auto tupleSet = std::make_shared<TupleSet>();

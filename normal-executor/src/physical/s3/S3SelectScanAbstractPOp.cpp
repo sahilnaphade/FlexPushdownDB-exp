@@ -62,6 +62,19 @@ S3SelectScanAbstractPOp::S3SelectScanAbstractPOp() :
   awsClient_(normal::aws::AWSClient::daemonClient_),
   splitReqLock_(std::make_shared<std::mutex>()) {}
 
+void S3SelectScanAbstractPOp::onReceive(const Envelope &message) {
+  if (message.message().type() == MessageType::START) {
+    this->onStart();
+  } else if (message.message().type() == MessageType::SCAN) {
+    auto scanMessage = dynamic_cast<const ScanMessage &>(message.message());
+    this->onCacheLoadResponse(scanMessage);
+  } else if (message.message().type() == MessageType::COMPLETE) {
+    // Noop
+  } else {
+    ctx()->notifyError(fmt::format("Unrecognized message type: {}, {}", message.message().getTypeString(), name()));
+  }
+}
+
 void S3SelectScanAbstractPOp::onStart() {
   SPDLOG_DEBUG("Starting operator  |  name: '{}'", this->name());
   if (scanOnStart_) {
@@ -101,21 +114,6 @@ void S3SelectScanAbstractPOp::put(const std::shared_ptr<TupleSet> &tupleSet) {
         bufferedColumnArrays->second.emplace_back(readChunk);
       }
     }
-  }
-}
-
-
-void S3SelectScanAbstractPOp::onReceive(const Envelope &message) {
-  if (message.message().type() == "StartMessage") {
-	  this->onStart();
-  } else if (message.message().type() == "ScanMessage") {
-    auto scanMessage = dynamic_cast<const ScanMessage &>(message.message());
-    this->onCacheLoadResponse(scanMessage);
-  } else if (message.message().type() == "CompleteMessage") {
-    // Noop
-  } else {
-    // FIXME: Propagate error properly
-    throw std::runtime_error(fmt::format("Unrecognized message type: {}, {}", message.message().type(), name()));
   }
 }
 

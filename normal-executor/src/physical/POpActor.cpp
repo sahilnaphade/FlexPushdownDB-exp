@@ -40,19 +40,22 @@ POpActor::POpActor(::caf::actor_config &cfg, std::shared_ptr<PhysicalOp> opBehav
                  msg.message().sender(),
                  msg.message().type());
 
-		if (msg.message().type() == "ConnectMessage") {
+		if (msg.message().type() == MessageType::CONNECT) {
 		  auto connectMessage = dynamic_cast<const message::ConnectMessage &>(msg.message());
 
 		  for (const auto &element: connectMessage.connections()) {
-			auto localEntry = LocalPOpDirectoryEntry(element.getName(),
-														  element.getActorHandle(),
-														  element.getConnectionType(),
-														  false);
+        auto localEntry = LocalPOpDirectoryEntry(element.getName(),
+                                element.getActorHandle(),
+                                element.getConnectionType(),
+                                false);
 
-			self->operator_()->ctx()->operatorMap().insert(localEntry);
+        auto result = self->operator_()->ctx()->operatorMap().insert(localEntry);
+        if (!result.has_value()) {
+          self->operator_()->ctx()->notifyError(result.error());
+        }
 		  }
 		}
-		else if (msg.message().type() == "StartMessage") {
+		else if (msg.message().type() == MessageType::START) {
 		  auto startMessage = dynamic_cast<const message::StartMessage &>(msg.message());
 
 		  self->running_ = true;
@@ -68,7 +71,7 @@ POpActor::POpActor(::caf::actor_config &cfg, std::shared_ptr<PhysicalOp> opBehav
 
 		  self->overriddenMessageSender_ = std::nullopt;
 
-		} else if (msg.message().type() == "StopMessage") {
+		} else if (msg.message().type() == MessageType::STOP) {
 		  self->running_ = false;
 
 		  self->operator_()->onReceive(msg);
@@ -78,9 +81,12 @@ POpActor::POpActor(::caf::actor_config &cfg, std::shared_ptr<PhysicalOp> opBehav
 			self->buffer_.emplace(self->current_mailbox_element()->content(), self->current_sender());
 		  }
 		  else {
-			if (msg.message().type() == "CompleteMessage") {
+			if (msg.message().type() == MessageType::COMPLETE) {
 			  auto completeMessage = dynamic_cast<const message::CompleteMessage &>(msg.message());
-			  self->operator_()->ctx()->operatorMap().setComplete(msg.message().sender());
+			  auto result = self->operator_()->ctx()->operatorMap().setComplete(msg.message().sender());
+        if (!result.has_value()) {
+          return self->operator_()->ctx()->notifyError(result.error());
+        }
 			}
 
 			self->operator_()->onReceive(msg);

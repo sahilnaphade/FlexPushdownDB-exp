@@ -33,10 +33,9 @@ public:
   LocalPOpDirectory &operatorMap();
 
   void tell(std::shared_ptr<message::Message> &msg);
-
+  void send(const std::shared_ptr<message::Message> &msg, const std::string &recipientId);
   void notifyComplete();
-
-  tl::expected<void, std::string> send(const std::shared_ptr<message::Message> &msg, const std::string &recipientId);
+  void notifyError(const std::string &content);
 
   void destroyActorHandles();
   [[nodiscard]] bool isComplete() const;

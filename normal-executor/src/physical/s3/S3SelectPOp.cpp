@@ -5,7 +5,6 @@
 #include <normal/executor/physical/s3/S3SelectPOp.h>
 #include <normal/executor/physical/Globals.h>
 #include <normal/executor/message/Message.h>
-#include <normal/executor/message/cache/LoadResponseMessage.h>
 #include <normal/catalogue/format/CSVFormat.h>
 #include <normal/cache/SegmentKey.h>
 #include <normal/tuple/TupleSet.h>
@@ -223,7 +222,11 @@ std::shared_ptr<TupleSet> S3SelectPOp::s3Select(uint64_t startOffset, uint64_t e
       }
       std::chrono::steady_clock::time_point startConversionTime = std::chrono::steady_clock::now();
 #ifdef __AVX2__
-      simdParser->parseChunk(reinterpret_cast<char *>(payload.data()), payload.size());
+      try {
+        simdParser->parseChunk(reinterpret_cast<char *>(payload.data()), payload.size());
+      } catch (const std::runtime_error &err) {
+        ctx()->notifyError(err.what());
+      }
 #else
       s3Result_.insert(s3Result_.end(), payload.begin(), payload.end());
 #endif
@@ -303,7 +306,11 @@ std::shared_ptr<TupleSet> S3SelectPOp::s3Select(uint64_t startOffset, uint64_t e
   std::chrono::steady_clock::time_point startConversionTime = std::chrono::steady_clock::now();
   std::shared_ptr<TupleSet> tupleSet;
 #ifdef __AVX2__
-  tupleSet = simdParser->outputCompletedTupleSet();
+  try {
+    tupleSet = simdParser->outputCompletedTupleSet();
+  } catch (const std::runtime_error &err) {
+    ctx()->notifyError(err.what());
+  }
 #else
   // If no results are returned then there is nothing to process
   if (s3Result_.size() > 0) {std::shared_ptr<TupleSet> tupleSetV1 = parser_->parseCompletePayload(s3Result_.begin(), s3Result_.end());
@@ -319,7 +326,7 @@ std::shared_ptr<TupleSet> S3SelectPOp::s3Select(uint64_t startOffset, uint64_t e
   s3SelectScanStats_.selectConvertTimeNS += conversionTime;
   splitReqLock_->unlock();
   if (optionalErrorMessage.has_value()) {
-    throw std::runtime_error(fmt::format("{}, {}", optionalErrorMessage.value(), name()));
+    ctx()->notifyError(fmt::format("{}, {}", optionalErrorMessage.value(), name()));
   }
 
   return tupleSet;
@@ -477,8 +484,7 @@ void S3SelectPOp::sendSegmentWeight() {
     weightMap.emplace(segmentKey, weight);
   }
 
-  ctx()->send(WeightRequestMessage::make(weightMap, name()), "SegmentCache")
-          .map_error([](auto err) { throw std::runtime_error(err); });
+  ctx()->send(WeightRequestMessage::make(weightMap, name()), "SegmentCache");
 }
 
 }

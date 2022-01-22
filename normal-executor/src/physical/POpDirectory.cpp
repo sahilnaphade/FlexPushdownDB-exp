@@ -8,24 +8,27 @@
 
 namespace normal::executor::physical {
 
-void POpDirectory::insert(const POpDirectoryEntry& entry) {
+tl::expected<void, std::string> POpDirectory::insert(const POpDirectoryEntry& entry) {
   auto inserted = entries_.emplace(entry.getDef()->name(), entry);
-  if(!inserted.second)
-    throw std::runtime_error(fmt::format("Operator '{}' already added to directory", entry.getDef()->name()));
+  if (!inserted.second) {
+    return tl::make_unexpected(fmt::format("Operator '{}' already added to directory", entry.getDef()->name()));
+  }
   ++numOperators_;
+  return {};
 }
 
-void POpDirectory::setComplete(const std::string& name) {
+tl::expected<void, std::string> POpDirectory::setComplete(const std::string& name) {
   auto entry = entries_.find(name);
-  if(entry == entries_.end())
-    throw std::runtime_error("No entry for operator '" + name + "'");
+  if (entry == entries_.end())
+    return tl::make_unexpected("No entry for operator '" + name + "'");
   else {
     if (entry->second.isComplete()) {
-      throw std::runtime_error("Opdir: Entry for operator '" + name + "'" + "completes twice");
+      return tl::make_unexpected("Opdir: Entry for operator '" + name + "'" + "completes twice");
     }
     entry->second.setComplete(true);
   }
   ++numOperatorsComplete_;
+  return {};
 }
 
 bool POpDirectory::allComplete() const {

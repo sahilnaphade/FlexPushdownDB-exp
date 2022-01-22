@@ -30,7 +30,7 @@ std::shared_ptr<S3CSVParser> S3CSVParser::make(const std::vector<std::string>& c
  * @param to
  * @return
  */
-std::shared_ptr<TupleSet> S3CSVParser::parseCompletePayload(
+tl::expected<std::shared_ptr<TupleSet>, std::string> S3CSVParser::parseCompletePayload(
 	const Aws::Vector<unsigned char>::iterator &from,
 	const Aws::Vector<unsigned char>::iterator &to) {
 
@@ -50,35 +50,6 @@ std::shared_ptr<TupleSet> S3CSVParser::parseCompletePayload(
   }
   convert_options.column_types = columnTypes;
 
-//  // Get a view of the first line
-//  auto newLineIt = std::find(from, to, '\n');
-//  if (newLineIt == to)
-//	throw std::runtime_error("Cannot parse S3 Select payload  |  Newline not found in payload");
-//  arrow::util::string_view firstLine(reinterpret_cast<const char *>(from.base()), newLineIt - from + 1);
-//
-//  // Parse the first line
-//  arrow::csv::BlockParser p{parse_options, -1, 1};
-//  uint32_t out_size;
-//  auto parseStatus = p.Parse(firstLine, &out_size);
-//  if (!parseStatus.ok())
-//	throw std::runtime_error(fmt::format(
-//		"Cannot parse S3 Select payload  |  Error parsing first line in payload, firstline: '{}', error: '{}'",
-//		to_string(firstLine),
-//		parseStatus.message()));
-//
-//  // With the number of columns, set the types of each column to utf8 (Arrow will infer types otherwise)
-//  int numFields = p.num_cols();
-//  if (numFields <= 0)
-//	throw std::runtime_error(fmt::format(
-//		"Cannot parse S3 Select payload  |  {} fields found in first line, firstline: '{}'",
-//		numFields,
-//		to_string(firstLine)));
-//  std::unordered_map<std::string, std::shared_ptr<arrow::DataType>> column_types{};
-//  for (int i = 0; i < numFields; ++i) {
-//	column_types[fmt::format("f{}", i)] = arrow::utf8();
-//  }
-//  convert_options.column_types = column_types;
-
   // Create a reader
   ::arrow::io::IOContext ioContext;
   auto reader = std::make_shared<arrow::io::BufferReader>(from.base(), std::distance(from, to));
@@ -87,7 +58,7 @@ std::shared_ptr<TupleSet> S3CSVParser::parseCompletePayload(
 															 reader,
 															 -1);
   if (!createResult.ok())
-	throw std::runtime_error(fmt::format("Cannot parse S3 Select payload  |  Could not create a reader, error: '{}'",
+	return tl::make_unexpected(fmt::format("Cannot parse S3 Select payload  |  Could not create a reader, error: '{}'",
 										 createResult.status().message()));
   auto input = *createResult;
 
@@ -158,12 +129,14 @@ tl::expected<std::optional<std::shared_ptr<TupleSet>>,
 			   });
 
   if (pos > 0) {
-	std::shared_ptr<TupleSet>
-		tupleSet = S3CSVParser::parseCompletePayload(payload.begin(), payload.begin() + pos);
-
-	return tupleSet;
+    auto expTupleSet = S3CSVParser::parseCompletePayload(payload.begin(), payload.begin() + pos);
+    if (expTupleSet.has_value()) {
+      return *expTupleSet;
+    } else {
+      return tl::make_unexpected(expTupleSet.error());
+    }
   } else {
-	return std::nullopt;
+	  return std::nullopt;
   }
 }
 

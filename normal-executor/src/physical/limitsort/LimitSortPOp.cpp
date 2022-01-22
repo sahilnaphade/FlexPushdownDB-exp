@@ -20,17 +20,16 @@ std::string LimitSortPOp::getTypeString() const {
 }
 
 void LimitSortPOp::onReceive(const Envelope &message) {
-  if (message.message().type() == "StartMessage") {
+  if (message.message().type() == MessageType::START) {
     this->onStart();
-  } else if (message.message().type() == "TupleMessage") {
+  } else if (message.message().type() == MessageType::TUPLE) {
     auto tupleMessage = dynamic_cast<const TupleMessage &>(message.message());
     this->onTuple(tupleMessage);
-  } else if (message.message().type() == "CompleteMessage") {
+  } else if (message.message().type() == MessageType::COMPLETE) {
     auto completeMessage = dynamic_cast<const CompleteMessage &>(message.message());
     this->onComplete(completeMessage);
   } else {
-    // FIXME: Propagate error properly
-    throw runtime_error("Unrecognized message type " + message.message().type());
+    ctx()->notifyError("Unrecognized message type " + message.message().getTypeString());
   }
 }
 
@@ -79,7 +78,7 @@ shared_ptr<TupleSet> LimitSortPOp::makeInput(const shared_ptr<TupleSet> &tupleSe
   } else {
     const auto &concatenateResult = TupleSet::concatenate({result_.value(), tupleSet});
     if (!concatenateResult.has_value()) {
-      throw runtime_error(concatenateResult.error());
+      ctx()->notifyError(concatenateResult.error());
     }
     return concatenateResult.value();
   }
@@ -97,18 +96,18 @@ shared_ptr<TupleSet> LimitSortPOp::selectK(const shared_ptr<TupleSet> &tupleSet)
   // Compute selectK indices
   const auto table = tupleSet->table();
   if (!arrowSelectKOptions_.has_value()) {
-    throw runtime_error("Arrow SelectKOptions not set yet");
+    ctx()->notifyError("Arrow SelectKOptions not set yet");
   }
   const auto &expSelectKIndices = arrow::compute::SelectKUnstable(table, *arrowSelectKOptions_);
   if (!expSelectKIndices.ok()) {
-    throw runtime_error(expSelectKIndices.status().message());
+    ctx()->notifyError(expSelectKIndices.status().message());
   }
   const auto &selectKIndices = *expSelectKIndices;
 
   // Make result table using selectKIndices
   const auto expSelectKTable = arrow::compute::Take(table, selectKIndices);
   if (!expSelectKTable.ok()) {
-    throw runtime_error(expSelectKTable.status().message());
+    ctx()->notifyError(expSelectKTable.status().message());
   }
 
   return TupleSet::make((*expSelectKTable).table());

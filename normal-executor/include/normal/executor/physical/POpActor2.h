@@ -599,11 +599,11 @@ private:
 				 envelope.message().type());
 
 	const auto& message = envelope.message();
-	if (message.type() == "StartMessage") {
+	if (message.type() == MessageType::START) {
 	  return handleStart(actor, messageSender);
-	} else if (message.type() == "StopMessage") {
+	} else if (message.type() == MessageType::STOP) {
 	  return handleStop(actor, messageSender);
-	} else if (message.type() == "ConnectMessage") {
+	} else if (message.type() == MessageType::CONNECT) {
 	  return handleConnect(actor,
 						   messageSender,
 						   dynamic_cast<const ConnectMessage&>(message).connections());
@@ -613,7 +613,7 @@ private:
 									 messageSender);
 		return {};
 	  } else {
-		if (message.type() == "CompleteMessage") {
+		if (message.type() == MessageType::COMPLETE) {
 		  return handleComplete(actor, messageSender);
 		} else {
 		  return onEnvelope(actor, messageSender, envelope);

@@ -25,6 +25,8 @@ public:
   TupleMessage& operator=(const TupleMessage&) = default;
   ~TupleMessage() override = default;
 
+  std::string getTypeString() const override;
+
   const std::shared_ptr<TupleSet>& tuples() const;
 
 private:

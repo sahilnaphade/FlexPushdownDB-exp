@@ -25,7 +25,7 @@ public:
   RecordBatchShuffler2(vector<int> shuffleColumnIndices,
                        size_t numSlots,
                        shared_ptr<::arrow::Schema> schema,
-                       size_t numRows);
+                       vector<vector<shared_ptr<ArrayAppender>>> shuffledAppendersVector);
 
   static tl::expected<shared_ptr<RecordBatchShuffler2>, string> make(const vector<string> &columnNames,
                                                                      size_t numSlots,

@@ -43,7 +43,8 @@ public:
   static std::shared_ptr<TupleSet> make(const std::shared_ptr<arrow::Schema>& schema,
                                         const std::vector<std::shared_ptr<Column>>& columns);
   static std::shared_ptr<TupleSet> make(const std::vector<std::shared_ptr<Column>>& columns);
-  static std::shared_ptr<TupleSet> make(const std::shared_ptr<arrow::csv::TableReader> &tableReader);
+  static tl::expected<std::shared_ptr<TupleSet>, std::string>
+  make(const std::shared_ptr<arrow::csv::TableReader> &tableReader);
   static std::shared_ptr<TupleSet> makeWithNullTable();
   static std::shared_ptr<TupleSet> makeWithEmptyTable();
 

@@ -22,17 +22,16 @@ std::string CollatePOp::getTypeString() const {
 }
 
 void CollatePOp::onReceive(const normal::executor::message::Envelope &message) {
-  if (message.message().type() == "StartMessage") {
+  if (message.message().type() == MessageType::START) {
     this->onStart();
-  } else if (message.message().type() == "TupleMessage") {
+  } else if (message.message().type() == MessageType::TUPLE) {
     auto tupleMessage = dynamic_cast<const normal::executor::message::TupleMessage &>(message.message());
     this->onTuple(tupleMessage);
-  } else if (message.message().type() == "CompleteMessage") {
+  } else if (message.message().type() == MessageType::COMPLETE) {
     auto completeMessage = dynamic_cast<const normal::executor::message::CompleteMessage &>(message.message());
     this->onComplete(completeMessage);
   } else {
-	// FIXME: Propagate error properly
-	throw std::runtime_error("Unrecognized message type " + message.message().type());
+    ctx()->notifyError("Unrecognized message type " + message.message().getTypeString());
   }
 }
 
@@ -46,7 +45,7 @@ void CollatePOp::onComplete(const normal::executor::message::CompleteMessage &) 
       tables_.push_back(tuples_->table());
       const arrow::Result<std::shared_ptr<arrow::Table>> &res = arrow::ConcatenateTables(tables_);
       if (!res.ok()) {
-        throw std::runtime_error(res.status().message());
+        ctx()->notifyError(res.status().message());
       }
       tuples_->table(*res);
       tables_.clear();
@@ -56,7 +55,7 @@ void CollatePOp::onComplete(const normal::executor::message::CompleteMessage &) 
     if (tuples_ && tuples_->valid()) {
       const auto &expTupleSet = tuples_->projectExist(getProjectColumnNames());
       if (!expTupleSet.has_value()) {
-        throw std::runtime_error(expTupleSet.error());
+        ctx()->notifyError(expTupleSet.error());
       }
       tuples_ = expTupleSet.value();
     } else {
@@ -77,7 +76,7 @@ void CollatePOp::onTuple(const normal::executor::message::TupleMessage &message)
       tables_.push_back(tuples_->table());
       const arrow::Result<std::shared_ptr<arrow::Table>> &res = arrow::ConcatenateTables(tables_);
       if (!res.ok()) {
-        throw std::runtime_error(res.status().message());
+        ctx()->notifyError(res.status().message());
       }
       tuples_->table(*res);
       tables_.clear();

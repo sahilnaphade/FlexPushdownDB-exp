@@ -28,12 +28,18 @@ TestUtil::TestUtil(const string &schemaName,
   parallelDegree_(parallelDegree),
   isDistributed_(isDistributed) {}
 
-void TestUtil::e2eNoStartCalciteServer(const string &schemaName,
+bool TestUtil::e2eNoStartCalciteServer(const string &schemaName,
                                        const vector<string> &queryFileNames,
                                        int parallelDegree,
                                        bool isDistributed) {
   TestUtil testUtil(schemaName, queryFileNames, parallelDegree, isDistributed);
-  testUtil.runTest();
+  try {
+    testUtil.runTest();
+    return true;
+  } catch (const runtime_error &err) {
+    cout << err.what() << endl;
+    return false;
+  }
 }
 
 void TestUtil::runTest() {

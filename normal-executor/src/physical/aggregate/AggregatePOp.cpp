@@ -37,17 +37,16 @@ void AggregatePOp::onStart() {
 }
 
 void AggregatePOp::onReceive(const Envelope &message) {
-  if (message.message().type() == "StartMessage") {
+  if (message.message().type() == MessageType::START) {
     this->onStart();
-  } else if (message.message().type() == "TupleMessage") {
+  } else if (message.message().type() == MessageType::TUPLE) {
     auto tupleMessage = dynamic_cast<const TupleMessage &>(message.message());
     this->onTuple(tupleMessage);
-  } else if (message.message().type() == "CompleteMessage") {
+  } else if (message.message().type() == MessageType::COMPLETE) {
     auto completeMessage = dynamic_cast<const CompleteMessage &>(message.message());
     this->onComplete(completeMessage);
   } else {
-	// FIXME: Propagate error properly
-	throw runtime_error("Unrecognized message type " + message.message().type());
+    ctx()->notifyError("Unrecognized message type " + message.message().getTypeString());
   }
 }
 
@@ -78,7 +77,7 @@ void AggregatePOp::compute(const shared_ptr<TupleSet> &tupleSet) {
   for (uint i = 0; i < functions_.size(); ++i) {
     const auto &expAggregateResult = functions_[i]->compute(tupleSet);
     if (!expAggregateResult.has_value()) {
-      throw runtime_error(expAggregateResult.error());
+      ctx()->notifyError(expAggregateResult.error());
     }
     aggregateResults_[i].emplace_back(expAggregateResult.value());
   }
@@ -100,7 +99,7 @@ shared_ptr<TupleSet> AggregatePOp::finalize() {
     // Finalize
     const auto &expFinalResult = function->finalize(aggregateResults_[i]);
     if (!expFinalResult.has_value()) {
-      throw runtime_error(expFinalResult.error());
+      ctx()->notifyError(expFinalResult.error());
     }
 
     // Make the column of the final result
@@ -115,7 +114,7 @@ shared_ptr<TupleSet> AggregatePOp::finalize() {
       auto colArgh = makeArgh<arrow::DoubleType>(static_pointer_cast<arrow::DoubleScalar>(finalResult));
       columns.emplace_back(colArgh.value());
     } else {
-      throw runtime_error("Unsupported aggregate output field type " + function->returnType()->name());
+      ctx()->notifyError("Unsupported aggregate output field type " + function->returnType()->name());
     }
   }
 
@@ -126,7 +125,7 @@ shared_ptr<TupleSet> AggregatePOp::finalize() {
   // Project using projectColumnNames
   auto expProjectTupleSet = aggregatedTuples->projectExist(getProjectColumnNames());
   if (!expProjectTupleSet) {
-    throw runtime_error(expProjectTupleSet.error());
+    ctx()->notifyError(expProjectTupleSet.error());
   }
 
   SPDLOG_DEBUG("Completing  |  Aggregation result: \n{}", aggregatedTuples->toString());

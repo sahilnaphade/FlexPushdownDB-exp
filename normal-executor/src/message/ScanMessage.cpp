@@ -8,9 +8,13 @@
 using namespace normal::executor::message;
 
 ScanMessage::ScanMessage(std::vector<std::string> ColumnNames, const std::string &Sender, bool resultNeeded) :
-	Message("ScanMessage", Sender),
+	Message(SCAN, Sender),
 	columnNames_(std::move(ColumnNames)),
 	resultNeeded_(resultNeeded) {}
+
+std::string ScanMessage::getTypeString() const {
+  return "ScanMessage";
+}
 
 const std::vector<std::string> &ScanMessage::getColumnNames() const {
   return columnNames_;

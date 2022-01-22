@@ -10,12 +10,16 @@ using namespace normal::executor::message;
 
 LoadRequestMessage::LoadRequestMessage(std::vector<std::shared_ptr<SegmentKey>> segmentKeys,
 									   const std::string &sender) :
-	Message("LoadRequestMessage", sender),
+	Message(LOAD_REQUEST, sender),
 	segmentKeys_(std::move(segmentKeys)) {}
 
 std::shared_ptr<LoadRequestMessage> LoadRequestMessage::make(const std::vector<std::shared_ptr<SegmentKey>>& segmentKeys,
 															 const std::string &sender) {
   return std::make_shared<LoadRequestMessage>(segmentKeys, sender);
+}
+
+std::string LoadRequestMessage::getTypeString() const {
+  return "LoadRequestMessage";
 }
 
 const std::vector<std::shared_ptr<SegmentKey>> &LoadRequestMessage::getSegmentKeys() const {

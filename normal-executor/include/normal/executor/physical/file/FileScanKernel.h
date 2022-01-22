@@ -24,29 +24,29 @@ class FileScanKernel {
 public:
   FileScanKernel(std::string path,
 				 std::shared_ptr<FileReader> reader,
-				 unsigned long startPos,
-				 unsigned long finishPos);
+				 int64_t startPos,
+                 int64_t finishPos);
   FileScanKernel() = default;
   FileScanKernel(const FileScanKernel&) = default;
   FileScanKernel& operator=(const FileScanKernel&) = default;
 
   static FileScanKernel make(const std::string &path,
                              FileType fileType,
-                             unsigned long startPos,
-                             unsigned long finishPos);
+                             int64_t startPos,
+                             int64_t finishPos);
 
   tl::expected<std::shared_ptr<TupleSet>, std::string> scan(const std::vector<std::string> &columnNames);
 
   [[nodiscard]] const std::string &getPath() const;
   [[nodiscard]] FileType getFileType() const;
-  [[nodiscard]] unsigned long getStartPos() const;
-  [[nodiscard]] unsigned long getFinishPos() const;
+  [[nodiscard]] int64_t getStartPos() const;
+  [[nodiscard]] int64_t getFinishPos() const;
 
 private:
   std::string path_;
   std::shared_ptr<FileReader> reader_;
-  unsigned long startPos_;
-  unsigned long finishPos_;
+  int64_t startPos_;
+  int64_t finishPos_;
 
 // caf inspect
 public:

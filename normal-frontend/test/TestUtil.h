@@ -35,8 +35,10 @@ public:
    * @param queryFileNames
    * @param parallelDegree
    * @param isDistributed
+   *
+   * @return whether executed successfully
    */
-  static void e2eNoStartCalciteServer(const string &schemaName,
+  static bool e2eNoStartCalciteServer(const string &schemaName,
                                       const vector<string> &queryFileNames,
                                       int parallelDegree,
                                       bool isDistributed);

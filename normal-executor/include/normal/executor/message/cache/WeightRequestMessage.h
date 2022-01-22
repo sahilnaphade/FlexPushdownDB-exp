@@ -29,6 +29,8 @@ public:
   static std::shared_ptr<WeightRequestMessage>
   make(const std::unordered_map<std::shared_ptr<SegmentKey>, double> &weightMap, const std::string &sender);
 
+  std::string getTypeString() const override;
+
   const std::unordered_map<std::shared_ptr<SegmentKey>, double> &getWeightMap() const;
 
 private:

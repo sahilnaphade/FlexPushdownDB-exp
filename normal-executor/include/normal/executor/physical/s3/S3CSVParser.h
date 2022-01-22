@@ -6,6 +6,7 @@
 #define NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_S3_S3CSVPARSER_H
 
 #include <normal/tuple/TupleSet.h>
+#include <tl/expected.hpp>
 #include <aws/core/Aws.h>
 #include <string>
 
@@ -34,7 +35,7 @@ public:
                                               const std::shared_ptr<arrow::Schema>& schema,
                                               char csvDelimiter);
 
-  std::shared_ptr<TupleSet> parseCompletePayload(
+  tl::expected<std::shared_ptr<TupleSet>, std::string> parseCompletePayload(
       const std::vector<unsigned char, Aws::Allocator<unsigned char>>::iterator &from,
       const std::vector<unsigned char, Aws::Allocator<unsigned char>>::iterator &to);
 

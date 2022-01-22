@@ -21,12 +21,11 @@ public:
   LocalPOpDirectory() = default;
   LocalPOpDirectory(const LocalPOpDirectory&) = default;
   LocalPOpDirectory& operator=(const LocalPOpDirectory&) = default;
-  
-  void insert(const LocalPOpDirectoryEntry &entry);
 
-  void setComplete(const std::string &name);
+  tl::expected<void, std::string> insert(const LocalPOpDirectoryEntry &entry);
+
+  tl::expected<void, std::string> setComplete(const std::string &name);
   bool allComplete(const POpRelationshipType &relationshipType) const;
-  void setIncomplete();
 
   tl::expected<LocalPOpDirectoryEntry, std::string> get(const std::string& operatorId);
   std::vector<LocalPOpDirectoryEntry> get(const POpRelationshipType &relationshipType);

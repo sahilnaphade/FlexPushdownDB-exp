@@ -5,13 +5,12 @@
 #ifndef NORMAL_NORMAL_TUPLE_INCLUDE_NORMAL_TUPLE_COLUMNITERATOR_H
 #define NORMAL_NORMAL_TUPLE_INCLUDE_NORMAL_TUPLE_COLUMNITERATOR_H
 
-#include <memory>
-
+#include "ColumnIndex.h"
 #include <arrow/table.h>
 #include <arrow/array.h>
-
+#include <tl/expected.hpp>
 #include "Scalar.h"
-#include "ColumnIndex.h"
+#include <memory>
 
 namespace normal::tuple {
 
@@ -67,7 +66,7 @@ public:
    *
    * @return
    */
-  [[nodiscard]] value_type value() const;
+  [[nodiscard]] tl::expected<value_type, std::string> value() const;
 
   /**
    * Dereference operator required for forward iterators. Need to return value as can't return reference to Scalar
@@ -75,14 +74,14 @@ public:
    *
    * @return
    */
-  value_type operator*() const;
+  tl::expected<value_type, std::string> operator*() const;
 
   /**
    * Returns the value pointed at
    *
    * @return
    */
-  pointer operator->() const;
+  tl::expected<pointer, std::string> operator->() const;
 
   /**
    * Equality operator required for forward iterators
@@ -113,14 +112,14 @@ private:
    *
    * @return
    */
-  [[nodiscard]] std::shared_ptr<::arrow::Scalar> getArrowScalar() const;
+  [[nodiscard]] tl::expected<std::shared_ptr<::arrow::Scalar>, std::string> getArrowScalar() const;
 
   /**
    * Gets the value pointed at by the iterator as a scalar
    *
    * @return
    */
-  [[nodiscard]] value_type getScalar() const;
+  [[nodiscard]] tl::expected<value_type, std::string> getScalar() const;
 };
 
 }

@@ -8,9 +8,11 @@ namespace normal::executor::message {
 
 ConnectMessage::ConnectMessage(std::vector<POpConnection> connections,
 							   std::string from) :
-	Message("ConnectMessage", std::move(from)),
-	connections_(std::move(connections)) {
+	Message(CONNECT, std::move(from)),
+	connections_(std::move(connections)) {}
 
+std::string ConnectMessage::getTypeString() const {
+  return "ConnectMessage";
 }
 
 const std::vector<POpConnection> &ConnectMessage::connections() const {

@@ -89,11 +89,11 @@ protected:
   tl::expected<void, std::string> onEnvelope(CollateStatefulActor actor,
 											 const ::caf::strong_actor_ptr &messageSender,
 											 const Envelope &envelope) override {
-	if (envelope.message().type() == "TupleMessage") {
+	if (envelope.message().type() == MessageType::TUPLE) {
 	  auto tupleMessage = dynamic_cast<const TupleMessage &>(envelope.message());
 	  return this->onTupleSet(actor, messageSender, tupleMessage.tuples());
 	} else {
-	  return tl::make_unexpected(fmt::format("Unrecognized message type {}", envelope.message().type()));
+	  return tl::make_unexpected(fmt::format("Unrecognized message type {}", envelope.message().getTypeString()));
 	}
   }
 

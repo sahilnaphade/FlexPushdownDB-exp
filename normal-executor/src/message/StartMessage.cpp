@@ -7,10 +7,11 @@
 
 namespace normal::executor::message {
 
-StartMessage::StartMessage(
-                           std::string from) :
-    Message("StartMessage", std::move(from)){
+StartMessage::StartMessage(std::string from) :
+  Message(START, std::move(from)) {}
 
+std::string StartMessage::getTypeString() const {
+  return "StartMessage";
 }
 
 }

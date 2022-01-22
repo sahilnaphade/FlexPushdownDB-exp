@@ -7,15 +7,19 @@
 namespace normal::executor::message {
 
 CacheMetricsMessage::CacheMetricsMessage(size_t hitNum, size_t missNum, size_t shardHitNum, size_t shardMissNum, const std::string &sender) :
-  Message("CacheMetricsMessage", sender),
+  Message(CACHE_METRICS, sender),
   hitNum_(hitNum),
   missNum_(missNum),
   shardHitNum_(shardHitNum),
-  shardMissNum_(shardMissNum){}
+  shardMissNum_(shardMissNum) {}
 
 std::shared_ptr<CacheMetricsMessage>
 CacheMetricsMessage::make(size_t hitNum, size_t missNum, size_t shardHitNum, size_t shardMissNum, const std::string &sender) {
   return std::make_shared<CacheMetricsMessage>(hitNum, missNum, shardHitNum, shardMissNum, sender);
+}
+
+std::string CacheMetricsMessage::getTypeString() const {
+  return "CacheMetricsMessage";
 }
 
 size_t CacheMetricsMessage::getHitNum() const {

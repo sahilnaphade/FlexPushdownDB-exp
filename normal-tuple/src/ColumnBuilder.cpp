@@ -15,31 +15,66 @@ std::shared_ptr<ColumnBuilder> ColumnBuilder::make(const std::string &name,
   return std::make_unique<ColumnBuilder>(name, type);
 }
 
-void ColumnBuilder::append(const std::shared_ptr<Scalar> &scalar) {
+tl::expected<void, std::string> ColumnBuilder::append(const std::shared_ptr<Scalar> &scalar) {
+  ::arrow::Status status;
   auto rawBuilderPtr = arrowBuilder_.get();
+
   if (scalar->type()->id() == ::arrow::Int32Type::type_id) {
     auto typedArrowBuilder = dynamic_cast<::arrow::Int32Builder*>(rawBuilderPtr);
-    auto status = typedArrowBuilder->Append(scalar->value<int>());
+    auto expValue = scalar->value<int>();
+    if (!expValue) {
+      return tl::make_unexpected(expValue.error());
+    }
+    status = typedArrowBuilder->Append(*expValue);
   }
   else if (scalar->type()->id() == ::arrow::Int64Type::type_id) {
     auto typedArrowBuilder = dynamic_cast<::arrow::Int64Builder*>(rawBuilderPtr);
-    auto status = typedArrowBuilder->Append(scalar->value<long>());
+    auto expValue = scalar->value<long>();
+    if (!expValue) {
+      return tl::make_unexpected(expValue.error());
+    }
+    status = typedArrowBuilder->Append(*expValue);
   }
   else if (scalar->type()->id() == ::arrow::DoubleType::type_id) {
     auto typedArrowBuilder = dynamic_cast<::arrow::DoubleBuilder*>(rawBuilderPtr);
-    auto status = typedArrowBuilder->Append(scalar->value<double>());
+    auto expValue = scalar->value<double>();
+    if (!expValue) {
+      return tl::make_unexpected(expValue.error());
+    }
+    status = typedArrowBuilder->Append(*expValue);
+  }
+  else if (scalar->type()->id() == ::arrow::BooleanType::type_id) {
+    auto typedArrowBuilder = dynamic_cast<::arrow::BooleanBuilder*>(rawBuilderPtr);
+    auto expValue = scalar->value<bool>();
+    if (!expValue) {
+      return tl::make_unexpected(expValue.error());
+    }
+    status = typedArrowBuilder->Append(*expValue);
   }
   else if (scalar->type()->id() == ::arrow::Date64Type::type_id) {
     auto typedArrowBuilder = dynamic_cast<::arrow::Date64Builder*>(rawBuilderPtr);
-    auto status = typedArrowBuilder->Append(scalar->value<long>());
+    auto expValue = scalar->value<long>();
+    if (!expValue) {
+      return tl::make_unexpected(expValue.error());
+    }
+    status = typedArrowBuilder->Append(*expValue);
   }
   else if (scalar->type()->id() == ::arrow::StringType::type_id) {
     auto typedArrowBuilder = dynamic_cast<::arrow::StringBuilder*>(rawBuilderPtr);
-    auto status = typedArrowBuilder->Append(scalar->value<std::string>());
+    auto expValue = scalar->value<std::string>();
+    if (!expValue) {
+      return tl::make_unexpected(expValue.error());
+    }
+    status = typedArrowBuilder->Append(*expValue);
   }
   else {
-    throw std::runtime_error("Builder for type '" + scalar->type()->ToString() + "' not implemented yet");
+    return tl::make_unexpected("Builder for type '" + scalar->type()->ToString() + "' not implemented yet");
   }
+
+  if (!status.ok()) {
+    return tl::make_unexpected(status.message());
+  }
+  return {};
 }
 
 tl::expected<void, std::string> ColumnBuilder::appendNulls(int64_t length) {

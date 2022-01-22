@@ -29,6 +29,8 @@ public:
 
   static std::shared_ptr<LoadRequestMessage> make(const std::vector<std::shared_ptr<SegmentKey>>& segmentKeys, const std::string &sender);
 
+  std::string getTypeString() const override;
+
   [[nodiscard]] const std::vector<std::shared_ptr<SegmentKey>> &getSegmentKeys() const;
 
   [[nodiscard]] std::string toString() const;

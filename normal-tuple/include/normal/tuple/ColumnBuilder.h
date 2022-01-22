@@ -21,7 +21,7 @@ public:
 
   static std::shared_ptr<ColumnBuilder> make(const std::string& name, const std::shared_ptr<::arrow::DataType>& type);
 
-  void append(const std::shared_ptr<Scalar>& scalar);
+  tl::expected<void, std::string> append(const std::shared_ptr<Scalar>& scalar);
   tl::expected<void, std::string> appendNulls(int64_t length);
 
   tl::expected<std::shared_ptr<Column>, std::string> finalize();

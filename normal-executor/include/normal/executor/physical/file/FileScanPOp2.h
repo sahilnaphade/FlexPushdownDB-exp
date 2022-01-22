@@ -109,11 +109,11 @@ protected:
   onEnvelope(FileScanStatefulActor actor,
 			 const ::caf::strong_actor_ptr &messageSender,
 			 const Envelope &envelope) override {
-	if (envelope.message().type() == "ScanMessage") {
+	if (envelope.message().type() == MessageType::SCAN) {
 	  auto scanMessage = dynamic_cast<const ScanMessage &>(envelope.message());
 	  return this->onScan(actor, messageSender, scanMessage.getColumnNames());
 	} else {
-	  return tl::make_unexpected(fmt::format("Unrecognized message type {}", envelope.message().type()));
+	  return tl::make_unexpected(fmt::format("Unrecognized message type {}", envelope.message().getTypeString()));
 	}
   }
 

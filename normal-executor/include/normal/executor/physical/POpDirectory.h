@@ -24,10 +24,10 @@ private:
   int numOperatorsComplete_ = 0;
 
 public:
-  void insert(const POpDirectoryEntry& entry);
+  tl::expected<void, std::string> insert(const POpDirectoryEntry& entry);
   tl::expected<POpDirectoryEntry, std::string> get(const std::string& name);
 
-  void setComplete(const std::string& name);
+  tl::expected<void, std::string> setComplete(const std::string& name);
   void setIncomplete();
   [[nodiscard]] bool allComplete() const;
 

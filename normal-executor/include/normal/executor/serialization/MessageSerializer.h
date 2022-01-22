@@ -9,6 +9,7 @@
 #include <normal/executor/message/StartMessage.h>
 #include <normal/executor/message/ConnectMessage.h>
 #include <normal/executor/message/CompleteMessage.h>
+#include <normal/executor/message/ErrorMessage.h>
 #include <normal/executor/message/ScanMessage.h>
 #include <normal/executor/message/TupleMessage.h>
 #include <normal/executor/message/TupleSetIndexMessage.h>
@@ -29,6 +30,7 @@ CAF_ADD_TYPE_ID(Message, (MessagePtr))
 CAF_ADD_TYPE_ID(Message, (StartMessage))
 CAF_ADD_TYPE_ID(Message, (ConnectMessage))
 CAF_ADD_TYPE_ID(Message, (CompleteMessage))
+CAF_ADD_TYPE_ID(Message, (ErrorMessage))
 CAF_ADD_TYPE_ID(Message, (ScanMessage))
 CAF_ADD_TYPE_ID(Message, (TupleMessage))
 CAF_ADD_TYPE_ID(Message, (TupleSetIndexMessage))
@@ -59,6 +61,7 @@ struct variant_inspector_traits<MessagePtr> {
           type_id_v<StartMessage>,
           type_id_v<ConnectMessage>,
           type_id_v<CompleteMessage>,
+          type_id_v<ErrorMessage>,
           type_id_v<ScanMessage>,
           type_id_v<TupleMessage>,
           type_id_v<TupleSetIndexMessage>
@@ -68,18 +71,20 @@ struct variant_inspector_traits<MessagePtr> {
   static auto type_index(const value_type &x) {
     if (!x)
       return 0;
-    else if (x->type() == "StartMessage")
+    else if (x->type() == MessageType::START)
       return 1;
-    else if (x->type() == "ConnectMessage")
+    else if (x->type() == MessageType::CONNECT)
       return 2;
-    else if (x->type() == "CompleteMessage")
+    else if (x->type() == MessageType::COMPLETE)
       return 3;
-    else if (x->type() == "ScanMessage")
+    else if (x->type() == MessageType::ERROR)
       return 4;
-    else if (x->type() == "TupleMessage")
+    else if (x->type() == MessageType::SCAN)
       return 5;
-    else if (x->type() == "TupleSetIndexMessage")
+    else if (x->type() == MessageType::TUPLE)
       return 6;
+    else if (x->type() == MessageType::TUPLESET_INDEX)
+      return 7;
     else
       return -1;
   }
@@ -95,10 +100,12 @@ struct variant_inspector_traits<MessagePtr> {
       case 3:
         return f(dynamic_cast<CompleteMessage &>(*x));
       case 4:
-        return f(dynamic_cast<ScanMessage &>(*x));
+        return f(dynamic_cast<ErrorMessage &>(*x));
       case 5:
-        return f(dynamic_cast<TupleMessage &>(*x));
+        return f(dynamic_cast<ScanMessage &>(*x));
       case 6:
+        return f(dynamic_cast<TupleMessage &>(*x));
+      case 7:
         return f(dynamic_cast<TupleSetIndexMessage &>(*x));
       default: {
         none_t dummy;
@@ -140,6 +147,11 @@ struct variant_inspector_traits<MessagePtr> {
       }
       case type_id_v<CompleteMessage>: {
         auto tmp = CompleteMessage{};
+        continuation(tmp);
+        return true;
+      }
+      case type_id_v<ErrorMessage>: {
+        auto tmp = ErrorMessage{};
         continuation(tmp);
         return true;
       }

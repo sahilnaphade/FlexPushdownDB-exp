@@ -22,6 +22,8 @@ public:
   StartMessage(const StartMessage&) = default;
   StartMessage& operator=(const StartMessage&) = default;
 
+  std::string getTypeString() const override;
+
 // caf inspect
 public:
   template <class Inspector>

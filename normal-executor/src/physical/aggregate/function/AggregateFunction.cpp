@@ -74,8 +74,11 @@ AggregateFunction::evaluateExpr(const shared_ptr<TupleSet> &tupleSet) {
 
   // expression projection, need to use gandiva projector
   else {
-    const auto exprTupleSet = projector_.value()->evaluate(*tupleSet);
-    return exprTupleSet->table()->column(0);
+    const auto &expExprTupleSet = projector_.value()->evaluate(*tupleSet);
+    if (!expExprTupleSet.has_value()) {
+      return tl::make_unexpected(expExprTupleSet.error());
+    }
+    return (*expExprTupleSet)->table()->column(0);
   }
 }
 

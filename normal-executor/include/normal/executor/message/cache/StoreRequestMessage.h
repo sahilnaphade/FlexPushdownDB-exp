@@ -30,6 +30,8 @@ public:
   make(const std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>>& segments,
 	   const std::string &sender);
 
+  std::string getTypeString() const override;
+
   [[nodiscard]] const std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>> &
   getSegments() const;
 

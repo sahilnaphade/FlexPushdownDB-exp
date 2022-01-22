@@ -18,17 +18,16 @@ std::string SortPOp::getTypeString() const {
 }
 
 void SortPOp::onReceive(const Envelope &message) {
-  if (message.message().type() == "StartMessage") {
+  if (message.message().type() == MessageType::START) {
     this->onStart();
-  } else if (message.message().type() == "TupleMessage") {
+  } else if (message.message().type() == MessageType::TUPLE) {
     auto tupleMessage = dynamic_cast<const TupleMessage &>(message.message());
     this->onTuple(tupleMessage);
-  } else if (message.message().type() == "CompleteMessage") {
+  } else if (message.message().type() == MessageType::COMPLETE) {
     auto completeMessage = dynamic_cast<const CompleteMessage &>(message.message());
     this->onComplete(completeMessage);
   } else {
-    // FIXME: Propagate error properly
-    throw runtime_error("Unrecognized message type " + message.message().type());
+    ctx()->notifyError("Unrecognized message type " + message.message().getTypeString());
   }
 }
 
@@ -75,7 +74,7 @@ void SortPOp::buffer(const shared_ptr<TupleSet> &tupleSet) {
   } else {
     const auto &concatenateResult = TupleSet::concatenate({buffer_.value(), tupleSet});
     if (!concatenateResult.has_value()) {
-      throw runtime_error(concatenateResult.error());
+      ctx()->notifyError(concatenateResult.error());
     }
     buffer_ = concatenateResult.value();
   }
@@ -92,18 +91,18 @@ shared_ptr<TupleSet> SortPOp::sort() {
   // Compute sort indices
   const auto table = buffer_.value()->table();
   if (!arrowSortOptions_.has_value()) {
-    throw runtime_error("Arrow SortOptions not set yet");
+    ctx()->notifyError("Arrow SortOptions not set yet");
   }
   const auto &expSortIndices = arrow::compute::SortIndices(table, *arrowSortOptions_);
   if (!expSortIndices.ok()) {
-    throw runtime_error(expSortIndices.status().message());
+    ctx()->notifyError(expSortIndices.status().message());
   }
   const auto &sortIndices = *expSortIndices;
 
   // Make sorted table using sort indices
   const auto expSortedTable = arrow::compute::Take(table, sortIndices);
   if (!expSortedTable.ok()) {
-    throw runtime_error(expSortedTable.status().message());
+    ctx()->notifyError(expSortedTable.status().message());
   }
 
   return TupleSet::make((*expSortedTable).table());

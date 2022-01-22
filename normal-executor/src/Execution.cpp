@@ -50,7 +50,10 @@ void Execution::boot() {
   for (const auto &op: physicalPlan_->getPhysicalOps()) {
     assert(op);
     op->setQueryId(queryId_);
-    opDirectory_.insert(POpDirectoryEntry(op, nullptr, false));
+    auto result = opDirectory_.insert(POpDirectoryEntry(op, nullptr, false));
+    if (!result.has_value()) {
+      throw runtime_error(result.error());
+    }
   }
 
   // Spawn actors locally/remotely according to nodeId assigned
@@ -187,12 +190,34 @@ void Execution::join() {
 
   bool allComplete = false;
   (*rootActor_)->receive_while([&] { return !allComplete; })(
-          [&](const Envelope &msg) {
+          [&](const Envelope &e) {
+            const auto &msg = e.message();
             SPDLOG_DEBUG("Query root actor received message  |  query: '{}', messageKind: '{}', from: '{}'",
-                         queryId_, msg.message().type(), msg.message().sender());
+                         queryId_, msg.getTypeString(), msg.sender());
 
-            this->opDirectory_.setComplete(msg.message().sender());
-            allComplete = this->opDirectory_.allComplete();
+            switch (msg.type()) {
+              case MessageType::COMPLETE: {
+                auto result = this->opDirectory_.setComplete(msg.sender());
+                if (!result.has_value()) {
+                  allComplete = true;
+                  close();
+                  throw runtime_error(result.error());
+                }
+                allComplete = this->opDirectory_.allComplete();
+                break;
+              }
+              case MessageType::ERROR: {
+                allComplete = true;
+                close();
+                throw runtime_error(fmt::format("ERROR: {}, from {}", ((ErrorMessage &) msg).getContent(), msg.sender()));
+              }
+              default: {
+                allComplete = true;
+                close();
+                throw runtime_error(fmt::format("Invalid message type sent to the root actor: {}, from {}", msg.getTypeString(), msg.sender()));
+              }
+            }
+
           },
           handle_err);
 
@@ -333,7 +358,7 @@ std::tuple<size_t, size_t, size_t> Execution::getFilterTimeNSInputOutputBytes() 
       outputBytes += filterOp->getFilterOutputBytes();
     }
   }
-  return std::tuple<size_t, size_t, size_t>(timeNS, inputBytes, outputBytes);
+  return {timeNS, inputBytes, outputBytes};
 }
 
 string Execution::showMetrics(bool showOpTimes, bool showScanMetrics) {

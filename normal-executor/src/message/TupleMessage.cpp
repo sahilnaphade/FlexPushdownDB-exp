@@ -9,8 +9,12 @@ namespace normal::executor::message {
 
 TupleMessage::TupleMessage(std::shared_ptr<TupleSet> tuples,
                            std::string sender) :
-    Message("TupleMessage", std::move(sender)),
-    tuples_(std::move(tuples)) {
+  Message(TUPLE, std::move(sender)),
+  tuples_(std::move(tuples)) {
+}
+
+std::string TupleMessage::getTypeString() const {
+  return "TupleMessage";
 }
 
 const std::shared_ptr<TupleSet>& TupleMessage::tuples() const {

@@ -24,17 +24,16 @@ std::string HashJoinBuildPOp::getTypeString() const {
 }
 
 void HashJoinBuildPOp::onReceive(const Envelope &msg) {
-  if (msg.message().type() == "StartMessage") {
-	this->onStart();
-  } else if (msg.message().type() == "TupleMessage") {
-	auto tupleMessage = dynamic_cast<const TupleMessage &>(msg.message());
-	this->onTuple(tupleMessage);
-  } else if (msg.message().type() == "CompleteMessage") {
-	auto completeMessage = dynamic_cast<const CompleteMessage &>(msg.message());
-	this->onComplete(completeMessage);
+  if (msg.message().type() == MessageType::START) {
+	  this->onStart();
+  } else if (msg.message().type() == MessageType::TUPLE) {
+    auto tupleMessage = dynamic_cast<const TupleMessage &>(msg.message());
+    this->onTuple(tupleMessage);
+  } else if (msg.message().type() == MessageType::COMPLETE) {
+    auto completeMessage = dynamic_cast<const CompleteMessage &>(msg.message());
+    this->onComplete(completeMessage);
   } else {
-	// FIXME: Propagate error properly
-	throw runtime_error(fmt::format("Unrecognized message type: {}, {}", msg.message().type(), name()));
+    ctx()->notifyError(fmt::format("Unrecognized message type: {}, {}", msg.message().getTypeString(), name()));
   }
 }
 
@@ -49,7 +48,7 @@ void HashJoinBuildPOp::onTuple(const TupleMessage &msg) {
 
   auto result = buffer(tupleSet);
   if(!result)
-    throw runtime_error(fmt::format("{}, {}", result.error(), name()));
+    ctx()->notifyError(fmt::format("{}, {}", result.error(), name()));
   send(false);
 }
 

@@ -21,6 +21,8 @@ public:
 
   static std::shared_ptr<CacheMetricsMessage> make(size_t hitNum, size_t missNum, size_t shardHitNum, size_t shardMissNum, const std::string &sender);
 
+  std::string getTypeString() const override;
+
   size_t getHitNum() const;
   size_t getMissNum() const;
 

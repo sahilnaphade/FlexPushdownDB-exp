@@ -7,6 +7,11 @@
 
 namespace normal::executor::message {
 
-CompleteMessage::CompleteMessage(std::string sender) : Message("CompleteMessage", std::move(sender)) {}
+CompleteMessage::CompleteMessage(std::string sender) :
+  Message(COMPLETE, std::move(sender)) {}
+
+std::string CompleteMessage::getTypeString() const {
+  return "CompleteMessage";
+}
 
 }

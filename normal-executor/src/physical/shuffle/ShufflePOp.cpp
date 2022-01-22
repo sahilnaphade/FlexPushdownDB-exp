@@ -24,17 +24,16 @@ std::string ShufflePOp::getTypeString() const {
 }
 
 void ShufflePOp::onReceive(const Envelope &msg) {
-  if (msg.message().type() == "StartMessage") {
-	this->onStart();
-  } else if (msg.message().type() == "TupleMessage") {
-	auto tupleMessage = dynamic_cast<const TupleMessage &>(msg.message());
-	this->onTuple(tupleMessage);
-  } else if (msg.message().type() == "CompleteMessage") {
-	auto completeMessage = dynamic_cast<const CompleteMessage &>(msg.message());
-	this->onComplete(completeMessage);
+  if (msg.message().type() == MessageType::START) {
+	  this->onStart();
+  } else if (msg.message().type() == MessageType::TUPLE) {
+    auto tupleMessage = dynamic_cast<const TupleMessage &>(msg.message());
+    this->onTuple(tupleMessage);
+  } else if (msg.message().type() == MessageType::COMPLETE) {
+    auto completeMessage = dynamic_cast<const CompleteMessage &>(msg.message());
+    this->onComplete(completeMessage);
   } else {
-	// FIXME: Propagate error properly
-	throw runtime_error(fmt::format("Unrecognized message type: {}, {}" + msg.message().type(), name()));
+    ctx()->notifyError(fmt::format("Unrecognized message type: {}, {}" + msg.message().getTypeString(), name()));
   }
 }
 
@@ -53,7 +52,7 @@ void ShufflePOp::onComplete(const CompleteMessage &) {
     for (int partitionIndex = 0; partitionIndex < static_cast<int>(buffers_.size()); ++partitionIndex) {
       auto sendResult = send(partitionIndex, true);
       if (!sendResult)
-        throw runtime_error(sendResult.error());
+        ctx()->notifyError(sendResult.error());
     }
 
     ctx()->notifyComplete();
@@ -110,7 +109,7 @@ void ShufflePOp::onTuple(const TupleMessage &message) {
     // Shuffle the tuple set
     auto expectedShuffledTupleSets = ShuffleKernel2::shuffle(shuffleColumnNames_, consumerVec_.size(), *tupleSet);
     if (!expectedShuffledTupleSets.has_value()) {
-      throw runtime_error(fmt::format("{}, {}", expectedShuffledTupleSets.error(), name()));
+      ctx()->notifyError(fmt::format("{}, {}", expectedShuffledTupleSets.error(), name()));
     }
     shuffledTupleSets = expectedShuffledTupleSets.value();
   }
@@ -121,7 +120,7 @@ void ShufflePOp::onTuple(const TupleMessage &message) {
     auto bufferAndSendResult = buffer(shuffledTupleSet, partitionIndex)
       .and_then([&]() { return send(partitionIndex, false); });
     if (!bufferAndSendResult)
-      throw runtime_error(bufferAndSendResult.error());
+      ctx()->notifyError(bufferAndSendResult.error());
     ++partitionIndex;
   }
 

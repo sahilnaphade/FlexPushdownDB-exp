@@ -21,6 +21,8 @@ public:
   ScanMessage() = default;
   ScanMessage(const ScanMessage&) = default;
   ScanMessage& operator=(const ScanMessage&) = default;
+
+  std::string getTypeString() const override;
   
   [[nodiscard]] const std::vector<std::string> &getColumnNames() const;
   [[nodiscard]] bool isResultNeeded() const;

@@ -48,10 +48,10 @@ private:
   /**
    * Filter the cartesian product computed above, and compute row match indexes of two input batches
    */
-  arrow::ArrayVector filter(const shared_ptr<arrow::RecordBatch> &recordBatch,
-                            int64_t leftBatchNumRows,
-                            int64_t leftRowOffset,
-                            int64_t rightRowOffset);
+  tl::expected<arrow::ArrayVector, string> filter(const shared_ptr<arrow::RecordBatch> &recordBatch,
+                                                  int64_t leftBatchNumRows,
+                                                  int64_t leftRowOffset,
+                                                  int64_t rightRowOffset);
 
   /**
    * Compute row match indexes of two input batches using the selection vector of filtering on cartesian product

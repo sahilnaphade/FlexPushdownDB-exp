@@ -42,21 +42,25 @@ ColumnIterator::this_type ColumnIterator::operator++(int) {
   return iterator;
 }
 
-ColumnIterator::value_type ColumnIterator::value() const {
+tl::expected<ColumnIterator::value_type, std::string> ColumnIterator::value() const {
   return getScalar();
 }
 
-ColumnIterator::value_type ColumnIterator::operator*() const {
+tl::expected<ColumnIterator::value_type, std::string> ColumnIterator::operator*() const {
 
   if(index_.getChunk() >= chunkedArray_->num_chunks() || index_.getChunkIndex() >= chunkedArray_->chunk(index_.getChunk())->length()){
-    throw std::runtime_error("Cannot dereference iterator. Iterator refers to past-the-end element");
+    return tl::make_unexpected("Cannot dereference iterator. Iterator refers to past-the-end element");
   }
 
   return getScalar();
 }
 
-ColumnIterator::pointer ColumnIterator::operator->() const {
-  return std::make_shared<value_type>(getScalar());
+tl::expected<ColumnIterator::pointer, std::string> ColumnIterator::operator->() const {
+  auto expScalar = getScalar();
+  if (!expScalar.has_value()) {
+    return tl::make_unexpected(expScalar.error());
+  }
+  return std::make_shared<value_type>(*expScalar);
 }
 
 bool ColumnIterator::operator==(const ColumnIterator::this_type &other) const {
@@ -68,30 +72,34 @@ bool ColumnIterator::operator!=(const ColumnIterator::this_type &other) const {
 }
 
 ColumnIterator::this_type ColumnIterator::operator-(const ColumnIterator::difference_type &other) {
-  return ColumnIterator(chunkedArray_, index_.getChunk() - other.index_.getChunk(),
-						index_.getChunkIndex() - other.index_.getChunkIndex());
+  return {chunkedArray_, index_.getChunk() - other.index_.getChunk(),
+						index_.getChunkIndex() - other.index_.getChunkIndex()};
 }
 
-std::shared_ptr<::arrow::Scalar> ColumnIterator::getArrowScalar() const {
+tl::expected<std::shared_ptr<::arrow::Scalar>, std::string> ColumnIterator::getArrowScalar() const {
 
   // Need to cast to the array type to be able to use the element accessors
   if (chunkedArray_->type()->id() == arrow::int64()->id()) {
-	auto typedArray = std::dynamic_pointer_cast<arrow::Int64Array>(chunkedArray_->chunk(index_.getChunk()));
-	auto value = typedArray->Value(index_.getChunkIndex());
-	auto arrowScalar = arrow::MakeScalar(value);
-	return arrowScalar;
+    auto typedArray = std::dynamic_pointer_cast<arrow::Int64Array>(chunkedArray_->chunk(index_.getChunk()));
+    auto value = typedArray->Value(index_.getChunkIndex());
+    auto arrowScalar = arrow::MakeScalar(value);
+    return arrowScalar;
   }
   else if (chunkedArray_->type()->id() == arrow::utf8()->id()) {
-	auto typedArray = std::dynamic_pointer_cast<arrow::StringArray>(chunkedArray_->chunk(index_.getChunk()));
-	auto value = typedArray->GetString(index_.getChunkIndex());
-	auto arrowScalar = arrow::MakeScalar(value);
-	return arrowScalar;
+    auto typedArray = std::dynamic_pointer_cast<arrow::StringArray>(chunkedArray_->chunk(index_.getChunk()));
+    auto value = typedArray->GetString(index_.getChunkIndex());
+    auto arrowScalar = arrow::MakeScalar(value);
+    return arrowScalar;
   } else {
-	throw std::runtime_error(
-		"Iterator on column type '" + chunkedArray_->type()->ToString() + "' not implemented yet");
+    return tl::make_unexpected(
+      "Iterator on column type '" + chunkedArray_->type()->ToString() + "' not implemented yet");
   }
 }
 
-ColumnIterator::value_type ColumnIterator::getScalar() const {
-  return Scalar::make(getArrowScalar());
+tl::expected<ColumnIterator::value_type, std::string> ColumnIterator::getScalar() const {
+  auto expArrowScalar = getArrowScalar();
+  if (!expArrowScalar.has_value()) {
+    return tl::make_unexpected(expArrowScalar.error());
+  }
+  return Scalar::make(*expArrowScalar);
 }

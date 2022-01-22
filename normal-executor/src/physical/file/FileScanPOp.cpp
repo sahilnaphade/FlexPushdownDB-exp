@@ -9,7 +9,6 @@
 #include <normal/executor/message/TupleMessage.h>
 #include <normal/catalogue/local-fs/LocalFSPartition.h>
 #include <normal/tuple/TupleSet.h>
-#include <normal/tuple/csv/CSVParser.h>
 #include <arrow/type_fwd.h>            // for default_memory_pool
 #include <memory>                      // for make_unique, unique_ptr, __sha...
 #include <utility>
@@ -17,7 +16,6 @@
 using namespace normal::executor::physical::cache;
 using namespace normal::executor::message;
 using namespace normal::tuple;
-using namespace normal::tuple::csv;
 
 namespace arrow { class MemoryPool; }
 
@@ -40,19 +38,16 @@ std::string FileScanPOp::getTypeString() const {
 }
 
 void FileScanPOp::onReceive(const Envelope &message) {
-  if (message.message().type() == "StartMessage") {
-	this->onStart();
-  } else if (message.message().type() == "ScanMessage") {
-	auto scanMessage = dynamic_cast<const ScanMessage &>(message.message());
-	this->onCacheLoadResponse(scanMessage);
-  }
-  else if (message.message().type() == "CompleteMessage") {
-	auto completeMessage = dynamic_cast<const CompleteMessage &>(message.message());
-	this->onComplete(completeMessage);
-  }
-  else {
-	// FIXME: Propagate error properly
-	throw std::runtime_error("Unrecognized message type " + message.message().type());
+  if (message.message().type() == MessageType::START) {
+	  this->onStart();
+  } else if (message.message().type() == MessageType::SCAN) {
+    auto scanMessage = dynamic_cast<const ScanMessage &>(message.message());
+    this->onCacheLoadResponse(scanMessage);
+  } else if (message.message().type() == MessageType::COMPLETE) {
+    auto completeMessage = dynamic_cast<const CompleteMessage &>(message.message());
+    this->onComplete(completeMessage);
+  } else {
+    ctx()->notifyError("Unrecognized message type " + message.message().getTypeString());
   }
 }
 

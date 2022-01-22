@@ -42,6 +42,7 @@ HashJoinProbePOp::HashJoinProbePOp(string name,
       break;
     }
     default:
+      // This is not inside actor processing, so we cannot use ctx()->notifyError()
       throw runtime_error(fmt::format("Unsupported hash join type, {}", joinType));
   }
 }
@@ -51,20 +52,19 @@ std::string HashJoinProbePOp::getTypeString() const {
 }
 
 void HashJoinProbePOp::onReceive(const Envelope &msg) {
-  if (msg.message().type() == "StartMessage") {
-	this->onStart();
-  } else if (msg.message().type() == "TupleMessage") {
-	auto tupleMessage = dynamic_cast<const TupleMessage &>(msg.message());
-	this->onTuple(tupleMessage);
-  } else if (msg.message().type() == "TupleSetIndexMessage") {
-	auto hashTableMessage = dynamic_cast<const TupleSetIndexMessage &>(msg.message());
-	this->onHashTable(hashTableMessage);
-  } else if (msg.message().type() == "CompleteMessage") {
-	auto completeMessage = dynamic_cast<const CompleteMessage &>(msg.message());
-	this->onComplete(completeMessage);
+  if (msg.message().type() == MessageType::START) {
+	  this->onStart();
+  } else if (msg.message().type() == MessageType::TUPLE) {
+    auto tupleMessage = dynamic_cast<const TupleMessage &>(msg.message());
+    this->onTuple(tupleMessage);
+  } else if (msg.message().type() == MessageType::TUPLESET_INDEX) {
+    auto hashTableMessage = dynamic_cast<const TupleSetIndexMessage &>(msg.message());
+    this->onHashTable(hashTableMessage);
+  } else if (msg.message().type() == MessageType::COMPLETE) {
+    auto completeMessage = dynamic_cast<const CompleteMessage &>(msg.message());
+    this->onComplete(completeMessage);
   } else {
-	// FIXME: Propagate error properly
-	throw runtime_error(fmt::format("Unrecognized message type: {}, {}", msg.message().type(), name()));
+	  ctx()->notifyError(fmt::format("Unrecognized message type: {}, {}", msg.message().getTypeString(), name()));
   }
 }
 
@@ -77,7 +77,7 @@ void HashJoinProbePOp::onTuple(const TupleMessage &msg) {
   const auto& tupleSet = msg.tuples();
   auto result = kernel_->joinProbeTupleSet(tupleSet);
   if(!result)
-    throw runtime_error(fmt::format("{}, {}", result.error(), name()));
+    ctx()->notifyError(fmt::format("{}, {}", result.error(), name()));
 
   // Send
   send(false);
@@ -88,7 +88,7 @@ void HashJoinProbePOp::onComplete(const CompleteMessage &) {
     // Finalize
     auto result = kernel_->finalize();
     if (!result) {
-      throw runtime_error(result.error());
+      ctx()->notifyError(result.error());
     }
 
     // Send final tupleSet
@@ -108,7 +108,7 @@ void HashJoinProbePOp::onHashTable(const TupleSetIndexMessage &msg) {
   // Incremental join immediately
   auto result = kernel_->joinBuildTupleSetIndex(msg.getTupleSetIndex());
   if(!result)
-    throw runtime_error(fmt::format("{}, {}", result.error(), name()));
+    ctx()->notifyError(fmt::format("{}, {}", result.error(), name()));
 
   // Send
   send(false);
@@ -132,7 +132,7 @@ void HashJoinProbePOp::send(bool force) {
 void HashJoinProbePOp::sendEmpty() {
   auto outputSchema = kernel_->getOutputSchema();
   if (!outputSchema.has_value()) {
-    throw runtime_error("OutputSchema not set yet");
+    ctx()->notifyError("OutputSchema not set yet");
   }
   auto tupleSet = TupleSet::make(outputSchema.value());
   shared_ptr<Message> tupleMessage = make_shared<TupleMessage>(tupleSet, name());

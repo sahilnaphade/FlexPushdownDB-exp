@@ -8,35 +8,36 @@
 
 namespace normal::executor::physical {
 
-void LocalPOpDirectory::insert(const LocalPOpDirectoryEntry& entry) {
-  // map insert cannot cover the value for the same key, need to delete first
-  auto iter = entries_.find(entry.name());
-  if (iter != entries_.end()) {
-    entries_.erase(iter);
+tl::expected<void, std::string> LocalPOpDirectory::insert(const LocalPOpDirectoryEntry& entry) {
+  auto inserted = entries_.emplace(entry.name(), entry);
+  if (!inserted.second) {
+    return tl::make_unexpected(fmt::format("Operator '{}' already added to local directory", entry.name()));
   }
-  entries_.emplace(entry.name(), entry);
 
-  switch (entry.relationshipType()) {
-    case POpRelationshipType::Producer: ++numProducers; break;
-    case POpRelationshipType::Consumer: ++numConsumers; break;
-    case POpRelationshipType::None: throw std::runtime_error("Unconnected operator not supported");
+  if (entry.relationshipType() == POpRelationshipType::Producer) {
+    ++numProducers;
+  } else {
+    ++numConsumers;
   }
+  return {};
 }
 
-void LocalPOpDirectory::setComplete(const std::string& name) {
+tl::expected<void, std::string> LocalPOpDirectory::setComplete(const std::string& name) {
   auto entry = entries_.find(name);
-  if(entry == entries_.end())
-    throw std::runtime_error("No entry for actor '" + name + "'");
-  else {
-  if (entry->second.complete()) {
-    throw std::runtime_error("LocalOpdir: Entry for operator '" + name + "'" + "completes twice");
+  if (entry == entries_.end()) {
+    return tl::make_unexpected("No entry for actor '" + name + "'");
   }
-	entry->second.complete(true);
-	switch (entry->second.relationshipType()) {
-    case POpRelationshipType::Producer: ++numProducersComplete; break;
-    case POpRelationshipType::Consumer: ++numConsumersComplete; break;
-    case POpRelationshipType::None:throw std::runtime_error("Unconnected operator not supported");
-	}
+  else {
+    if (entry->second.complete()) {
+      return tl::make_unexpected("LocalOpdir: Entry for operator '" + name + "'" + "completes twice");
+    }
+    entry->second.complete(true);
+    if (entry->second.relationshipType() == POpRelationshipType::Producer) {
+      ++numProducersComplete;
+    } else {
+      ++numConsumersComplete;
+    }
+    return {};
   }
 }
 
@@ -48,20 +49,11 @@ std::string LocalPOpDirectory::showString() const {
   return ss.str();
 }
 
-void LocalPOpDirectory::setIncomplete() {
-  for(auto& entry : entries_){
-    entry.second.complete(false);
-  }
-  numProducersComplete = 0;
-  numConsumersComplete = 0;
-}
-
 bool LocalPOpDirectory::allComplete(const POpRelationshipType &operatorRelationshipType) const {
-  switch (operatorRelationshipType) {
-    case POpRelationshipType::Producer: return numProducersComplete >= numProducers;
-    case POpRelationshipType::Consumer: return numConsumersComplete >= numConsumers;
-    case POpRelationshipType::None:
-      throw std::runtime_error("Unconnected operator not supported");
+  if (operatorRelationshipType == POpRelationshipType::Producer) {
+    return numProducersComplete >= numProducers;
+  } else {
+    return numConsumersComplete >= numConsumers;
   }
 }
 

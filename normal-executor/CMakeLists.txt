@@ -8,6 +8,7 @@ project(normal-executor VERSION "${PROJECT_VERSION}" LANGUAGES C CXX)
 add_library(normal-executor STATIC
 #        messages
         src/message/Envelope.cpp include/normal/executor/message/Envelope.h
+        include/normal/executor/message/MessageType.h
         src/message/Message.cpp include/normal/executor/message/Message.h
         src/message/StartMessage.cpp include/normal/executor/message/StartMessage.h
         src/message/ConnectMessage.cpp include/normal/executor/message/ConnectMessage.h
@@ -15,6 +16,7 @@ add_library(normal-executor STATIC
         src/message/TupleMessage.cpp include/normal/executor/message/TupleMessage.h
         src/message/ScanMessage.cpp include/normal/executor/message/ScanMessage.h
         src/message/TupleSetIndexMessage.cpp include/normal/executor/message/TupleSetIndexMessage.h
+        src/message/ErrorMessage.cpp include/normal/executor/message/ErrorMessage.h
         src/message/cache/CacheMetricsMessage.cpp include/normal/executor/message/cache/CacheMetricsMessage.h
         src/message/cache/LoadRequestMessage.cpp include/normal/executor/message/cache/LoadRequestMessage.h
         src/message/cache/LoadResponseMessage.cpp include/normal/executor/message/cache/LoadResponseMessage.h

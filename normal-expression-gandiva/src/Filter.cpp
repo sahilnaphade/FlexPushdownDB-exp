@@ -17,8 +17,9 @@ std::shared_ptr<Filter> Filter::make(const std::shared_ptr<Expression> &Pred) {
   return std::make_shared<Filter>(Pred);
 }
 
-arrow::ArrayVector Filter::evaluateBySelectionVectorStatic(const arrow::RecordBatch &recordBatch,
-                                                           const std::shared_ptr<::gandiva::SelectionVector> &selectionVector) {
+tl::expected<arrow::ArrayVector, std::string>
+Filter::evaluateBySelectionVectorStatic(const arrow::RecordBatch &recordBatch,
+                                        const std::shared_ptr<::gandiva::SelectionVector> &selectionVector) {
   // Build a projector for the pass through expression
   std::shared_ptr<::gandiva::Projector> gandivaProjector;
   std::vector<std::shared_ptr<::gandiva::Expression>> fieldExpressions;
@@ -33,7 +34,7 @@ arrow::ArrayVector Filter::evaluateBySelectionVectorStatic(const arrow::RecordBa
                                            ::gandiva::ConfigurationBuilder::DefaultConfiguration(),
                                            &gandivaProjector);
   if (!status.ok()) {
-    throw std::runtime_error(status.message());
+    return tl::make_unexpected(status.message());
   }
 
   // Evaluate the expressions
@@ -44,14 +45,14 @@ arrow::ArrayVector Filter::evaluateBySelectionVectorStatic(const arrow::RecordBa
   if (selectionVector->GetNumSlots() > 0) {
     status = gandivaProjector->Evaluate(recordBatch, selectionVector.get(), arrow::default_memory_pool(), &outputs);
     if (!status.ok()) {
-      throw std::runtime_error(status.message());
+      return tl::make_unexpected(status.message());
     }
   }
   else{
     for (const auto &field: recordBatch.schema()->fields()) {
       const auto &expArray = normal::tuple::Util::makeEmptyArray(field->type());
       if (!expArray) {
-        throw std::runtime_error(expArray.error());
+        return tl::make_unexpected(expArray.error());
       }
       outputs.emplace_back(*expArray);
     }
@@ -59,121 +60,127 @@ arrow::ArrayVector Filter::evaluateBySelectionVectorStatic(const arrow::RecordBa
   return outputs;
 }
 
-arrow::ArrayVector Filter::evaluate(const arrow::RecordBatch &recordBatch) {
+tl::expected<arrow::ArrayVector, std::string> Filter::evaluate(const arrow::RecordBatch &recordBatch) {
   assert(recordBatch.ValidateFull().ok());
 
   // Create a bit vector
-  const auto selection_vector = computeSelectionVector(recordBatch);
+  const auto &expSelectionVector = computeSelectionVector(recordBatch);
+  if (!expSelectionVector.has_value()) {
+    return tl::make_unexpected(expSelectionVector.error());
+  }
+  const auto &selectionVector = *expSelectionVector;
 
-  SPDLOG_DEBUG("Evaluated SelectionVector  |  vector: {}", selection_vector->ToArray()->ToString());
+  SPDLOG_DEBUG("Evaluated SelectionVector  |  vector: {}", selectionVector->ToArray()->ToString());
 
   // Evaluate the expressions
-  return evaluateBySelectionVector(recordBatch, selection_vector);
+  return evaluateBySelectionVector(recordBatch, selectionVector);
 }
 
-std::shared_ptr<normal::tuple::TupleSet> Filter::evaluate(const normal::tuple::TupleSet &tupleSet) {
+tl::expected<std::shared_ptr<normal::tuple::TupleSet>, std::string>
+Filter::evaluate(const normal::tuple::TupleSet &tupleSet) {
   if (tupleSet.valid()) {
 
-	auto filteredTupleSet = normal::tuple::TupleSet::make(tupleSet.schema());
-	auto arrowTable = tupleSet.table();
+    auto filteredTupleSet = normal::tuple::TupleSet::make(tupleSet.schema());
+    auto arrowTable = tupleSet.table();
 
-	assert(arrowTable->ValidateFull().ok());
+    assert(arrowTable->ValidateFull().ok());
 
-	arrow::Status arrowStatus;
+    arrow::Status arrowStatus;
 
-	std::shared_ptr<arrow::RecordBatch> batch;
-	arrow::TableBatchReader reader(*arrowTable);
-  // Maximum chunk size Gandiva filter evaluates at a time
-	reader.set_chunksize((int64_t) normal::tuple::DefaultChunkSize);
-	arrowStatus = reader.ReadNext(&batch);
-	if (!arrowStatus.ok()) {
-	  throw std::runtime_error(arrowStatus.message());
-	}
+    std::shared_ptr<arrow::RecordBatch> batch;
+    arrow::TableBatchReader reader(*arrowTable);
+    // Maximum chunk size Gandiva filter evaluates at a time
+    reader.set_chunksize((int64_t) normal::tuple::DefaultChunkSize);
+    arrowStatus = reader.ReadNext(&batch);
+    if (!arrowStatus.ok()) {
+      return tl::make_unexpected(arrowStatus.message());
+    }
 
-	while (batch != nullptr) {
+    while (batch != nullptr) {
 
-	  assert(batch->ValidateFull().ok());
-	  std::shared_ptr<::gandiva::SelectionVector> selection_vector;
-	  auto status = ::gandiva::SelectionVector::MakeInt64(batch->num_rows(), ::arrow::default_memory_pool(), &selection_vector);
-	  if (!status.ok()) {
-		throw std::runtime_error(status.message());
-	  }
+      assert(batch->ValidateFull().ok());
+      std::shared_ptr<::gandiva::SelectionVector> selection_vector;
+      auto status = ::gandiva::SelectionVector::MakeInt64(batch->num_rows(), ::arrow::default_memory_pool(), &selection_vector);
+      if (!status.ok()) {
+        return tl::make_unexpected(status.message());
+      }
 
-	  status = gandivaFilter_->Evaluate(*batch, selection_vector);
+      status = gandivaFilter_->Evaluate(*batch, selection_vector);
 
-	  if (!status.ok()) {
-		throw std::runtime_error(status.message());
-	  }
+      if (!status.ok()) {
+        return tl::make_unexpected(status.message());
+      }
 
-	  SPDLOG_DEBUG("Evaluated SelectionVector  |  vector: {}", selection_vector->ToArray()->ToString());
+      SPDLOG_DEBUG("Evaluated SelectionVector  |  vector: {}", selection_vector->ToArray()->ToString());
 
-	  // Evaluate the expressions
-	  std::shared_ptr<::arrow::Table> batchArrowTable;
+      // Evaluate the expressions
+      std::shared_ptr<::arrow::Table> batchArrowTable;
 
-	  /**
-	   * NOTE: Gandiva fails if the projector is evaluated using an empty selection vector, so need to test for it
-	   */
-	  if(selection_vector->GetNumSlots() > 0) {
-		arrow::ArrayVector outputs;
-		status = gandivaProjector_->Evaluate(*batch, selection_vector.get(), arrow::default_memory_pool(), &outputs);
+      /**
+       * NOTE: Gandiva fails if the projector is evaluated using an empty selection vector, so need to test for it
+       */
+      if(selection_vector->GetNumSlots() > 0) {
+        arrow::ArrayVector outputs;
+        status = gandivaProjector_->Evaluate(*batch, selection_vector.get(), arrow::default_memory_pool(), &outputs);
 
-		if (!status.ok()) {
-		  throw std::runtime_error(status.message());
-		}
+        if (!status.ok()) {
+          return tl::make_unexpected(status.message());
+        }
 
-		batchArrowTable = ::arrow::Table::Make(batch->schema(), outputs);
-	  }
-	  else{
-	    auto columns = Schema::make(batch->schema())->makeColumns();
-	    auto arrowArrays = Column::columnVectorToArrowChunkedArrayVector(columns);
-		batchArrowTable = ::arrow::Table::Make(batch->schema(), arrowArrays);
-	  }
+        batchArrowTable = ::arrow::Table::Make(batch->schema(), outputs);
+      }
+      else{
+        auto columns = Schema::make(batch->schema())->makeColumns();
+        auto arrowArrays = Column::columnVectorToArrowChunkedArrayVector(columns);
+        batchArrowTable = ::arrow::Table::Make(batch->schema(), arrowArrays);
+      }
 
-	  auto batchTupleSet = std::make_shared<normal::tuple::TupleSet>(batchArrowTable);
+      auto batchTupleSet = std::make_shared<normal::tuple::TupleSet>(batchArrowTable);
 
-	  SPDLOG_DEBUG("Filtered batch:\n{}",
-				   batchTupleSet->showString(normal::tuple::TupleSetShowOptions(normal::tuple::TupleSetShowOrientation::RowOriented)));
+      SPDLOG_DEBUG("Filtered batch:\n{}",
+             batchTupleSet->showString(normal::tuple::TupleSetShowOptions(normal::tuple::TupleSetShowOrientation::RowOriented)));
 
-	  auto result = filteredTupleSet->append(batchTupleSet);
-	  if(!result.has_value()){
-		throw std::runtime_error(result.error());
-	  }
+      auto result = filteredTupleSet->append(batchTupleSet);
+      if(!result.has_value()){
+        return tl::make_unexpected(result.error());
+      }
 
-	  arrowStatus = reader.ReadNext(&batch);
-	  if (!arrowStatus.ok()) {
-		throw std::runtime_error(arrowStatus.message());
-	  }
-	}
+      arrowStatus = reader.ReadNext(&batch);
+      if (!arrowStatus.ok()) {
+        return tl::make_unexpected(arrowStatus.message());
+      }
+    }
 
-	return filteredTupleSet;
-  } else {
-	// FIXME: Does it make sense to have a tuple set with no schema? Maybe it should be forbidden. DB's tend to register
-	//  schema less tables as defined but not queryable. I.e. the "table" exists but not the "relation".
-	//  Raise an error for now
-	throw std::runtime_error("Cannot filter tuple set. Tuple set schema is undefined.");
+    return filteredTupleSet;
+  }
+
+  else {
+    return tl::make_unexpected("Cannot filter tupleSet. TupleSet is invalid.");
   }
 }
 
-std::shared_ptr<::gandiva::SelectionVector> Filter::computeSelectionVector(const arrow::RecordBatch &recordBatch) {
+tl::expected<std::shared_ptr<::gandiva::SelectionVector>, std::string>
+Filter::computeSelectionVector(const arrow::RecordBatch &recordBatch) {
   // Create a bit vector
   std::shared_ptr<::gandiva::SelectionVector> selectionVector;
   auto status = ::gandiva::SelectionVector::MakeInt64(recordBatch.num_rows(),
                                                       ::arrow::default_memory_pool(),
                                                       &selectionVector);
   if (!status.ok()) {
-    throw std::runtime_error(status.message());
+    return tl::make_unexpected(status.message());
   }
 
   // Compute the bit vector
   status = gandivaFilter_->Evaluate(recordBatch, selectionVector);
   if (!status.ok()) {
-    throw std::runtime_error(status.message());
+    return tl::make_unexpected(status.message());
   }
   return selectionVector;
 }
 
-arrow::ArrayVector Filter::evaluateBySelectionVector(const arrow::RecordBatch &recordBatch,
-                                                     const std::shared_ptr<::gandiva::SelectionVector> &selectionVector) {
+tl::expected<arrow::ArrayVector, std::string>
+Filter::evaluateBySelectionVector(const arrow::RecordBatch &recordBatch,
+                                  const std::shared_ptr<::gandiva::SelectionVector> &selectionVector) {
   /**
    * NOTE: Gandiva fails if the projector is evaluated using an empty selection vector, so need to test for it
    */
@@ -181,14 +188,14 @@ arrow::ArrayVector Filter::evaluateBySelectionVector(const arrow::RecordBatch &r
   if(selectionVector->GetNumSlots() > 0) {
     auto status = gandivaProjector_->Evaluate(recordBatch, selectionVector.get(), arrow::default_memory_pool(), &outputs);
     if (!status.ok()) {
-      throw std::runtime_error(status.message());
+      return tl::make_unexpected(status.message());
     }
   }
   else{
     for (const auto &field: recordBatch.schema()->fields()) {
       const auto &expArray = normal::tuple::Util::makeEmptyArray(field->type());
       if (!expArray) {
-        throw std::runtime_error(expArray.error());
+        return tl::make_unexpected(expArray.error());
       }
       outputs.emplace_back(*expArray);
     }
@@ -196,7 +203,7 @@ arrow::ArrayVector Filter::evaluateBySelectionVector(const arrow::RecordBatch &r
   return outputs;
 }
 
-void Filter::compile(const std::shared_ptr<normal::tuple::Schema> &Schema) {
+tl::expected<void, std::string> Filter::compile(const std::shared_ptr<normal::tuple::Schema> &Schema) {
   std::lock_guard<std::mutex> g(BigGlobalLock);
 
   // Compile the expressions
@@ -212,7 +219,7 @@ void Filter::compile(const std::shared_ptr<normal::tuple::Schema> &Schema) {
                                         ::gandiva::ConfigurationBuilder::DefaultConfiguration(),
                                         &gandivaFilter_);
   if (!status.ok()) {
-    throw std::runtime_error(status.message());
+    return tl::make_unexpected(status.message());
   }
 
   // Create a pass through expression
@@ -231,6 +238,8 @@ void Filter::compile(const std::shared_ptr<normal::tuple::Schema> &Schema) {
                                       &gandivaProjector_);
 
   if (!status.ok()) {
-    throw std::runtime_error(status.message());
+    return tl::make_unexpected(status.message());
   }
+
+  return {};
 }

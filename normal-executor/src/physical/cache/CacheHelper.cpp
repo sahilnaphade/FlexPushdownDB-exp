@@ -29,8 +29,7 @@ void CacheHelper::requestLoadSegmentsFromCache(const std::vector<std::string> &c
     segmentKeys.emplace_back(segmentKey);
   }
 
-  ctx->send(LoadRequestMessage::make(segmentKeys, sender), "SegmentCache")
-	  .map_error([](auto err) { throw std::runtime_error(err); });
+  ctx->send(LoadRequestMessage::make(segmentKeys, sender), "SegmentCache");
 }
 
 void CacheHelper::requestStoreSegmentsInCache(const std::shared_ptr<TupleSet> &tupleSet,
@@ -58,6 +57,5 @@ void CacheHelper::requestStoreSegmentsInCache(const std::shared_ptr<TupleSet> &t
 	segmentsToStore.emplace(segmentKey, segmentData);
   }
 
-  ctx->send(StoreRequestMessage::make(segmentsToStore, sender), "SegmentCache")
-	  .map_error([](auto err) { throw std::runtime_error(err); });
+  ctx->send(StoreRequestMessage::make(segmentsToStore, sender), "SegmentCache");
 }
