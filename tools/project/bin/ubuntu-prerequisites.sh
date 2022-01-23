@@ -32,7 +32,8 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
       flex \
       libtool \
       tcl \
-      libdeflate-dev
+      libdeflate-dev \
+      openjdk-11-jre-headless
 
   fi
 fi
