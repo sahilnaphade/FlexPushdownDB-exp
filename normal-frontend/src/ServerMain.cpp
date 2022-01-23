@@ -3,6 +3,7 @@
 //
 
 #include <normal/frontend/Server.h>
+#include <signal.h>
 
 using namespace normal::frontend;
 

@@ -19,7 +19,7 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
     # Install development requirements
     apt-get install -y \
       build-essential \
-      clang-10 \
+      clang-12 \
       cmake \
       ninja-build \
       libcurl4-openssl-dev \
