@@ -17,7 +17,7 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
     apt-get update
 
     # Install development requirements
-    apt-get install \
+    apt-get install -y \
       build-essential \
       clang-10 \
       cmake \
