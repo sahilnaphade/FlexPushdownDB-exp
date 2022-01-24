@@ -3,22 +3,24 @@
 trap ctrl_c INT
 function ctrl_c() {
   echo "*** Trapped CTRL-C, exit"
-  cd "${script_dir}"
+  popd > /dev/null
   exit 0
 }
 
 # parameters
 build_dir_name="build"
-clean=false
+clean=true
 build_parallel=8
 targets=("normal-frontend-server" "normal-frontend-test")
 
-# make build directory
+# get script path
+pushd "$(dirname "$0")" > /dev/null
 script_dir=$(pwd)
+
+# make build directory
 resource_dir="$(dirname "${script_dir}")"
 root_dir="$(dirname "${resource_dir}")"
 build_dir="${root_dir}"/"${build_dir_name}"
-pushd "${script_dir}" > /dev/null
 
 if [ "${clean}" = true ]; then
   rm -rf "${build_dir}"
@@ -49,5 +51,5 @@ do
   cmake --build . --target "${target}" -- -j "${build_parallel}"
 done
 
-# back to script directory
+# back to original directory
 popd > /dev/null

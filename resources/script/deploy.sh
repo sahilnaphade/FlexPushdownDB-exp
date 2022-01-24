@@ -1,16 +1,26 @@
 # Script to spread built package to all cluster nodes
 # Note: set resources/config/cluster_ips first
 
+trap ctrl_c INT
+function ctrl_c() {
+  echo "*** Trapped CTRL-C, exit"
+  popd > /dev/null
+  exit 0
+}
+
 # parameters
-build_dir_name="build"
+build_dir_name="cmake-build-release"
 deploy_dir_name="FPDB-build"
 exe_dir_name="normal-frontend"
 calcite_dir_name="normal-calcite/java"
 pem_path="$HOME""/.aws/yifei-aws-wisc.pem"
 
+# get script path
+pushd "$(dirname "$0")" > /dev/null
+script_dir=$(pwd)
+
 # directories
 deploy_dir=$HOME/$deploy_dir_name
-script_dir=$(pwd)
 resource_dir="$(dirname "${script_dir}")"
 root_dir="$(dirname "${resource_dir}")"
 build_dir="${root_dir}"/"${build_dir_name}"
@@ -70,3 +80,5 @@ do
   scp -i -r "$pem_path" "$deploy_dir" ubuntu@"$slave_ip":"$deploy_dir"
 done
 
+# back to original directory
+popd > /dev/null
