@@ -9,7 +9,7 @@ function ctrl_c() {
 }
 
 # parameters
-build_dir_name="cmake-build-release"
+build_dir_name="build"
 deploy_dir_name="FPDB-build"
 exe_dir_name="normal-frontend"
 calcite_dir_name="normal-calcite/java"
