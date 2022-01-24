@@ -10,6 +10,8 @@ import org.apache.thrift.TException;
 import org.apache.thrift.server.TServer;
 import org.apache.thrift.transport.TServerTransport;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.nio.file.Path;
 import java.util.Arrays;
 
@@ -48,7 +50,10 @@ public class CalciteServerHandler implements CalciteServer.Iface{
       RelNode queryPlan = optimizer.planQuery(query, schemaName);
       tPlanResult.plan_result = RelJsonSerializer.serialize(queryPlan).toString(2);
     } catch (Exception e) {
-      throw new ParsePlanningError(Arrays.toString(e.getStackTrace()));
+      StringWriter sw = new StringWriter();
+      PrintWriter pw = new PrintWriter(sw);
+      e.printStackTrace(pw);
+      throw new ParsePlanningError(sw.toString());
     }
     tPlanResult.execution_time_ms = System.currentTimeMillis() - startTime;
     return tPlanResult;
