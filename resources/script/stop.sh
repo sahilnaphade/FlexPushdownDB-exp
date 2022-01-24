@@ -1,0 +1,1 @@
+# stop the system on all cluster nodes
