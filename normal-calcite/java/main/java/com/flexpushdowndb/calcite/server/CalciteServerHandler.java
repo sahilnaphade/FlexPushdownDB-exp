@@ -10,6 +10,7 @@ import org.apache.thrift.TException;
 import org.apache.thrift.server.TServer;
 import org.apache.thrift.transport.TServerTransport;
 
+import java.nio.file.Path;
 import java.util.Arrays;
 
 public class CalciteServerHandler implements CalciteServer.Iface{
@@ -17,8 +18,8 @@ public class CalciteServerHandler implements CalciteServer.Iface{
   private TServerTransport serverTransport;
   private TServer server;
 
-  public CalciteServerHandler() {
-    this.optimizer = new Optimizer();
+  public CalciteServerHandler(Path resourcePath) {
+    this.optimizer = new Optimizer(resourcePath);
   }
 
   public void setServerTransport(TServerTransport serverTransport) {

@@ -32,12 +32,14 @@ import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.sql2rel.StandardConvertletTable;
 import org.apache.calcite.tools.*;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 public class Optimizer {
   private static final RelOptTable.ViewExpander NOOP_EXPANDER = (type, query, schema, path) -> null;
+  private final Path resourcePath;
   private final RelDataTypeFactory typeFactory;
   private final RelOptCluster cluster;
   private final RelOptPlanner planner;
@@ -47,7 +49,8 @@ public class Optimizer {
   // assigned during query parsing
   private SqlValidator sqlValidator = null;
 
-  public Optimizer() {
+  public Optimizer(Path resourcePath) {
+    this.resourcePath = resourcePath;
     this.typeFactory = new JavaTypeFactoryImpl();
     this.cluster = newCluster(typeFactory);
     this.planner = cluster.getPlanner();
@@ -78,7 +81,7 @@ public class Optimizer {
   private RelNode parseAndValidate(String query, String schemaName) throws Exception {
     // Load schema if not loaded
     if (!rootSchema.getSubSchemaMap().containsKey(schemaName)) {
-      SchemaImpl schema = SchemaReader.readSchema(schemaName);
+      SchemaImpl schema = SchemaReader.readSchema(resourcePath, schemaName);
       rootSchema.add(schemaName, schema);
     }
 

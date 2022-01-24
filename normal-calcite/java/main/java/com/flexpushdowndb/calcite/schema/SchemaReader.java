@@ -11,13 +11,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class SchemaReader {
-  private static final Path metadataRootPath = Paths.get(System.getProperty("user.dir"))
-          .getParent()
-          .getParent()
-          .resolve("resources/metadata");
 
-  public static SchemaImpl readSchema(String schemaName) throws Exception {
-    Path schemaDirPath = metadataRootPath.resolve(schemaName);
+  public static SchemaImpl readSchema(Path resourcePath, String schemaName) throws Exception {
+    Path schemaDirPath = resourcePath
+            .resolve("metadata")
+            .resolve(schemaName);
 
     // Read schema
     Path schemaPath = schemaDirPath.resolve("schema.json");

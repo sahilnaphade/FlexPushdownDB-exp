@@ -10,21 +10,23 @@ import org.ini4j.Ini;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 public class Server {
-  private final int SERVER_PORT;
-
-  public Server() throws IOException {
-    InputStream is = getClass().getResourceAsStream("/config/exec.conf");
-    Ini ini = new Ini(is);
-    this.SERVER_PORT = Integer.parseInt(ini.get("conf", "SERVER_PORT"));
-  }
 
   public void start() {
     try {
-      CalciteServerHandler handler = new CalciteServerHandler();
+      // read conf
+      InputStream is = getClass().getResourceAsStream("/config/exec.conf");
+      Ini ini = new Ini(is);
+      int serverPort = Integer.parseInt(ini.get("conf", "SERVER_PORT"));
+      Path resourcePath = Paths.get(ini.get("conf", "RESOURCE_PATH"));
+
+      // create and start thrift server
+      CalciteServerHandler handler = new CalciteServerHandler(resourcePath);
       CalciteServer.Processor<CalciteServerHandler> processor = new CalciteServer.Processor<>(handler);
-      TServerTransport serverTransport = new TServerSocket(SERVER_PORT);
+      TServerTransport serverTransport = new TServerSocket(serverPort);
       TServer server = new TSimpleServer(new Args(serverTransport).processor(processor));
       handler.setServerTransport(serverTransport);
       handler.setServer(server);
