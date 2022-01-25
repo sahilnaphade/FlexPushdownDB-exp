@@ -29,6 +29,7 @@ add_library(normal-plan STATIC
 
 target_include_directories(normal-plan PUBLIC include)
 
+target_link_libraries(normal-plan PUBLIC normal-calcite)
 target_link_libraries(normal-plan PUBLIC normal-catalogue)
 target_link_libraries(normal-plan PUBLIC normal-expression-gandiva)
 
