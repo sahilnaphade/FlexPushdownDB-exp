@@ -37,6 +37,7 @@ do
 done < "$cluster_ips_path"
 
 # 2. organize executables, resources and required libraries
+echo "Copying built files..."
 mkdir -p "$deploy_dir"
 
 # executables
@@ -74,11 +75,21 @@ do
   cp -r "$lib_dir" "$lib_deploy_dir"
 done
 
+echo -e "done\n"
+
 # 3. deploy organized package for each node
+echo "Sending built files to cluster nodes..."
+
 for slave_ip in "${slave_ips[@]}"
 do
-  scp -i -r "$pem_path" "$deploy_dir" ubuntu@"$slave_ip":"$deploy_dir"
+  echo -n "  Sending to ""$slave_ip""... "
+  SSHKey=`ssh-keyscan -H "$slave_ip" 2> /dev/null`
+  echo "$SSHKey" >> ~/.ssh/known_hosts
+  scp -rqi "$pem_path" "$deploy_dir" ubuntu@"$slave_ip":"$(dirname "${deploy_dir}")"
+  echo "  done"
 done
+
+echo "done"
 
 # back to original directory
 popd > /dev/null
