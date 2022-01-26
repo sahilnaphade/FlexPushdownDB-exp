@@ -114,8 +114,9 @@ public final class EnhancedFilterJoinExtractor {
       case FULL: {
         return extractFullOuterJoin();
       }
-      default:
-        throw new UnsupportedOperationException();
+      default: {
+        return null;
+      }
     }
   }
 

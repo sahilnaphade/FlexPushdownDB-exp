@@ -34,10 +34,7 @@ import org.apache.calcite.sql2rel.RelDecorrelator;
 import org.apache.calcite.sql2rel.RelFieldTrimmer;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.sql2rel.StandardConvertletTable;
-import org.apache.calcite.tools.Program;
-import org.apache.calcite.tools.Programs;
-import org.apache.calcite.tools.RelBuilder;
-import org.apache.calcite.tools.RuleSets;
+import org.apache.calcite.tools.*;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -154,7 +151,7 @@ public class Optimizer {
 
   private RelNode joinOptimize(RelNode relNode) {
     // join optimize
-    Program program = Programs.heuristicJoinOrder(getConvertToPhysicalRules(), false, 0);
+    Program program = Programs.heuristicJoinOrder(getJoinOptimizeRules(), false, 0);
     return program.run(
             planner,
             relNode,
@@ -181,12 +178,26 @@ public class Optimizer {
 
   private RelNode postHeuristics(RelNode relNode) {
     HepProgram hepProgram = new HepProgramBuilder()
-            .addRuleInstance(JoinSmallLeftRule.INSTANCE)
-            .addRuleInstance(EnumerableRules.ENUMERABLE_PROJECT_RULE)
+            .addRuleCollection(ImmutableList.of(
+                    CoreRules.PROJECT_MERGE,
+                    CoreRules.PROJECT_FILTER_TRANSPOSE,
+                    CoreRules.PROJECT_REMOVE,
+                    JoinSmallLeftRule.INSTANCE,
+                    EnumerableRules.ENUMERABLE_PROJECT_RULE))
             .build();
     HepPlanner hepPlanner = new HepPlanner(hepProgram);
     hepPlanner.setRoot(relNode);
     return hepPlanner.findBestExp();
+  }
+
+  private static List<RelOptRule> getJoinOptimizeRules() {
+    List<RelOptRule> ruleList = getConvertToPhysicalRules();
+    ruleList.add(CoreRules.PROJECT_MERGE);
+    ruleList.add(CoreRules.PROJECT_AGGREGATE_MERGE);
+    ruleList.add(CoreRules.FILTER_AGGREGATE_TRANSPOSE);
+    ruleList.add(CoreRules.JOIN_TO_SEMI_JOIN);
+    ruleList.add(CoreRules.PROJECT_TO_SEMI_JOIN);
+    return ruleList;
   }
 
   private static List<RelOptRule> getConvertToPhysicalRules() {

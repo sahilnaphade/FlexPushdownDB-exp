@@ -67,6 +67,10 @@ public abstract class EnhancedFilterJoinRule extends RelOptRule {
     // Extract the join condition and pushdown predicates, also simplify the remaining filter
     EnhancedFilterJoinExtraction extraction = new EnhancedFilterJoinExtractor(filterRel, joinRel,
             FilterJoinRulesUtil.EQUAL_IS_NOT_DISTINCT_FROM).extract();
+    if (extraction == null) {
+      return null;
+    }
+
     RexNode inputFilterConditionPruned = extraction.getInputFilterConditionPruned();
     RexNode inputJoinConditionPruned = extraction.getInputJoinConditionPruned();
     RexNode newJoinCondition = extraction.getJoinCondition();
