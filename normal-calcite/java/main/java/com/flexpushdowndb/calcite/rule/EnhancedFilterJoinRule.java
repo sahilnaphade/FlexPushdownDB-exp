@@ -129,14 +129,14 @@ public abstract class EnhancedFilterJoinRule extends RelOptRule {
 
   private static class WithFilter extends EnhancedFilterJoinRule {
     private WithFilter() {
-      super(RelOptRule.operand(LogicalFilter.class,
-              RelOptRule.operand(LogicalJoin.class, RelOptRule.any())), "EnhancedFilterJoinRule:filter");
+      super(RelOptRule.operand(Filter.class,
+              RelOptRule.operand(Join.class, RelOptRule.any())), "EnhancedFilterJoinRule:filter");
     }
   }
 
   private static class NoFilter extends EnhancedFilterJoinRule {
     private NoFilter() {
-      super(RelOptRule.operand(LogicalJoin.class, RelOptRule.any()),
+      super(RelOptRule.operand(Join.class, RelOptRule.any()),
               "EnhancedFilterJoinRule:no-filter");
     }
   }

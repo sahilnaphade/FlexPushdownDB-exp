@@ -419,12 +419,14 @@ void CalcitePlanJsonDeserializer::addProjectForJoinColumnRenames(shared_ptr<PreP
     set<string> projectColumnNames;
     for (const auto &column: leftFieldNames) {
       const auto &renameIt = leftFieldRenames.find(column);
+      const auto &canonColumn = ColumnName::canonicalize(column);
       if (renameIt == leftFieldRenames.end()) {
-        projectColumnNamePairs.emplace_back(make_pair(column, column));
-        projectColumnNames.emplace(column);
+        projectColumnNamePairs.emplace_back(make_pair(canonColumn, canonColumn));
+        projectColumnNames.emplace(canonColumn);
       } else {
-        projectColumnNamePairs.emplace_back(make_pair(column, renameIt->second));
-        projectColumnNames.emplace(renameIt->second);
+        const auto &renameColumn = ColumnName::canonicalize(renameIt->second);
+        projectColumnNamePairs.emplace_back(make_pair(canonColumn, renameColumn));
+        projectColumnNames.emplace(renameColumn);
       }
     }
 
@@ -448,12 +450,14 @@ void CalcitePlanJsonDeserializer::addProjectForJoinColumnRenames(shared_ptr<PreP
     set<string> projectColumnNames;
     for (const auto &column: rightFieldNames) {
       const auto &renameIt = rightFieldRenames.find(column);
+      const auto &canonColumn = ColumnName::canonicalize(column);
       if (renameIt == rightFieldRenames.end()) {
-        projectColumnNamePairs.emplace_back(make_pair(column, column));
-        projectColumnNames.emplace(column);
+        projectColumnNamePairs.emplace_back(make_pair(canonColumn, canonColumn));
+        projectColumnNames.emplace(canonColumn);
       } else {
-        projectColumnNamePairs.emplace_back(make_pair(column, renameIt->second));
-        projectColumnNames.emplace(renameIt->second);
+        const auto &renameColumn = ColumnName::canonicalize(renameIt->second);
+        projectColumnNamePairs.emplace_back(make_pair(canonColumn, renameColumn));
+        projectColumnNames.emplace(renameColumn);
       }
     }
 
@@ -657,8 +661,9 @@ shared_ptr<prephysical::PrePhysicalOp> CalcitePlanJsonDeserializer::deserializeP
       if (consumedFieldsIdSet.find(fieldId) != consumedFieldsIdSet.end()) {
         // this field is consumed by the consumer, here we add its involvedColumnNames instead of itself
         for (const auto &columnName: exprUsedColumnNames) {
-          projectColumnNames.emplace(columnName);
-          projectColumnNamePairs.emplace_back(make_pair(columnName, columnName));
+          const auto &canonColumnName = ColumnName::canonicalize(columnName);
+          projectColumnNames.emplace(canonColumnName);
+          projectColumnNamePairs.emplace_back(make_pair(canonColumnName, canonColumnName));
         }
         continue;
       }

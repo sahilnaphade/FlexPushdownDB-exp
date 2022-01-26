@@ -18,7 +18,10 @@ import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.metadata.*;
+import org.apache.calcite.rel.metadata.CachingRelMetadataProvider;
+import org.apache.calcite.rel.metadata.ChainedRelMetadataProvider;
+import org.apache.calcite.rel.metadata.JaninoRelMetadataProvider;
+import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
@@ -31,7 +34,10 @@ import org.apache.calcite.sql2rel.RelDecorrelator;
 import org.apache.calcite.sql2rel.RelFieldTrimmer;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.sql2rel.StandardConvertletTable;
-import org.apache.calcite.tools.*;
+import org.apache.calcite.tools.Program;
+import org.apache.calcite.tools.Programs;
+import org.apache.calcite.tools.RelBuilder;
+import org.apache.calcite.tools.RuleSets;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -75,14 +81,17 @@ public class Optimizer {
     // Decorrelate
     RelNode decorrelatedPlan = decorrelate(logicalPlan);
 
-    // Filter pushdown
-    RelNode filterPushdownPlan = filterPushdown(decorrelatedPlan);
+    // Pre-join filter pushdown
+    RelNode preFilterPushdownPlan = filterPushdown(decorrelatedPlan);
 
-    // Volcano cost-based optimization
-    RelNode volOptPlan = logicalOptimize(filterPushdownPlan);
+    // Join optimization
+    RelNode joinOptPlan = joinOptimize(preFilterPushdownPlan);
+
+    // Post-join filter pushdown
+    RelNode postFilterPushdownPlan = filterPushdown(joinOptPlan);
 
     // Trim unused fields
-    RelNode trimmedPhysicalPlan = trim(volOptPlan);
+    RelNode trimmedPhysicalPlan = trim(postFilterPushdownPlan);
 
     // Heuristics to apply
     return postHeuristics(trimmedPhysicalPlan);
@@ -143,23 +152,13 @@ public class Optimizer {
     return hepPlanner.findBestExp();
   }
 
-  private RelNode logicalOptimize(RelNode relNode) {
+  private RelNode joinOptimize(RelNode relNode) {
     // join optimize
-    Program program = Programs.of(getJoinOptRuleSet());
-    RelNode joinOptPlan = program.run(
+    Program program = Programs.heuristicJoinOrder(getConvertToPhysicalRules(), false, 0);
+    return program.run(
             planner,
             relNode,
             relNode.getTraitSet().plus(EnumerableConvention.INSTANCE),
-            Collections.emptyList(),
-            Collections.emptyList()
-    );
-
-    // post join optimize
-    program = Programs.of(getPostJoinOptRuleSet());
-    return program.run(
-            planner,
-            joinOptPlan,
-            joinOptPlan.getTraitSet().plus(EnumerableConvention.INSTANCE),
             Collections.emptyList(),
             Collections.emptyList()
     );
@@ -188,27 +187,6 @@ public class Optimizer {
     HepPlanner hepPlanner = new HepPlanner(hepProgram);
     hepPlanner.setRoot(relNode);
     return hepPlanner.findBestExp();
-  }
-
-  private static RuleSet getJoinOptRuleSet() {
-    List<RelOptRule> ruleList = new ArrayList<>();
-    ruleList.add(CoreRules.JOIN_COMMUTE);
-    ruleList.addAll(getConvertToPhysicalRules());
-    return RuleSets.ofList(ruleList);
-  }
-
-  private static RuleSet getPostJoinOptRuleSet() {
-    // Currently the merge join is unsupported
-    List<RelOptRule> ruleList = new ArrayList<>();
-    for (RelOptRule rule: Programs.RULE_SET) {
-      if (!rule.equals(EnumerableRules.ENUMERABLE_MERGE_JOIN_RULE)  // engine currently does not support merge join
-        &&!rule.equals(CoreRules.JOIN_COMMUTE)                      // this will make planning of some queries infinitely long
-        &&!rule.equals(CoreRules.FILTER_INTO_JOIN))                 // filters are already pushed by EnhancedFilterJoinRule
-        ruleList.add(rule);
-    }
-    ruleList.add(EnumerableRules.ENUMERABLE_LIMIT_SORT_RULE);
-    ruleList.add(EnumerableRules.ENUMERABLE_SORTED_AGGREGATE_RULE);
-    return RuleSets.ofList(ruleList);
   }
 
   private static List<RelOptRule> getConvertToPhysicalRules() {
