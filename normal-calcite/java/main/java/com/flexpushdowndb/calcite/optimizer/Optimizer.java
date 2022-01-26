@@ -18,6 +18,7 @@ import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.metadata.*;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
@@ -50,12 +51,21 @@ public class Optimizer {
   private SqlValidator sqlValidator = null;
 
   public Optimizer(Path resourcePath) {
+    // Initialize
     this.resourcePath = resourcePath;
     this.typeFactory = new JavaTypeFactoryImpl();
     this.cluster = newCluster(typeFactory);
     this.planner = cluster.getPlanner();
     this.relBuilder = RelBuilder.proto(planner.getContext()).create(cluster, null);
     this.rootSchema = CalciteSchema.createRootSchema(false, true);
+
+    // Set RelMetadataProvider, using DefaultRelMetadataProvider
+    List<RelMetadataProvider> metadataProviders = new ArrayList<>();
+    metadataProviders.add(JaninoRelMetadataProvider.DEFAULT);
+    this.planner.registerMetadataProviders(metadataProviders);
+    RelMetadataProvider chainedMetadataProvider = ChainedRelMetadataProvider.of(metadataProviders);
+    CachingRelMetadataProvider cachingMetadataProvider = new CachingRelMetadataProvider(chainedMetadataProvider, planner);
+    this.cluster.setMetadataProvider(cachingMetadataProvider);
   }
 
   public RelNode planQuery(String query, String schemaName) throws Exception {
@@ -134,11 +144,22 @@ public class Optimizer {
   }
 
   private RelNode logicalOptimize(RelNode relNode) {
-    Program program = Programs.of(getDefaultRuleSet());
-    return program.run(
+    // join optimize
+    Program program = Programs.of(getJoinOptRuleSet());
+    RelNode joinOptPlan = program.run(
             planner,
             relNode,
             relNode.getTraitSet().plus(EnumerableConvention.INSTANCE),
+            Collections.emptyList(),
+            Collections.emptyList()
+    );
+
+    // post join optimize
+    program = Programs.of(getPostJoinOptRuleSet());
+    return program.run(
+            planner,
+            joinOptPlan,
+            joinOptPlan.getTraitSet().plus(EnumerableConvention.INSTANCE),
             Collections.emptyList(),
             Collections.emptyList()
     );
@@ -149,7 +170,7 @@ public class Optimizer {
     RelNode trimmedPlan = trimmer.trim(relNode);
 
     // Convert trimmedPlan to physical
-    Program program = Programs.of(getConvertToPhysicalRuleSet());
+    Program program = Programs.of(RuleSets.ofList(getConvertToPhysicalRules()));
     return program.run(
             planner,
             trimmedPlan,
@@ -169,7 +190,14 @@ public class Optimizer {
     return hepPlanner.findBestExp();
   }
 
-  private static RuleSet getDefaultRuleSet() {
+  private static RuleSet getJoinOptRuleSet() {
+    List<RelOptRule> ruleList = new ArrayList<>();
+    ruleList.add(CoreRules.JOIN_COMMUTE);
+    ruleList.addAll(getConvertToPhysicalRules());
+    return RuleSets.ofList(ruleList);
+  }
+
+  private static RuleSet getPostJoinOptRuleSet() {
     // Currently the merge join is unsupported
     List<RelOptRule> ruleList = new ArrayList<>();
     for (RelOptRule rule: Programs.RULE_SET) {
@@ -179,10 +207,11 @@ public class Optimizer {
         ruleList.add(rule);
     }
     ruleList.add(EnumerableRules.ENUMERABLE_LIMIT_SORT_RULE);
+    ruleList.add(EnumerableRules.ENUMERABLE_SORTED_AGGREGATE_RULE);
     return RuleSets.ofList(ruleList);
   }
 
-  private static RuleSet getConvertToPhysicalRuleSet() {
+  private static List<RelOptRule> getConvertToPhysicalRules() {
     List<RelOptRule> ruleList = new ArrayList<>();
     ruleList.add(EnumerableRules.ENUMERABLE_TABLE_SCAN_RULE);
     ruleList.add(EnumerableRules.ENUMERABLE_FILTER_RULE);
@@ -192,7 +221,8 @@ public class Optimizer {
     ruleList.add(EnumerableRules.ENUMERABLE_SORT_RULE);
     ruleList.add(EnumerableRules.ENUMERABLE_LIMIT_SORT_RULE);
     ruleList.add(EnumerableRules.ENUMERABLE_LIMIT_RULE);
-    return RuleSets.ofList(ruleList);
+    ruleList.add(EnumerableRules.ENUMERABLE_SORTED_AGGREGATE_RULE);
+    return ruleList;
   }
 
   private static RelOptCluster newCluster(RelDataTypeFactory typeFactory) {

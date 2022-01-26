@@ -34,8 +34,8 @@ public:
   AggregateFunctionType getType() const;
   const string &getOutputColumnName() const;
   const shared_ptr<normal::expression::gandiva::Expression> &getExpression() const;
-  virtual shared_ptr<arrow::DataType> returnType() = 0;
-  virtual set<string> involvedColumnNames() = 0;
+  virtual shared_ptr<arrow::DataType> returnType() const;
+  virtual set<string> involvedColumnNames() const;
 
   /**
    * Perform the aggregation given an input tupleSet.
@@ -65,7 +65,9 @@ protected:
    * Build input array for finalize()
    */
   tl::expected<shared_ptr<arrow::Array>, string>
-  buildFinalizeInputArray(const vector<shared_ptr<AggregateResult>> &aggregateResults, const string &key);
+  buildFinalizeInputArray(const vector<shared_ptr<AggregateResult>> &aggregateResults,
+                          const string &key,
+                          const shared_ptr<arrow::DataType> &type);
 
   /*
    * Aggregate function type
@@ -94,9 +96,9 @@ protected:
   std::optional<shared_ptr<normal::expression::Projector>> projector_;
 
   /**
-   * Data type of aggregate output column
+   * Data type of aggregate input column (after evaluating the expression)
    */
-  shared_ptr<arrow::DataType> returnType_;
+  shared_ptr<arrow::DataType> aggColumnDataType_;
 
 };
 

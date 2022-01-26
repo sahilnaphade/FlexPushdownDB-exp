@@ -34,8 +34,8 @@ public final class RelJsonSerializer {
       jo = serializeJoin((Join) relNode);
     } else if (relNode instanceof EnumerableProject) {
       jo = serializeEnumerableProject((EnumerableProject) relNode);
-    } else if (relNode instanceof EnumerableAggregate) {
-      jo = serializeEnumerableAggregate((EnumerableAggregate) relNode);
+    } else if (relNode instanceof EnumerableAggregate || relNode instanceof EnumerableSortedAggregate) {
+      jo = serializeEnumerableAggregate((EnumerableAggregateBase) relNode);
     } else if (relNode instanceof EnumerableSort) {
       jo = serializeEnumerableSort((EnumerableSort) relNode);
     } else if (relNode instanceof EnumerableLimitSort) {
@@ -166,7 +166,7 @@ public final class RelJsonSerializer {
     return jo;
   }
 
-  private static JSONObject serializeEnumerableAggregate(EnumerableAggregate aggregate) {
+  private static JSONObject serializeEnumerableAggregate(EnumerableAggregateBase aggregate) {
     JSONObject jo = new JSONObject();
     // operator name
     jo.put("operator", aggregate.getClass().getSimpleName());

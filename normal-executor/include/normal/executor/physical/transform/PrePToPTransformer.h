@@ -78,12 +78,15 @@ private:
 
   /**
    * Transform aggregate and aggregate reduce function
-   * @param alias
+   * @param outputColumnName
    * @param prePFunction
+   * @param isParallel whether using more than one operators to compute the aggregation in parallel
    * @return
    */
-  shared_ptr<aggregate::AggregateFunction> transformAggFunction(const string &outputColumnName,
-                                                                const shared_ptr<AggregatePrePFunction> &prePFunction);
+  vector<shared_ptr<aggregate::AggregateFunction>>
+  transformAggFunction(const string &outputColumnName,
+                       const shared_ptr<AggregatePrePFunction> &prePFunction,
+                       bool isParallel);
   shared_ptr<aggregate::AggregateFunction> transformAggReduceFunction(const string &outputColumnName,
                                                                       const shared_ptr<AggregatePrePFunction> &prePFunction);
 

@@ -28,11 +28,22 @@ const shared_ptr<normal::expression::gandiva::Expression> &AggregateFunction::ge
   return expression_;
 }
 
+shared_ptr<arrow::DataType> AggregateFunction::returnType() const {
+  return aggColumnDataType_;
+}
+
+set<string> AggregateFunction::involvedColumnNames() const {
+  if (expression_) {
+    return expression_->involvedColumnNames();
+  } else {
+    return {};
+  }
+}
+
 tl::expected<void, string> AggregateFunction::compile(const shared_ptr<arrow::Schema> &schema) {
-  // check if no expression and the function type is count, which means count(*)
+  // if no expression and the function type is count, which means count(*), then we do not need to compile
   if (!expression_) {
     if (type_ == COUNT) {
-      returnType_ = arrow::int64();
       return {};
     } else {
       return tl::make_unexpected("Aggregate function has no expression, neither it is count");
@@ -43,7 +54,7 @@ tl::expected<void, string> AggregateFunction::compile(const shared_ptr<arrow::Sc
   if (expression_->getType() == expression::gandiva::COLUMN) {
     const auto &columnName = static_pointer_cast<expression::gandiva::Column>(expression_)->getColumnName();
     const auto &field = schema->GetFieldByName(columnName);
-    returnType_ = field->type();
+    aggColumnDataType_ = field->type();
   }
 
   // expression projection, need to use gandiva projector
@@ -58,7 +69,7 @@ tl::expected<void, string> AggregateFunction::compile(const shared_ptr<arrow::Sc
 tl::expected<shared_ptr<arrow::ChunkedArray>, string>
 AggregateFunction::evaluateExpr(const shared_ptr<TupleSet> &tupleSet) {
   // compile if not yet
-  if (!returnType_) {
+  if (!aggColumnDataType_) {
     auto compileResult = compile(tupleSet->schema());
     if (!compileResult.has_value()) {
       return tl::make_unexpected(compileResult.error());
@@ -93,16 +104,17 @@ void AggregateFunction::buildAndCacheProjector() {
     auto expressionsVec = {this->expression_};
     projector_ = std::make_shared<expression::gandiva::Projector>(expressionsVec);
     projector_.value()->compile(inputSchema_.value());
-    returnType_ = expression_->getReturnType();
+    aggColumnDataType_ = expression_->getReturnType();
   }
 }
 
 tl::expected<shared_ptr<arrow::Array>, string>
 AggregateFunction::buildFinalizeInputArray(const vector<shared_ptr<AggregateResult>> &aggregateResults,
-                                           const string &key) {
+                                           const string &key,
+                                           const shared_ptr<arrow::DataType> &type) {
   // make arrayBuilder
   unique_ptr<arrow::ArrayBuilder> arrayBuilder;
-  arrow::Status status = arrow::MakeBuilder(arrow::default_memory_pool(), returnType(), &arrayBuilder);
+  arrow::Status status = arrow::MakeBuilder(arrow::default_memory_pool(), type, &arrayBuilder);
   if (!status.ok()) {
     return tl::make_unexpected(status.message());
   }

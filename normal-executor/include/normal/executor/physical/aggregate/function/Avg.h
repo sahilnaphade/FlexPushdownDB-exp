@@ -1,22 +1,24 @@
 //
-// Created by Yifei Yang on 12/2/21.
+// Created by Yifei Yang on 1/25/22.
 //
 
-#ifndef NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_AGGREGATE_FUNCTION_SUM_H
-#define NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_AGGREGATE_FUNCTION_SUM_H
+#ifndef NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_AGGREGATE_FUNCTION_AVG_H
+#define NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_AGGREGATE_FUNCTION_AVG_H
 
 #include <normal/executor/physical/aggregate/function/AggregateFunction.h>
 
 namespace normal::executor::physical::aggregate {
-
-class Sum : public AggregateFunction {
-
+  
+class Avg : public AggregateFunction {
+  
 public:
-  Sum(const string &outputColumnName,
+  Avg(const string &outputColumnName,
       const shared_ptr<normal::expression::gandiva::Expression> &expression);
-  Sum() = default;
-  Sum(const Sum&) = default;
-  Sum& operator=(const Sum&) = default;
+  Avg() = default;
+  Avg(const Avg&) = default;
+  Avg& operator=(const Avg&) = default;
+
+  shared_ptr<arrow::DataType> returnType() const override;
 
   tl::expected<shared_ptr<AggregateResult>, string> compute(const shared_ptr<TupleSet> &tupleSet) override;
 
@@ -25,11 +27,12 @@ public:
 
 private:
   constexpr static const char *const SUM_RESULT_KEY = "SUM";
+  constexpr static const char *const COUNT_RESULT_KEY = "COUNT";
 
 // caf inspect
 public:
   template <class Inspector>
-  friend bool inspect(Inspector& f, Sum& func) {
+  friend bool inspect(Inspector& f, Avg& func) {
     return f.object(func).fields(f.field("type", func.type_),
                                  f.field("outputColumnName", func.outputColumnName_),
                                  f.field("expression", func.expression_));
@@ -39,4 +42,4 @@ public:
 }
 
 
-#endif //NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_AGGREGATE_FUNCTION_SUM_H
+#endif //NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_AGGREGATE_FUNCTION_AVG_H

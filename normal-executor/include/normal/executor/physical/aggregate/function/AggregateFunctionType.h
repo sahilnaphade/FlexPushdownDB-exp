@@ -11,6 +11,8 @@ enum AggregateFunctionType {
   SUM,
   COUNT,
   MIN_MAX,
+  AVG,
+  AVG_REDUCE
 };
 
 }

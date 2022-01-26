@@ -15,11 +15,11 @@ Count::Count(const string &outputColumnName,
              const shared_ptr<normal::expression::gandiva::Expression> &expression):
   AggregateFunction(COUNT, outputColumnName, expression) {}
 
-shared_ptr<arrow::DataType> Count::returnType() {
+shared_ptr<arrow::DataType> Count::returnType() const {
   return arrow::int64();
 }
 
-set<string> Count::involvedColumnNames() {
+set<string> Count::involvedColumnNames() const {
   if (expression_) {
     return expression_->involvedColumnNames();
   } else {
@@ -61,7 +61,7 @@ tl::expected<shared_ptr<AggregateResult>, string> Count::compute(const shared_pt
 tl::expected<shared_ptr<arrow::Scalar>, string>
 Count::finalize(const vector<shared_ptr<AggregateResult>> &aggregateResults) {
   // build aggregate input array
-  const auto expFinalizeInputArray = buildFinalizeInputArray(aggregateResults, COUNT_RESULT_KEY);
+  const auto expFinalizeInputArray = buildFinalizeInputArray(aggregateResults, COUNT_RESULT_KEY, returnType());
   if (!expFinalizeInputArray) {
     return tl::make_unexpected(expFinalizeInputArray.error());
   }

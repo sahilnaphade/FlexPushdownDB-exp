@@ -12,18 +12,6 @@ Sum::Sum(const string &outputColumnName,
          const shared_ptr<normal::expression::gandiva::Expression> &expression)
   : AggregateFunction(SUM, outputColumnName, expression) {}
 
-shared_ptr<arrow::DataType> Sum::returnType() {
-  return returnType_;
-}
-
-set<string> Sum::involvedColumnNames() {
-  if (expression_) {
-    return expression_->involvedColumnNames();
-  } else {
-    return set<string>();
-  }
-}
-
 tl::expected<shared_ptr<AggregateResult>, string> Sum::compute(const shared_ptr<TupleSet> &tupleSet) {
   // evaluate the expression to get input of aggregation
   const auto &expAggChunkedArray = evaluateExpr(tupleSet);
@@ -47,7 +35,7 @@ tl::expected<shared_ptr<AggregateResult>, string> Sum::compute(const shared_ptr<
 tl::expected<shared_ptr<arrow::Scalar>, string>
 Sum::finalize(const vector<shared_ptr<AggregateResult>> &aggregateResults) {
   // build aggregate input array
-  const auto expFinalizeInputArray = buildFinalizeInputArray(aggregateResults, SUM_RESULT_KEY);
+  const auto expFinalizeInputArray = buildFinalizeInputArray(aggregateResults, SUM_RESULT_KEY, returnType());
   if (!expFinalizeInputArray) {
     return tl::make_unexpected(expFinalizeInputArray.error());
   }

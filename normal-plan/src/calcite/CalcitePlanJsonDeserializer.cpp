@@ -64,7 +64,7 @@ shared_ptr<PrePhysicalOp> CalcitePlanJsonDeserializer::deserializeDfs(json &jObj
     return deserializeSort(jObj);
   } else if (opName == "EnumerableLimitSort") {
     return deserializeLimitSort(jObj);
-  } else if (opName == "EnumerableAggregate") {
+  } else if (opName == "EnumerableAggregate" || opName == "EnumerableSortedAggregate") {
     return deserializeAggregateOrGroup(jObj);
   } else if (opName == "EnumerableProject") {
     return deserializeProject(jObj);

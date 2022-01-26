@@ -14,19 +14,6 @@ MinMax::MinMax(bool isMin,
   AggregateFunction(MIN_MAX, outputColumnName, expression),
   isMin_(isMin) {}
 
-
-shared_ptr<arrow::DataType> MinMax::returnType() {
-  return returnType_;
-}
-
-set<string> MinMax::involvedColumnNames() {
-  if (expression_) {
-    return expression_->involvedColumnNames();
-  } else {
-    return set<string>();
-  }
-}
-
 tl::expected<shared_ptr<AggregateResult>, string> MinMax::compute(const shared_ptr<TupleSet> &tupleSet) {
   // evaluate the expression to get input of aggregation
   const auto &expAggChunkedArray = evaluateExpr(tupleSet);
@@ -54,7 +41,7 @@ tl::expected<shared_ptr<arrow::Scalar>, string>
 MinMax::finalize(const vector<shared_ptr<AggregateResult>> &aggregateResults) {
   // build aggregate input array
   auto key = isMin_ ? MIN_RESULT_KEY : MAX_RESULT_KEY;
-  const auto expFinalizeInputArray = buildFinalizeInputArray(aggregateResults, key);
+  const auto expFinalizeInputArray = buildFinalizeInputArray(aggregateResults, key, returnType());
   if (!expFinalizeInputArray) {
     return tl::make_unexpected(expFinalizeInputArray.error());
   }

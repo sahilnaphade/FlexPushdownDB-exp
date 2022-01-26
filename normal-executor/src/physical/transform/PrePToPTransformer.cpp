@@ -10,6 +10,8 @@
 #include <normal/executor/physical/aggregate/function/Sum.h>
 #include <normal/executor/physical/aggregate/function/Count.h>
 #include <normal/executor/physical/aggregate/function/MinMax.h>
+#include <normal/executor/physical/aggregate/function/Avg.h>
+#include <normal/executor/physical/aggregate/function/AvgReduce.h>
 #include <normal/executor/physical/group/GroupPOp.h>
 #include <normal/executor/physical/project/ProjectPOp.h>
 #include <normal/executor/physical/filter/FilterPOp.h>
@@ -188,21 +190,37 @@ PrePToPTransformer::transformAggregate(const shared_ptr<AggregatePrePOp> &aggreg
   const auto &producerTransRes = producersTransRes[0];
   auto upConnPOps = producerTransRes.first;
   auto allPOps = producerTransRes.second;
+  bool isParallel = upConnPOps.size() > 1;
 
   vector<shared_ptr<PhysicalOp>> selfPOps, selfConnUpPOps, selfConnDownPOps;
   vector<string> projectColumnNames{aggregatePrePOp->getProjectColumnNames().begin(),
                                     aggregatePrePOp->getProjectColumnNames().end()};
-  vector<string> reducePOpUsedColumnNames{aggregatePrePOp->getAggOutputColumnNames().begin(),
-                                          aggregatePrePOp->getAggOutputColumnNames().end()};
-  const auto &parallelAggProjectColumnNames = upConnPOps.size() > 1 ? reducePOpUsedColumnNames : projectColumnNames;
+  vector<string> parallelAggProjectColumnNames;
+  if (isParallel) {
+    for (uint i = 0; i < aggregatePrePOp->getFunctions().size(); ++i) {
+      const auto prePFunction = aggregatePrePOp->getFunctions()[i];
+      const auto aggOutputColumnName = aggregatePrePOp->getAggOutputColumnNames()[i];
+      if (prePFunction->getType() == AggregatePrePFunctionType::AVG) {
+        parallelAggProjectColumnNames.emplace_back(AggregatePrePFunction::AVG_PARALLEL_SUM_COLUMN_PREFIX + aggOutputColumnName);
+        parallelAggProjectColumnNames.emplace_back(AggregatePrePFunction::AVG_PARALLEL_COUNT_COLUMN_PREFIX + aggOutputColumnName);
+      } else {
+        parallelAggProjectColumnNames.emplace_back(aggOutputColumnName);
+      }
+    }
+  } else {
+    parallelAggProjectColumnNames = projectColumnNames;
+  }
 
   for (size_t i = 0; i < upConnPOps.size(); ++i) {
     // aggregate functions, better to let each operator has its own copy of aggregate functions
     vector<shared_ptr<aggregate::AggregateFunction>> aggFunctions;
     for (size_t j = 0; j < aggregatePrePOp->getFunctions().size(); ++j) {
-      const auto &prepFunction = aggregatePrePOp->getFunctions()[j];
-      const auto &alias = aggregatePrePOp->getAggOutputColumnNames()[j];
-      aggFunctions.emplace_back(transformAggFunction(alias, prepFunction));
+      const auto &prePFunction = aggregatePrePOp->getFunctions()[j];
+      const auto &aggOutputColumnName = aggregatePrePOp->getAggOutputColumnNames()[j];
+      const auto &transAggFunctions = transformAggFunction(aggOutputColumnName,
+                                                           prePFunction,
+                                                           upConnPOps.size() > 1);
+      aggFunctions.insert(aggFunctions.end(), transAggFunctions.begin(), transAggFunctions.end());
     }
 
     selfPOps.emplace_back(make_shared<aggregate::AggregatePOp>(
@@ -220,9 +238,10 @@ PrePToPTransformer::transformAggregate(const shared_ptr<AggregatePrePOp> &aggreg
     // aggregate reduce functions
     vector<shared_ptr<aggregate::AggregateFunction>> aggReduceFunctions;
     for (size_t j = 0; j < aggregatePrePOp->getFunctions().size(); ++j) {
-      const auto &prepFunction = aggregatePrePOp->getFunctions()[j];
-      const auto &alias = aggregatePrePOp->getAggOutputColumnNames()[j];
-      aggReduceFunctions.emplace_back(transformAggReduceFunction(alias, prepFunction));
+      const auto &prePFunction = aggregatePrePOp->getFunctions()[j];
+      const auto &aggOutputColumnName = aggregatePrePOp->getAggOutputColumnNames()[j];
+      aggReduceFunctions.emplace_back(transformAggReduceFunction(aggOutputColumnName,
+                                                                 prePFunction));
     }
 
     shared_ptr<PhysicalOp> aggReducePOp = make_shared<aggregate::AggregatePOp>(
@@ -261,24 +280,40 @@ PrePToPTransformer::transformGroup(const shared_ptr<GroupPrePOp> &groupPrePOp) {
   const auto &producerTransRes = producersTransRes[0];
   auto upConnPOps = producerTransRes.first;
   auto allPOps = producerTransRes.second;
+  bool isParallel = upConnPOps.size() > 1;
 
   vector<shared_ptr<PhysicalOp>> selfPOps, selfConnUpPOps, selfConnDownPOps;
   vector<string> projectColumnNames{groupPrePOp->getProjectColumnNames().begin(),
                                     groupPrePOp->getProjectColumnNames().end()};
-  vector<string> reducePOpUsedColumnNames{groupPrePOp->getGroupColumnNames().begin(),
-                                          groupPrePOp->getGroupColumnNames().end()};
-  reducePOpUsedColumnNames.insert(reducePOpUsedColumnNames.end(),
-                                  groupPrePOp->getAggOutputColumnNames().begin(),
-                                  groupPrePOp->getAggOutputColumnNames().end());
-  const auto &parallelGroupProjectColumnNames = upConnPOps.size() > 1 ? reducePOpUsedColumnNames : projectColumnNames;
+  vector<string> parallelGroupProjectColumnNames;
+  if (isParallel) {
+    parallelGroupProjectColumnNames.insert(parallelGroupProjectColumnNames.end(),
+                                           groupPrePOp->getGroupColumnNames().begin(),
+                                           groupPrePOp->getGroupColumnNames().end());
+    for (uint i = 0; i < groupPrePOp->getFunctions().size(); ++i) {
+      const auto prePFunction = groupPrePOp->getFunctions()[i];
+      const auto aggOutputColumnName = groupPrePOp->getAggOutputColumnNames()[i];
+      if (prePFunction->getType() == AggregatePrePFunctionType::AVG) {
+        parallelGroupProjectColumnNames.emplace_back(AggregatePrePFunction::AVG_PARALLEL_SUM_COLUMN_PREFIX + aggOutputColumnName);
+        parallelGroupProjectColumnNames.emplace_back(AggregatePrePFunction::AVG_PARALLEL_COUNT_COLUMN_PREFIX + aggOutputColumnName);
+      } else {
+        parallelGroupProjectColumnNames.emplace_back(aggOutputColumnName);
+      }
+    }
+  } else {
+    parallelGroupProjectColumnNames = projectColumnNames;
+  }
 
   for (size_t i = 0; i < upConnPOps.size(); ++i) {
     // aggregate functions, better to let each operator has its own copy of aggregate functions
     vector<shared_ptr<aggregate::AggregateFunction>> aggFunctions;
     for (size_t j = 0; j < groupPrePOp->getFunctions().size(); ++j) {
-      const auto &prepFunction = groupPrePOp->getFunctions()[j];
-      const auto &alias = groupPrePOp->getAggOutputColumnNames()[j];
-      aggFunctions.emplace_back(transformAggFunction(alias, prepFunction));
+      const auto &prePFunction = groupPrePOp->getFunctions()[j];
+      const auto &aggOutputColumnName = groupPrePOp->getAggOutputColumnNames()[j];
+      const auto &transAggFunctions = transformAggFunction(aggOutputColumnName,
+                                                           prePFunction,
+                                                           isParallel);
+      aggFunctions.insert(aggFunctions.end(), transAggFunctions.begin(), transAggFunctions.end());
     }
 
     selfPOps.emplace_back(make_shared<group::GroupPOp>(fmt::format("Group[{}]-{}", prePOpId, i),
@@ -296,9 +331,10 @@ PrePToPTransformer::transformGroup(const shared_ptr<GroupPrePOp> &groupPrePOp) {
     // aggregate reduce functions
     vector<shared_ptr<aggregate::AggregateFunction>> aggReduceFunctions;
     for (size_t j = 0; j < groupPrePOp->getFunctions().size(); ++j) {
-      const auto &prepFunction = groupPrePOp->getFunctions()[j];
-      const auto &alias = groupPrePOp->getAggOutputColumnNames()[j];
-      aggReduceFunctions.emplace_back(transformAggReduceFunction(alias, prepFunction));
+      const auto &prePFunction = groupPrePOp->getFunctions()[j];
+      const auto &aggOutputColumnName = groupPrePOp->getAggOutputColumnNames()[j];
+      aggReduceFunctions.emplace_back(transformAggReduceFunction(aggOutputColumnName,
+                                                                 prePFunction));
     }
 
     shared_ptr<PhysicalOp> groupReducePOp = make_shared<group::GroupPOp>(fmt::format("Group[{}]-reduce", prePOpId),
@@ -556,23 +592,36 @@ PrePToPTransformer::transformFilterableScan(const shared_ptr<FilterableScanPrePO
   return s3PTransformer->transformFilterableScan(filterableScanPrePOp);
 }
 
-shared_ptr<aggregate::AggregateFunction>
+vector<shared_ptr<aggregate::AggregateFunction>>
 PrePToPTransformer::transformAggFunction(const string &outputColumnName,
-                                         const shared_ptr<AggregatePrePFunction> &prePFunction) {
+                                         const shared_ptr<AggregatePrePFunction> &prePFunction,
+                                         bool isParallel) {
   switch (prePFunction->getType()) {
     case plan::prephysical::SUM: {
-      return make_shared<aggregate::Sum>(outputColumnName, prePFunction->getExpression());
+      return {make_shared<aggregate::Sum>(outputColumnName, prePFunction->getExpression())};
     }
     case plan::prephysical::COUNT: {
-      return make_shared<aggregate::Count>(outputColumnName, prePFunction->getExpression());
+      return {make_shared<aggregate::Count>(outputColumnName, prePFunction->getExpression())};
     }
     case plan::prephysical::MIN: {
-      return make_shared<aggregate::MinMax>(true, outputColumnName, prePFunction->getExpression());
+      return {make_shared<aggregate::MinMax>(true, outputColumnName, prePFunction->getExpression())};
     }
     case plan::prephysical::MAX: {
-      return make_shared<aggregate::MinMax>(false, outputColumnName, prePFunction->getExpression());
+      return {make_shared<aggregate::MinMax>(false, outputColumnName, prePFunction->getExpression())};
     }
-    case plan::prephysical::AVG:
+    case plan::prephysical::AVG: {
+      if (isParallel) {
+        auto sumFunc = make_shared<aggregate::Sum>(
+                AggregatePrePFunction::AVG_PARALLEL_SUM_COLUMN_PREFIX + outputColumnName,
+                prePFunction->getExpression());
+        auto countFunc = make_shared<aggregate::Count>(
+                AggregatePrePFunction::AVG_PARALLEL_COUNT_COLUMN_PREFIX + outputColumnName,
+                prePFunction->getExpression());
+        return {sumFunc, countFunc};
+      } else {
+        return {make_shared<aggregate::Avg>(outputColumnName, prePFunction->getExpression())};
+      }
+    }
     default: {
       throw runtime_error(fmt::format("Unsupported aggregate function type: {}", prePFunction->getTypeString()));
     }
@@ -585,17 +634,24 @@ PrePToPTransformer::transformAggReduceFunction(const string &outputColumnName,
   switch (prePFunction->getType()) {
     case plan::prephysical::SUM:
     case plan::prephysical::COUNT: {
-      return make_shared<aggregate::Sum>(outputColumnName, normal::expression::gandiva::col(outputColumnName));
+      return make_shared<aggregate::Sum>(outputColumnName,
+                                         normal::expression::gandiva::col(outputColumnName));
     }
     case plan::prephysical::MIN: {
-      return make_shared<aggregate::MinMax>(true, outputColumnName, normal::expression::gandiva::col(outputColumnName));
+      return make_shared<aggregate::MinMax>(true,
+                                            outputColumnName,
+                                            normal::expression::gandiva::col(outputColumnName));
     }
     case plan::prephysical::MAX: {
-      return make_shared<aggregate::MinMax>(false, outputColumnName, normal::expression::gandiva::col(outputColumnName));
+      return make_shared<aggregate::MinMax>(false,
+                                            outputColumnName,
+                                            normal::expression::gandiva::col(outputColumnName));
     }
-    case plan::prephysical::AVG:
+    case plan::prephysical::AVG: {
+      return make_shared<aggregate::AvgReduce>(outputColumnName,nullptr);
+    }
     default: {
-      throw runtime_error(fmt::format("Unsupported aggregate function type: {}", prePFunction->getTypeString()));
+      throw runtime_error(fmt::format("Unsupported aggregate function type for parallel execution: {}", prePFunction->getTypeString()));
     }
   }
 }

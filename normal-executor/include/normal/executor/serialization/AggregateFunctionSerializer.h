@@ -9,6 +9,8 @@
 #include <normal/executor/physical/aggregate/function/Count.h>
 #include <normal/executor/physical/aggregate/function/MinMax.h>
 #include <normal/executor/physical/aggregate/function/Sum.h>
+#include <normal/executor/physical/aggregate/function/Avg.h>
+#include <normal/executor/physical/aggregate/function/AvgReduce.h>
 #include <normal/caf/CAFUtil.h>
 
 using namespace normal::executor::physical::aggregate;
@@ -19,6 +21,8 @@ CAF_ADD_TYPE_ID(AggregateFunction, (AggregateFunctionPtr))
 CAF_ADD_TYPE_ID(AggregateFunction, (Count))
 CAF_ADD_TYPE_ID(AggregateFunction, (MinMax))
 CAF_ADD_TYPE_ID(AggregateFunction, (Sum))
+CAF_ADD_TYPE_ID(AggregateFunction, (Avg))
+CAF_ADD_TYPE_ID(AggregateFunction, (AvgReduce))
 CAF_END_TYPE_ID_BLOCK(AggregateFunction)
 
 // Variant-based approach on AggregateFunctionPtr
@@ -33,7 +37,9 @@ struct variant_inspector_traits<AggregateFunctionPtr> {
           type_id_v<none_t>,
           type_id_v<Count>,
           type_id_v<MinMax>,
-          type_id_v<Sum>
+          type_id_v<Sum>,
+          type_id_v<Avg>,
+          type_id_v<AvgReduce>
   };
 
   // Returns which type in allowed_types corresponds to x.
@@ -46,6 +52,10 @@ struct variant_inspector_traits<AggregateFunctionPtr> {
       return 2;
     else if (x->getType() == SUM)
       return 3;
+    else if (x->getType() == AVG)
+      return 4;
+    else if (x->getType() == AVG_REDUCE)
+      return 5;
     else return -1;
   }
 
@@ -59,6 +69,10 @@ struct variant_inspector_traits<AggregateFunctionPtr> {
         return f(dynamic_cast<MinMax &>(*x));
       case 3:
         return f(dynamic_cast<Sum &>(*x));
+      case 4:
+        return f(dynamic_cast<Avg &>(*x));
+      case 5:
+        return f(dynamic_cast<AvgReduce &>(*x));
       default: {
         none_t dummy;
         return f(dummy);
@@ -99,6 +113,16 @@ struct variant_inspector_traits<AggregateFunctionPtr> {
       }
       case type_id_v<Sum>: {
         auto tmp = Sum{};
+        continuation(tmp);
+        return true;
+      }
+      case type_id_v<Avg>: {
+        auto tmp = Avg{};
+        continuation(tmp);
+        return true;
+      }
+      case type_id_v<AvgReduce>: {
+        auto tmp = AvgReduce{};
         continuation(tmp);
         return true;
       }

@@ -19,7 +19,11 @@ namespace normal::plan::prephysical {
 class AggregatePrePFunction {
 
 public:
+  // column name for count(*)
   constexpr static const char *const COUNT_STAR_COLUMN = "COUNT_*";
+  // column names for sum and count result for parallel avg
+  constexpr static const char *const AVG_PARALLEL_SUM_COLUMN_PREFIX = "avg_parallel_sum-";
+  constexpr static const char *const AVG_PARALLEL_COUNT_COLUMN_PREFIX = "avg_parallel_count-";
 
   AggregatePrePFunction(AggregatePrePFunctionType type,
                         const shared_ptr<expression::gandiva::Expression> &expression);
