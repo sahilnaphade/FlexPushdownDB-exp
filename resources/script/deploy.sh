@@ -43,13 +43,13 @@ mkdir -p "$deploy_dir"
 # executables
 exe_dir="$build_dir"/"$exe_dir_name"
 exe_deploy_dir="$deploy_dir"/"$exe_dir_name"
-cp -r "$exe_dir" "$(dirname "${exe_deploy_dir}")"
+cp -r "$exe_dir"/ "$exe_deploy_dir"/
 
 # calcite
 calcite_dir="$root_dir"/"$calcite_dir_name"
 calcite_deploy_dir="$deploy_dir"/"$calcite_dir_name"
 mkdir -p "$(dirname "${calcite_deploy_dir}")"
-cp -r "$calcite_dir" "$(dirname "${calcite_deploy_dir}")"
+cp -r "$calcite_dir"/ "$calcite_deploy_dir"/
 
 # use exec.conf.ec2 for calcite
 calcite_deploy_config_dir="$calcite_deploy_dir""/main/resources/config"
@@ -59,7 +59,7 @@ cp "$calcite_deploy_config_dir""/exec.conf.ec2" "$calcite_deploy_config_dir""/ex
 # resources
 resource_deploy_dir="$deploy_dir""/resources/"
 mkdir -p "$(dirname "${resource_deploy_dir}")"
-cp -r "$resource_dir" "$(dirname "${resource_deploy_dir}")"
+cp -r "$resource_dir"/ "$resource_deploy_dir"/
 
 # libs
 lib_names=("aws-cpp-sdk_ep" "caf_ep" "graphviz_ep")
@@ -72,7 +72,7 @@ do
   lib_dir="$lib_root_dir"/"$lib_name"/"$lib_suffix"
   lib_deploy_dir="$lib_deploy_root_dir"/"$lib_name"/"$lib_suffix"
   mkdir -p "$(dirname "${lib_deploy_dir}")"
-  cp -r "$lib_dir" "$(dirname "${lib_deploy_dir}")"
+  cp -r "$lib_dir"/ "$lib_deploy_dir"/
 done
 
 echo -e "done\n"
@@ -85,7 +85,7 @@ do
   echo -n "  Sending to ""$slave_ip""... "
   SSHKey=$(ssh-keyscan -H "$slave_ip" 2> /dev/null)
   echo "$SSHKey" >> ~/.ssh/known_hosts
-  scp -rqi "$pem_path" "$deploy_dir" ubuntu@"$slave_ip":"$(dirname "${deploy_dir}")"
+  scp -rqi "$pem_path" "$deploy_dir"/ ubuntu@"$slave_ip":"$deploy_dir"/
   echo "  done"
 done
 
