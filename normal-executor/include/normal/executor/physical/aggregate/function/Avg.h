@@ -5,11 +5,11 @@
 #ifndef NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_AGGREGATE_FUNCTION_AVG_H
 #define NORMAL_NORMAL_EXECUTOR_INCLUDE_NORMAL_EXECUTOR_PHYSICAL_AGGREGATE_FUNCTION_AVG_H
 
-#include <normal/executor/physical/aggregate/function/AggregateFunction.h>
+#include <normal/executor/physical/aggregate/function/AvgBase.h>
 
 namespace normal::executor::physical::aggregate {
   
-class Avg : public AggregateFunction {
+class Avg : public AvgBase {
   
 public:
   Avg(const string &outputColumnName,
@@ -18,16 +18,7 @@ public:
   Avg(const Avg&) = default;
   Avg& operator=(const Avg&) = default;
 
-  shared_ptr<arrow::DataType> returnType() const override;
-
   tl::expected<shared_ptr<AggregateResult>, string> compute(const shared_ptr<TupleSet> &tupleSet) override;
-
-  tl::expected<shared_ptr<arrow::Scalar>, string>
-  finalize(const vector<shared_ptr<AggregateResult>> &aggregateResults) override;
-
-private:
-  constexpr static const char *const SUM_RESULT_KEY = "SUM";
-  constexpr static const char *const COUNT_RESULT_KEY = "COUNT";
 
 // caf inspect
 public:
