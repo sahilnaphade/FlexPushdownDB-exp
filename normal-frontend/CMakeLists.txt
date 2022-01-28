@@ -58,12 +58,3 @@ target_link_libraries(normal-frontend-test PRIVATE doctest::doctest)
 if (${APPLE})
   linkForMacExecutable(normal-frontend-test)
 endif()
-
-add_executable(custom_type4
-        src/custom_type4.cpp)
-target_link_libraries(custom_type4 PUBLIC normal-tuple)
-target_link_libraries(custom_type4 PUBLIC caf::libcaf_core_shared)
-target_link_libraries(custom_type4 PUBLIC caf::libcaf_io_shared)
-if (${APPLE})
-  linkForMacExecutable(custom_type4)
-endif()

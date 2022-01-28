@@ -3,7 +3,7 @@
 //
 
 #include <normal/frontend/Server.h>
-#include <signal.h>
+#include <csignal>
 
 using namespace normal::frontend;
 
@@ -24,10 +24,6 @@ int main() {
   server = std::make_shared<Server>();
   server->start();
 
-  // wait to stop
-  std::cout << "Press <Enter> to shutdown the server" << std::endl;
-  getchar();
-  server->stop();
-  server.reset();
-  return 0;
+  // make this a daemon, i.e. wait forever
+  std::promise<void>().get_future().wait();
 }

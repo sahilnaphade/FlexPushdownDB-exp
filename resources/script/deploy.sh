@@ -15,9 +15,10 @@ exe_dir_name="normal-frontend"
 calcite_dir_name="normal-calcite/java"
 pem_path="$HOME""/.aws/yifei-aws-wisc.pem"
 
-# get script path
+# get script path and import
 pushd "$(dirname "$0")" > /dev/null
 script_dir=$(pwd)
+source "$script_dir""/util.sh"
 
 # directories
 deploy_dir=$HOME/$deploy_dir_name
@@ -25,13 +26,13 @@ resource_dir="$(dirname "${script_dir}")"
 root_dir="$(dirname "${resource_dir}")"
 build_dir="${root_dir}"/"${build_dir_name}"
 
-# 1. local ip and slave ips
-local_ip="$(curl -s ifconfig.me)"
+# 1. master ip and slave ips
+master_ip="$(curl -s ifconfig.me)"
 
 cluster_ips_path="${resource_dir}""/config/cluster_ips"
 while IFS= read -r line || [[ -n "$line" ]];
 do
-  if [ "$line" != "$local_ip" ]; then
+  if [ "$line" != "$master_ip" ]; then
     slave_ips+=("$line")
   fi
 done < "$cluster_ips_path"
@@ -83,8 +84,7 @@ echo "Sending built files to cluster nodes..."
 for slave_ip in "${slave_ips[@]}"
 do
   echo -n "  Sending to ""$slave_ip""... "
-  SSHKey=$(ssh-keyscan -H "$slave_ip" 2> /dev/null)
-  echo "$SSHKey" >> ~/.ssh/known_hosts
+  check_or_add_to_known_hosts "$slave_ip"
   scp -rqi "$pem_path" "$deploy_dir"/ ubuntu@"$slave_ip":"$deploy_dir"/
   echo "  done"
 done
