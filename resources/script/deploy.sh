@@ -1,43 +1,11 @@
 # Script to spread built package to all cluster nodes
 # Note: set resources/config/cluster_ips first
 
-trap ctrl_c INT
-function ctrl_c() {
-  echo "*** Trapped CTRL-C, exit"
-  popd > /dev/null
-  exit 0
-}
+# import util
+util_path=$(dirname "$0")"/util.sh"
+source "$util_path"
 
-# parameters
-build_dir_name="build"
-deploy_dir_name="FPDB-build"
-exe_dir_name="normal-frontend"
-calcite_dir_name="normal-calcite/java"
-pem_path="$HOME""/.aws/yifei-aws-wisc.pem"
-
-# get script path and import
-pushd "$(dirname "$0")" > /dev/null
-script_dir=$(pwd)
-source "$script_dir""/util.sh"
-
-# directories
-deploy_dir=$HOME/$deploy_dir_name
-resource_dir="$(dirname "${script_dir}")"
-root_dir="$(dirname "${resource_dir}")"
-build_dir="${root_dir}"/"${build_dir_name}"
-
-# 1. master ip and slave ips
-master_ip="$(curl -s ifconfig.me)"
-
-cluster_ips_path="${resource_dir}""/config/cluster_ips"
-while IFS= read -r line || [[ -n "$line" ]];
-do
-  if [ "$line" != "$master_ip" ]; then
-    slave_ips+=("$line")
-  fi
-done < "$cluster_ips_path"
-
-# 2. organize executables, resources and required libraries
+# 1. organize executables, resources and required libraries
 echo "Copying built files..."
 mkdir -p "$deploy_dir"
 
@@ -78,7 +46,7 @@ done
 
 echo -e "done\n"
 
-# 3. deploy organized package for each node
+# 2. deploy organized package for each node
 echo "Sending built files to cluster nodes..."
 
 for slave_ip in "${slave_ips[@]}"
@@ -90,6 +58,3 @@ do
 done
 
 echo "done"
-
-# back to original directory
-popd > /dev/null

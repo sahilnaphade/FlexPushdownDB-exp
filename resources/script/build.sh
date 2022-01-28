@@ -1,27 +1,12 @@
 # script to build the system locally
 
-trap ctrl_c INT
-function ctrl_c() {
-  echo "*** Trapped CTRL-C, exit"
-  popd > /dev/null
-  exit 0
-}
+# import util
+util_path=$(dirname "$0")"/util.sh"
+source "$util_path"
 
-# parameters
-build_dir_name="build"
-clean=true
-build_parallel=8
-targets=("normal-frontend-server" "normal-frontend-test")
-
-# get script path
 pushd "$(dirname "$0")" > /dev/null
-script_dir=$(pwd)
 
 # make build directory
-resource_dir="$(dirname "${script_dir}")"
-root_dir="$(dirname "${resource_dir}")"
-build_dir="${root_dir}"/"${build_dir_name}"
-
 if [ "${clean}" = true ]; then
   rm -rf "${build_dir}"
 fi
@@ -51,5 +36,4 @@ do
   cmake --build . --target "${target}" -- -j "${build_parallel}"
 done
 
-# back to original directory
 popd > /dev/null
