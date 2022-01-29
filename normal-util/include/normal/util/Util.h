@@ -91,6 +91,7 @@ namespace normal::util {
   }
 
   bool isInteger(const string& str);
+  tl::expected<string, string> execCmd(const char *cmd);
   tl::expected<string, string> getLocalIp();
 }
 

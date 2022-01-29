@@ -7,8 +7,6 @@
 #include <filesystem>
 #include <fstream>
 #include <sstream>
-#include <arpa/inet.h>
-#include <ifaddrs.h>
 
 using namespace normal::util;
 
@@ -99,36 +97,20 @@ bool normal::util::isInteger(const string& str) {
   return true;
 }
 
+tl::expected<string, string> normal::util::execCmd(const char *cmd) {
+  char buffer[128];
+  string result;
+  FILE* pipe = popen(cmd, "r");
+  if (!pipe) {
+    return tl::make_unexpected("popen() failed!");
+  }
+  while (fgets(buffer, sizeof buffer, pipe) != nullptr) {
+    result += buffer;
+  }
+  pclose(pipe);
+  return result;
+}
+
 tl::expected<string, string> normal::util::getLocalIp() {
-  string ipv4Addr;
-  struct ifaddrs *ifAddrStruct = nullptr;
-  struct ifaddrs *ifa;
-  void *tmpAddrPtr;
-
-  getifaddrs(&ifAddrStruct);
-
-  for (ifa = ifAddrStruct; ifa != nullptr; ifa = ifa->ifa_next) {
-    if (!ifa->ifa_addr) {
-      continue;
-    }
-    if (ifa->ifa_addr->sa_family == AF_INET) { // check it is IPv4
-      // is a valid IP4 Address
-      tmpAddrPtr=&((struct sockaddr_in *)ifa->ifa_addr)->sin_addr;
-      char addressBuffer[INET_ADDRSTRLEN];
-      inet_ntop(AF_INET, tmpAddrPtr, addressBuffer, INET_ADDRSTRLEN);
-      if (strcmp(ifa->ifa_name, "lo0") == 0) {
-        // this is loopback address
-        continue;
-      }
-      ipv4Addr = string(addressBuffer);
-      break;
-    }
-  }
-  if (ifAddrStruct != nullptr) freeifaddrs(ifAddrStruct);
-
-  if (ipv4Addr.empty()) {
-    return tl::make_unexpected("Cannot find local IP address");
-  } else {
-    return ipv4Addr;
-  }
+  return execCmd("curl -s ifconfig.me");
 }
