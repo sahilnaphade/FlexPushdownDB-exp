@@ -12,7 +12,7 @@ ${lib_deploy_dir}/graphviz_ep/install/lib:${lib_deploy_dir}/graphviz_ep/install/
 # start server
 server_exe_name="normal-frontend-server"
 server_deploy_dir="$deploy_dir"/"$exe_dir_name"
-server_pid_path="$server_deploy_dir"/"$server_pid_name"
+server_pid_path="$temp_deploy_dir"/"$server_pid_name"
 
 pushd "$(dirname "$0")" > /dev/null
 cd "$server_deploy_dir"

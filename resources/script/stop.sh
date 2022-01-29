@@ -4,6 +4,13 @@
 util_path=$(dirname "$0")"/util.sh"
 source "$util_path"
 
+# stop calcite server on master
+calcite_pid_path="$temp_deploy_dir"/"$calcite_pid_name"
+if [ -e "$calcite_pid_path" ]; then
+	kill "$(cat "$calcite_pid_path")"
+	rm "$calcite_pid_path"
+fi
+
 # stop server on each slave node
 echo "Stopping server on cluster nodes..."
 

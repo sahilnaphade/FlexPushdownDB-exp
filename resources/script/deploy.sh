@@ -45,6 +45,9 @@ do
   cp -r "$lib_dir"/ "$lib_deploy_dir"/
 done
 
+# create a temp directory
+mkdir -p "$temp_deploy_dir"
+
 echo -e "done\n"
 
 # 2. deploy organized package for each node

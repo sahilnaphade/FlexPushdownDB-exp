@@ -1,14 +1,16 @@
 
 # parameters
-export clean=true
+export clean=false
 export build_parallel=8
 export targets=("normal-frontend-server" "normal-frontend-test")
 export build_dir_name="build"
 export deploy_dir_name="FPDB-build"
 export exe_dir_name="normal-frontend"
 export calcite_dir_name="normal-calcite/java"
+export temp_dir_name="temp"
 export pem_path="$HOME""/.aws/yifei-aws-wisc.pem"
 export server_pid_name="FPDB-server.pid"
+export calcite_pid_name="calcite-server.pid"
 
 # get script path
 pushd "$(dirname "$0")" > /dev/null
@@ -20,7 +22,8 @@ resource_dir="$(dirname "${script_dir}")"
 root_dir="$(dirname "${resource_dir}")"
 build_dir="${root_dir}"/"${build_dir_name}"
 deploy_dir=$HOME/$deploy_dir_name
-export script_dir resource_dir root_dir build_dir deploy_dir
+temp_deploy_dir="$deploy_dir"/"$temp_dir_name"
+export script_dir resource_dir root_dir build_dir deploy_dir temp_deploy_dir
 
 # slave ips
 master_ip="$(curl -s ifconfig.me)"

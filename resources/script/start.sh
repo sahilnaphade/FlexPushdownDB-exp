@@ -4,6 +4,12 @@
 util_path=$(dirname "$0")"/util.sh"
 source "$util_path"
 
+# start calcite server on master
+calcite_jar_path="$deploy_dir"/"$calcite_dir_name""/target/flexpushdowndb.thrift.calcite-1.0-SNAPSHOT.jar"
+calcite_pid_path="$temp_deploy_dir"/"$calcite_pid_name"
+java -jar "$calcite_jar_path" &
+echo $! > "$calcite_pid_path"
+
 # start server on each slave node
 echo "Starting server on cluster nodes..."
 
