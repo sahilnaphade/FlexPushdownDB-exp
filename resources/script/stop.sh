@@ -11,7 +11,7 @@ for slave_ip in "${slave_ips[@]}"
 do
   echo -n "  Stopping ""$slave_ip""... "
   check_or_add_to_known_hosts "$slave_ip"
-  run_command "$pem_path" "$slave_ip" "$script_dir""/stop_node.sh"
+  run_command "$pem_path" "$slave_ip" "$deploy_dir""/resources/script/stop_node.sh"
   echo "  done"
 done
 

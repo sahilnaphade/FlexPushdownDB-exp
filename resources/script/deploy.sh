@@ -6,6 +6,7 @@ util_path=$(dirname "$0")"/util.sh"
 source "$util_path"
 
 # 1. organize executables, resources and required libraries
+rm -rf "$deploy_dir"
 echo "Copying built files..."
 mkdir -p "$deploy_dir"
 
@@ -53,6 +54,7 @@ for slave_ip in "${slave_ips[@]}"
 do
   echo -n "  Sending to ""$slave_ip""... "
   check_or_add_to_known_hosts "$slave_ip"
+  run_command "$pem_path" "$slave_ip" rm -rf "$deploy_dir"
   scp -rqi "$pem_path" "$deploy_dir"/ ubuntu@"$slave_ip":"$deploy_dir"/
   echo "  done"
 done

@@ -10,8 +10,12 @@ export LD_LIBRARY_PATH=${lib_deploy_dir}/aws-cpp-sdk_ep/install/lib:${lib_deploy
 ${lib_deploy_dir}/graphviz_ep/install/lib:${lib_deploy_dir}/graphviz_ep/install/lib/graphviz
 
 # start server
-target_name="normal-frontend-server"
-target_path="$deploy_dir"/"$exe_dir_name"/"$target_name"
-server_pid_path="$deploy_dir"/"$exe_dir_name"/"$server_pid_name"
-nohup "$target_path" >/dev/null &
+server_exe_name="normal-frontend-server"
+server_deploy_dir="$deploy_dir"/"$exe_dir_name"
+server_pid_path="$server_deploy_dir"/"$server_pid_name"
+
+pushd "$(dirname "$0")" > /dev/null
+cd "$server_deploy_dir"
+nohup "./""$server_exe_name" >/dev/null 2>&1 &
 echo $! > "$server_pid_path"
+popd > /dev/null

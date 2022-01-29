@@ -46,7 +46,6 @@ function check_or_add_to_known_hosts() {
   ip=$1
   SSHKey=$(ssh-keygen -F "$ip")
   if [ -z "$SSHKey" ]; then
-    echo "Key of IP ""$ip"" not found"
     SSHKey=$(ssh-keyscan -H "$ip" 2> /dev/null)
     echo "$SSHKey" >> ~/.ssh/known_hosts
   fi
