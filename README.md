@@ -6,12 +6,14 @@ A research cloud OLAP engine using hybrid caching and computation pushdown.
 
 [1] Yifei Yang, Matt Youill, Matthew Woicik, Yizhou Liu, Xiangyao Yu, Marco Serafini, Ashraf Aboulnaga, Michael Stonebraker, FlexPushdownDB: Hybrid Pushdown and Caching in a Cloud DBMS, VLDB 2021.
 
+
 ## Clone the Repo
 
 ```
 git clone https://github.com/cloud-olap/FlexPushdownDB-Dev.git
 cd FlexPushdownDB-Dev
 ```
+
 
 ## Set up the System
 
@@ -39,6 +41,17 @@ Compiler needed: LLVM-12 or later versions.
 - `temp_dir_name` name of the directory to store temp files after the system starts.
 - `pem_path` the pem file (AWS private key) used to log in created EC2 nodes.
 
+
+## Prepare Data and Metadata
+1. Organize data files as follows on one S3 bucket: 
+   1) Create a directory of which the absolute path denotes the schema name, e.g. data files under `s3://tpch-sf0.01/csv/` belong to schema `tpch-sf0.01/csv/`.
+   2) For each table `T` with a single partition, name the file as `T.tbl` for CSV format or `T.parquet` for Parquet format; for each table `T` with multiple partitions, create a directory `T_sharded/` and put partition files named as `T.tbl.0/T.parquet.0`, `T.tbl.1/T.parquet.1`... into it.
+2. Register data by creating metadata files under `resources/metadata/`. Create a directory named as the schema name, and organize metadata files as follows:
+   1) `schema.json` For each table, specify `name`, `format`(`delimiter` if CSV), `numPartitions`, `fields`.
+   2) `stats.json` For each table, specify `name`, `rowCount`, `apxColumnLength`(no need to be accurate, just an estimation, used by W-LFU).
+   3) `zoneMap.json` For each table, specify `name`, collected min_max values of each partition on some columns, leave it empty if not collected.
+   
+
 ## Run End-to-end Tests
 
 #### To run tests locally in a single node:
@@ -54,6 +67,7 @@ Compiler needed: LLVM-12 or later versions.
 4. `cd fpdb-main`.
 5. Run tests `./fpdb-main-test -ts=<test-suite> -tc=<test-case>`, available test suites are `ssb-sf1-single_node-no-parallel`, `tpch-sf0.01-single_node-no-parallel`, `tpch-sf0.01-single_node-parallel`, `tpch-sf0.01-distributed`.
 6. When finished, stop the system `~/FPDB-build/resources/script/stop.sh`.
+
 
 ## Configurations
 
