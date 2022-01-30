@@ -44,7 +44,7 @@ Compiler needed: LLVM-12 or later versions.
 
 ## Prepare Data and Metadata
 1. Organize data files as follows on one S3 bucket: 
-   1) Create a directory of which the absolute path denotes the schema name, e.g. data files under `s3://tpch-sf0.01/csv/` belong to schema `tpch-sf0.01/csv/`.
+   1) Under `resources/metadata/`, create a directory of which the absolute path denotes the schema name, e.g. data files under `s3://tpch-sf0.01/csv/` belong to schema `tpch-sf0.01/csv/`.
    2) For each table `T` with a single partition, name the file as `T.tbl` for CSV format or `T.parquet` for Parquet format; for each table `T` with multiple partitions, create a directory `T_sharded/` and put partition files named as `T.tbl.0/T.parquet.0`, `T.tbl.1/T.parquet.1`... into it.
 2. Register data by creating metadata files under `resources/metadata/`. Create a directory named as the schema name, and organize metadata files as follows:
    1) `schema.json` For each table, specify `name`, `format`(`delimiter` if CSV), `numPartitions`, `fields`.
