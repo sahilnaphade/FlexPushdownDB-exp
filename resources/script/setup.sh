@@ -1,16 +1,8 @@
 # main entry to setup the system on a cluster
 
-# parameters
-install_dependency=false
-
-# get script path
-pushd "$(dirname "$0")" > /dev/null
-script_dir=$(pwd)
-popd > /dev/null
-
-# directories
-resource_dir="$(dirname "${script_dir}")"
-root_dir="$(dirname "${resource_dir}")"
+# import util
+util_path=$(dirname "$0")"/util.sh"
+source "$util_path"
 
 # install dependencies
 if [ "$install_dependency" = true ]; then

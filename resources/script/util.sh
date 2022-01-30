@@ -1,5 +1,6 @@
 
 # parameters
+export install_dependency=false
 export clean=false
 export build_parallel=8
 export targets=("fpdb-main-server" "fpdb-main-test")
