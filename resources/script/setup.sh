@@ -24,7 +24,7 @@ if [ "$install_dependency" = true ]; then
 fi
 
 # build
-source "$script_dir""/build.sh"
+"$script_dir""/build.sh"
 
 # deploy
-source "$script_dir""/deploy.sh"
+"$script_dir""/deploy.sh"
