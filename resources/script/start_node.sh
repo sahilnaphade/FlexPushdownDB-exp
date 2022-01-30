@@ -10,7 +10,7 @@ export LD_LIBRARY_PATH=${lib_deploy_dir}/aws-cpp-sdk_ep/install/lib:${lib_deploy
 ${lib_deploy_dir}/graphviz_ep/install/lib:${lib_deploy_dir}/graphviz_ep/install/lib/graphviz
 
 # start server
-server_exe_name="normal-frontend-server"
+server_exe_name="fpdb-main-server"
 server_deploy_dir="$deploy_dir"/"$exe_dir_name"
 server_pid_path="$temp_deploy_dir"/"$server_pid_name"
 

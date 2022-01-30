@@ -269,19 +269,16 @@ Temporary Items
 
 !/tools/project/bin/
 
-# Ignore this data set, too big to check in to git
-/normal-ssb/data/ssb-sf1/
-
 # Local copy of keys etc
 /private/
 
 # project .idea
 /.idea/
 
-# normal-calcite .idea
-/normal-calcite/java/.idea/
+# fpdb-calcite .idea
+/fpdb-calcite/java/.idea/
 *.class
-/normal-calcite/cpp/gen-cpp/
-/normal-calcite/java/main/java/com/thrift/calciteserver/
-/normal-calcite/java/target/
-/normal-calcite/java/dependency-reduced-pom.xml
+/fpdb-calcite/cpp/gen-cpp/
+/fpdb-calcite/java/main/java/com/thrift/calciteserver/
+/fpdb-calcite/java/target/
+/fpdb-calcite/java/dependency-reduced-pom.xml

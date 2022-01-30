@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project("normal" VERSION "${PROJECT_VERSION}" LANGUAGES C CXX)
+project("fpdb" VERSION "${PROJECT_VERSION}" LANGUAGES C CXX)
 
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_CURRENT_LIST_DIR}/cmake")
 
@@ -91,19 +91,18 @@ include(External_nlohmannjson)
 # Modules
 #-----------------------------------------------------------------------------------------------------------------------
 
-add_subdirectory(normal-util)
-add_subdirectory(normal-tuple)
-add_subdirectory(normal-aws)
-add_subdirectory(normal-caf)
-add_subdirectory(normal-catalogue)
-add_subdirectory(normal-expression)
-add_subdirectory(normal-expression-gandiva)
-add_subdirectory(normal-calcite/cpp)
-add_subdirectory(normal-plan)
-add_subdirectory(normal-cache)
-add_subdirectory(normal-executor)
-add_subdirectory(normal-frontend)
-add_subdirectory(normal-ssb)
+add_subdirectory(fpdb-util)
+add_subdirectory(fpdb-caf)
+add_subdirectory(fpdb-tuple)
+add_subdirectory(fpdb-aws)
+add_subdirectory(fpdb-catalogue)
+add_subdirectory(fpdb-expression)
+add_subdirectory(fpdb-expression-gandiva)
+add_subdirectory(fpdb-calcite/cpp)
+add_subdirectory(fpdb-plan)
+add_subdirectory(fpdb-cache)
+add_subdirectory(fpdb-executor)
+add_subdirectory(fpdb-main)
 
 
 #-----------------------------------------------------------------------------------------------------------------------
