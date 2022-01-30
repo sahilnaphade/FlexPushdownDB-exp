@@ -1,16 +1,18 @@
 
-# parameters
+# configurable parameters
 export install_dependency=false
 export clean=false
 export build_parallel=8
-export targets=("fpdb-main-server" "fpdb-main-test")
 export build_dir_name="build"
 export deploy_dir_name="FPDB-build"
+export temp_dir_name="temp"
+export pem_path="$HOME""/.aws/yifei-aws-wisc.pem"
+
+# fixed parameters
+export targets=("fpdb-main-server" "fpdb-main-test")
 export exe_dir_name="fpdb-main"
 export calcite_jar_name="flexpushdowndb.thrift.calcite-1.0-SNAPSHOT.jar"
 export calcite_dir_name="fpdb-calcite/java"
-export temp_dir_name="temp"
-export pem_path="$HOME""/.aws/yifei-aws-wisc.pem"
 export server_pid_name="FPDB-server.pid"
 export calcite_pid_name="calcite-server.pid"
 
