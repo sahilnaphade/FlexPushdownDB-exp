@@ -70,7 +70,7 @@ Compiler needed: LLVM-12 or later versions.
 6. When finished, stop the system `~/FPDB-build/resources/script/stop.sh`.
 
 
-## Configurations
+## System Configurations
 
 #### Execution config (resources/config/exec.conf):
 - `S3_BUCKET` s3 bucket name where the data is in.
