@@ -56,7 +56,7 @@ Compiler needed: LLVM-12 or later versions.
 
 #### To run tests locally in a single node:
 1. Start the Calcite server `java -jar fpdb-calcite/java/target/flexpushdowndb.thrift.calcite-1.0-SNAPSHOT.jar &`.
-2. `cd fpdb-main`.
+2. `cd <build directory>/fpdb-main`.
 3. Run tests `./fpdb-main-test -ts=<test-suite> -tc=<test-case>`, available single-node test suites are `ssb-sf1-single_node-no-parallel`, `tpch-sf0.01-single_node-no-parallel`, `tpch-sf0.01-single_node-parallel`.
 4. When finished, stop the Calcite server.
 
