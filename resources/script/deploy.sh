@@ -16,15 +16,10 @@ exe_deploy_dir="$deploy_dir"/"$exe_dir_name"
 cp -r "$exe_dir"/ "$exe_deploy_dir"/
 
 # calcite
-calcite_dir="$root_dir"/"$calcite_dir_name"
-calcite_deploy_dir="$deploy_dir"/"$calcite_dir_name"
-mkdir -p "$(dirname "${calcite_deploy_dir}")"
-cp -r "$calcite_dir"/ "$calcite_deploy_dir"/
-
-# use exec.conf.ec2 for calcite
-calcite_deploy_config_dir="$calcite_deploy_dir""/main/resources/config"
-rm "$calcite_deploy_config_dir""/exec.conf"
-cp "$calcite_deploy_config_dir""/exec.conf.ec2" "$calcite_deploy_config_dir""/exec.conf"
+calcite_jar_path="$root_dir"/"$calcite_dir_name""/target/""$calcite_jar_name"
+calcite_deploy_jar_path="$deploy_dir"/"$calcite_dir_name""/target/""$calcite_jar_name"
+mkdir -p "$(dirname "${calcite_deploy_jar_path}")"
+cp -r "$calcite_jar_path" "$calcite_deploy_jar_path"
 
 # resources
 resource_deploy_dir="$deploy_dir""/resources/"
