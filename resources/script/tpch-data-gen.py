@@ -38,7 +38,10 @@ def format_data_for_table(table, column_names, num_partitions):
     partition_dir = table + "_sharded"
 
     # remove '|' at the end of each row
-    os.system('sed -i \'\' \'s/.$//\' {}'.format(table_file))
+    if platform.system() == "Darwin":
+        os.system('sed -i \'\' \'s/.$//\' {}'.format(table_file))
+    else:
+        os.system('sed -i \'s/.$//\' {}'.format(table_file))
 
     # split table file if it has multiple partitions
     if num_partitions > 1:
