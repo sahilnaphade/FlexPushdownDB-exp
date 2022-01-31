@@ -6,6 +6,7 @@
 import os
 import platform
 import math
+import threading
 
 # configurable parameters
 sf = 0.01
@@ -29,9 +30,12 @@ def get_num_digits_suffix(num_partitions):
     return int(math.ceil(math.log(num_partitions, 10)))
 
 
+def run_command(cmd):
+    os.system(cmd)
+
+
 def format_data_for_table(table, column_names, num_partitions):
     global split_func, data_dir
-    print("Formatting " + table + "... ", end='')
 
     table_file = table + ".tbl"
     partition_file_prefix = table_file + "."
@@ -58,14 +62,21 @@ def format_data_for_table(table, column_names, num_partitions):
                                                    partition_file_prefix))
 
         # remove leading 0s in the suffix of partitions and add column names
+        threads = []
         for i in range(num_partitions):
             old_name = partition_file_prefix + str(i).zfill(num_digits_suffix)
             new_name = partition_file_prefix + str(i)
             os.system('mv {} {} 2>/dev/null'.format(old_name, new_name))
+
             if platform.system() == "Darwin":
-                os.system('sed -i \'\' \'1s/^/{}\\\'$\'\\n/\' {}'.format(column_names, new_name))
+                cmd_add_column_names = 'sed -i \'\' \'1s/^/{}\\\'$\'\\n/\' {}'.format(column_names, new_name)
             else:
-                os.system('sed -i \'1i {}\' {}'.format(column_names, new_name))
+                cmd_add_column_names = 'sed -i \'1i {}\' {}'.format(column_names, new_name)
+            t = threading.Thread(target=run_command, args=(cmd_add_column_names,))
+            t.start()
+            threads.append(t)
+        for t in threads:
+            t.join()
 
         # move partitions into the directory
         os.system('mkdir {}'.format(partition_dir))
@@ -83,8 +94,6 @@ def format_data_for_table(table, column_names, num_partitions):
 
         # move data into data_dir
         os.system('mv {} {}'.format(table_file, data_dir))
-
-    print('done')
 
 
 # fixed parameters
@@ -119,7 +128,9 @@ print("Tables generated.")
 
 # format for each table
 for table in tables:
+    print("Formatting " + table + "... ", end='', flush=True)
     format_data_for_table(table, column_names_dict[table], num_partitions_dict[table])
+    print('done')
 print("Tables formatted.")
 
 os.system('rm -f *.tbl')
