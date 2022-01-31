@@ -59,7 +59,10 @@ def format_data_for_table(table, column_names, num_partitions):
             old_name = partition_file_prefix + str(i).zfill(num_digits_suffix)
             new_name = partition_file_prefix + str(i)
             os.system('mv {} {}'.format(old_name, new_name))
-            os.system('sed -i \'\' \'1s/^/{}\\\'$\'\\n/\' {}'.format(column_names, new_name))
+            if platform.system() == "Darwin":
+                os.system('sed -i \'\' \'1s/^/{}\\\'$\'\\n/\' {}'.format(column_names, new_name))
+            else:
+                os.system('sed -i \'1i {}\' {}'.format(column_names, new_name))
 
         # move partitions into the directory
         os.system('mkdir {}'.format(partition_dir))
@@ -70,7 +73,10 @@ def format_data_for_table(table, column_names, num_partitions):
 
     else:
         # add column names
-        os.system('sed -i \'\' \'1s/^/{}\\\'$\'\\n/\' {}'.format(column_names, table_file))
+        if platform.system() == "Darwin":
+            os.system('sed -i \'\' \'1s/^/{}\\\'$\'\\n/\' {}'.format(column_names, table_file))
+        else:
+            os.system('sed -i \'1i {}\' {}'.format(column_names, table_file))
 
         # move data into data_dir
         os.system('mv {} {}'.format(table_file, data_dir))
