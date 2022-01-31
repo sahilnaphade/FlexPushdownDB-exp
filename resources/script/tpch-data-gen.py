@@ -61,7 +61,7 @@ def format_data_for_table(table, column_names, num_partitions):
         for i in range(num_partitions):
             old_name = partition_file_prefix + str(i).zfill(num_digits_suffix)
             new_name = partition_file_prefix + str(i)
-            os.system('mv {} {}'.format(old_name, new_name))
+            os.system('mv {} {} 2>/dev/null'.format(old_name, new_name))
             if platform.system() == "Darwin":
                 os.system('sed -i \'\' \'1s/^/{}\\\'$\'\\n/\' {}'.format(column_names, new_name))
             else:
