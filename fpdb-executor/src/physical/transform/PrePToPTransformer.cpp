@@ -130,7 +130,7 @@ PrePToPTransformer::transformSort(const shared_ptr<SortPrePOp> &sortPrePOp) {
 
   shared_ptr<PhysicalOp> sortPOp = make_shared<sort::SortPOp>(fmt::format("Sort[{}]", prePOpId),
                                                               projectColumnNames,
-                                                              0,
+                                                              1,
                                                               sortPrePOp->getSortKeys());
   allPOps.emplace_back(sortPOp);
 
@@ -163,7 +163,7 @@ PrePToPTransformer::transformLimitSort(const shared_ptr<LimitSortPrePOp> &limitS
   shared_ptr<PhysicalOp> limitSortPOp = make_shared<limitsort::LimitSortPOp>(
           fmt::format("LimitSort[{}]", prePOpId),
           projectColumnNames,
-          0,
+          1,
           limitSortPrePOp->getK(),
           limitSortPrePOp->getSortKeys());
   allPOps.emplace_back(limitSortPOp);
@@ -247,7 +247,7 @@ PrePToPTransformer::transformAggregate(const shared_ptr<AggregatePrePOp> &aggreg
     shared_ptr<PhysicalOp> aggReducePOp = make_shared<aggregate::AggregatePOp>(
             fmt::format("Aggregate[{}]-Reduce", prePOpId),
             projectColumnNames,
-            0,
+            1,
             aggReduceFunctions);
     connectManyToOne(selfPOps, aggReducePOp);
     selfConnUpPOps = selfPOps;
@@ -339,7 +339,7 @@ PrePToPTransformer::transformGroup(const shared_ptr<GroupPrePOp> &groupPrePOp) {
 
     shared_ptr<PhysicalOp> groupReducePOp = make_shared<group::GroupPOp>(fmt::format("Group[{}]-reduce", prePOpId),
                                                                          projectColumnNames,
-                                                                         0,
+                                                                         1,
                                                                          groupPrePOp->getGroupColumnNames(),
                                                                          aggReduceFunctions);
     connectManyToOne(selfPOps, groupReducePOp);
