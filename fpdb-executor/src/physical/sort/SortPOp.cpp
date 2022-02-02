@@ -88,11 +88,16 @@ shared_ptr<TupleSet> SortPOp::sort() {
   // Make sortOptions if not yet
   makeArrowSortOptions();
 
-  // Compute sort indices
-  const auto table = buffer_.value()->table();
+  // Check input buffer, arrow api will throw error if table has no rows, so we need a check
+  const auto table = (*buffer_)->table();
   if (!arrowSortOptions_.has_value()) {
     ctx()->notifyError("Arrow SortOptions not set yet");
   }
+  if (table->num_rows() == 0) {
+    return *buffer_;
+  }
+
+  // Compute sort indices
   const auto &expSortIndices = arrow::compute::SortIndices(table, *arrowSortOptions_);
   if (!expSortIndices.ok()) {
     ctx()->notifyError(expSortIndices.status().message());
