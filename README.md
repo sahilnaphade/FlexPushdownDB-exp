@@ -95,3 +95,9 @@ Compiler needed: LLVM-12 or later versions.
 - `SERVER_PORT` port for the Calcite server, should be kept same as cpp side.
 - `RESOURCE_PATH` absolute path of `resources/` used for metadata fetching.
 - `exec.conf.ec2` is a fixed config for EC2 deployment and does not need to be changed.
+
+
+## To Do (backlog, not urgent)
+- Update the stale Parquet reader for scan operators.
+- Update the stale FileScan operator to support querying local files.
+- Update the stale BloomJoin and incorporate it into the physical query plan.
