@@ -156,7 +156,7 @@ void TestUtil::executeQueryFile(const string &queryFileName) {
                                                             awsClient_,
                                                             mode_,
                                                             parallelDegree_,
-                                                            nodes_.size() + 1);
+                                                            nodes_.size());
   const auto &physicalPlan = prePToPTransformer->transform();
 
   // execute
