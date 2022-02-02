@@ -62,14 +62,20 @@ vector<string> fpdb::util::readRemoteIps() {
     throw runtime_error(expLocalIp.error());
   }
   const auto &localIp = *expLocalIp;
+
+  // read cluster ips
   string clusterIpFilePath = filesystem::current_path()
           .parent_path()
           .append("resources/config/cluster_ips")
           .string();
   auto clusterIps = readFileByLine(clusterIpFilePath);
-  set<string> clusterIpSet(clusterIps.begin(), clusterIps.end());
-  clusterIpSet.erase(localIp);
-  return vector<string>(clusterIpSet.begin(), clusterIpSet.end());
+
+  // remove local ip
+  auto localIpIt = std::find(clusterIps.begin(), clusterIps.end(), localIp);
+  if (localIpIt != clusterIps.end()) {
+    clusterIps.erase(localIpIt);
+  }
+  return clusterIps;
 }
 
 bool fpdb::util::parseBool(const string& stringToParse) {

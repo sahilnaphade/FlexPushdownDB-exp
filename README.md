@@ -27,8 +27,8 @@ Compiler needed: LLVM-12 or later versions.
 
 #### To set up the system in an EC2 cluster:
 
-1. Create a cluster of EC2 nodes.
-2. Put public IP of each node into `resources/config/cluster_ips`. Each line is one IP.
+1. Create a cluster of EC2 nodes, within which one is the coordinator, the others are executors. The coordinator is not necessarily as powerful as the executor.
+2. Log in the coordinator. Put public IP of all nodes (including the coordinator) into `resources/config/cluster_ips`. Each line is one IP.
 3. Set up the system `./resources/script/setup.sh`. If all required dependencies are already installed, the system can also be set up by `./resources/script/build.sh`, `./resources/script/deploy.sh`.
 
 #### Configurable parameters in `resources/script/util.sh` used when setting up the system:
