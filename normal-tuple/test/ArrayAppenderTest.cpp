@@ -20,7 +20,7 @@ TEST_CASE ("array-appender-test-append" * doctest::skip(false)) {
   auto appender = ArrayAppenderBuilder::make(::arrow::utf8(), 3).value();
 
   for (int i = 0; i < sourceArray->length(); ++i) {
-		CHECK(appender->safeAppendValue(sourceArray, i));
+		CHECK(appender->appendValue(sourceArray, i));
   }
 
   auto destArray = appender->finalize();
@@ -39,7 +39,7 @@ TEST_CASE ("array-appender-test-append-empty" * doctest::skip(false)) {
   auto appender = ArrayAppenderBuilder::make(::arrow::utf8(), 3).value();
 
   for (int i = 0; i < sourceArray->length(); ++i) {
-		CHECK(appender->safeAppendValue(sourceArray, i));
+		CHECK(appender->appendValue(sourceArray, i));
   }
 
   auto destArray = appender->finalize();
@@ -57,7 +57,7 @@ TEST_CASE ("array-appender-test-append-bad-array" * doctest::skip(false)) {
   auto appender = ArrayAppenderBuilder::make(::arrow::utf8(), 3).value();
 
   // Should return error
-  auto result = appender->safeAppendValue(sourceArray, 0);
+  auto result = appender->appendValue(sourceArray, 0);
 	  CHECK_FALSE_MESSAGE(result, "Safe append succeeded when should have failed");
 }
 
@@ -69,7 +69,7 @@ TEST_CASE ("array-appender-test-append-bad-index" * doctest::skip(false)) {
   auto appender = ArrayAppenderBuilder::make(::arrow::utf8(), 3).value();
 
   // Should return error
-  auto result = appender->safeAppendValue(sourceArray, sourceArray->length() + 1);
+  auto result = appender->appendValue(sourceArray, sourceArray->length() + 1);
 	  CHECK_FALSE_MESSAGE(result, "Safe append succeeded when should have failed");
 }
 

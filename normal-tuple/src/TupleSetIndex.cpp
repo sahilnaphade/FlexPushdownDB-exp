@@ -185,7 +185,7 @@ tl::expected<void, string> TupleSetIndex::validate() {
 
       auto indexes = find(tupleKey);
       bool found = false;
-      for(long long &index: indexes){
+      for(long long index: indexes){
         SPDLOG_DEBUG("  Index for tupleKey '{}' points to row {}", tupleKey->toString(), index);
         if(index == tableRow) {
           SPDLOG_DEBUG("  FOUND!");

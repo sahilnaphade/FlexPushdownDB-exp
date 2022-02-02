@@ -23,7 +23,7 @@ TEST_CASE ("array-appender-benchmark-append-unsafe" * doctest::skip(false)) {
 	  getCurrentTestName(), [&] {
 		auto appender = ArrayAppenderBuilder::make(::arrow::utf8(), 0).value();
 		for (int i = 0; i < sourceArray->length(); ++i) {
-		  auto result = appender->safeAppendValue(sourceArray, i);
+		  auto result = appender->appendValue(sourceArray, i);
 		  if (!result) {
 			throw std::runtime_error(result.error());
 		  }

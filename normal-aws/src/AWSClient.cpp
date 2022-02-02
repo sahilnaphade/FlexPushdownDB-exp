@@ -5,6 +5,8 @@
 #include <normal/aws/AWSClient.h>
 #include <spdlog/spdlog.h>
 
+#include "normal/aws/ProfileAWSCredentialsProviderChain.h"
+
 namespace normal::aws {
 
 AWSClient::AWSClient(const shared_ptr<AWSConfig> &awsConfig) :
@@ -28,6 +30,8 @@ std::shared_ptr<Aws::S3::S3Client> AWSClient::makeS3Client() {
 
   Aws::Client::ClientConfiguration config;
   config.scheme = Aws::Http::Scheme::HTTP;
+  config.region = Aws::Region::US_EAST_2;
+
   // This value has been tuned for c5a.4xlarge, c5a.8xlarge, and c5n.9xlarge, any more connections than this and aggregate
   // network performance degrades rather than remaining constant
   // This value makes low selectivity S3 Select requests much faster as it utilizes more network bandwidth for them.
@@ -54,7 +58,7 @@ std::shared_ptr<Aws::S3::S3Client> AWSClient::makeS3Client() {
       SPDLOG_DEBUG("Using S3 Client");
       s3Client = Aws::MakeShared<Aws::S3::S3Client>(
               ALLOCATION_TAG,
-              Aws::MakeShared<Aws::Auth::DefaultAWSCredentialsProviderChain>(ALLOCATION_TAG),
+              Aws::MakeShared<normal::aws::ProfileAWSCredentialsProviderChain>(ALLOCATION_TAG, "FlexPushdownDB"),
               config,
               Aws::Client::AWSAuthV4Signer::PayloadSigningPolicy::Never,
               true);
