@@ -1,11 +1,14 @@
 # CAF
 
-set(CAF_VERSION "0.17.6")
-set(CAF_GIT_URL "https://github.com/actor-framework/actor-framework.git")
+# This repo is forked from CAF repo, with support added for remote spawning actors with spawn_options
+# A pull request will be made, and after it's get merged I will switch back to CAF repo
+set(CAF_VERSION "0.18.5-remote_spawn_option")
+set(CAF_GIT_URL "https://github.com/Yifei-yang7/actor-framework.git")
 
 
 include(ExternalProject)
 find_package(Git REQUIRED)
+find_package(OpenSSL REQUIRED)
 
 set(CAF_BASE caf_ep)
 set(CAF_PREFIX ${DEPS_PREFIX}/${CAF_BASE})
@@ -46,6 +49,7 @@ ExternalProject_Add(${CAF_BASE}
         -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
         -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
         -DCMAKE_INSTALL_PREFIX:STRING=${CAF_INSTALL_DIR}
+        -DOPENSSL_ROOT_DIR=${OPENSSL_ROOT_DIR}
         )
 
 
