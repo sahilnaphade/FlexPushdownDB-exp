@@ -33,7 +33,8 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
       libtool \
       tcl \
       libdeflate-dev \
-      openjdk-11-jre-headless
+      openjdk-11-jre-headless \
+      maven
 
   fi
 fi

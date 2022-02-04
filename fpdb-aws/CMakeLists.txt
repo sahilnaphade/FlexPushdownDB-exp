@@ -9,7 +9,8 @@ add_library(fpdb-aws
         include/fpdb/aws/S3ClientType.h
         src/AWSClient.cpp include/fpdb/aws/AWSClient.h
         src/AWSConfig.cpp include/fpdb/aws/AWSConfig.h
-        src/S3Util.cpp include/fpdb/aws/S3Util.h)
+        src/S3Util.cpp include/fpdb/aws/S3Util.h
+        src/ProfileAWSCredentialsProviderChain.cpp include/fpdb/aws/ProfileAWSCredentialsProviderChain.h)
 
 target_include_directories(fpdb-aws PUBLIC include)
 

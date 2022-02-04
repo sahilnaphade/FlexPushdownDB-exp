@@ -40,6 +40,8 @@ if (${APPLE})
   linkForMacExecutable(fpdb-main-server)
 endif()
 
+add_dependencies(fpdb-main-server resources)
+
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Test
@@ -58,3 +60,5 @@ target_link_libraries(fpdb-main-test PRIVATE doctest::doctest)
 if (${APPLE})
   linkForMacExecutable(fpdb-main-test)
 endif()
+
+add_dependencies(fpdb-main-test resources)

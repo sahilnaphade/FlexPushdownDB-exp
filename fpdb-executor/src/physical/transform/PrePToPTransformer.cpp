@@ -163,7 +163,7 @@ PrePToPTransformer::transformLimitSort(const shared_ptr<LimitSortPrePOp> &limitS
   shared_ptr<PhysicalOp> limitSortPOp = make_shared<limitsort::LimitSortPOp>(
           fmt::format("LimitSort[{}]", prePOpId),
           projectColumnNames,
-          1,
+          0, // FIXME: Shouldn't be hard coded but what should it be?
           limitSortPrePOp->getK(),
           limitSortPrePOp->getSortKeys());
   allPOps.emplace_back(limitSortPOp);
@@ -463,12 +463,12 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
     hashJoinBuildPOps.emplace_back(make_shared<join::HashJoinBuildPOp>(
             fmt::format("HashJoinBuild[{}]-{}-{}", prePOpId, hashJoinPredicateStr, i),
             projectColumnNames,
-            i % numNodes_ + 1,
+            i % (numNodes_ + 1),
             leftColumnNames));
     hashJoinProbePOps.emplace_back(make_shared<join::HashJoinProbePOp>(
             fmt::format("HashJoinProbe[{}]-{}-{}", prePOpId, hashJoinPredicateStr, i),
             projectColumnNames,
-            i % numNodes_ + 1,
+            i % (numNodes_ + 1),
             hashJoinPredicate,
             joinType));
   }
@@ -477,7 +477,7 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
   connectOneToOne(hashJoinBuildPOps, hashJoinProbePOps);
 
   // if num > 1, then we need shuffle operators
-  if (parallelDegree_ * numNodes_ == 1) {
+  if (parallelDegree_ * (numNodes_ == 1)) {
     // connect to upstream
     connectManyToOne(leftTransRes.first, hashJoinBuildPOps[0]);
     connectManyToOne(rightTransRes.first, hashJoinProbePOps[0]);
@@ -541,7 +541,7 @@ PrePToPTransformer::transformNestedLoopJoin(const shared_ptr<NestedLoopJoinPrePO
     shared_ptr<join::NestedLoopJoinPOp> nestedLoopJoinPOp =
             make_shared<join::NestedLoopJoinPOp>(fmt::format("NestedLoopJoin[{}]-{}", prePOpId, i),
                                                  projectColumnNames,
-                                                 i % numNodes_ + 1,
+                                                 i % (numNodes_ + 1),
                                                  predicate,
                                                  joinType);
     // connect to left inputs

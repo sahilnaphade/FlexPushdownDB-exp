@@ -2,7 +2,7 @@
 // Created by matt on 2/2/22.
 //
 
-#include "normal/aws/ProfileAWSCredentialsProviderChain.h"
+#include "fpdb/aws/ProfileAWSCredentialsProviderChain.h"
 
 #include <aws/core/auth/AWSCredentialsProviderChain.h>
 #include <aws/core/auth/STSCredentialsProvider.h>

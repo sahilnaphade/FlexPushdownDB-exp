@@ -109,6 +109,19 @@ add_subdirectory(fpdb-main)
 # Resources
 #-----------------------------------------------------------------------------------------------------------------------
 
-file(COPY resources/config/ DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/resources/config/)
-file(COPY resources/metadata/ DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/resources/metadata/)
-file(COPY resources/query/ DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/resources/query/)
+add_custom_target(resources-config
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_CURRENT_SOURCE_DIR}/resources/config
+        ${CMAKE_CURRENT_BINARY_DIR}/resources/config)
+
+add_custom_target(resources-metadata
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_CURRENT_SOURCE_DIR}/resources/metadata
+        ${CMAKE_CURRENT_BINARY_DIR}/resources/metadata)
+
+add_custom_target(resources-query
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_CURRENT_SOURCE_DIR}/resources/query
+        ${CMAKE_CURRENT_BINARY_DIR}/resources/query)
+
+add_custom_target(resources DEPENDS resources-config resources-metadata resources-query)
