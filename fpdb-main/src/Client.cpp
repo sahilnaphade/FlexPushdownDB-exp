@@ -153,7 +153,7 @@ shared_ptr<PhysicalPlan> Client::plan(const string &query, const shared_ptr<Cata
 }
 
 pair<shared_ptr<TupleSet>, long> Client::execute(const shared_ptr<PhysicalPlan> &physicalPlan) {
-  return executor_->execute(physicalPlan, false);
+  return executor_->execute(physicalPlan, execConfig_->isDistributed());
 }
 
 void Client::connect() {
