@@ -57,12 +57,14 @@ void Executor::stop() {
   running_ = false;
 }
 
-pair<shared_ptr<TupleSet>, long> Executor::execute(const shared_ptr<PhysicalPlan> &physicalPlan) {
+pair<shared_ptr<TupleSet>, long> Executor::execute(const shared_ptr<PhysicalPlan> &physicalPlan,
+                                                   bool isDistributed) {
   const auto &execution = make_shared<Execution>(nextQueryId(),
                                                  actorSystem_,
                                                  nodes_,
                                                  segmentCacheActor_,
-                                                 physicalPlan);
+                                                 physicalPlan,
+                                                 isDistributed);
   const auto &result = execution->execute();
   long elapsedTime = execution->getElapsedTime();
   if (showOpTimes_ || showScanMetrics_) {

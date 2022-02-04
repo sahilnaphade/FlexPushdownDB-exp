@@ -32,7 +32,8 @@ public:
             const shared_ptr<::caf::actor_system> &actorSystem,
             const vector<::caf::node_id> &nodes,
             const ::caf::actor &segmentCacheActor,
-            const shared_ptr<PhysicalPlan> &physicalPlan);
+            const shared_ptr<PhysicalPlan> &physicalPlan,
+            bool isDistributed);
   ~Execution();
 
   long getQueryId() const;
@@ -62,6 +63,8 @@ private:
   shared_ptr<::caf::scoped_actor> rootActor_;
   ::caf::actor segmentCacheActor_;
   shared_ptr<PhysicalPlan> physicalPlan_;
+  bool isDistributed_;
+
   POpDirectory opDirectory_;
   [[maybe_unused]] physical::collate::CollateActor collateActorHandle_;
   shared_ptr<physical::collate::CollatePOp> legacyCollateOperator_;
