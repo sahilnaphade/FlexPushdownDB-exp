@@ -26,7 +26,8 @@ ExecConfig::ExecConfig(const shared_ptr<Mode> &mode,
                        int parallelDegree,
                        bool showOpTimes,
                        bool showScanMetrics,
-                       int CAFServerPort) :
+                       int CAFServerPort,
+                       bool isDistributed) :
   mode_(mode),
   cachingPolicy_(cachingPolicy),
   s3Bucket_(move(s3Bucket)),
@@ -34,7 +35,8 @@ ExecConfig::ExecConfig(const shared_ptr<Mode> &mode,
   parallelDegree_(parallelDegree),
   showOpTimes_(showOpTimes),
   showScanMetrics_(showScanMetrics),
-  CAFServerPort_(CAFServerPort) {}
+  CAFServerPort_(CAFServerPort),
+  isDistributed_(isDistributed) {}
 
 shared_ptr<ExecConfig> ExecConfig::parseExecConfig(const shared_ptr<Catalogue> &catalogue,
                                                    const shared_ptr<AWSClient> &awsClient) {
@@ -48,6 +50,7 @@ shared_ptr<ExecConfig> ExecConfig::parseExecConfig(const shared_ptr<Catalogue> &
   bool showOpTimes = parseBool(configMap["SHOW_OP_TIMES"]);
   bool showScanMetrics = parseBool(configMap["SHOW_SCAN_METRICS"]);
   int CAFServerPort = stoi(configMap["CAF_SERVER_PORT"]);
+  bool isDistributed = parseBool(configMap["IS_DISTRIBUTED"]);
 
   // catalogue entry
   shared_ptr<CatalogueEntry> catalogueEntry;
@@ -69,7 +72,8 @@ shared_ptr<ExecConfig> ExecConfig::parseExecConfig(const shared_ptr<Catalogue> &
                                  parallelDegree,
                                  showOpTimes,
                                  showScanMetrics,
-                                 CAFServerPort);
+                                 CAFServerPort,
+                                 isDistributed);
 }
 
 int ExecConfig::parseCAFServerPort() {

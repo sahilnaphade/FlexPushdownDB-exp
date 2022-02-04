@@ -82,6 +82,7 @@ Compiler needed: LLVM-12 or later versions.
 - `SHOW_OP_TIMES` whether to show execution times of each operator and each kind of operator.
 - `SHOW_SCAN_METRICS` whether to show scan metrics like data load speed, selectivity, data conversion speed...
 - `CAF_SERVER_PORT` port used by CAF for cross-node communications.
+- `IS_DISTRIBUTED` whether the system runs across a cluster or just locally.
 
 #### AWS config (resources/config/aws.conf):
 - `S3_CLIENT_TYPE` type of S3 client, can be one of `S3`, `AIRMETTLE`, `MINIO`. For `AIRMETTLE` and `MINIO`, access key and endpoint need to be set in `fpdb-aws/src/AWSClient.cpp`.

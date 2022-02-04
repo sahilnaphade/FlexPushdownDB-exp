@@ -28,7 +28,8 @@ public:
              int parallelDegree,
              bool showOpTimes,
              bool showScanMetrics,
-             int CAFServerPort);
+             int CAFServerPort,
+             bool isDistributed);
 
   static shared_ptr<ExecConfig> parseExecConfig(const shared_ptr<Catalogue> &catalogue,
                                                 const shared_ptr<AWSClient> &awsClient);
@@ -58,6 +59,7 @@ private:
   bool showOpTimes_;
   bool showScanMetrics_;
   int CAFServerPort_;
+  bool isDistributed_;
 
 };
 

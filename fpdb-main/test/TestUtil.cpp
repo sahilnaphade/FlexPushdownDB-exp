@@ -152,15 +152,16 @@ void TestUtil::executeQueryFile(const string &queryFileName) {
   prePhysicalPlan->populateAndTrimProjectColumns();
 
   // transform prephysical plan to physical plan
+  int numNodes = isDistributed_ ? (int) nodes_.size() : 1;
   auto prePToPTransformer = make_shared<PrePToPTransformer>(prePhysicalPlan,
                                                             awsClient_,
                                                             mode_,
                                                             parallelDegree_,
-                                                            nodes_.size());
+                                                            numNodes);
   const auto &physicalPlan = prePToPTransformer->transform();
 
   // execute
-  const auto &execRes = executor_->execute(physicalPlan);
+  const auto &execRes = executor_->execute(physicalPlan, isDistributed_);
 
   // show output
   stringstream ss;

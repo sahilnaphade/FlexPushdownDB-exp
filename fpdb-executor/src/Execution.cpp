@@ -18,12 +18,14 @@ Execution::Execution(long queryId,
                      const shared_ptr<::caf::actor_system> &actorSystem,
                      const vector<::caf::node_id> &nodes,
                      const ::caf::actor &segmentCacheActor,
-                     const shared_ptr<PhysicalPlan> &physicalPlan) :
+                     const shared_ptr<PhysicalPlan> &physicalPlan,
+                     bool isDistributed) :
   queryId_(queryId),
   actorSystem_(actorSystem),
   nodes_(nodes),
   segmentCacheActor_(segmentCacheActor),
-  physicalPlan_(physicalPlan) {
+  physicalPlan_(physicalPlan),
+  isDistributed_(isDistributed) {
   rootActor_ = make_shared<::caf::scoped_actor>(*actorSystem_);
 }
 
@@ -59,15 +61,19 @@ void Execution::boot() {
   // Spawn actors locally/remotely according to nodeId assigned
   for (auto &element: opDirectory_) {
     auto op = element.second.getDef();
-    int nodeId = op->getNodeId();
-
     auto ctx = make_shared<POpContext>(*rootActor_, segmentCacheActor_);
     op->create(ctx);
 
-    if (nodeId == 0) {
+    // Spawn collate at the coordinator
+    if (op->getType() == POpType::COLLATE) {
+      legacyCollateOperator_ = static_pointer_cast<physical::collate::CollatePOp>(op);
       element.second.setActorHandle(localSpawn(op));
     } else {
-      element.second.setActorHandle(remoteSpawn(op, nodeId));
+      if (isDistributed_) {
+        element.second.setActorHandle(remoteSpawn(op, op->getNodeId()));
+      } else {
+        element.second.setActorHandle(localSpawn(op));
+      }
     }
   }
 }
@@ -105,7 +111,6 @@ void Execution::boot() {
 //    element.second.setActorHandle(::caf::actor_cast<::caf::actor>(collateActorHandle_));
 //  }
 
-
   // Need s3 operators to be "detached" to not block others while loading data.
   // Don't run more S3Get requests in parallel than # cores, earlier testing showed this did not help as S3Get
   // already utilizes the full network bandwidth with #cores requests whereas S3Select does not when
@@ -118,12 +123,9 @@ void Execution::boot() {
   }
 
   else {
-    if(op->getType() == POpType::COLLATE){
-      legacyCollateOperator_ = static_pointer_cast<physical::collate::CollatePOp>(op);
-    }
     auto actorHandle = actorSystem_->spawn<POpActor>(op);
     if (!actorHandle)
-      throw runtime_error(fmt::format("Failed to spawn operator actor '{}': {}", op->name()));
+      throw runtime_error(fmt::format("Failed to spawn operator actor '{}'", op->name()));
     return ::caf::actor_cast<::caf::actor>(actorHandle);
   }
 }
@@ -139,7 +141,7 @@ void Execution::boot() {
   auto actorTypeName = (op->getType() == POpType::S3_SELECT || op->getType() == POpType::S3_GET) ?
           "POpActor-detached" : "POpActor";
 
-  auto expectedActorHandle = actorSystem_->middleman().remote_spawn<::caf::actor>(nodes_[nodeId - 1],
+  auto expectedActorHandle = actorSystem_->middleman().remote_spawn<::caf::actor>(nodes_[nodeId],
                                                                                   actorTypeName,
                                                                                   args,
                                                                                   remoteSpawnTout);

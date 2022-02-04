@@ -78,7 +78,7 @@ PrePToS3PTransformer::transformFilterableScanPullup(const shared_ptr<FilterableS
     // s3 get
     const auto &scanPOp = make_shared<s3::S3GetPOp>(fmt::format("S3Get[{}]-{}/{}", prePOpId_, s3Bucket, s3Object),
                                                    projPredColumnNames,
-                                                   partitionId % numNodes_ + 1,
+                                                   partitionId % numNodes_,
                                                    s3Bucket,
                                                    s3Object,
                                                    scanRange.first,
@@ -93,7 +93,7 @@ PrePToS3PTransformer::transformFilterableScanPullup(const shared_ptr<FilterableS
     if (predicate) {
       const auto &filterPOp = make_shared<filter::FilterPOp>(fmt::format("Filter[{}]-{}/{}", prePOpId_, s3Bucket, s3Object),
                                                              projectColumnNames,
-                                                             partitionId % numNodes_ + 1,
+                                                             partitionId % numNodes_,
                                                              predicate,
                                                              table);
       filterPOps.emplace_back(filterPOp);
@@ -137,7 +137,7 @@ PrePToS3PTransformer::transformFilterableScanPushdown(const shared_ptr<Filterabl
     // s3 select
     pOps.emplace_back(make_shared<s3::S3SelectPOp>(fmt::format("S3Select[{}]-{}/{}", prePOpId_, s3Bucket, s3Object),
                                                    projectColumnNames,
-                                                   partitionId % numNodes_ + 1,
+                                                   partitionId % numNodes_,
                                                    s3Bucket,
                                                    s3Object,
                                                    filterSql,
@@ -192,7 +192,7 @@ PrePToS3PTransformer::transformFilterableScanCachingOnly(const shared_ptr<Filter
     // cache load
     const auto cacheLoadPOp = make_shared<cache::CacheLoadPOp>(fmt::format("CacheLoad[{}]-{}/{}", prePOpId_, s3Bucket, s3Object),
                                                                projectColumnNames,
-                                                               partitionId % numNodes_ + 1,
+                                                               partitionId % numNodes_,
                                                                predicateColumnNames,
                                                                projPredColumnNames,
                                                                s3Partition,
@@ -204,7 +204,7 @@ PrePToS3PTransformer::transformFilterableScanCachingOnly(const shared_ptr<Filter
     // s3 get
     const auto &scanPOp = make_shared<s3::S3GetPOp>(fmt::format("S3Get[{}]-{}/{}", prePOpId_, s3Bucket, s3Object),
                                                     projPredColumnNames,
-                                                    partitionId % numNodes_ + 1,
+                                                    partitionId % numNodes_,
                                                     s3Bucket,
                                                     s3Object,
                                                     scanRange.first,
@@ -218,7 +218,7 @@ PrePToS3PTransformer::transformFilterableScanCachingOnly(const shared_ptr<Filter
     // merge
     const auto &mergePOp = make_shared<merge::MergePOp>(fmt::format("Merge[{}]-{}/{}", prePOpId_, s3Bucket, s3Object),
                                                         projPredColumnNames,
-                                                        partitionId % numNodes_ + 1);
+                                                        partitionId % numNodes_);
     allPOps.emplace_back(mergePOp);
 
     // connect
@@ -233,7 +233,7 @@ PrePToS3PTransformer::transformFilterableScanCachingOnly(const shared_ptr<Filter
     if (predicate) {
       const auto &filterPOp = make_shared<filter::FilterPOp>(fmt::format("Filter[{}]-{}/{}", prePOpId_, s3Bucket, s3Object),
                                                              projectColumnNames,
-                                                             partitionId % numNodes_ + 1,
+                                                             partitionId % numNodes_,
                                                              predicate,
                                                              table,
                                                              weightedSegmentKeys);
@@ -291,7 +291,7 @@ PrePToS3PTransformer::transformFilterableScanHybrid(const shared_ptr<FilterableS
     // cache load
     const auto cacheLoadPOp = make_shared<cache::CacheLoadPOp>(fmt::format("CacheLoad[{}]-{}/{}", prePOpId_, s3Bucket, s3Object),
                                                                projectColumnNames,
-                                                               partitionId % numNodes_ + 1,
+                                                               partitionId % numNodes_,
                                                                predicateColumnNames,
                                                                projPredColumnNames,
                                                                s3Partition,
@@ -303,7 +303,7 @@ PrePToS3PTransformer::transformFilterableScanHybrid(const shared_ptr<FilterableS
     // s3 select (cache)
     const auto &scanPOp = make_shared<s3::S3SelectPOp>(fmt::format("S3Select(cache)[{}]-{}/{}", prePOpId_, s3Bucket, s3Object),
                                                        projPredColumnNames,
-                                                       partitionId % numNodes_ + 1,
+                                                       partitionId % numNodes_,
                                                        s3Bucket,
                                                        s3Object,
                                                        "",
@@ -318,7 +318,7 @@ PrePToS3PTransformer::transformFilterableScanHybrid(const shared_ptr<FilterableS
     // first merge
     const auto &mergePOp1 = make_shared<merge::MergePOp>(fmt::format("merge1[{}]-{}/{}", prePOpId_, s3Bucket, s3Object),
                                                          projPredColumnNames,
-                                                         partitionId % numNodes_ + 1);
+                                                         partitionId % numNodes_);
     allPOps.emplace_back(mergePOp1);
 
     // connect cache load, s3 select (to cache) and first merge
@@ -334,7 +334,7 @@ PrePToS3PTransformer::transformFilterableScanHybrid(const shared_ptr<FilterableS
     if (predicate) {
       const auto &filterPOp = make_shared<filter::FilterPOp>(fmt::format("Filter[{}]-{}/{}", prePOpId_, s3Bucket, s3Object),
                                                              projectColumnNames,
-                                                             partitionId % numNodes_ + 1,
+                                                             partitionId % numNodes_,
                                                              predicate,
                                                              table,
                                                              weightedSegmentKeys);
@@ -349,7 +349,7 @@ PrePToS3PTransformer::transformFilterableScanHybrid(const shared_ptr<FilterableS
     // s3 select (pushdown)
     const auto &selectPOp = make_shared<s3::S3SelectPOp>(fmt::format("S3Select(pushdown)[{}]-{}/{}", prePOpId_, s3Bucket, s3Object),
                                                          projectColumnNames,
-                                                         partitionId % numNodes_ + 1,
+                                                         partitionId % numNodes_,
                                                          s3Bucket,
                                                          s3Object,
                                                          filterSql,
@@ -365,7 +365,7 @@ PrePToS3PTransformer::transformFilterableScanHybrid(const shared_ptr<FilterableS
     // second merge
     const auto &mergePOp2 = make_shared<merge::MergePOp>(fmt::format("merge2[{}]-{}/{}", prePOpId_, s3Bucket, s3Object),
                                                          projectColumnNames,
-                                                         partitionId % numNodes_ + 1);
+                                                         partitionId % numNodes_);
     allPOps.emplace_back(mergePOp2);
 
     // connect op of local result, s3 select (pushdown) and second merge
