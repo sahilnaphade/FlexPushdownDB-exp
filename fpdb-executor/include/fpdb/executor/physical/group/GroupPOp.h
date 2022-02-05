@@ -43,6 +43,7 @@ public:
   GroupPOp& operator=(const GroupPOp&) = default;
 
   void onReceive(const Envelope &msg) override;
+  void clear() override;
   std::string getTypeString() const override;
 
 private:

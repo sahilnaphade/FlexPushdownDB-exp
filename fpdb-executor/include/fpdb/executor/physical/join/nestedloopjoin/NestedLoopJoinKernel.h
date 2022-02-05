@@ -38,6 +38,8 @@ public:
   const std::optional<shared_ptr<TupleSet>> &getBuffer() const;
   const std::optional<shared_ptr<::arrow::Schema>> &getOutputSchema() const;
   tl::expected<void, string> finalize();
+
+  void clear();
   void clearBuffer();
 
 private:

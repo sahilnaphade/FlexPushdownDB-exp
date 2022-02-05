@@ -103,4 +103,8 @@ const FileScanKernel &FileScanPOp::getKernel() const {
   return kernel_;
 }
 
+void FileScanPOp::clear() {
+  // Noop
+}
+
 }

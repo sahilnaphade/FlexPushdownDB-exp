@@ -138,3 +138,7 @@ void HashJoinProbePOp::sendEmpty() {
   shared_ptr<Message> tupleMessage = make_shared<TupleMessage>(tupleSet, name());
   ctx()->tell(tupleMessage);
 }
+
+void HashJoinProbePOp::clear() {
+  kernel_->clear();
+}

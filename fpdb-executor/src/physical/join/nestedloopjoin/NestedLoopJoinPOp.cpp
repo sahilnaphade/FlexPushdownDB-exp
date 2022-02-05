@@ -149,4 +149,8 @@ void NestedLoopJoinPOp::sendEmpty() {
   ctx()->tell(tupleMessage);
 }
 
+void NestedLoopJoinPOp::clear() {
+  kernel_.clear();
+}
+
 }

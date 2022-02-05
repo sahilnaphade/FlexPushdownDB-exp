@@ -39,6 +39,7 @@ public:
   HashJoinProbePOp& operator=(const HashJoinProbePOp&) = default;
 
   void onReceive(const Envelope &msg) override;
+  void clear() override;
   std::string getTypeString() const override;
 
 private:

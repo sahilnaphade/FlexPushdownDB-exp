@@ -222,3 +222,8 @@ size_t FilterPOp::getFilterInputBytes() const {
 size_t FilterPOp::getFilterOutputBytes() const {
   return outputBytesFiltered_;
 }
+
+void FilterPOp::clear() {
+  received_.reset();
+  filtered_.reset();
+}

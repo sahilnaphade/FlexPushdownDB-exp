@@ -89,4 +89,9 @@ std::shared_ptr<TupleSet> CollatePOp::tuples() {
   return tuples_;
 }
 
+void CollatePOp::clear() {
+  tuples_.reset();
+  tables_.clear();
+}
+
 }

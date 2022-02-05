@@ -71,6 +71,11 @@ public:
    */
   [[nodiscard]] tl::expected<shared_ptr<TupleSet>, string> finalise();
 
+  /**
+   * Clear internal state
+   */
+  void clear();
+
 private:
   vector<string> groupColumnNames_;
   vector<shared_ptr<AggregateFunction>> aggregateFunctions_;

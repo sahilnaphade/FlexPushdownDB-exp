@@ -487,4 +487,11 @@ void S3SelectPOp::sendSegmentWeight() {
   ctx()->send(WeightRequestMessage::make(weightMap, name()), "SegmentCache");
 }
 
+void S3SelectPOp::clear() {
+  s3Result_.clear();
+  parser_.reset();
+  columnsReadFromS3_.clear();
+  splitReqNumToTable_.clear();
+}
+
 }

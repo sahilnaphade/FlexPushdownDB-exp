@@ -21,6 +21,7 @@ using namespace fpdb::catalogue;
 namespace fpdb::executor::physical::filter {
 
 class FilterPOp : public PhysicalOp {
+
 public:
   explicit FilterPOp(std::string name,
                   std::vector<std::string> projectColumnNames,
@@ -33,6 +34,7 @@ public:
   FilterPOp& operator=(const FilterPOp&) = default;
 
   void onReceive(const Envelope &Envelope) override;
+  void clear() override;
   std::string getTypeString() const override;
 
   [[nodiscard]] size_t getFilterTimeNS() const;

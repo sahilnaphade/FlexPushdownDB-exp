@@ -35,6 +35,7 @@ public:
   ~CacheLoadPOp() override = default;
 
   void onReceive(const Envelope &msg) override;
+  void clear() override;
   std::string getTypeString() const override;
 
   void setHitOperator(const std::shared_ptr<PhysicalOp> &op);

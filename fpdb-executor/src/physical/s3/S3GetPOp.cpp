@@ -518,4 +518,11 @@ void S3GetPOp::processScanMessage(const ScanMessage &message) {
   setProjectColumnNames(message.getColumnNames());
 }
 
+void S3GetPOp::clear() {
+  reqNumToAdditionalOutput_.clear();
+  reqNumToParser_.clear();
+  columnsReadFromS3_.clear();
+  splitReqNumToTable_.clear();
+}
+
 }

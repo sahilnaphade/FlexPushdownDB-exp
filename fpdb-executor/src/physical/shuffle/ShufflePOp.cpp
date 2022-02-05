@@ -123,5 +123,8 @@ void ShufflePOp::onTuple(const TupleMessage &message) {
       ctx()->notifyError(bufferAndSendResult.error());
     ++partitionIndex;
   }
+}
 
+void ShufflePOp::clear() {
+  buffers_.clear();
 }

@@ -341,4 +341,10 @@ bool GroupKernel::hasResult() {
   return !groupAggregateResultVectorMap_.empty();
 }
 
+void GroupKernel::clear() {
+  groupArrayAppenderVectorMap_.clear();
+  groupArrayVectorMap_.clear();
+  groupAggregateResultVectorMap_.clear();
+}
+
 }

@@ -295,4 +295,12 @@ tl::expected<void, string> NestedLoopJoinKernel::computeOuterJoin() {
   return {};
 }
 
+void NestedLoopJoinKernel::clear() {
+  leftTupleSet_ = nullopt;
+  rightTupleSet_ = nullopt;
+  clearBuffer();
+  leftJoinHelper_ = nullopt;
+  rightJoinHelper_ = nullopt;
+}
+
 }

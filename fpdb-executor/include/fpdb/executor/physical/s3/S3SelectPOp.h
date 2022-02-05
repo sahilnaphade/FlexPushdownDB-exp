@@ -38,6 +38,7 @@ public:
   S3SelectPOp(const S3SelectPOp&) = default;
   S3SelectPOp& operator=(const S3SelectPOp&) = default;
 
+  void clear() override;
   std::string getTypeString() const override;
 
 private:

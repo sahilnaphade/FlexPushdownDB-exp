@@ -145,4 +145,8 @@ bool AggregatePOp::hasResult() {
   return !aggregateResults_[0].empty();
 }
 
+void AggregatePOp::clear() {
+  aggregateResults_.clear();
+}
+
 }

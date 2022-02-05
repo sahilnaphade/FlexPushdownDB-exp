@@ -28,6 +28,7 @@ public:
 
   void onReceive(const Envelope &msg) override;
   std::string getTypeString() const override;
+  void clear() override;
   void produce(const shared_ptr<PhysicalOp> &op) override;
 
 private:
@@ -39,7 +40,6 @@ private:
   tl::expected<void, string> bufferInput(const shared_ptr<TupleSet>& tupleSet);
   tl::expected<vector<shared_ptr<TupleSet>>, string> split();
   void send(const vector<shared_ptr<TupleSet>> &tupleSets);
-  void clear();
 
   vector<string> consumerVec_;
   std::optional<shared_ptr<TupleSet>> inputTupleSet_;

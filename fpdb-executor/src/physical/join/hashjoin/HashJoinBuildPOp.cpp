@@ -71,3 +71,7 @@ void HashJoinBuildPOp::send(bool force) {
     kernel_.clear();
   }
 }
+
+void HashJoinBuildPOp::clear() {
+  kernel_.clear();
+}

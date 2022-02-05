@@ -34,6 +34,7 @@ public:
   std::shared_ptr<TupleSet> tuples();
 
   void onReceive(const fpdb::executor::message::Envelope &message) override;
+  void clear() override;
   std::string getTypeString() const override;
 
 private:

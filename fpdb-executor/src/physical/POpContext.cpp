@@ -88,6 +88,11 @@ void POpContext::notifyComplete() {
   // Send message to root actor
   operatorActor->anon_send(rootActor_, e);
 
+  // Clear internal state, except collate whose internal state is final result
+  if (operatorActor->operator_()->getType() != POpType::COLLATE) {
+    operatorActor->operator_()->clear();
+  }
+
   complete_ = true;
 }
 

@@ -26,6 +26,7 @@ public:
   MergePOp& operator=(const MergePOp&) = default;
 
   void onReceive(const Envelope &msg) override;
+  void clear() override;
   std::string getTypeString() const override;
 
   void setLeftProducer(const std::shared_ptr<PhysicalOp> &leftProducer);

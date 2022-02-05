@@ -31,6 +31,7 @@ public:
   ~AggregatePOp() override = default;
 
   void onReceive(const Envelope &message) override;
+  void clear() override;
   std::string getTypeString() const override;
 
 private:
