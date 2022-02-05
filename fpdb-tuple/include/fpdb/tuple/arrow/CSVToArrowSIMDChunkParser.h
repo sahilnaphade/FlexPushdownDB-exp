@@ -61,7 +61,6 @@ private:
   uint64_t bufferCapacity_ = 0;
   uint64_t bufferBytesUtilized_ = 0;
   ParsedCSV pcsv_;
-  uint64_t rowsRead_ = 0;
   uint64_t inputNumColumns_;
   std::shared_ptr<arrow::Schema> inputSchema_;
   std::shared_ptr<arrow::Schema> outputSchema_;

@@ -69,6 +69,14 @@ template<>
 }
 
 template<>
+::arrow::Status ArrayAppenderWrapper<::arrow::BooleanType::c_type, ::arrow::BooleanType>::appendValues(
+        const std::shared_ptr<::arrow::BooleanBuilder> &builder,
+        const std::vector<::arrow::BooleanType::c_type> &buffer,
+        const std::vector<bool> &isValid) {
+  return builder->AppendValues(buffer, isValid);
+}
+
+template<>
 ::arrow::Status ArrayAppenderWrapper<std::string, ::arrow::StringType>::appendValues(
         const std::shared_ptr<::arrow::StringBuilder> &builder,
         const std::vector<std::string> &buffer,

@@ -290,10 +290,6 @@ void CSVToArrowSIMDStreamParser::dumpToArrayBuilderColumnWise(ParsedCSV & pcsv) 
 }
 
 void CSVToArrowSIMDStreamParser::initializeDataStructures(ParsedCSV & pcsv) {
-  uint32_t rows = (pcsv.n_indexes / inputNumColumns_) - 2; // -2 as two dummy rows at start and end
-  // if rows is == 0 and we called this something went wrong in an earlier step.
-  assert(rows > 0);
-
   arrow::MemoryPool* pool = arrow::default_memory_pool();
   uint64_t pcsvStartingIndex = inputNumColumns_ - 1;
   for (int outputCol = 0; outputCol < outputSchema_->num_fields(); outputCol++) {
@@ -347,13 +343,10 @@ std::shared_ptr<fpdb::tuple::TupleSet> CSVToArrowSIMDStreamParser::constructTupl
   pcsv.indexes = static_cast<uint32_t *>(aligned_alloc(64, bufferCapacity_));
   pcsv.n_indexes = 0;
 
-  uint16_t rows = 0;
-
   bool initialized = false;
   do {
     // 64 added in source code, believe it is a precaution
     find_indexes(reinterpret_cast<const uint8_t *>(buffer_), bufferBytesUtilized_ + 64, pcsv, csvFileDelimiter_);
-    rows += (pcsv.n_indexes / inputNumColumns_) - 2; // -2 as two dummy rows at start and end
     if (!initialized) {
       initializeDataStructures(pcsv);
       initialized = true;
@@ -370,8 +363,7 @@ std::shared_ptr<fpdb::tuple::TupleSet> CSVToArrowSIMDStreamParser::constructTupl
     }
     arrays.emplace_back(result.ValueOrDie());
   }
-  std::shared_ptr<arrow::Table> table = arrow::Table::Make(outputSchema_, arrays, rows);
-  return fpdb::tuple::TupleSet::make(table);
+  return fpdb::tuple::TupleSet::make(outputSchema_, arrays);
 }
 
 #endif

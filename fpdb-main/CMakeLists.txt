@@ -50,7 +50,8 @@ add_executable(fpdb-main-test
         test/TestUtil.cpp test/TestUtil.h
         test/MainTest.cpp
         test/SSBTest.cpp
-        test/TPCHTest.cpp)
+        test/TPCHTest.cpp
+        test/TPCHDistTest.cpp)
 
 target_link_libraries(fpdb-main-test PRIVATE fpdb-main)
 target_link_libraries(fpdb-main-test PRIVATE doctest::doctest)

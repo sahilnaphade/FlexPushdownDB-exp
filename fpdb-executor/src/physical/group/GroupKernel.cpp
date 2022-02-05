@@ -120,11 +120,9 @@ tl::expected<void, string> GroupKernel::cache(const TupleSet &tupleSet) {
       groupColumnIndices_.push_back(fieldIndex);
     }
 
-    bool hasCountStar = false;
     for (const auto &columnName: getAggregateColumnNames()) {
       // Check if it's the case of count(*)
       if (columnName == AggregatePrePFunction::COUNT_STAR_COLUMN) {
-        hasCountStar = true;
         continue;
       }
 
@@ -133,9 +131,10 @@ tl::expected<void, string> GroupKernel::cache(const TupleSet &tupleSet) {
         return tl::make_unexpected(fmt::format("Aggregate column '{}' not found in input schema", columnName));
       aggregateColumnIndices_.push_back(fieldIndex);
     }
-    // In case there is only one count(*) which can cause aggregateColumnIndices_ to be empty,
-    // we just add any single column to aggregateColumnIndices_.
-    if (aggregateColumnIndices_.empty() && hasCountStar) {
+    // In case aggregate functions require no input column (e.g., count(*) or aggregate on literals),
+    // which can cause aggregateColumnIndices_ to be empty,
+    // we need to add at least one column to aggregateColumnIndices_ to make it non-empty.
+    if (aggregateColumnIndices_.empty() && !aggregateFunctions_.empty()) {
       aggregateColumnIndices_.emplace_back(0);
     }
 
