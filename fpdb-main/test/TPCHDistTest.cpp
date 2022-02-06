@@ -171,7 +171,7 @@ TEST_CASE ("tpch-sf0.01-distributed-22" * doctest::skip(false || SKIP_SUITE)) {
 
 TEST_SUITE ("tpch-sf10-distributed" * doctest::skip(SKIP_SUITE)) {
 
-int parallelDegreeDist = 16;
+int parallelDegreeDist = 23;
 
 TEST_CASE ("tpch-sf10-distributed-01" * doctest::skip(false || SKIP_SUITE)) {
           REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/csv/",
