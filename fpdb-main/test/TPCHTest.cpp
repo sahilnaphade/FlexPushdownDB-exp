@@ -329,7 +329,7 @@ TEST_CASE ("tpch-sf0.01-single_node-parallel-22" * doctest::skip(false || SKIP_S
 
 TEST_SUITE ("tpch-sf10-single_node-parallel" * doctest::skip(SKIP_SUITE)) {
 
-int parallelDegree = 8;
+int parallelDegree = 16;
 
 TEST_CASE ("tpch-sf10-single_node-parallel-01" * doctest::skip(false || SKIP_SUITE)) {
           REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/csv/",

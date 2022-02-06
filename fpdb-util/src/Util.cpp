@@ -87,11 +87,12 @@ bool fpdb::util::parseBool(const string& stringToParse) {
 }
 
 size_t fpdb::util::hashCombine(const vector<size_t> &hashes) {
-  size_t hash = 17;
-  for (const auto &singleHash: hashes) {
-    hash = hash * 31 + singleHash;
+  // reference: https://stackoverflow.com/questions/20511347/a-good-hash-function-for-a-vector
+  std::size_t seed = hashes.size();
+  for (auto hash: hashes) {
+    seed ^= hash + 0x9e3779b9 + (seed << 6) + (seed >> 2);
   }
-  return hash;
+  return seed;
 }
 
 bool fpdb::util::isInteger(const string& str) {

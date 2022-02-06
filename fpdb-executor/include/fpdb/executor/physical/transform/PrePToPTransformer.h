@@ -80,13 +80,13 @@ private:
    * Transform aggregate and aggregate reduce function
    * @param outputColumnName
    * @param prePFunction
-   * @param isParallel whether using more than one operators to compute the aggregation in parallel
+   * @param hasReduceOp whether there is a reduce op as the consumer for all parallel ops
    * @return
    */
   vector<shared_ptr<aggregate::AggregateFunction>>
   transformAggFunction(const string &outputColumnName,
                        const shared_ptr<AggregatePrePFunction> &prePFunction,
-                       bool isParallel);
+                       bool hasReduceOp);
   shared_ptr<aggregate::AggregateFunction> transformAggReduceFunction(const string &outputColumnName,
                                                                       const shared_ptr<AggregatePrePFunction> &prePFunction);
 
