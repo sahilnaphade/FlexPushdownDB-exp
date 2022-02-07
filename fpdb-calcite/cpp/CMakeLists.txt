@@ -1,4 +1,4 @@
-project(fpdb-connector VERSION "${PROJECT_VERSION}" LANGUAGES C CXX)
+project(fpdb-calcite VERSION "${PROJECT_VERSION}" LANGUAGES C CXX)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Calcite server thrift - cpp
