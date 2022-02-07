@@ -22,7 +22,8 @@ public:
 
   set<string> involvedColumnNames() const override;
 
-  tl::expected<shared_ptr<AggregateResult>, string> compute(const shared_ptr<TupleSet> &tupleSet) override;
+  tl::expected<shared_ptr<arrow::Scalar>, string> computeComplete(const shared_ptr<TupleSet> &tupleSet) override;
+  tl::expected<shared_ptr<AggregateResult>, string> computePartial(const shared_ptr<TupleSet> &tupleSet) override;
 
   tl::expected<shared_ptr<arrow::Scalar>, string>
   finalize(const vector<shared_ptr<AggregateResult>> &aggregateResults) override;

@@ -14,7 +14,7 @@ MinMax::MinMax(bool isMin,
   AggregateFunction(MIN_MAX, outputColumnName, expression),
   isMin_(isMin) {}
 
-tl::expected<shared_ptr<AggregateResult>, string> MinMax::compute(const shared_ptr<TupleSet> &tupleSet) {
+tl::expected<shared_ptr<arrow::Scalar>, string> MinMax::computeComplete(const shared_ptr<TupleSet> &tupleSet) {
   // evaluate the expression to get input of aggregation
   const auto &expAggChunkedArray = evaluateExpr(tupleSet);
   if (!expAggChunkedArray.has_value()) {
@@ -27,13 +27,21 @@ tl::expected<shared_ptr<AggregateResult>, string> MinMax::compute(const shared_p
     return tl::make_unexpected(expResultDatum.status().message());
   }
   const auto &resultScalar = (*expResultDatum).scalar();
+  const auto &structScalar = static_pointer_cast<arrow::StructScalar>(resultScalar);
+  return isMin_ ? structScalar->value[0] : structScalar->value[1];
+}
+
+tl::expected<shared_ptr<AggregateResult>, string> MinMax::computePartial(const shared_ptr<TupleSet> &tupleSet) {
+  // compute the result scalar
+  const auto &expResultScalar = computeComplete(tupleSet);
+  if (!expResultScalar) {
+    return tl::make_unexpected(expResultScalar.error());
+  }
 
   // make the aggregateResult
   auto aggregateResult = make_shared<AggregateResult>();
   auto key = isMin_ ? MIN_RESULT_KEY : MAX_RESULT_KEY;
-  const auto &structScalar = static_pointer_cast<arrow::StructScalar>(resultScalar);
-  const shared_ptr<arrow::Scalar> minMaxScalar = isMin_ ? structScalar->value[0] : structScalar->value[1];
-  aggregateResult->put(key, minMaxScalar);
+  aggregateResult->put(key, *expResultScalar);
   return aggregateResult;
 }
 

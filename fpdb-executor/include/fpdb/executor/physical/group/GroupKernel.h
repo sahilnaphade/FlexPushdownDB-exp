@@ -40,12 +40,12 @@ using GroupArrayVectorMap = unordered_map<shared_ptr<TupleKey>,
 											   TupleKeyPointerPredicate>;
 
 /**
- * Aggregate result map for results accumulated by all incoming tupleSets
+ * Final aggregate result map
  */
-using GroupAggregateResultVectorMap = unordered_map<shared_ptr<TupleKey>,
-                                    vector<vector<shared_ptr<AggregateResult>>>,
-                                    TupleKeyPointerHash,
-                                    TupleKeyPointerPredicate>;
+using GroupFinalAggregateResultVectorMap = unordered_map<shared_ptr<TupleKey>,
+        vector<shared_ptr<arrow::Scalar>>,
+        TupleKeyPointerHash,
+        TupleKeyPointerPredicate>;
 
 class GroupKernel {
 
@@ -86,8 +86,7 @@ private:
   std::optional<shared_ptr<arrow::Schema>> aggregateInputSchema_;
 
   GroupArrayAppenderVectorMap groupArrayAppenderVectorMap_;
-  GroupArrayVectorMap groupArrayVectorMap_;
-  GroupAggregateResultVectorMap groupAggregateResultVectorMap_;
+  GroupFinalAggregateResultVectorMap groupFinalAggregateResultVectorMap_;
 
   /**
    * Collect aggregate column names from all aggregate functions

@@ -12,7 +12,7 @@ Sum::Sum(const string &outputColumnName,
          const shared_ptr<fpdb::expression::gandiva::Expression> &expression)
   : AggregateFunction(SUM, outputColumnName, expression) {}
 
-tl::expected<shared_ptr<AggregateResult>, string> Sum::compute(const shared_ptr<TupleSet> &tupleSet) {
+tl::expected<shared_ptr<arrow::Scalar>, string> Sum::computeComplete(const shared_ptr<TupleSet> &tupleSet) {
   // evaluate the expression to get input of aggregation
   const auto &expAggChunkedArray = evaluateExpr(tupleSet);
   if (!expAggChunkedArray.has_value()) {
@@ -24,11 +24,19 @@ tl::expected<shared_ptr<AggregateResult>, string> Sum::compute(const shared_ptr<
   if (!expResultDatum.ok()) {
     return tl::make_unexpected(expResultDatum.status().message());
   }
-  const auto &resultScalar = (*expResultDatum).scalar();
+  return (*expResultDatum).scalar();
+}
+
+tl::expected<shared_ptr<AggregateResult>, string> Sum::computePartial(const shared_ptr<TupleSet> &tupleSet) {
+  // compute the result scalar
+  const auto &expResultScalar = computeComplete(tupleSet);
+  if (!expResultScalar) {
+    return tl::make_unexpected(expResultScalar.error());
+  }
 
   // make the aggregateResult
   auto aggregateResult = make_shared<AggregateResult>();
-  aggregateResult->put(SUM_RESULT_KEY, resultScalar);
+  aggregateResult->put(SUM_RESULT_KEY, *expResultScalar);
   return aggregateResult;
 }
 

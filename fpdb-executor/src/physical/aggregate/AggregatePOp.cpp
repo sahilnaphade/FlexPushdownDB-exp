@@ -75,7 +75,7 @@ void AggregatePOp::onComplete(const CompleteMessage &) {
 void AggregatePOp::compute(const shared_ptr<TupleSet> &tupleSet) {
   // compute and save aggregate results
   for (uint i = 0; i < functions_.size(); ++i) {
-    const auto &expAggregateResult = functions_[i]->compute(tupleSet);
+    const auto &expAggregateResult = functions_[i]->computePartial(tupleSet);
     if (!expAggregateResult.has_value()) {
       ctx()->notifyError(expAggregateResult.error());
     }
