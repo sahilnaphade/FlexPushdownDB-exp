@@ -146,4 +146,8 @@ void ProjectPOp::sendTuples(std::shared_ptr<TupleSet> &projected) {
 	ctx()->tell(tupleMessage);
 }
 
+void ProjectPOp::clear() {
+  tuples_.reset();
+}
+
 }

@@ -31,20 +31,10 @@ tl::expected<void, string> GroupKernel::group(const TupleSet &tupleSet) {
 	  return tl::make_unexpected("Tuple set is undefined");
   auto table = tupleSet.table();
 
-  // Group the tupleSet
+  // Group the tupleSet into appenders
   auto groupedArraysResult = groupTable(*table);
   if (!groupedArraysResult)
 	  return groupedArraysResult;
-
-  // Compute aggregate results for this tupleSet
-  auto computeResult = computeGroupAggregates();
-  if (!computeResult) {
-    return computeResult;
-  }
-
-  // Clear computed grouped tupleSet
-  groupArrayAppenderVectorMap_.clear();
-  groupArrayVectorMap_.clear();
 
   return {};
 }
@@ -52,38 +42,34 @@ tl::expected<void, string> GroupKernel::group(const TupleSet &tupleSet) {
 tl::expected<void, string> GroupKernel::computeGroupAggregates() {
 
   // Finalise the appenders
+  GroupArrayVectorMap groupArrayVectorMap;
   for (const auto &groupArrayAppenders: groupArrayAppenderVectorMap_) {
     vector<shared_ptr<arrow::Array>> arrays{};
     for (const auto &groupArrayAppender: groupArrayAppenders.second) {
-      arrays.push_back(groupArrayAppender->finalize().value());
+      arrays.emplace_back(groupArrayAppender->finalize().value());
     }
-    groupArrayVectorMap_.emplace(groupArrayAppenders.first, arrays);
+    groupArrayVectorMap.emplace(groupArrayAppenders.first, arrays);
   }
 
   // Compute aggregate results for each groupTupleSetPair
-  for (const auto &groupTupleSetPair: groupArrayVectorMap_) {
+  for (const auto &groupTupleSetPair: groupArrayVectorMap) {
     // Make group tupleSet
     auto groupKey = groupTupleSetPair.first;
     auto groupArrays = groupTupleSetPair.second;
     auto groupTupleSet = TupleSet::make(aggregateInputSchema_.value(), groupArrays);
 
-    // Initialize aggregate result vector for new groupKey
-    if (groupAggregateResultVectorMap_.find(groupKey) == groupAggregateResultVectorMap_.end()) {
-      vector<vector<shared_ptr<AggregateResult>>> initAggregateResults;
-      for (uint i = 0; i < aggregateFunctions_.size(); ++i) {
-        initAggregateResults.emplace_back(vector<shared_ptr<AggregateResult>>{});
-      }
-      groupAggregateResultVectorMap_.emplace(groupKey, initAggregateResults);
-    }
+    // Initialize aggregate result vector
+    groupFinalAggregateResultVectorMap_.emplace(groupKey,
+                                                vector<shared_ptr<arrow::Scalar>>{aggregateFunctions_.size()});
 
     // Compute and save aggregate results
     for (uint i = 0; i < aggregateFunctions_.size(); ++i) {
       const auto &function = aggregateFunctions_[i];
-      const auto &expAggregateResult = function->compute(groupTupleSet);
+      const auto &expAggregateResult = function->computeComplete(groupTupleSet);
       if (!expAggregateResult) {
         return tl::make_unexpected(expAggregateResult.error());
       }
-      groupAggregateResultVectorMap_.find(groupKey)->second[i].emplace_back(expAggregateResult.value());
+      groupFinalAggregateResultVectorMap_.find(groupKey)->second[i] = *expAggregateResult;
     }
   }
 
@@ -108,7 +94,7 @@ tl::expected<void, string> GroupKernel::cache(const TupleSet &tupleSet) {
     // Canonicalize and cache the schema
     vector<shared_ptr<arrow::Field>> fields;
     for(const auto &field : table->schema()->fields()){
-      fields.push_back(field->WithName(ColumnName::canonicalize(field->name())));
+      fields.emplace_back(field->WithName(ColumnName::canonicalize(field->name())));
     }
     inputSchema_ = arrow::schema(fields);
 
@@ -117,32 +103,31 @@ tl::expected<void, string> GroupKernel::cache(const TupleSet &tupleSet) {
       auto fieldIndex = inputSchema_.value()->GetFieldIndex(columnName);
       if (fieldIndex == -1)
         return tl::make_unexpected(fmt::format("Group column '{}' not found in input schema", columnName));
-      groupColumnIndices_.push_back(fieldIndex);
+      groupColumnIndices_.emplace_back(fieldIndex);
     }
 
-    bool hasCountStar = false;
     for (const auto &columnName: getAggregateColumnNames()) {
       // Check if it's the case of count(*)
       if (columnName == AggregatePrePFunction::COUNT_STAR_COLUMN) {
-        hasCountStar = true;
         continue;
       }
 
       auto fieldIndex = inputSchema_.value()->GetFieldIndex(columnName);
       if (fieldIndex == -1)
         return tl::make_unexpected(fmt::format("Aggregate column '{}' not found in input schema", columnName));
-      aggregateColumnIndices_.push_back(fieldIndex);
+      aggregateColumnIndices_.emplace_back(fieldIndex);
     }
-    // In case there is only one count(*) which can cause aggregateColumnIndices_ to be empty,
-    // we just add any single column to aggregateColumnIndices_.
-    if (aggregateColumnIndices_.empty() && hasCountStar) {
+    // In case aggregate functions require no input column (e.g., count(*) or aggregate on literals),
+    // which can cause aggregateColumnIndices_ to be empty,
+    // we need to add at least one column to aggregateColumnIndices_ to make it non-empty.
+    if (aggregateColumnIndices_.empty() && !aggregateFunctions_.empty()) {
       aggregateColumnIndices_.emplace_back(0);
     }
 
     // Create aggregate input schema
     vector<shared_ptr<arrow::Field>> aggregateFields;
     for(const auto &aggregateColumnIndex: aggregateColumnIndices_){
-      aggregateFields.push_back(table->schema()->field(aggregateColumnIndex));
+      aggregateFields.emplace_back(table->schema()->field(aggregateColumnIndex));
     }
     aggregateInputSchema_ = arrow::schema(aggregateFields);
 
@@ -171,6 +156,12 @@ tl::expected<shared_ptr<TupleSet>, string> GroupKernel::finalise() {
     return finaliseEmpty();
   }
 
+  // Compute aggregate results
+  auto computeResult = computeGroupAggregates();
+  if (!computeResult) {
+    return tl::make_unexpected(computeResult.error());
+  }
+
   // Create column builders for group columns
   vector<shared_ptr<ColumnBuilder>> groupColumnBuilders;
   for (const auto &groupColumnIndex: groupColumnIndices_) {
@@ -186,7 +177,7 @@ tl::expected<shared_ptr<TupleSet>, string> GroupKernel::finalise() {
   }
 
   // Append values
-  for (const auto &groupAggregateResultIt: groupAggregateResultVectorMap_) {
+  for (const auto &groupAggregateResultIt: groupFinalAggregateResultVectorMap_) {
     const auto &groupKey = groupAggregateResultIt.first;
     const auto &expGroupKeyScalars = groupKey->getScalars();
     if (!expGroupKeyScalars.has_value()) {
@@ -202,12 +193,8 @@ tl::expected<shared_ptr<TupleSet>, string> GroupKernel::finalise() {
 
     // For aggregate column
     for (uint c = 0; c < aggregateFunctions_.size(); ++c) {
-      const auto &function = aggregateFunctions_[c];
-      const auto &expFinalResult = function->finalize(aggregateResults[c]);
-      if (!expFinalResult.has_value()) {
-        return tl::make_unexpected(expFinalResult.error());
-      }
-      aggregateColumnBuilders[c]->append(Scalar::make(expFinalResult.value()));
+      const auto &aggregateResult = aggregateResults[c];
+      aggregateColumnBuilders[c]->append(Scalar::make(aggregateResult));
     }
   }
 
@@ -269,7 +256,7 @@ makeAppenders(const ::arrow::Schema &schema, const vector<int>& columnIndices) {
     auto expectedAppender = ArrayAppenderBuilder::make(field->type(), 0);
     if (!expectedAppender)
       return tl::make_unexpected(expectedAppender.error());
-    appenders.push_back(expectedAppender.value());
+    appenders.emplace_back(expectedAppender.value());
   }
   return appenders;
 }
@@ -339,7 +326,12 @@ tl::expected<void, string> GroupKernel::groupTable(const arrow::Table &table) {
 }
 
 bool GroupKernel::hasResult() {
-  return !groupAggregateResultVectorMap_.empty();
+  return !groupArrayAppenderVectorMap_.empty();
+}
+
+void GroupKernel::clear() {
+  groupArrayAppenderVectorMap_.clear();
+  groupFinalAggregateResultVectorMap_.clear();
 }
 
 }

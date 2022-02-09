@@ -32,6 +32,7 @@ public:
   LimitSortPOp& operator=(const LimitSortPOp&) = default;
 
   void onReceive(const Envelope &msg) override;
+  void clear() override;
   std::string getTypeString() const override;
 
 private:

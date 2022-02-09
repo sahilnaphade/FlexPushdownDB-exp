@@ -1,4 +1,4 @@
-project(fpdb-executor VERSION "${PROJECT_VERSION}" LANGUAGES C CXX)
+project(fpdb-caf VERSION "${PROJECT_VERSION}" LANGUAGES C CXX)
 
 
 #-----------------------------------------------------------------------------------------------------------------------

@@ -338,10 +338,6 @@ void CSVToArrowSIMDChunkParser::dumpToArrayBuilderColumnWise(ParsedCSV & pcsv) {
 }
 
 void CSVToArrowSIMDChunkParser::initializeDataStructures(ParsedCSV & pcsv) {
-  uint32_t rows = (pcsv.n_indexes / inputNumColumns_) - 2; // -2 as two dummy rows at start and end
-  // if rows is == 0 and we called this something went wrong in an earlier step.
-  assert(rows > 0);
-
   arrow::MemoryPool* pool = arrow::default_memory_pool();
   uint64_t pcsvStartingIndex = inputNumColumns_ - 1;
   for (int outputCol = 0; outputCol < outputSchema_->num_fields(); outputCol++) {
@@ -384,10 +380,8 @@ void CSVToArrowSIMDChunkParser::initializeDataStructures(ParsedCSV & pcsv) {
 }
 
 void CSVToArrowSIMDChunkParser::parseAndReadInData() {
-  uint32_t inputColumns = inputSchema_->num_fields();
   // 64 added in source code, believe it is a precaution
   find_indexes(reinterpret_cast<const uint8_t *>(buffer_), bufferBytesUtilized_ + 64, pcsv_, csvFileDelimiter_);
-  rowsRead_ += (pcsv_.n_indexes / inputColumns) - 2; // -2 as two dummy rows at start and end
   if (!initialized_) {
     initializeDataStructures(pcsv_);
     initialized_ = true;
@@ -440,8 +434,7 @@ std::shared_ptr<fpdb::tuple::TupleSet> CSVToArrowSIMDChunkParser::outputComplete
     }
     arrays.emplace_back(result.ValueOrDie());
   }
-  std::shared_ptr<arrow::Table> table = arrow::Table::Make(outputSchema_, arrays, rowsRead_);
-  return fpdb::tuple::TupleSet::make(table);
+  return fpdb::tuple::TupleSet::make(outputSchema_, arrays);
 }
 
 #endif

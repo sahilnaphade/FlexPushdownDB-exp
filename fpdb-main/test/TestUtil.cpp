@@ -166,7 +166,7 @@ void TestUtil::executeQueryFile(const string &queryFileName) {
   // show output
   stringstream ss;
   ss << fmt::format("Result |\n{}", execRes.first->showString(
-          TupleSetShowOptions(TupleSetShowOrientation::RowOriented, 10000)));
+          TupleSetShowOptions(TupleSetShowOrientation::RowOriented, 100)));
   ss << fmt::format("\nTime: {} secs", (double) (execRes.second) / 1000000000.0);
   ss << endl;
   cout << ss.str() << endl;

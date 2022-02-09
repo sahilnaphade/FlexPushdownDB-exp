@@ -165,4 +165,8 @@ int ExecConfig::getCAFServerPort() const {
   return CAFServerPort_;
 }
 
+bool ExecConfig::isDistributed() const {
+  return isDistributed_;
+}
+
 }

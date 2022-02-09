@@ -240,3 +240,7 @@ void CacheLoadPOp::setMissOperatorToPushdown(const std::shared_ptr<PhysicalOp> &
   this->missOperatorToPushdownName_ = op->name();
   this->produce(op);
 }
+
+void CacheLoadPOp::clear() {
+  // Noop
+}

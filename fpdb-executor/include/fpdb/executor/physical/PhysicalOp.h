@@ -52,6 +52,7 @@ public:
   void create(const std::shared_ptr<POpContext>& ctx);
 
   virtual void onReceive(const fpdb::executor::message::Envelope &msg) = 0;
+  virtual void clear() = 0;
   void destroyActor();
 
 protected:

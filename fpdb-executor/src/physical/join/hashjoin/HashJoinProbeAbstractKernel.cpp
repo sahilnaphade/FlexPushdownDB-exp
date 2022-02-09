@@ -90,6 +90,12 @@ const std::optional<shared_ptr<fpdb::tuple::TupleSet>> &HashJoinProbeAbstractKer
   return buffer_;
 }
 
+void HashJoinProbeAbstractKernel::clear() {
+  buildTupleSetIndex_ = nullopt;
+  probeTupleSet_ = nullopt;
+  clearBuffer();
+}
+
 void HashJoinProbeAbstractKernel::clearBuffer() {
   buffer_ = nullopt;
 }

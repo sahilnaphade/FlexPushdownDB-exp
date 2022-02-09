@@ -38,6 +38,13 @@ function(linkForMacExecutable target)
   add_custom_command(TARGET ${target} PRE_LINK
           COMMAND sed -i '' 's/ -lrt//g' ${linkFile})
 
+  # remove /libc++fs.a from build.make and link.txt which mac does not have or need
+  set(buildFile ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/${target}.dir/build.make)
+  add_custom_target(pre-compile-${target}
+          COMMAND sed -i '' '/\\/libc++fs.a/d' ${buildFile}
+          COMMAND sed -i '' 's/ \\/libc++fs.a//g' ${linkFile})
+  add_dependencies(${target} pre-compile-${target})
+
   # fix "dyld: Library not loaded" on mac
   set(path_to_libs libgvplugin_neato_layout.6.dylib
           libgvplugin_core.6.dylib

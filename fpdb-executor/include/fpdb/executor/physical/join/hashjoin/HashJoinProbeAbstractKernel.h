@@ -36,6 +36,7 @@ public:
   const std::optional<shared_ptr<fpdb::tuple::TupleSet>> &getBuffer() const;
   const std::optional<shared_ptr<::arrow::Schema>> &getOutputSchema() const;
 
+  virtual void clear();
   void clearBuffer();
 
 protected:

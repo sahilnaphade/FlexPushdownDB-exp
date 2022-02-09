@@ -197,4 +197,9 @@ HashSemiJoinProbeKernel::makeSelectionVector(const unordered_set<int64_t> &rowMa
   return selectionVector;
 }
 
+void HashSemiJoinProbeKernel::clear() {
+  rowMatchIndexes_.clear();
+  HashJoinProbeAbstractKernel::clear();
+}
+
 }

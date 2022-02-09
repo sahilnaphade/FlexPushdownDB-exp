@@ -17,7 +17,9 @@ cd FlexPushdownDB-Dev
 
 ## Set up the System
 
-Compiler needed: LLVM-12 or later versions.
+Compiler needed: 
+- Linux: LLVM-12 or later versions.
+- Mac OS: LLVM-13.
 
 #### To set up the system locally to develop:
 

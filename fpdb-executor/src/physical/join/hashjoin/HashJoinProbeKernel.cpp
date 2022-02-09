@@ -224,4 +224,10 @@ tl::expected<void, string> HashJoinProbeKernel::computeOuterJoin() {
   return {};
 }
 
+void HashJoinProbeKernel::clear() {
+  leftJoinHelper_ = nullopt;
+  rightJoinHelper_ = nullopt;
+  HashJoinProbeAbstractKernel::clear();
+}
+
 }

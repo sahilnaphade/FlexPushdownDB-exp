@@ -105,3 +105,8 @@ void MergePOp::setRightProducer(const std::shared_ptr<PhysicalOp> &rightProducer
   rightProducerName_ = rightProducer->name();
   consume(rightProducer);
 }
+
+void MergePOp::clear() {
+  leftTupleSets_.clear();
+  rightTupleSets_.clear();
+}

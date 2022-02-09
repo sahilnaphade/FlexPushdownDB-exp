@@ -66,4 +66,8 @@ void GroupPOp::onComplete(const CompleteMessage &) {
   }
 }
 
+void GroupPOp::clear() {
+  kernel_.clear();
+}
+
 }

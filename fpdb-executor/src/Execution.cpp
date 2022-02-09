@@ -197,26 +197,24 @@ void Execution::join() {
             SPDLOG_DEBUG("Query root actor received message  |  query: '{}', messageKind: '{}', from: '{}'",
                          queryId_, msg.getTypeString(), msg.sender());
 
+            auto errAct = [&](const std::string &errMsg) {
+              allComplete = true;
+              close();
+              throw runtime_error(errMsg);
+            };
+
             switch (msg.type()) {
               case MessageType::COMPLETE: {
-                auto result = this->opDirectory_.setComplete(msg.sender());
-                if (!result.has_value()) {
-                  allComplete = true;
-                  close();
-                  throw runtime_error(result.error());
-                }
+                this->opDirectory_.setComplete(msg.sender())
+                        .map_error(errAct);
                 allComplete = this->opDirectory_.allComplete();
                 break;
               }
               case MessageType::ERROR: {
-                allComplete = true;
-                close();
-                throw runtime_error(fmt::format("ERROR: {}, from {}", ((ErrorMessage &) msg).getContent(), msg.sender()));
+                errAct(fmt::format("ERROR: {}, from {}", ((ErrorMessage &) msg).getContent(), msg.sender()));
               }
               default: {
-                allComplete = true;
-                close();
-                throw runtime_error(fmt::format("Invalid message type sent to the root actor: {}, from {}", msg.getTypeString(), msg.sender()));
+                errAct(fmt::format("Invalid message type sent to the root actor: {}, from {}", msg.getTypeString(), msg.sender()));
               }
             }
 

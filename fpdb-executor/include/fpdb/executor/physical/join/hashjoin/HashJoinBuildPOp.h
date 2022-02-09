@@ -36,6 +36,7 @@ public:
   HashJoinBuildPOp& operator=(const HashJoinBuildPOp&) = default;
 
   void onReceive(const Envelope &msg) override;
+  void clear() override;
   std::string getTypeString() const override;
 
 private:

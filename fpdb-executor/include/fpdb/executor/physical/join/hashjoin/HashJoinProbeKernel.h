@@ -32,6 +32,8 @@ public:
   tl::expected<void, string> joinProbeTupleSet(const shared_ptr<TupleSet>& tupleSet) override;
   tl::expected<void, string> finalize() override;
 
+  void clear() override;
+
 private:
   tl::expected<shared_ptr<fpdb::tuple::TupleSet>, string> join(const shared_ptr<RecordBatchHashJoiner> &joiner,
                                                                  const shared_ptr<TupleSet> &probeTupleSet,

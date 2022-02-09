@@ -36,6 +36,7 @@ public:
   S3GetPOp(const S3GetPOp&) = default;
   S3GetPOp& operator=(const S3GetPOp&) = default;
 
+  void clear() override;
   std::string getTypeString() const override;
 
 private:

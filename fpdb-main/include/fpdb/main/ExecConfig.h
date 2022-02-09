@@ -43,6 +43,7 @@ public:
   bool showOpTimes() const;
   bool showScanMetrics() const;
   int getCAFServerPort() const;
+  bool isDistributed() const;
 
 private:
   static size_t parseCacheSize(const string& stringToParse);

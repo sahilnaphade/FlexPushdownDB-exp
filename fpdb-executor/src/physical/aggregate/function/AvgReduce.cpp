@@ -20,7 +20,12 @@ set<string> AvgReduce::involvedColumnNames() const {
           AggregatePrePFunction::AVG_PARALLEL_COUNT_COLUMN_PREFIX + outputColumnName_};
 }
 
-tl::expected<shared_ptr<AggregateResult>, string> AvgReduce::compute(const shared_ptr<TupleSet> &tupleSet) {
+tl::expected<shared_ptr<arrow::Scalar>, string> AvgReduce::computeComplete(const shared_ptr<TupleSet> &tupleSet) {
+  // this doesn't make sense
+  return tl::make_unexpected("Unexpected to enter AvgReduce::computeComplete()");
+}
+
+tl::expected<shared_ptr<AggregateResult>, string> AvgReduce::computePartial(const shared_ptr<TupleSet> &tupleSet) {
   // compute sum
   const auto &sumInputColumn = tupleSet->table()->GetColumnByName(
           AggregatePrePFunction::AVG_PARALLEL_SUM_COLUMN_PREFIX + outputColumnName_);

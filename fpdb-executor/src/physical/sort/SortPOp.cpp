@@ -113,4 +113,8 @@ shared_ptr<TupleSet> SortPOp::sort() {
   return TupleSet::make((*expSortedTable).table());
 }
 
+void SortPOp::clear() {
+  buffer_ = nullopt;
+}
+
 }

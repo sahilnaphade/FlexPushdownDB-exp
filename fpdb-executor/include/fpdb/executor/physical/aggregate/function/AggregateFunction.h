@@ -38,14 +38,21 @@ public:
   virtual set<string> involvedColumnNames() const;
 
   /**
-   * Perform the aggregation given an input tupleSet.
+   * Perform complete aggregation (i.e. input is complete), return an arrow::Scalar
+   * @param tupleSet
+   */
+  virtual tl::expected<shared_ptr<arrow::Scalar>, string>
+  computeComplete(const shared_ptr<TupleSet> &tupleSet) = 0;
+
+  /**
+   * Perform partial aggregation (i.e. input is partial), return an AggregateResult
    * @param tupleSet
    */
   virtual tl::expected<shared_ptr<AggregateResult>, string>
-  compute(const shared_ptr<TupleSet> &tupleSet) = 0;
+  computePartial(const shared_ptr<TupleSet> &tupleSet) = 0;
 
   /**
-   * Finalize aggregate results, e.g. compute mean from a vector of sum and count values.
+   * Finalize partial aggregate results, e.g. compute mean from a vector of sum and count values.
    * @return
    */
   virtual tl::expected<shared_ptr<arrow::Scalar>, string>

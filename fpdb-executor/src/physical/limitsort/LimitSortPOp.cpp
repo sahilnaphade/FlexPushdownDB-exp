@@ -40,16 +40,18 @@ void LimitSortPOp::onStart() {
 void LimitSortPOp::onComplete(const CompleteMessage &) {
   if(!ctx()->isComplete() && ctx()->operatorMap().allComplete(POpRelationshipType::Producer)){
     // check if has results
-    if (result_.has_value()) {
-      // Project using projectColumnNames
-      auto expProjectTupleSet = result_.value()->projectExist(getProjectColumnNames());
-      if (!expProjectTupleSet) {
-        throw std::runtime_error(expProjectTupleSet.error());
-      }
-
-      shared_ptr<Message> tupleMessage = make_shared<TupleMessage>(expProjectTupleSet.value(), name());
-      ctx()->tell(tupleMessage);
+    if (!result_.has_value()) {
+      ctx()->notifyError("Result not produced yet");
     }
+
+    // Project using projectColumnNames
+    auto expProjectTupleSet = result_.value()->projectExist(getProjectColumnNames());
+    if (!expProjectTupleSet) {
+      ctx()->notifyError(expProjectTupleSet.error());
+    }
+
+    shared_ptr<Message> tupleMessage = make_shared<TupleMessage>(expProjectTupleSet.value(), name());
+    ctx()->tell(tupleMessage);
     ctx()->notifyComplete();
   }
 }
@@ -111,6 +113,10 @@ shared_ptr<TupleSet> LimitSortPOp::selectK(const shared_ptr<TupleSet> &tupleSet)
   }
 
   return TupleSet::make((*expSelectKTable).table());
+}
+
+void LimitSortPOp::clear() {
+  result_ = nullopt;
 }
 
 }

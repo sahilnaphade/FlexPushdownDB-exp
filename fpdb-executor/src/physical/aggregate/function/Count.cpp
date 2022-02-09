@@ -27,9 +27,7 @@ set<string> Count::involvedColumnNames() const {
   }
 }
 
-tl::expected<shared_ptr<AggregateResult>, string> Count::compute(const shared_ptr<TupleSet> &tupleSet) {
-  shared_ptr<arrow::Scalar> resultScalar;
-
+tl::expected<shared_ptr<arrow::Scalar>, string> Count::computeComplete(const shared_ptr<TupleSet> &tupleSet) {
   if (expression_) {
     // if has expr, then evaluate it and call arrow api to count
     const auto &expAggChunkedArray = evaluateExpr(tupleSet);
@@ -40,7 +38,7 @@ tl::expected<shared_ptr<AggregateResult>, string> Count::compute(const shared_pt
     if (!expResultDatum.ok()) {
       return tl::make_unexpected(expResultDatum.status().message());
     }
-    resultScalar = (*expResultDatum).scalar();
+    return (*expResultDatum).scalar();
   }
 
   else {
@@ -49,12 +47,20 @@ tl::expected<shared_ptr<AggregateResult>, string> Count::compute(const shared_pt
     if (!expResultScalar.ok()) {
       return tl::make_unexpected(expResultScalar.status().message());
     }
-    resultScalar = *expResultScalar;
+    return *expResultScalar;
+  }
+}
+
+tl::expected<shared_ptr<AggregateResult>, string> Count::computePartial(const shared_ptr<TupleSet> &tupleSet) {
+  // compute the result scalar
+  const auto &expResultScalar = computeComplete(tupleSet);
+  if (!expResultScalar) {
+    return tl::make_unexpected(expResultScalar.error());
   }
 
   // make the aggregateResult
   auto aggregateResult = make_shared<AggregateResult>();
-  aggregateResult->put(COUNT_RESULT_KEY, resultScalar);
+  aggregateResult->put(COUNT_RESULT_KEY, *expResultScalar);
   return aggregateResult;
 }
 

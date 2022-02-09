@@ -27,6 +27,8 @@ public:
   tl::expected<void, string> joinProbeTupleSet(const shared_ptr<TupleSet>& tupleSet) override;
   tl::expected<void, string> finalize() override;
 
+  void clear() override;
+
 private:
   static tl::expected<shared_ptr<::gandiva::SelectionVector>, string>
   makeSelectionVector(const unordered_set<int64_t> &rowMatchIndexes);
