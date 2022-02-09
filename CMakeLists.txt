@@ -103,6 +103,8 @@ add_subdirectory(fpdb-plan)
 add_subdirectory(fpdb-cache)
 add_subdirectory(fpdb-executor)
 add_subdirectory(fpdb-main)
+add_subdirectory(fpdb-store-client)
+add_subdirectory(fpdb-store-server)
 
 
 #-----------------------------------------------------------------------------------------------------------------------

@@ -35,6 +35,8 @@ set(ARROW_GANDIVA_STATIC_LIB ${ARROW_LIB_DIR}/${CMAKE_STATIC_LIBRARY_PREFIX}gand
 #set(ARROW_SNAPPY_STATIC_LIB ${ARROW_SNAPPY_BASE_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}snappy${CMAKE_STATIC_LIBRARY_SUFFIX})
 set(ARROW_PARQUET_SHARED_LIB ${ARROW_LIB_DIR}/${CMAKE_SHARED_LIBRARY_PREFIX}parquet${CMAKE_SHARED_LIBRARY_SUFFIX})
 set(ARROW_PARQUET_STATIC_LIB ${ARROW_LIB_DIR}/${CMAKE_STATIC_LIBRARY_PREFIX}parquet${CMAKE_STATIC_LIBRARY_SUFFIX})
+set(ARROW_FLIGHT_SHARED_LIB ${ARROW_LIB_DIR}/${CMAKE_SHARED_LIBRARY_PREFIX}arrow_flight${CMAKE_SHARED_LIBRARY_SUFFIX})
+set(ARROW_FLIGHT_STATIC_LIB ${ARROW_LIB_DIR}/${CMAKE_STATIC_LIBRARY_PREFIX}arrow_flight${CMAKE_STATIC_LIBRARY_SUFFIX})
 #set(ARROW_JEMALLOC_BASE_DIR ${ARROW_BASE_DIR}/src/${ARROW_BASE}-build/jemalloc_ep-prefix/src/jemalloc_ep)
 #set(ARROW_JEMALLOC_INCLUDE_DIR ${ARROW_JEMALLOC_BASE_DIR}/include)
 #set(ARROW_JEMALLOC_STATIC_LIB ${ARROW_JEMALLOC_BASE_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}jemalloc${CMAKE_STATIC_LIBRARY_SUFFIX})
@@ -62,19 +64,22 @@ ExternalProject_Add(${ARROW_BASE}
 #        ${ARROW_SNAPPY_STATIC_LIB}
         ${ARROW_PARQUET_SHARED_LIB}
         ${ARROW_PARQUET_STATIC_LIB}
+        ${ARROW_FLIGHT_SHARED_LIB}
+        ${ARROW_FLIGHT_STATIC_LIB}
         ${ARROW_DEPENDENCIES_SHARED_LIBS}
         ${ARROW_DEPENDENCIES_STATIC_LIBS}
         CMAKE_ARGS
         -DARROW_USE_CCACHE:BOOL=ON
         -DARROW_CSV:BOOL=ON
         -DARROW_DATASET:BOOL=OFF
-        -DARROW_FLIGHT:BOOL=OFF
+        -DARROW_FLIGHT:BOOL=ON
         -DARROW_IPC:BOOL=OFF
         -DARROW_PARQUET:BOOL=ON
         -DARROW_WITH_SNAPPY:BOOL=ON
         -DARROW_WITH_ZLIB:BOOL=ON
         -DARROW_JEMALLOC:BOOL=ON
         -DARROW_GANDIVA:BOOL=ON
+        -DARROW_GRPC_USE_SHARED=OFF
         -DARROW_DEPENDENCY_SOURCE=BUNDLED
         -DCMAKE_INSTALL_MESSAGE=NEVER
         -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
@@ -112,9 +117,26 @@ file(MAKE_DIRECTORY ${ARROW_INCLUDE_DIR}) # Include directory needs to exist to 
 #find_package(Arrow REQUIRED)
 #find_package(Gandiva REQUIRED)
 
+# Arrow does not add absl to the arrow_bundled_dependencies static library so we need to add it ourselves
+# See: https://issues.apache.org/jira/browse/ARROW-14708
+set(_ABSL_EP_INSTALL_DIR ${ARROW_BASE_DIR}/src/${ARROW_BASE}-build/absl_ep-install)
+file(MAKE_DIRECTORY ${_ABSL_EP_INSTALL_DIR}/${CMAKE_INSTALL_INCLUDEDIR})
+
+# Absl's lib structure is very complicated so use the targets exported by cmake
+set(_IMPORT_PREFIX ${_ABSL_EP_INSTALL_DIR})
+include(${CMAKE_CURRENT_LIST_DIR}/absl/abslTargets.cmake)
+set(_IMPORT_PREFIX)
+
 add_library(arrow_bundled_dependencies_static STATIC IMPORTED)
 set_target_properties(arrow_bundled_dependencies_static PROPERTIES IMPORTED_LOCATION ${ARROW_DEPENDENCIES_STATIC_LIBS})
 add_dependencies(arrow_bundled_dependencies_static ${ARROW_BASE})
+target_link_libraries(arrow_bundled_dependencies_static INTERFACE OpenSSL::SSL)
+target_link_libraries(arrow_bundled_dependencies_static INTERFACE OpenSSL::Crypto)
+target_link_libraries(arrow_bundled_dependencies_static INTERFACE absl::base)
+target_link_libraries(arrow_bundled_dependencies_static INTERFACE absl::str_format_internal)
+target_link_libraries(arrow_bundled_dependencies_static INTERFACE absl::time)
+target_link_libraries(arrow_bundled_dependencies_static INTERFACE absl::optional)
+target_link_libraries(arrow_bundled_dependencies_static INTERFACE absl::synchronization)
 
 #add_library(jemalloc_static STATIC IMPORTED)
 #set_target_properties(jemalloc_static PROPERTIES IMPORTED_LOCATION ${ARROW_JEMALLOC_STATIC_LIB})
@@ -201,5 +223,18 @@ target_link_libraries(parquet_shared INTERFACE arrow_static)
 #target_link_libraries(parquet_shared INTERFACE snappy_static)
 add_dependencies(parquet_shared ${ARROW_BASE})
 
+add_library(arrow_flight_static STATIC IMPORTED)
+set_target_properties(arrow_flight_static PROPERTIES IMPORTED_LOCATION ${ARROW_FLIGHT_STATIC_LIB})
+target_include_directories(arrow_flight_static INTERFACE ${ARROW_INCLUDE_DIR})
+target_link_libraries(arrow_flight_static INTERFACE arrow_static)
+add_dependencies(arrow_flight_static ${ARROW_BASE})
+
+add_library(arrow_flight_shared SHARED IMPORTED)
+set_target_properties(arrow_flight_shared PROPERTIES IMPORTED_LOCATION ${ARROW_FLIGHT_SHARED_LIB})
+target_include_directories(arrow_flight_shared INTERFACE ${ARROW_INCLUDE_DIR})
+target_link_libraries(arrow_flight_shared INTERFACE arrow_shared)
+add_dependencies(arrow_flight_shared ${ARROW_BASE})
+
 #showTargetProps(arrow_static)
 #showTargetProps(arrow_dataset_static)
+
