@@ -10,9 +10,6 @@
 #define SPDLOG_ACTIVE_LEVEL LOG_LEVEL
 #include "spdlog/spdlog.h"
 
-class Module {
+class Module {};
 
-};
-
-
-#endif //FPDB_MODULE_HPP
+#endif // FPDB_MODULE_HPP

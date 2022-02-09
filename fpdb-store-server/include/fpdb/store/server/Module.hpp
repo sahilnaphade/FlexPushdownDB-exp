@@ -5,7 +5,6 @@
 #ifndef FPDB_MODULE_HPP
 #define FPDB_MODULE_HPP
 
-namespace fpdb::store::server {
-}
+namespace fpdb::store::server {}
 
-#endif //FPDB_MODULE_HPP
+#endif // FPDB_MODULE_HPP

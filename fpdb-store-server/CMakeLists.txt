@@ -5,15 +5,15 @@
 
 add_library(fpdb_store_server_objlib OBJECT
         src/Module.cpp include/fpdb/store/server/Module.hpp
-        src/FlightHandler.cpp include/fpdb/store/server/FlightHandler.hpp
-        src/CmdObject.cpp include/fpdb/store/server/CmdObject.hpp
-        src/CmdType.cpp include/fpdb/store/server/CmdType.hpp
-        src/HeaderMiddleware.cpp include/fpdb/store/server/HeaderMiddleware.hpp
-        src/HeaderMiddlewareFactory.cpp include/fpdb/store/server/HeaderMiddlewareFactory.hpp
-        src/TicketObject.cpp include/fpdb/store/server/TicketObject.hpp
-        src/TicketType.cpp include/fpdb/store/server/TicketType.hpp
-        src/FlightSelectObjectContentRequest.cpp include/fpdb/store/server/FlightSelectObjectContentRequest.hpp
-        src/FlightInputSerialization.cpp include/fpdb/store/server/FlightInputSerialization.hpp
+        src/flight/FlightHandler.cpp include/fpdb/store/server/flight/FlightHandler.hpp
+        src/flight/CmdObject.cpp include/fpdb/store/server/flight/CmdObject.hpp
+        src/flight/CmdType.cpp include/fpdb/store/server/flight/CmdType.hpp
+        src/flight/HeaderMiddleware.cpp include/fpdb/store/server/flight/HeaderMiddleware.hpp
+        src/flight/HeaderMiddlewareFactory.cpp include/fpdb/store/server/flight/HeaderMiddlewareFactory.hpp
+        src/flight/TicketObject.cpp include/fpdb/store/server/flight/TicketObject.hpp
+        src/flight/TicketType.cpp include/fpdb/store/server/flight/TicketType.hpp
+        src/flight/FlightSelectObjectContentRequest.cpp include/fpdb/store/server/flight/FlightSelectObjectContentRequest.hpp
+        src/flight/FlightInputSerialization.cpp include/fpdb/store/server/flight/FlightInputSerialization.hpp
         src/FileHeaderInfo.cpp include/fpdb/store/server/FileHeaderInfo.hpp
         src/CSVInput.cpp include/fpdb/store/server/CSVInput.hpp
         src/InputSerializationType.cpp include/fpdb/store/server/InputSerializationType.hpp

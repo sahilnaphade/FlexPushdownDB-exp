@@ -7,8 +7,8 @@
 
 namespace fpdb::store::server {
 
-    enum class InputSerializationType { CSV, Parquet };
+enum class InputSerializationType { CSV, Parquet };
 
 }
 
-#endif //FPDB_INPUTSERIALIZATIONTYPE_HPP
+#endif // FPDB_INPUTSERIALIZATIONTYPE_HPP

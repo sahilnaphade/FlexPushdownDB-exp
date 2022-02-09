@@ -7,11 +7,8 @@
 
 namespace fpdb::store::server {
 
-    enum class FileHeaderInfo {
-        None, Ignore, Use
-    };
+enum class FileHeaderInfo { None, Ignore, Use };
 
 }
 
-
-#endif //FPDB_FILEHEADERINFO_HPP
+#endif // FPDB_FILEHEADERINFO_HPP

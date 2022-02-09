@@ -4,6 +4,4 @@
 
 #include "fpdb/store/server/InputSerializationType.hpp"
 
-namespace fpdb::store::server {
-
-}
+namespace fpdb::store::server {}

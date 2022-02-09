@@ -9,17 +9,18 @@
 
 namespace fpdb::store::server {
 
-    class CSVInput {
-    public:
-        explicit CSVInput(FileHeaderInfo file_header_info);
+class CSVInput {
+public:
+  explicit CSVInput(FileHeaderInfo file_header_info);
 
-        [[nodiscard]] FileHeaderInfo &file_header_info();
+  [[nodiscard]] FileHeaderInfo& file_header_info();
 
-        [[nodiscard]] const FileHeaderInfo &file_header_info() const;
+  [[nodiscard]] const FileHeaderInfo& file_header_info() const;
 
-    private:
-        FileHeaderInfo file_header_info_;
-    };
-}
+private:
+  FileHeaderInfo file_header_info_;
+};
 
-#endif //FPDB_CSVINPUT_HPP
+} // namespace fpdb::store::server
+
+#endif // FPDB_CSVINPUT_HPP

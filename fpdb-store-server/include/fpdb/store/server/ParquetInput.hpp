@@ -5,10 +5,6 @@
 #ifndef FPDB_PARQUETINPUT_HPP
 #define FPDB_PARQUETINPUT_HPP
 
+class ParquetInput {};
 
-class ParquetInput {
-
-};
-
-
-#endif //FPDB_PARQUETINPUT_HPP
+#endif // FPDB_PARQUETINPUT_HPP
