@@ -11,10 +11,10 @@ void AggregateResult::put(const string &key, const shared_ptr<arrow::Scalar> &va
   this->resultMap_.insert_or_assign(key, Scalar::make(value));
 }
 
-std::optional<shared_ptr<arrow::Scalar>> AggregateResult::get(const string &key) {
+tl::expected<shared_ptr<arrow::Scalar>, string> AggregateResult::get(const string &key) {
   auto resIt = this->resultMap_.find(key);
   if (resIt == this->resultMap_.end()) {
-    return nullopt;
+    return tl::make_unexpected(fmt::format("Aggregate result key not found: {}", key));
   } else {
     return resIt->second->getArrowScalar();
   }

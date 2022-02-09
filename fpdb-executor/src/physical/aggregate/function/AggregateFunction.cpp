@@ -41,12 +41,15 @@ set<string> AggregateFunction::involvedColumnNames() const {
 }
 
 tl::expected<void, string> AggregateFunction::compile(const shared_ptr<arrow::Schema> &schema) {
-  // if no expression and the function type is count, which means count(*), then we do not need to compile
+  // if no expression then there are can be two cases:
+  //   1) the function type is COUNT, which means count(*),
+  //   2) the function type is AVG_REDUCE, which use pre-specified sum and count columns,
+  // then we do not need to compile.
   if (!expression_) {
-    if (type_ == COUNT) {
+    if (type_ == COUNT || type_ == AVG_REDUCE) {
       return {};
     } else {
-      return tl::make_unexpected("Aggregate function has no expression, neither it is count");
+      return tl::make_unexpected("Aggregate function has no expression, it is neither COUNT nor AVG_REDUCE");
     }
   }
 
@@ -123,7 +126,7 @@ AggregateFunction::buildFinalizeInputArray(const vector<shared_ptr<AggregateResu
   for (const auto &aggregateResult: aggregateResults) {
     const auto &expResultScalar = aggregateResult->get(key);
     if (!expResultScalar.has_value()) {
-      return tl::make_unexpected(fmt::format("Aggregate result key not found: {}", key));
+      return tl::make_unexpected(expResultScalar.error());
     }
     status = arrayBuilder->AppendScalar(*expResultScalar.value());
     if (!status.ok()) {
