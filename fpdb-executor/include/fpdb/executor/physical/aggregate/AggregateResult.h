@@ -7,6 +7,7 @@
 
 #include <fpdb/tuple/TupleSet.h>
 #include <fpdb/tuple/Scalar.h>
+#include <tl/expected.hpp>
 #include <string>
 #include <unordered_map>
 
@@ -31,7 +32,7 @@ public:
   AggregateResult& operator=(const AggregateResult&) = default;
 
   void put(const string &key, const shared_ptr<arrow::Scalar> &value);
-  std::optional<shared_ptr<arrow::Scalar>> get(const string &key);
+  tl::expected<shared_ptr<arrow::Scalar>, string> get(const string &key);
 
 private:
   // use fpdb::tuple::Scalar instead of arrow::Scalar for ease of serialization
