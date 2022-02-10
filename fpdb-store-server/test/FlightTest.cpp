@@ -9,8 +9,10 @@
 #include "fpdb/store/server/flight/FlightInputSerialization.hpp"
 #include "fpdb/store/server/flight/TicketObject.hpp"
 #include <doctest/doctest.h>
+#include <iostream>
 
 #include "Module.hpp"
+#include "fpdb/store/server/Server.hpp"
 
 using namespace fpdb::store::server;
 using namespace fpdb::store::server::flight;
@@ -100,17 +102,16 @@ TEST_SUITE("fpdb-store-server/FlightTest" * doctest::skip(false)) {
     ::arrow::Status st;
 
     // Start the server
-    ::arrow::flight::Location server_location;
-    st = ::arrow::flight::Location::ForGrpcTcp("0.0.0.0", 0, &server_location);
-    REQUIRE(st.ok());
-    auto server = std::make_unique<FlightHandler>(server_location);
-    server->init();
-    auto stopped_future = std::async([&]() { return server->serve(); });
+    Server server(0);
+    auto init_result = server.init();
+    REQUIRE(init_result.has_value());
+    auto start_result = server.start();
+    REQUIRE(start_result.has_value());
 
     // Connect the client
     arrow::flight::Location client_location;
-    auto port = server->port();
-    st = arrow::flight::Location::ForGrpcTcp("localhost", port.value(), &client_location);
+    auto port = server.flight_port();
+    st = arrow::flight::Location::ForGrpcTcp("localhost", port, &client_location);
     REQUIRE(st.ok());
     arrow::flight::FlightClientOptions client_options = arrow::flight::FlightClientOptions::Defaults();
     std::unique_ptr<arrow::flight::FlightClient> client;
@@ -130,25 +131,23 @@ TEST_SUITE("fpdb-store-server/FlightTest" * doctest::skip(false)) {
     SPDLOG_DEBUG(flight_info->endpoints()[0].ticket.ticket);
     SPDLOG_DEBUG(flight_info->endpoints()[0].locations.size());
 
-    server->shutdown();
-    stopped_future.wait();
+    server.stop();
   }
 
   TEST_CASE("fpdb-store-server/FlightTest/test-do-get" * doctest::skip(false)) {
+
     ::arrow::Status st;
 
-    // Start the server
-    ::arrow::flight::Location server_location;
-    st = ::arrow::flight::Location::ForGrpcTcp("0.0.0.0", 0, &server_location);
-    REQUIRE(st.ok());
-    auto server = std::make_unique<FlightHandler>(server_location);
-    server->init();
-    auto stopped_future = std::async([&]() { return server->serve(); });
+    Server server(0);
+    auto init_result = server.init();
+    REQUIRE(init_result.has_value());
+    auto start_result = server.start();
+    REQUIRE(start_result.has_value());
 
     // Connect the client
     arrow::flight::Location client_location;
-    auto port = server->port();
-    st = arrow::flight::Location::ForGrpcTcp("localhost", port.value(), &client_location);
+    auto port = server.flight_port();
+    st = arrow::flight::Location::ForGrpcTcp("localhost", port, &client_location);
     REQUIRE(st.ok());
     arrow::flight::FlightClientOptions client_options = arrow::flight::FlightClientOptions::Defaults();
     std::unique_ptr<arrow::flight::FlightClient> client;
@@ -167,10 +166,14 @@ TEST_SUITE("fpdb-store-server/FlightTest" * doctest::skip(false)) {
     st = reader->ReadAll(&table);
     REQUIRE(st.ok());
 
+    auto options = ::arrow::PrettyPrintOptions::Defaults();
+    options.skip_new_lines = true;
+    st = ::arrow::PrettyPrint(*table, options, &std::cout);
+    REQUIRE(st.ok());
+
     REQUIRE_EQ(table->num_columns(), 3);
     REQUIRE_EQ(table->num_rows(), 20);
 
-    server->shutdown();
-    stopped_future.wait();
+    server.stop();
   }
 }

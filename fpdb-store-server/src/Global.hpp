@@ -1,0 +1,13 @@
+//
+// Created by matt on 10/2/22.
+//
+
+#ifndef FPDB_FPDB_STORE_SERVER_SRC_GLOBAL_HPP
+#define FPDB_FPDB_STORE_SERVER_SRC_GLOBAL_HPP
+
+#define LOG_LEVEL SPDLOG_LEVEL_DEBUG
+
+#define SPDLOG_ACTIVE_LEVEL LOG_LEVEL
+#include <spdlog/spdlog.h>
+
+#endif // FPDB_FPDB_STORE_SERVER_SRC_GLOBAL_HPP

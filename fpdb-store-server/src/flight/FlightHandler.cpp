@@ -56,18 +56,22 @@ tl::expected<void, std::string> FlightHandler::serve() {
 }
 
 tl::expected<void, std::string> FlightHandler::shutdown() {
-  auto st = (this->Shutdown());
-  if(!st.ok()) {
-    return tl::make_unexpected(st.message());
-  }
-  st = (this->Wait());
+  auto st = this->Shutdown();
   if(!st.ok()) {
     return tl::make_unexpected(st.message());
   }
   return {};
 }
 
-tl::expected<int, std::string> FlightHandler::port() {
+tl::expected<void, std::string> FlightHandler::wait() {
+  auto st = this->Wait();
+  if(!st.ok()) {
+    return tl::make_unexpected(st.message());
+  }
+  return {};
+}
+
+int FlightHandler::port() {
   return FlightServerBase::port();
 }
 

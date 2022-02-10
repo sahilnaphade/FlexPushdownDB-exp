@@ -53,7 +53,13 @@ public:
    *
    * @return
    */
-  tl::expected<int, std::string> port();
+  tl::expected<void, std::string> wait();
+
+  /**
+   *
+   * @return
+   */
+  int port();
 
   /**
    *
@@ -82,14 +88,6 @@ private:
    * @return
    */
   static tl::expected<HeaderMiddleware*, std::string> get_header_middleware(const ServerCallContext& context);
-
-  //        /**
-  //         *
-  //         * @param context
-  //         * @return
-  //         */
-  //        tl::expected<AuthorizeMiddleware *, std::string>
-  //        get_authorize_middleware(const ::arrow::flight::ServerCallContext &context);
 
   /**
    *

@@ -17,7 +17,9 @@ add_library(fpdb_store_server_objlib OBJECT
         src/FileHeaderInfo.cpp include/fpdb/store/server/FileHeaderInfo.hpp
         src/CSVInput.cpp include/fpdb/store/server/CSVInput.hpp
         src/InputSerializationType.cpp include/fpdb/store/server/InputSerializationType.hpp
-        src/ParquetInput.cpp include/fpdb/store/server/ParquetInput.hpp)
+        src/ParquetInput.cpp include/fpdb/store/server/ParquetInput.hpp
+        src/Server.cpp include/fpdb/store/server/Server.hpp src/Global.hpp
+        src/SignalHandler.cpp include/fpdb/store/server/SignalHandler.hpp)
 
 set_target_properties(fpdb_store_server_objlib PROPERTIES POSITION_INDEPENDENT_CODE ON)
 set_target_properties(fpdb_store_server_objlib PROPERTIES OUTPUT_NAME fpdb_store_server)
@@ -81,3 +83,9 @@ target_link_libraries(fpdb_store_server_test fpdb_store_server_shared)
 if (${APPLE})
     linkForMacExecutable(fpdb_store_server_test)
 endif()
+
+add_custom_command(
+        TARGET fpdb_store_server_test POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_CURRENT_SOURCE_DIR}/test-resources
+        ${CMAKE_CURRENT_BINARY_DIR})
