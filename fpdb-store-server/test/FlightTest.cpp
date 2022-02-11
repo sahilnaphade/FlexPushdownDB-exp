@@ -101,7 +101,7 @@ TEST_SUITE("fpdb-store-server/FlightTest" * doctest::skip(false)) {
     ::arrow::Status st;
 
     // Start the server
-    auto server = Server::make("1", 0, actor_manager);
+    auto server = Server::make("1", 0, true, 0,std::nullopt, std::nullopt, std::nullopt, 0,actor_manager);
     auto init_result = server->init();
     REQUIRE(init_result.has_value());
     auto start_result = server->start();
@@ -137,7 +137,7 @@ TEST_SUITE("fpdb-store-server/FlightTest" * doctest::skip(false)) {
 
     ::arrow::Status st;
 
-    auto server = Server::make("1", 0, actor_manager);
+    auto server = Server::make("1", 0, true, 0, std::nullopt,std::nullopt,std::nullopt, 0, actor_manager);
     auto init_result = server->init();
     REQUIRE(init_result.has_value());
     auto start_result = server->start();

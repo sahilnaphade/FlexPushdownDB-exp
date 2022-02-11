@@ -7,15 +7,34 @@
 #include <future>
 #include <utility>
 
-#include "Global.hpp"
+#include <caf/io/all.hpp>
+
+#include "fpdb/store/server/Global.hpp"
 #include "fpdb/store/server/caf/ServerMeta.hpp"
+#include "fpdb/store/server/cluster/ClusterActor.hpp"
+#include "fpdb/store/server/cluster/NodeActor.hpp"
 
 namespace fpdb::store::server {
 
 using namespace std::chrono_literals;
+using namespace fpdb::store::server::cluster;
 
-Server::Server(std::string name, int flight_port, std::shared_ptr<caf::ActorManager> ActorManager)
-    : name_(std::move(name)), flight_port_(flight_port), actor_manager_(std::move(ActorManager)) {
+Server::Server(std::string name, int node_port, bool start_coordinator, std::optional<int> coordinator_port,
+               std::optional<ClusterActor> remote_coordinator_actor_handle,
+               std::optional<std::string> remote_coordinator_host, std::optional<int> remote_coordinator_port_,
+               int flight_port, std::shared_ptr<caf::ActorManager> ActorManager)
+    : name_(std::move(name)),
+      node_port_(node_port),
+      start_coordinator_(start_coordinator),
+      coordinator_port_(coordinator_port),
+      remote_coordinator_host_(std::move(remote_coordinator_host)),
+      remote_coordinator_port_(remote_coordinator_port_),
+      flight_port_(flight_port),
+      actor_manager_(std::move(ActorManager)),
+      cluster_actor_handle_(std::move(remote_coordinator_actor_handle)) {
+
+//  assert((start_coordinator_ && coordinator_port_.has_value() && !remote_coordinator_host_.has_value()) ||
+//         (!start_coordinator_ && !coordinator_port_.has_value() && remote_coordinator_host_.has_value()));
 }
 
 Server::~Server() {
@@ -24,17 +43,21 @@ Server::~Server() {
   }
 }
 
-std::shared_ptr<Server> Server::make(const std::string& name, int port, std::optional<std::shared_ptr<caf::ActorManager>> optional_actor_manager) {
+std::shared_ptr<Server>
+Server::make(const std::string& name, int node_port, bool coordinator, std::optional<int> coordinator_port,
+             std::optional<ClusterActor> coordinator_actor_handle,
+             const std::optional<std::string>& remote_coordinator_host, std::optional<int> remote_coordinator_port,
+             int flight_port, std::optional<std::shared_ptr<caf::ActorManager>> optional_actor_manager) {
 
   std::shared_ptr<caf::ActorManager> actor_manager;
-  if(optional_actor_manager){
+  if(optional_actor_manager) {
     actor_manager = optional_actor_manager.value();
-  }
-  else{
+  } else {
     actor_manager = caf::ActorManager::make<::caf::id_block::Server>().value();
   }
 
-  return std::make_shared<Server>(name, port, actor_manager);
+  return std::make_shared<Server>(name, node_port, coordinator, coordinator_port, coordinator_actor_handle, remote_coordinator_host,
+                                  remote_coordinator_port, flight_port, actor_manager);
 }
 
 tl::expected<void, std::string> Server::init() {
@@ -70,6 +93,38 @@ tl::expected<void, std::string> Server::start() {
 
   SPDLOG_INFO("FlexPushdownDB Store Server ({}) starting", name_);
 
+  if(start_coordinator_) {
+    // Local coordinator, start coordinator and node actor
+    cluster_actor_handle_ = actor_manager_->actor_system().spawn(ClusterActorState::actor_functor);
+    auto expected_coordinator_port = actor_manager_->actor_system().middleman().publish(cluster_actor_handle_.value(),
+                                                                                        coordinator_port_.value());
+    coordinator_port_ = expected_coordinator_port.value();
+
+    SPDLOG_DEBUG("Started local Coordinator actor (port: {})", coordinator_port_.value());
+
+    node_actor_handle_ = actor_manager_->actor_system().spawn(NodeActorState::actor_functor, cluster_actor_handle_,
+                                                              std::nullopt, std::nullopt);
+    auto expected_node_port = actor_manager_->actor_system().middleman().publish(node_actor_handle_, node_port_);
+    node_port_ = expected_node_port.value();
+
+    SPDLOG_DEBUG("Started Node actor (port: {})", node_port_);
+  } else {
+    // Remote coordinator, just start node actor
+    if(cluster_actor_handle_.has_value()) {
+      node_actor_handle_ = actor_manager_->actor_system().spawn(NodeActorState::actor_functor, cluster_actor_handle_.value(),
+                                                                std::nullopt, std::nullopt);
+    }
+    else{
+      node_actor_handle_ = actor_manager_->actor_system().spawn(NodeActorState::actor_functor, std::nullopt,
+                                                                remote_coordinator_host_, remote_coordinator_port_);
+    }
+
+    auto expected_node_port = actor_manager_->actor_system().middleman().publish(node_actor_handle_, node_port_);
+    node_port_ = expected_node_port.value();
+
+    SPDLOG_DEBUG("Started Node actor (port: {})", node_port_);
+  }
+
   flight_future_ = std::async(std::launch::async, [=]() { return flight_handler_->serve(); });
 
   // Bit of a hack to check if the flight server failed on "serve"
@@ -89,6 +144,12 @@ void Server::stop() {
   assert(running_);
 
   SPDLOG_INFO("FlexPushdownDB Store Server ({}) stopping", name_);
+
+  ::caf::scoped_actor self(actor_manager_->actor_system());
+  self->send_exit(node_actor_handle_, ::caf::exit_reason::user_shutdown);
+  if(start_coordinator_) {
+    self->send_exit(cluster_actor_handle_.value(), ::caf::exit_reason::user_shutdown);
+  }
 
   flight_handler_->shutdown();
   flight_handler_->wait();
@@ -127,6 +188,14 @@ void Server::stop_except_signal_handler() {
   running_ = false;
 
   SPDLOG_INFO("FlexPushdownDB Store Server stopped ");
+}
+
+const std::optional<int>& Server::coordinator_port() const {
+  return coordinator_port_;
+}
+
+const std::optional<ClusterActor>& Server::cluster_actor_handle() const {
+  return cluster_actor_handle_;
 }
 
 } // namespace fpdb::store::server

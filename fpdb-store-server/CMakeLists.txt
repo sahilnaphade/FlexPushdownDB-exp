@@ -18,10 +18,13 @@ add_library(fpdb_store_server_objlib OBJECT
         src/CSVInput.cpp include/fpdb/store/server/CSVInput.hpp
         src/InputSerializationType.cpp include/fpdb/store/server/InputSerializationType.hpp
         src/ParquetInput.cpp include/fpdb/store/server/ParquetInput.hpp
-        src/Server.cpp include/fpdb/store/server/Server.hpp src/Global.hpp
+        src/Server.cpp include/fpdb/store/server/Server.hpp include/fpdb/store/server/Global.hpp
         src/SignalHandler.cpp include/fpdb/store/server/SignalHandler.hpp
         src/caf/ActorManager.cpp include/fpdb/store/server/caf/ActorManager.hpp
-        src/caf/ServerMeta.cpp include/fpdb/store/server/caf/ServerMeta.hpp)
+        src/caf/ServerMeta.cpp include/fpdb/store/server/caf/ServerMeta.hpp
+        src/cluster/ClusterActor.cpp include/fpdb/store/server/cluster/ClusterActor.hpp
+        src/caf/AbstractActor.cpp include/fpdb/store/server/caf/AbstractActor.hpp
+        src/cluster/NodeActor.cpp include/fpdb/store/server/cluster/NodeActor.hpp)
 
 set_target_properties(fpdb_store_server_objlib PROPERTIES POSITION_INDEPENDENT_CODE ON)
 set_target_properties(fpdb_store_server_objlib PROPERTIES OUTPUT_NAME fpdb_store_server)

@@ -6,6 +6,7 @@
 #define FPDB_FPDB_STORE_SERVER_INCLUDE_FPDB_STORE_SERVER_CAF_ACTORMANAGER_HPP
 
 #include <caf/all.hpp>
+#include <caf/io/all.hpp>
 #include <tl/expected.hpp>
 
 namespace fpdb::store::server::caf {
@@ -30,14 +31,17 @@ public:
     // Initialize global type information
     ::caf::init_global_meta_objects<T...>();
     ::caf::core::init_global_meta_objects();
+    ::caf::io::middleman::init_global_meta_objects();
     // Load modules
-    //    actor_manager->actor_system_config_.load<...>();
+    actor_manager->actor_system_config_->load<::caf::io::middleman>();
     // Create actor system
     actor_manager->actor_system_ = std::make_unique<::caf::actor_system>(*actor_manager->actor_system_config_);
     actor_manager->actor_system_->await_actors_before_shutdown(true);
 
     return actor_manager;
   }
+
+  [[nodiscard]] ::caf::actor_system& actor_system() const;
 
 private:
   inline static constexpr uint DefaultReservedCores = 4;
