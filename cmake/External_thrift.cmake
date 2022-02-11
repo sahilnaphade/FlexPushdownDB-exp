@@ -51,6 +51,7 @@ ExternalProject_Add(${THRIFT_BASE}
         -DBUILD_JAVA=FALSE
         -DBUILD_JAVASCRIPT=FALSE
         -DBoost_ROOT=${BOOST_INSTALL_DIR}
+        -DBoost_INCLUDE_DIR=${BOOST_INCLUDE_DIR}
         )
 add_dependencies(${THRIFT_BASE} ${BOOST_BASE})
 
