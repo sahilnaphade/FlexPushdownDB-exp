@@ -6,7 +6,7 @@
 #define FPDB_MODULE_H
 
 
-class Module {
+class Global {
 
 };
 

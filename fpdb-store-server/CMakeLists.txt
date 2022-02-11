@@ -19,7 +19,9 @@ add_library(fpdb_store_server_objlib OBJECT
         src/InputSerializationType.cpp include/fpdb/store/server/InputSerializationType.hpp
         src/ParquetInput.cpp include/fpdb/store/server/ParquetInput.hpp
         src/Server.cpp include/fpdb/store/server/Server.hpp src/Global.hpp
-        src/SignalHandler.cpp include/fpdb/store/server/SignalHandler.hpp)
+        src/SignalHandler.cpp include/fpdb/store/server/SignalHandler.hpp
+        src/caf/ActorManager.cpp include/fpdb/store/server/caf/ActorManager.hpp
+        src/caf/ServerMeta.cpp include/fpdb/store/server/caf/ServerMeta.hpp)
 
 set_target_properties(fpdb_store_server_objlib PROPERTIES POSITION_INDEPENDENT_CODE ON)
 set_target_properties(fpdb_store_server_objlib PROPERTIES OUTPUT_NAME fpdb_store_server)
@@ -29,6 +31,9 @@ list(APPEND _PUBLIC_LINK_LIBRARIES fpdb-tuple)
 list(APPEND _PUBLIC_LINK_LIBRARIES nlohmann_json)
 
 list(APPEND _PRIVATE_LINK_LIBRARIES fmt::fmt)
+list(APPEND _PUBLIC_LINK_LIBRARIES caf::libcaf_core_shared)
+list(APPEND _PUBLIC_LINK_LIBRARIES caf::libcaf_io_shared)
+list(APPEND _PUBLIC_LINK_LIBRARIES caf::libcaf_openssl_shared)
 
 list(APPEND _PUBLIC_SHARED_LINK_LIBRARIES arrow_flight_shared)
 list(APPEND _PUBLIC_SHARED_LINK_LIBRARIES fpdb_store_client_shared)
@@ -72,7 +77,7 @@ target_link_libraries(fpdb_store_server_executable fpdb_store_server_static)
 #-----------------------------------------------------------------------------------------------------------------------
 
 add_executable(fpdb_store_server_test
-        test/Module.cpp test/Module.hpp test/Main.cpp test/FlightTest.cpp)
+        test/Global.cpp test/Global.hpp test/Main.cpp test/FlightTest.cpp test/DistributedTest.cpp)
 
 target_link_libraries(fpdb_store_server_test fmt::fmt)
 target_link_libraries(fpdb_store_server_test spdlog::spdlog)

@@ -5,14 +5,17 @@
 #include "fpdb/store/server/Server.hpp"
 
 #include <future>
+#include <utility>
 
 #include "Global.hpp"
+#include "fpdb/store/server/caf/ServerMeta.hpp"
 
 namespace fpdb::store::server {
 
 using namespace std::chrono_literals;
 
-Server::Server(int flight_port) : flight_port_(flight_port) {
+Server::Server(std::string name, int flight_port, std::shared_ptr<caf::ActorManager> ActorManager)
+    : name_(std::move(name)), flight_port_(flight_port), actor_manager_(std::move(ActorManager)) {
 }
 
 Server::~Server() {
@@ -21,12 +24,25 @@ Server::~Server() {
   }
 }
 
+std::shared_ptr<Server> Server::make(const std::string& name, int port, std::optional<std::shared_ptr<caf::ActorManager>> optional_actor_manager) {
+
+  std::shared_ptr<caf::ActorManager> actor_manager;
+  if(optional_actor_manager){
+    actor_manager = optional_actor_manager.value();
+  }
+  else{
+    actor_manager = caf::ActorManager::make<::caf::id_block::Server>().value();
+  }
+
+  return std::make_shared<Server>(name, port, actor_manager);
+}
+
 tl::expected<void, std::string> Server::init() {
 
   ::arrow::Status st;
 
   signal_handler_ = std::make_unique<SignalHandler>([&](int signum) {
-    SPDLOG_INFO("Received signal (Signal {}:{})", signum, strsignal(signum));
+    SPDLOG_INFO("{}  |  Received signal (Signal {}:{})", name_, signum, strsignal(signum));
     stop_except_signal_handler();
   });
   signal_handler_->start();
@@ -52,7 +68,7 @@ tl::expected<void, std::string> Server::start() {
 
   assert(!running_);
 
-  SPDLOG_INFO("FlexPushdownDB Store Server starting");
+  SPDLOG_INFO("FlexPushdownDB Store Server ({}) starting", name_);
 
   flight_future_ = std::async(std::launch::async, [=]() { return flight_handler_->serve(); });
 
@@ -63,7 +79,7 @@ tl::expected<void, std::string> Server::start() {
 
   running_ = true;
 
-  SPDLOG_INFO("FlexPushdownDB Store Server started (FlightHandler listening on {})", flight_port_);
+  SPDLOG_INFO("FlexPushdownDB Store Server ({}) started (FlightHandler listening on {})", name_, flight_port_);
 
   return {};
 }
@@ -72,7 +88,7 @@ void Server::stop() {
 
   assert(running_);
 
-  SPDLOG_INFO("FlexPushdownDB Store Server stopping");
+  SPDLOG_INFO("FlexPushdownDB Store Server ({}) stopping", name_);
 
   flight_handler_->shutdown();
   flight_handler_->wait();
@@ -82,7 +98,7 @@ void Server::stop() {
 
   running_ = false;
 
-  SPDLOG_INFO("FlexPushdownDB Store Server stopped ");
+  SPDLOG_INFO("FlexPushdownDB Store Server ({}) stopped ", name_);
 }
 
 void Server::join() {

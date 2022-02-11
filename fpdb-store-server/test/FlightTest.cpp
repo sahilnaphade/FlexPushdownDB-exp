@@ -4,15 +4,14 @@
 
 #include <future>
 
-#include "fpdb/store/server/flight/CmdObject.hpp"
-#include "fpdb/store/server/flight/FlightHandler.hpp"
-#include "fpdb/store/server/flight/FlightInputSerialization.hpp"
-#include "fpdb/store/server/flight/TicketObject.hpp"
 #include <doctest/doctest.h>
-#include <iostream>
+#include <fpdb/store/server/Server.hpp>
+#include <fpdb/store/server/flight/CmdObject.hpp>
+#include <fpdb/store/server/flight/FlightHandler.hpp>
+#include <fpdb/store/server/flight/FlightInputSerialization.hpp>
+#include <fpdb/store/server/flight/TicketObject.hpp>
 
-#include "Module.hpp"
-#include "fpdb/store/server/Server.hpp"
+#include "Global.hpp"
 
 using namespace fpdb::store::server;
 using namespace fpdb::store::server::flight;
@@ -102,15 +101,15 @@ TEST_SUITE("fpdb-store-server/FlightTest" * doctest::skip(false)) {
     ::arrow::Status st;
 
     // Start the server
-    Server server(0);
-    auto init_result = server.init();
+    auto server = Server::make("1", 0, actor_manager);
+    auto init_result = server->init();
     REQUIRE(init_result.has_value());
-    auto start_result = server.start();
+    auto start_result = server->start();
     REQUIRE(start_result.has_value());
 
     // Connect the client
     arrow::flight::Location client_location;
-    auto port = server.flight_port();
+    auto port = server->flight_port();
     st = arrow::flight::Location::ForGrpcTcp("localhost", port, &client_location);
     REQUIRE(st.ok());
     arrow::flight::FlightClientOptions client_options = arrow::flight::FlightClientOptions::Defaults();
@@ -131,22 +130,22 @@ TEST_SUITE("fpdb-store-server/FlightTest" * doctest::skip(false)) {
     SPDLOG_DEBUG(flight_info->endpoints()[0].ticket.ticket);
     SPDLOG_DEBUG(flight_info->endpoints()[0].locations.size());
 
-    server.stop();
+    server->stop();
   }
 
   TEST_CASE("fpdb-store-server/FlightTest/test-do-get" * doctest::skip(false)) {
 
     ::arrow::Status st;
 
-    Server server(0);
-    auto init_result = server.init();
+    auto server = Server::make("1", 0, actor_manager);
+    auto init_result = server->init();
     REQUIRE(init_result.has_value());
-    auto start_result = server.start();
+    auto start_result = server->start();
     REQUIRE(start_result.has_value());
 
     // Connect the client
     arrow::flight::Location client_location;
-    auto port = server.flight_port();
+    auto port = server->flight_port();
     st = arrow::flight::Location::ForGrpcTcp("localhost", port, &client_location);
     REQUIRE(st.ok());
     arrow::flight::FlightClientOptions client_options = arrow::flight::FlightClientOptions::Defaults();
@@ -174,6 +173,6 @@ TEST_SUITE("fpdb-store-server/FlightTest" * doctest::skip(false)) {
     REQUIRE_EQ(table->num_columns(), 3);
     REQUIRE_EQ(table->num_rows(), 20);
 
-    server.stop();
+    server->stop();
   }
 }
