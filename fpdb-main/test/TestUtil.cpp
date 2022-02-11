@@ -70,8 +70,8 @@ void TestUtil::runTest() {
 }
 
 void TestUtil::makeAWSClient() {
-  awsClient_ = make_shared<AWSClient>(
-          make_shared<AWSConfig>(fpdb::aws::S3, 0));
+  auto awsConfig = AWSConfig::parseAWSConfig();
+  awsClient_ = make_shared<AWSClient>(awsConfig);
   awsClient_->init();
 }
 

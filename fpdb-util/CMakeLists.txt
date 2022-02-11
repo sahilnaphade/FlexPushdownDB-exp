@@ -37,6 +37,8 @@ if (${APPLE})
   linkForMacExecutable(fpdb-util-test)
 endif()
 
+add_dependencies(fpdb-util-test resources)
+
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Diagnostics

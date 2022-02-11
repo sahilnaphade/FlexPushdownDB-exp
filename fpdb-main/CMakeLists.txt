@@ -30,6 +30,8 @@ if (${APPLE})
   linkForMacExecutable(fpdb-main-client)
 endif()
 
+add_dependencies(fpdb-main-client resources)
+
 
 # fpdb-main-server
 add_executable(fpdb-main-server

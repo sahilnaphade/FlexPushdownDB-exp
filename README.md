@@ -88,6 +88,7 @@ Compiler needed:
 
 #### AWS config (resources/config/aws.conf):
 - `S3_CLIENT_TYPE` type of S3 client, can be one of `S3`, `AIRMETTLE`, `MINIO`. For `AIRMETTLE` and `MINIO`, access key and endpoint need to be set in `fpdb-aws/src/AWSClient.cpp`.
+- `AWS_REGION` the region of the bucket that data lies in.
 - `NETWORK_LIMIT` used to throttle data loading from S3, set to 0 if not throttling.
 
 #### Calcite config cpp side (resources/config/calcite.conf):

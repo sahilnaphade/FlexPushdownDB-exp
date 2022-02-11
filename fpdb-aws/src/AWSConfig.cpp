@@ -13,15 +13,18 @@ using namespace fpdb::util;
 namespace fpdb::aws {
 
 AWSConfig::AWSConfig(S3ClientType s3ClientType,
+                     const string &region,
                      size_t networkLimit) :
   s3ClientType_(s3ClientType),
+  region_(region),
   networkLimit_(networkLimit) {}
 
 shared_ptr<AWSConfig> AWSConfig::parseAWSConfig() {
   unordered_map<string, string> configMap = readConfig("aws.conf");
   auto s3ClientType = parseS3ClientType(configMap["S3_CLIENT_TYPE"]);
+  auto region = configMap["AWS_REGION"];
   auto networkLimit = stoul(configMap["NETWORK_LIMIT"]);
-  return make_shared<AWSConfig>(s3ClientType, networkLimit);
+  return make_shared<AWSConfig>(s3ClientType, region, networkLimit);
 }
 
 S3ClientType AWSConfig::parseS3ClientType(const string &stringToParse) {
@@ -37,6 +40,10 @@ S3ClientType AWSConfig::parseS3ClientType(const string &stringToParse) {
 
 S3ClientType AWSConfig::getS3ClientType() const {
   return s3ClientType_;
+}
+
+const Aws::String &AWSConfig::getRegion() const {
+  return region_;
 }
 
 size_t AWSConfig::getNetworkLimit() const {

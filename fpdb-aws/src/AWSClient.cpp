@@ -24,13 +24,13 @@ void AWSClient::init() {
 }
 
 std::shared_ptr<Aws::S3::S3Client> AWSClient::makeS3Client() {
-  static const char *ALLOCATION_TAG = "Normal";
+  static const char *ALLOCATION_TAG = "fpdb";
 
   std::shared_ptr<Aws::S3::S3Client> s3Client;
 
   Aws::Client::ClientConfiguration config;
   config.scheme = Aws::Http::Scheme::HTTP;
-  config.region = Aws::Region::US_EAST_2;
+  config.region = awsConfig_->getRegion();
 
   // This value has been tuned for c5a.4xlarge, c5a.8xlarge, and c5n.9xlarge, any more connections than this and aggregate
   // network performance degrades rather than remaining constant
@@ -58,7 +58,8 @@ std::shared_ptr<Aws::S3::S3Client> AWSClient::makeS3Client() {
       SPDLOG_DEBUG("Using S3 Client");
       s3Client = Aws::MakeShared<Aws::S3::S3Client>(
               ALLOCATION_TAG,
-              Aws::MakeShared<normal::aws::ProfileAWSCredentialsProviderChain>(ALLOCATION_TAG, "FlexPushdownDB"),
+              Aws::MakeShared<Aws::Auth::DefaultAWSCredentialsProviderChain>(ALLOCATION_TAG),
+//              Aws::MakeShared<fpdb::aws::ProfileAWSCredentialsProviderChain>(ALLOCATION_TAG, "FlexPushdownDB"),
               config,
               Aws::Client::AWSAuthV4Signer::PayloadSigningPolicy::Never,
               true);
