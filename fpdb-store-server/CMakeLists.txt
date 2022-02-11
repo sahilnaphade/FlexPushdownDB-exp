@@ -63,6 +63,10 @@ target_include_directories(fpdb_store_server_shared PUBLIC $<TARGET_PROPERTY:fpd
 target_link_libraries(fpdb_store_server_shared PUBLIC ${_PUBLIC_LINK_LIBRARIES})
 target_link_libraries(fpdb_store_server_shared PRIVATE ${_PUBLIC_SHARED_LINK_LIBRARIES})
 target_link_libraries(fpdb_store_server_shared PRIVATE ${_PRIVATE_LINK_LIBRARIES})
+# need to fix link on mac
+if (${APPLE})
+    linkForMacShared(fpdb_store_server_shared)
+endif()
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -87,7 +91,7 @@ target_link_libraries(fpdb_store_server_test spdlog::spdlog)
 target_link_libraries(fpdb_store_server_test doctest::doctest)
 target_link_libraries(fpdb_store_server_test arrow_flight_shared)
 target_link_libraries(fpdb_store_server_test fpdb_store_server_shared)
-# need to add and link libraries on mac
+# need to fix link on mac
 if (${APPLE})
     linkForMacExecutable(fpdb_store_server_test)
 endif()

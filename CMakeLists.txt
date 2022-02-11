@@ -27,25 +27,32 @@ endif()
 # Function for additional commands for mac os
 #-----------------------------------------------------------------------------------------------------------------------
 
-function(linkForMacExecutable target)
-  # missing linking on mac
-  target_link_directories(${target} PRIVATE /usr/local/opt/openssl/lib)
-  target_link_directories(${target} PRIVATE /usr/local/opt/llvm/lib)
-  target_link_directories(${target} PRIVATE /usr/local/opt/libdeflate/lib)
-
-  # remove -lrt from link.txt which mac does not have or need
-  set(linkFile ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/${target}.dir/link.txt)
-  add_custom_command(TARGET ${target} PRE_LINK
-          COMMAND sed -i '' 's/ -lrt//g' ${linkFile})
-
-  # remove /libc++fs.a from build.make and link.txt which mac does not have or need
+# remove /libc++fs.a from build.make and link.txt which mac does not have or need
+function(removeLibcppfsLinkForMac target)
   set(buildFile ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/${target}.dir/build.make)
+  set(linkFile ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/${target}.dir/link.txt)
   add_custom_target(pre-compile-${target}
           COMMAND sed -i '' '/\\/libc++fs.a/d' ${buildFile}
           COMMAND sed -i '' 's/ \\/libc++fs.a//g' ${linkFile})
   add_dependencies(${target} pre-compile-${target})
+endfunction()
 
-  # fix "dyld: Library not loaded" on mac
+# remove -lrt from link.txt which mac does not have or need
+function(removeLrtLinkForMac target)
+  set(linkFile ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/${target}.dir/link.txt)
+  add_custom_command(TARGET ${target} PRE_LINK
+          COMMAND sed -i '' 's/ -lrt//g' ${linkFile})
+endfunction()
+
+# Link missing libraries on mac
+function(linkMissingLibForMac target)
+  target_link_directories(${target} PRIVATE /usr/local/opt/openssl/lib)
+  target_link_directories(${target} PRIVATE /usr/local/opt/llvm/lib)
+  target_link_directories(${target} PRIVATE /usr/local/opt/libdeflate/lib)
+endfunction()
+
+# fix "dyld: Library not loaded" on mac
+function(fixDyldErrorForMac target)
   set(path_to_libs libgvplugin_neato_layout.6.dylib
           libgvplugin_core.6.dylib
           @rpath/libaws-cpp-sdk-core.dylib
@@ -64,6 +71,21 @@ function(linkForMacExecutable target)
     add_custom_command(TARGET ${target} POST_BUILD
             COMMAND install_name_tool -change ${path_to_lib} ${change_lib} ${target})
   endforeach()
+endfunction()
+
+# Fix link issues for mac executables
+function(linkForMacExecutable target)
+  removeLibcppfsLinkForMac(${target})
+  removeLrtLinkForMac(${target})
+  linkMissingLibForMac(${target})
+  fixDyldErrorForMac(${target})
+endfunction()
+
+# Fix link issues for mac shared libraries
+function(linkForMacShared target)
+  removeLibcppfsLinkForMac(${target})
+  removeLrtLinkForMac(${target})
+  linkMissingLibForMac(${target})
 endfunction()
 
 
