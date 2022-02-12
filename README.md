@@ -21,15 +21,14 @@ Compiler needed:
 - Linux: LLVM-12 or later versions.
 - Mac OS: LLVM-13.
 
-#### To set up the system locally to develop:
+#### To set up the system in a single node (to develop):
 
-1. Clear `resources/config/cluster_ips`.
-2. Install required dependency. For Ubuntu, `./tools/project/bin/ubuntu-prerequisites.sh`. For other Linux OS or Mac OS, required dependencies listed in `tools/project/bin/ubuntu-prerequisites.sh` have to be manually installed.
-3. Build the system `./resources/script/build.sh`.
+1. Install required dependency. For Ubuntu, `./tools/project/bin/ubuntu-prerequisites.sh`. For other Linux OS or Mac OS, required dependencies listed in `tools/project/bin/ubuntu-prerequisites.sh` have to be manually installed.
+2. Build the system `./resources/script/build.sh` (Or using an IDE like Clion to build).
 
 #### To set up the system in an EC2 cluster:
 
-1. Create a cluster of EC2 nodes, within which one is the coordinator, the others are executors. The coordinator is not necessarily as powerful as the executor.
+1. Create a cluster of EC2 nodes (at least 2), within which one is the coordinator, the others are executors. The coordinator is not necessarily as powerful as the executor.
 2. Log in the coordinator. Put public IP of all nodes (including the coordinator) into `resources/config/cluster_ips`. Each line is one IP.
 3. Set up the system `./resources/script/setup.sh`. If all required dependencies are already installed, the system can also be set up by `./resources/script/build.sh`, `./resources/script/deploy.sh`.
 
@@ -57,13 +56,13 @@ Compiler needed:
 
 ## Run End-to-end Tests
 
-#### To run tests locally in a single node:
+#### To run tests in a single node:
 1. Start the Calcite server `java -jar fpdb-calcite/java/target/flexpushdowndb.thrift.calcite-1.0-SNAPSHOT.jar &`.
 2. `cd <build directory>/fpdb-main`.
 3. Run tests `./fpdb-main-test -ts=<test-suite> -tc=<test-case>`, available single-node test suites are `ssb-sf1-single_node-no-parallel`, `tpch-sf0.01-single_node-no-parallel`, `tpch-sf0.01-single_node-parallel`.
 4. When finished, stop the Calcite server.
 
-#### To run tests in a cluster:
+#### To run tests in an EC2 cluster:
 1. Make sure the security group of your nodes allows inbound and outbound traffic for TCP protocol at `CAF_SERVER_PORT` (4242 by default, can be changed by instructions below). 
 2. `cd ~/FPDB-build/`.
 3. Start the system `./resources/script/start.sh`.
