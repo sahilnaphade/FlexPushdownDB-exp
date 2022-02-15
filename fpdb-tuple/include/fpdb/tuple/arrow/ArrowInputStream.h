@@ -7,10 +7,10 @@
 
 #include <arrow/io/interfaces.h>
 
-class ArrowAWSInputStream : public arrow::io::InputStream {
+class ArrowInputStream : public arrow::io::InputStream {
 public:
-  explicit ArrowAWSInputStream(std::basic_iostream<char, std::char_traits<char>> &file);
-  ~ArrowAWSInputStream() override;
+  explicit ArrowInputStream(std::basic_istream<char, std::char_traits<char>> &file);
+  ~ArrowInputStream() override;
 
   /// \brief Read data from current file position.
   ///
@@ -36,7 +36,7 @@ public:
   [[nodiscard]] bool closed() const override;
 
 protected:
-  std::basic_iostream<char, std::char_traits<char>>& underlyingFile_;
+  std::basic_istream<char, std::char_traits<char>>& underlyingFile_;
   int64_t position_ = 0;
   std::vector<char*> allocations_;
 };

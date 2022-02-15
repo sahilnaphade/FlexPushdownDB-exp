@@ -17,30 +17,33 @@ add_library(fpdb-tuple STATIC
         src/ColumnName.cpp include/fpdb/tuple/ColumnName.h
         src/ColumnBuilder.cpp include/fpdb/tuple/ColumnBuilder.h
         src/Sample.cpp include/fpdb/tuple/Sample.h
-        src/arrow/Arrays.cpp include/fpdb/tuple/arrow/Arrays.h
-        include/fpdb/tuple/arrow/ArrayHelper.h
-        include/fpdb/tuple/arrow/TableHelper.h
-        include/fpdb/tuple/arrow/ScalarHelperImpl.h
-        include/fpdb/tuple/arrow/ScalarHelperBuilder.h
-        include/fpdb/tuple/arrow/ScalarHelper.h
-        src/arrow/SchemaHelper.cpp include/fpdb/tuple/arrow/SchemaHelper.h
-        src/csv/CSVParser.cpp include/fpdb/tuple/csv/CSVParser.h
         src/ArrayAppender.cpp include/fpdb/tuple/ArrayAppender.h
+        src/ArrayAppenderWrapper.cpp include/fpdb/tuple/ArrayAppenderWrapper.h
         src/ArrayHasher.cpp include/fpdb/tuple/ArrayHasher.h
         include/fpdb/tuple/TupleKey.h
         src/TupleSetIndex.cpp include/fpdb/tuple/TupleSetIndex.h
         src/TupleSetIndexFinder.cpp include/fpdb/tuple/TupleSetIndexFinder.h
         src/Converter.cpp include/fpdb/tuple/Converter.h
-        src/parquet/ParquetReader.cpp include/fpdb/tuple/parquet/ParquetReader.h
         src/FileReader.cpp include/fpdb/tuple/FileReader.h
-        src/FileType.cpp include/fpdb/tuple/FileType.h
         src/FileReaderBuilder.cpp include/fpdb/tuple/FileReaderBuilder.h
-        src/csv/CSVReader.cpp include/fpdb/tuple/csv/CSVReader.h
-        src/ArrayAppenderWrapper.cpp include/fpdb/tuple/ArrayAppenderWrapper.h
+        src/FileFormat.cpp include/fpdb/tuple/FileFormat.h
+        include/fpdb/tuple/FileFormatType.h
         src/Util.cpp include/fpdb/tuple/Util.h
-        src/arrow/ArrowAWSInputStream.cpp include/fpdb/tuple/arrow/ArrowAWSInputStream.h
-        src/arrow/ArrowAWSGZIPInputStream.cpp include/fpdb/tuple/arrow/ArrowAWSGZIPInputStream.h
-        src/arrow/ArrowAWSGZIPInputStream2.cpp include/fpdb/tuple/arrow/ArrowAWSGZIPInputStream2.h
+        src/csv/CSVParser.cpp include/fpdb/tuple/csv/CSVParser.h
+        src/csv/CSVReader.cpp include/fpdb/tuple/csv/CSVReader.h
+        src/csv/CSVFormat.cpp include/fpdb/tuple/csv/CSVFormat.h
+        src/parquet/ParquetReader.cpp include/fpdb/tuple/parquet/ParquetReader.h
+        src/parquet/ParquetFormat.cpp include/fpdb/tuple/parquet/ParquetFormat.h
+        src/arrow/Arrays.cpp include/fpdb/tuple/arrow/Arrays.h
+        src/arrow/SchemaHelper.cpp include/fpdb/tuple/arrow/SchemaHelper.h
+        include/fpdb/tuple/arrow/ArrayHelper.h
+        include/fpdb/tuple/arrow/TableHelper.h
+        include/fpdb/tuple/arrow/ScalarHelperImpl.h
+        include/fpdb/tuple/arrow/ScalarHelperBuilder.h
+        include/fpdb/tuple/arrow/ScalarHelper.h
+        src/arrow/ArrowInputStream.cpp include/fpdb/tuple/arrow/ArrowInputStream.h
+        src/arrow/ArrowGzipInputStream.cpp include/fpdb/tuple/arrow/ArrowGzipInputStream.h
+        src/arrow/ArrowGzipInputStream2.cpp include/fpdb/tuple/arrow/ArrowGzipInputStream2.h
         src/arrow/CSVToArrowSIMDStreamParser.cpp include/fpdb/tuple/arrow/CSVToArrowSIMDStreamParser.h
         src/arrow/SIMDParserHelpers.cpp include/fpdb/tuple/arrow/SIMDParserHelpers.h
         src/arrow/CSVToArrowSIMDChunkParser.cpp include/fpdb/tuple/arrow/CSVToArrowSIMDChunkParser.h
@@ -73,17 +76,19 @@ add_executable(fpdb-tuple-test
         test/CSVTest.cpp
         test/ParquetTest.cpp
         test/ArrayAppenderTest.cpp
-        test/TupleSetIndexTest.cpp)
-
+        test/TupleSetIndexTest.cpp
+        test/FileReaderTestUtil.cpp test/FileReaderTestUtil.h)
 
 target_include_directories(fpdb-tuple-test PRIVATE include)
 
 target_link_libraries(fpdb-tuple-test spdlog::spdlog)
 target_link_libraries(fpdb-tuple-test doctest::doctest)
-target_link_libraries(fpdb-tuple-test Backward::Backward)
 target_link_libraries(fpdb-tuple-test fmt::fmt)
 target_link_libraries(fpdb-tuple-test fpdb-tuple)
-target_link_libraries(fpdb-tuple-test fpdb-util)
+# need to fix link on mac
+if (${APPLE})
+  linkForMacExecutable(fpdb-tuple-test)
+endif()
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -100,7 +105,6 @@ target_include_directories(fpdb-tuple-benchmark PRIVATE include)
 
 target_link_libraries(fpdb-tuple-benchmark spdlog::spdlog)
 target_link_libraries(fpdb-tuple-benchmark doctest::doctest)
-target_link_libraries(fpdb-tuple-benchmark Backward::Backward)
 target_link_libraries(fpdb-tuple-benchmark nanobench::nanobench)
 target_link_libraries(fpdb-tuple-benchmark fmt::fmt)
 target_link_libraries(fpdb-tuple-benchmark fpdb-tuple)

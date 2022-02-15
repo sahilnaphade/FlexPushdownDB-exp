@@ -10,7 +10,7 @@
 #include <immintrin.h>
 #include "fpdb/tuple/arrow/SIMDParserHelpers.h"
 #include "fpdb/tuple/TupleSet.h"
-#include "fpdb/tuple/arrow/ArrowAWSInputStream.h"
+#include "fpdb/tuple/arrow/ArrowInputStream.h"
 
 class CSVToArrowSIMDChunkParser {
 public:

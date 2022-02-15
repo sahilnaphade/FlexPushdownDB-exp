@@ -5,10 +5,9 @@
 #ifdef __AVX2__
 
 #include "fpdb/tuple/arrow/CSVToArrowSIMDStreamParser.h"
-#include "fpdb/tuple/arrow/ArrowAWSInputStream.h"
-#include "fpdb/tuple/arrow/ArrowAWSGZIPInputStream2.h"
+#include "fpdb/tuple/arrow/ArrowInputStream.h"
+#include "fpdb/tuple/arrow/ArrowGzipInputStream2.h"
 #include <arrow/util/value_parsing.h>
-#include <spdlog/common.h>
 #include <sstream>
 #include <cstdint>
 #include <cstdlib>
@@ -16,7 +15,7 @@
 
 CSVToArrowSIMDStreamParser::CSVToArrowSIMDStreamParser(std::string callerName,
                                                        uint64_t parseChunkSize,
-                                                       std::basic_iostream<char, std::char_traits<char>> &file,
+                                                       std::basic_istream<char, std::char_traits<char>> &file,
                                                        bool discardHeader,
                                                        std::shared_ptr<arrow::Schema> inputSchema,
                                                        std::shared_ptr<arrow::Schema> outputSchema,
@@ -29,9 +28,9 @@ CSVToArrowSIMDStreamParser::CSVToArrowSIMDStreamParser(std::string callerName,
   outputSchema_(std::move(outputSchema)),
   csvFileDelimiter_(csvFileDelimiter) {
   if (gzipCompressed) {
-    inputStream_ = std::make_shared<ArrowAWSGZIPInputStream2>(file);
+    inputStream_ = std::make_shared<ArrowGzipInputStream2>(file);
   } else {
-    inputStream_ = std::make_shared<ArrowAWSInputStream>(file);
+    inputStream_ = std::make_shared<ArrowInputStream>(file);
   }
   // Need to allocate allocate at least 64 bytes at end so that the last of the input can be processed since we
   // process in 64 byte chunks
@@ -286,7 +285,6 @@ void CSVToArrowSIMDStreamParser::dumpToArrayBuilderColumnWise(ParsedCSV & pcsv) 
       }
     }
   }
-  SPDLOG_DEBUG("Buffer contains:\n{}", ss.str());
 }
 
 void CSVToArrowSIMDStreamParser::initializeDataStructures(ParsedCSV & pcsv) {
@@ -299,7 +297,6 @@ void CSVToArrowSIMDStreamParser::initializeDataStructures(ParsedCSV & pcsv) {
     if (inputCol == -1) {
       throw std::runtime_error(fmt::format("Error, column %s missing from input schema but in output schema", field->name().c_str()));
     }
-    SPDLOG_DEBUG("Initializing column: {}", field->name());
     std::shared_ptr<arrow::DataType> datatype = field->type();
     datatypes_.emplace_back(datatype->id());
     switch(datatype->id()) {

@@ -5,7 +5,6 @@
 #ifdef __AVX2__
 
 #include "fpdb/tuple/arrow/CSVToArrowSIMDChunkParser.h"
-#include <spdlog/common.h>
 #include <arrow/util/value_parsing.h>
 #include <sstream>
 #include <cstdint>
@@ -334,7 +333,6 @@ void CSVToArrowSIMDChunkParser::dumpToArrayBuilderColumnWise(ParsedCSV & pcsv) {
       }
     }
   }
-  SPDLOG_DEBUG("Buffer contains:\n{}", ss.str());
 }
 
 void CSVToArrowSIMDChunkParser::initializeDataStructures(ParsedCSV & pcsv) {
@@ -347,7 +345,6 @@ void CSVToArrowSIMDChunkParser::initializeDataStructures(ParsedCSV & pcsv) {
     if (inputCol == -1) {
       throw std::runtime_error(fmt::format("Error, column %s missing from input schema but in output schema", field->name().c_str()));
     }
-    SPDLOG_DEBUG("Initializing column: {}", field->name());
     std::shared_ptr<arrow::DataType> datatype = field->type();
     datatypes_.emplace_back(datatype->id());
     switch(datatype->id()) {
