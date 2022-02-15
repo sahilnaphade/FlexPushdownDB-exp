@@ -25,7 +25,7 @@ Set up AWS access credentials and config. Run `aws configure` or manually set `~
 
 #### To set up the system in a single node (to develop):
 
-1. Clear `resources/config/cluster_ips`.
+1. Install required dependency. For Ubuntu, ./tools/project/bin/ubuntu-prerequisites.sh. For other Linux OS or Mac OS, required dependencies listed in tools/project/bin/ubuntu-prerequisites.sh have to be manually installed.
 2. Build the system `./resources/script/build.sh -s` (Or using an IDE like Clion to build).
 
 #### To set up the system in an EC2 cluster:
