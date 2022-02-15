@@ -21,16 +21,18 @@ Compiler needed:
 - Linux: LLVM-12 or later versions.
 - Mac OS: LLVM-13.
 
+Set up AWS access credentials and config. Run `aws configure` or manually set `~/.aws/credentials` and `~/.aws/config`.
+
 #### To set up the system in a single node (to develop):
 
-1. Install required dependency. For Ubuntu, `./tools/project/bin/ubuntu-prerequisites.sh`. For other Linux OS or Mac OS, required dependencies listed in `tools/project/bin/ubuntu-prerequisites.sh` have to be manually installed.
-2. Build the system `./resources/script/build.sh` (Or using an IDE like Clion to build).
+1. Install required dependency. For Ubuntu, ./tools/project/bin/ubuntu-prerequisites.sh. For other Linux OS or Mac OS, required dependencies listed in tools/project/bin/ubuntu-prerequisites.sh have to be manually installed.
+2. Build the system `./resources/script/build.sh -s` (Or using an IDE like Clion to build).
 
 #### To set up the system in an EC2 cluster:
 
 1. Create a cluster of EC2 nodes (at least 2), within which one is the coordinator, the others are executors. The coordinator is not necessarily as powerful as the executor.
 2. Log in the coordinator. Put public IP of all nodes (including the coordinator) into `resources/config/cluster_ips`. Each line is one IP.
-3. Set up the system `./resources/script/setup.sh`. If all required dependencies are already installed, the system can also be set up by `./resources/script/build.sh`, `./resources/script/deploy.sh`.
+3. Set up the system `./resources/script/setup.sh`. If all required dependencies are already installed, the system can also be set up by `./resources/script/build.sh -d`, `./resources/script/deploy.sh`.
 
 #### Configurable parameters in `resources/script/util.sh` used when setting up the system:
 
@@ -44,7 +46,7 @@ Compiler needed:
 
 
 ## Prepare Data and Metadata
-1. Set up AWS access credentials and config. Run `aws configure` or manually set `~/.aws/credentials` and `~/.aws/config`.
+1. Make AWS access credentials and config are set.
 2. Organize data files as follows on one S3 bucket: 
    1) Under `resources/metadata/`, create a directory of which the absolute path denotes the schema name, e.g. data files under `s3://tpch-sf0.01/csv/` belong to schema `tpch-sf0.01/csv/`.
    2) For each table `T` with a single partition, name the file as `T.tbl` for CSV format or `T.parquet` for Parquet format; for each table `T` with multiple partitions, create a directory `T_sharded/` and put partition files named as `T.tbl.0/T.parquet.0`, `T.tbl.1/T.parquet.1`... into it.
