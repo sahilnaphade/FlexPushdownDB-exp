@@ -74,6 +74,7 @@ Set up AWS access credentials and config. Run `aws configure` or manually set `~
 
 
 ## System Configurations
+The configurations are used by `fpdb-main-client` by default. When writing test cases, you may input your parameters in your code or read from configuration files. For example, in `fpdb-main-test`, parameters of execution config are specified in the code, while parameters of AWS config are read from `aws.conf`. In this way your test cases can be more flexible and easy to be adjusted.
 
 #### Execution config (resources/config/exec.conf):
 - `S3_BUCKET` s3 bucket name where the data is in.
