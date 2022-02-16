@@ -50,6 +50,8 @@ add_library(fpdb-tuple STATIC
 
 target_include_directories(fpdb-tuple PUBLIC include)
 
+set_target_properties(fpdb-tuple PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
 target_link_libraries(fpdb-tuple PUBLIC fpdb-util)
 target_link_libraries(fpdb-tuple PUBLIC fpdb-caf)
 target_link_libraries(fpdb-tuple PUBLIC spdlog::spdlog)

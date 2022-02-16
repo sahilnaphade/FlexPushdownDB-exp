@@ -14,13 +14,11 @@ void ClusterActorState::on_exit(ClusterStatefulActor /*self*/, const ::caf::erro
   // NOOP
 }
 
-void ClusterActorState::on_linked_exit(ClusterStatefulActor /*self*/,
-                                                  const ::caf::exit_msg& /*exit_message*/) {
+void ClusterActorState::on_linked_exit(ClusterStatefulActor /*self*/, const ::caf::exit_msg& /*exit_message*/) {
   // NOOP
 }
 
-ClusterActor::behavior_type
-ClusterActorState::actor_functor(ClusterStatefulActor self) {
+ClusterActor::behavior_type ClusterActorState::actor_functor(ClusterStatefulActor self) {
   return self->state.make_behaviour(self);
 }
 

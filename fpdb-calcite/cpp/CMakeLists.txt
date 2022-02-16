@@ -17,6 +17,8 @@ add_library(calciteserver_thrift_cpp STATIC
         ${CMAKE_CURRENT_SOURCE_DIR}/gen-cpp/CalciteServer_types.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/gen-cpp/CalciteServer_server.skeleton.cpp)
 
+set_target_properties(calciteserver_thrift_cpp PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
 target_link_libraries(calciteserver_thrift_cpp PRIVATE thrift_static)
 target_link_libraries(calciteserver_thrift_cpp PRIVATE boost)
 
@@ -40,6 +42,8 @@ add_library(fpdb-calcite STATIC
         src/CalciteConfig.cpp include/fpdb/calcite/CalciteConfig.h)
 
 target_include_directories(fpdb-calcite PUBLIC include)
+
+set_target_properties(fpdb-calcite PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 target_link_libraries(fpdb-calcite PUBLIC calciteserver_thrift_cpp)
 target_link_libraries(fpdb-calcite PUBLIC thrift_static)

@@ -24,7 +24,7 @@ add_library(fpdb_store_server_objlib OBJECT
         src/caf/ServerMeta.cpp include/fpdb/store/server/caf/ServerMeta.hpp
         src/cluster/ClusterActor.cpp include/fpdb/store/server/cluster/ClusterActor.hpp
         src/caf/AbstractActor.cpp include/fpdb/store/server/caf/AbstractActor.hpp
-        src/cluster/NodeActor.cpp include/fpdb/store/server/cluster/NodeActor.hpp)
+        src/cluster/NodeActor.cpp include/fpdb/store/server/cluster/NodeActor.hpp src/ServerConfig.cpp include/fpdb/store/server/ServerConfig.hpp)
 
 set_target_properties(fpdb_store_server_objlib PROPERTIES POSITION_INDEPENDENT_CODE ON)
 set_target_properties(fpdb_store_server_objlib PROPERTIES OUTPUT_NAME fpdb_store_server)
@@ -37,6 +37,9 @@ list(APPEND _PRIVATE_LINK_LIBRARIES fmt::fmt)
 list(APPEND _PUBLIC_LINK_LIBRARIES caf::libcaf_core_shared)
 list(APPEND _PUBLIC_LINK_LIBRARIES caf::libcaf_io_shared)
 list(APPEND _PUBLIC_LINK_LIBRARIES caf::libcaf_openssl_shared)
+list(APPEND _PUBLIC_LINK_LIBRARIES fpdb-catalogue)
+list(APPEND _PUBLIC_LINK_LIBRARIES fpdb-calcite)
+list(APPEND _PUBLIC_LINK_LIBRARIES fpdb-executor)
 
 list(APPEND _PUBLIC_SHARED_LINK_LIBRARIES arrow_flight_shared)
 list(APPEND _PUBLIC_SHARED_LINK_LIBRARIES fpdb_store_client_shared)
@@ -72,6 +75,7 @@ target_link_libraries(fpdb_store_server_shared PRIVATE ${_PRIVATE_LINK_LIBRARIES
 add_executable(fpdb_store_server_executable
         executable/Main.cpp executable/Global.hpp)
 
+target_link_libraries(fpdb_store_server_executable Backward::Backward)
 target_link_libraries(fpdb_store_server_executable fpdb_store_server_static)
 
 
@@ -85,6 +89,7 @@ add_executable(fpdb_store_server_test
 target_link_libraries(fpdb_store_server_test fmt::fmt)
 target_link_libraries(fpdb_store_server_test spdlog::spdlog)
 target_link_libraries(fpdb_store_server_test doctest::doctest)
+target_link_libraries(fpdb_store_server_test Backward::Backward)
 target_link_libraries(fpdb_store_server_test arrow_flight_shared)
 target_link_libraries(fpdb_store_server_test fpdb_store_server_shared)
 # need to add and link libraries on mac

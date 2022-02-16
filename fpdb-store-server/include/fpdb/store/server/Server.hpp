@@ -8,6 +8,7 @@
 #include <future>
 #include <memory>
 
+#include "ServerConfig.hpp"
 #include "SignalHandler.hpp"
 #include "caf/ActorManager.hpp"
 #include "caf/ServerMeta.hpp"
@@ -20,21 +21,18 @@ using namespace fpdb::store::server::cluster;
 
 class Server {
 public:
-  Server(std::string name, int node_port, bool start_coordinator, std::optional<int> coordinator_port,
-         std::optional<ClusterActor> coordinator_actor_handle, std::optional<std::string> remote_coordinator_host,
-         std::optional<int> remote_coordinator_port_, int flight_port, std::shared_ptr<caf::ActorManager> ActorManager);
+  Server(const ServerConfig& cfg, std::optional<ClusterActor> coordinator_actor_handle,
+         std::shared_ptr<caf::ActorManager> actor_manager);
   virtual ~Server();
 
   static std::shared_ptr<Server>
-  make(const std::string& name, int node_port, bool start_coordinator, std::optional<int> coordinator_port,
-       std::optional<ClusterActor> coordinator_actor_handle, const std::optional<std::string>& remote_coordinator_host,
-       std::optional<int> remote_coordinator_port_, int flight_port,
+  make(const ServerConfig& cfg, const std::optional<ClusterActor>& coordinator_actor_handle = std::nullopt,
        std::optional<std::shared_ptr<caf::ActorManager>> optional_actor_manager = std::nullopt);
 
   [[nodiscard]] const std::optional<int>& coordinator_port() const;
   [[nodiscard]] int flight_port() const;
   [[nodiscard]] bool running() const;
-  const std::optional<ClusterActor>& cluster_actor_handle() const;
+  [[nodiscard]] const std::optional<ClusterActor>& cluster_actor_handle() const;
 
   [[nodiscard]] tl::expected<void, std::string> init();
   [[nodiscard]] tl::expected<void, std::string> start();
@@ -51,10 +49,8 @@ private:
   int node_port_ = 0;
 
   bool start_coordinator_ = false;
+  std::optional<std::string> coordinator_host_ = std::nullopt;
   std::optional<int> coordinator_port_ = 0;
-
-  std::optional<std::string> remote_coordinator_host_ = std::nullopt;
-  std::optional<int> remote_coordinator_port_ = std::nullopt;
 
   int flight_port_ = 0;
 

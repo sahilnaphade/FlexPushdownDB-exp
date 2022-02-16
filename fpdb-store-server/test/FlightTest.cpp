@@ -101,7 +101,8 @@ TEST_SUITE("fpdb-store-server/FlightTest" * doctest::skip(false)) {
     ::arrow::Status st;
 
     // Start the server
-    auto server = Server::make("1", 0, true, 0,std::nullopt, std::nullopt, std::nullopt, 0,actor_manager);
+    auto server = Server::make(ServerConfig{"1", 0, true, std::nullopt, 0, 0, "./single/data"}, std::nullopt,
+                               actor_manager);
     auto init_result = server->init();
     REQUIRE(init_result.has_value());
     auto start_result = server->start();
@@ -118,12 +119,12 @@ TEST_SUITE("fpdb-store-server/FlightTest" * doctest::skip(false)) {
     REQUIRE(st.ok());
 
     // Get FlightInfo
-    arrow::flight::FlightCallOptions call_options2;
-    call_options2.headers.emplace_back("bucket", "test");
-    call_options2.headers.emplace_back("object", "test");
-    auto flight_descriptor = FlightDescriptor::Path({"test"});
+    arrow::flight::FlightCallOptions call_options;
+    call_options.headers.emplace_back("bucket", "ssb-sf0.01");
+    call_options.headers.emplace_back("object", "customer.csv");
+    auto flight_descriptor = FlightDescriptor::Path({});
     std::unique_ptr<FlightInfo> flight_info;
-    st = client->GetFlightInfo(call_options2, flight_descriptor, &flight_info);
+    st = client->GetFlightInfo(call_options, flight_descriptor, &flight_info);
     REQUIRE(st.ok());
 
     SPDLOG_DEBUG(flight_info->descriptor().ToString());
@@ -137,7 +138,8 @@ TEST_SUITE("fpdb-store-server/FlightTest" * doctest::skip(false)) {
 
     ::arrow::Status st;
 
-    auto server = Server::make("1", 0, true, 0, std::nullopt,std::nullopt,std::nullopt, 0, actor_manager);
+    auto server = Server::make(ServerConfig{"1", 0, true, std::nullopt, 0, 0, "./single/data"}, std::nullopt,
+                               actor_manager);
     auto init_result = server->init();
     REQUIRE(init_result.has_value());
     auto start_result = server->start();
@@ -154,7 +156,7 @@ TEST_SUITE("fpdb-store-server/FlightTest" * doctest::skip(false)) {
     REQUIRE(st.ok());
 
     auto ticket_obj = SelectObjectContentTicket::make(
-      "test-bucket", "test-object",
+      "ssb-sf0.01", "customer.csv",
       FlightSelectObjectContentRequest::make("select * from s3object",
                                              FlightCSVInputSerialization::make(CSVInput(FileHeaderInfo::Use))));
     std::unique_ptr<::arrow::flight::FlightStreamReader> reader;

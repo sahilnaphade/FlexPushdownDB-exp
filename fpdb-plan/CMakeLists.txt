@@ -29,6 +29,8 @@ add_library(fpdb-plan STATIC
 
 target_include_directories(fpdb-plan PUBLIC include)
 
+set_target_properties(fpdb-plan PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
 target_link_libraries(fpdb-plan PUBLIC fpdb-calcite)
 target_link_libraries(fpdb-plan PUBLIC fpdb-catalogue)
 target_link_libraries(fpdb-plan PUBLIC fpdb-expression-gandiva)

@@ -11,6 +11,8 @@ add_library(fpdb-util
 
 target_include_directories(fpdb-util PUBLIC include)
 
+set_target_properties(fpdb-util PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
 target_link_libraries(fpdb-util PUBLIC LLVM-filesystem)
 target_link_libraries(fpdb-util PUBLIC fmt::fmt)
 target_link_libraries(fpdb-util PUBLIC spdlog::spdlog)

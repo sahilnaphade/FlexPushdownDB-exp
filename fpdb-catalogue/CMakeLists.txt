@@ -29,6 +29,8 @@ add_library(fpdb-catalogue STATIC
 
 target_include_directories(fpdb-catalogue PUBLIC include)
 
+set_target_properties(fpdb-catalogue PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
 target_link_libraries(fpdb-catalogue PUBLIC nlohmann_json)
 target_link_libraries(fpdb-catalogue PUBLIC fpdb-tuple)
 target_link_libraries(fpdb-catalogue PUBLIC fpdb-aws)
