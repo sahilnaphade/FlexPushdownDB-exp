@@ -3,7 +3,7 @@
 //
 
 #ifndef FPDB_MODULE_HPP
-#define FPDB_MODULE_H
+#define FPDB_MODULE_HPP
 
 
 class Global {

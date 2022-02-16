@@ -138,6 +138,11 @@ tl::expected<void, string> TupleSetIndex::put(const shared_ptr<::arrow::Table> &
 }
 
 tl::expected<void, string> TupleSetIndex::merge(const shared_ptr<TupleSetIndex> &other) {
+  // Check if hash columns are the same
+  if (columnNames_ != other->columnNames_) {
+    return tl::make_unexpected("Hash column names are incompatible");
+  }
+
   int64_t rowOffset = tupleSet_->numRows();
 
   // Add the other rows to hashtable, offsetting their row numbers
@@ -145,8 +150,25 @@ tl::expected<void, string> TupleSetIndex::merge(const shared_ptr<TupleSetIndex> 
     valueRowMap_.emplace(valueIndexMapIterator.first, valueIndexMapIterator.second + rowOffset);
   }
 
+  // Need to synchronize schemas (schemas can be the same but in different orders)
+  shared_ptr<::arrow::Table> alignedTable;
+  auto schema = tupleSet_->schema();
+  if (!schema->Equals(other->tupleSet_->schema())) {
+    vector<shared_ptr<::arrow::ChunkedArray>> newChunkedArrays;
+    for (auto const &field: schema->fields()) {
+      auto chunkedArray = other->tupleSet_->table()->GetColumnByName(field->name());
+      if (!chunkedArray) {
+        return tl::make_unexpected("Schemas not compatible");
+      }
+      newChunkedArrays.emplace_back(chunkedArray);
+    }
+    alignedTable = ::arrow::Table::Make(schema, newChunkedArrays);
+  } else {
+    alignedTable = other->tupleSet_->table();
+  }
+
   // Add the other's table to the existing table
-  auto appendResult = ::arrow::ConcatenateTables({tupleSet_->table(), other->tupleSet_->table()});
+  auto appendResult = ::arrow::ConcatenateTables({tupleSet_->table(), alignedTable});
   if (!appendResult.ok()) {
     return tl::make_unexpected(appendResult.status().message());
   }

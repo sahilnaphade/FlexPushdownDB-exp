@@ -13,7 +13,7 @@ using namespace fpdb::tuple;
 
 TEST_SUITE ("tuple" * doctest::skip(SKIP_SUITE)) {
 
-TEST_CASE ("make" * doctest::skip(true || SKIP_SUITE)) {
+TEST_CASE ("make" * doctest::skip(false || SKIP_SUITE)) {
 
   auto column1 = std::vector{"1", "2", "3"};
   auto column2 = std::vector{"4", "5", "6"};
@@ -165,7 +165,7 @@ TEST_CASE ("iterate-column-empty" * doctest::skip(false || SKIP_SUITE)) {
   // Check explicit iteration
   std::vector<std::string> explicitScalars;
   auto explicitIt = columnA->begin();
-	  CHECK_THROWS(*(**explicitIt)->value<std::string>());
+	  CHECK_FALSE((*explicitIt).has_value());
 	  CHECK_EQ(explicitIt, columnA->end());
 	  CHECK_EQ(explicitScalars.size(), 0);
 
@@ -199,7 +199,7 @@ TEST_CASE ("iterate-column-empty-chunk" * doctest::skip(false || SKIP_SUITE)) {
   // Check explicit iteration
   std::vector<std::string> explicitScalars;
   auto explicitIt = columnA->begin();
-	  CHECK_THROWS(*(**explicitIt)->value<std::string>());
+          CHECK_FALSE((*explicitIt).has_value());
 	  CHECK_EQ(explicitIt, columnA->end());
 	  CHECK_EQ(explicitScalars.size(), 0);
 

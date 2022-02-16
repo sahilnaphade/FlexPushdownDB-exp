@@ -5,41 +5,38 @@
 #ifndef FPDB_FPDB_TUPLE_INCLUDE_FPDB_TUPLE_CSVREADER_H
 #define FPDB_FPDB_TUPLE_INCLUDE_FPDB_TUPLE_CSVREADER_H
 
-#include <string>
-#include <memory>
-
+#include "fpdb/tuple/FileReader.h"
+#include "fpdb/tuple/TupleSet.h"
 #include <tl/expected.hpp>
 #include <arrow/io/api.h>
 #include <parquet/arrow/reader.h>
+#include <string>
+#include <memory>
 
-#include "fpdb/tuple/FileReader.h"
-#include "fpdb/tuple/TupleSet.h"
-
-namespace fpdb::tuple {
+namespace fpdb::tuple::csv {
 
 class CSVReader : public FileReader {
 
 public:
-  explicit CSVReader(std::string path);
-  CSVReader() = default;
-  CSVReader(const CSVReader&) = default;
-  CSVReader& operator=(const CSVReader&) = default;
+  explicit CSVReader(const std::string &path,
+                     const std::shared_ptr<FileFormat> &format,
+                     const std::shared_ptr<::arrow::Schema> &schema);
+  ~CSVReader() = default;
 
-  static tl::expected<std::shared_ptr<CSVReader>, std::string> make(const std::string &path);
+  static std::shared_ptr<CSVReader> make(const std::string &path,
+                                         const std::shared_ptr<FileFormat> &format,
+                                         const std::shared_ptr<::arrow::Schema> &schema);
 
-  [[nodiscard]] tl::expected<std::shared_ptr<TupleSet>, std::string>
+  tl::expected<std::shared_ptr<TupleSet>, std::string> read(const std::vector<std::string> &columnNames) override;
+
+  // FIXME: this one parses all columns as string
+  tl::expected<std::shared_ptr<TupleSet>, std::string>
   read(const std::vector<std::string> &columnNames, int64_t startPos, int64_t finishPos) override;
 
 private:
-  std::string path_;
+  tl::expected<std::shared_ptr<TupleSet>, std::string> readUsingSimdParser(const std::vector<std::string> &columnNames);
+  tl::expected<std::shared_ptr<TupleSet>, std::string> readUsingArrowImpl(const std::vector<std::string> &columnNames);
 
-// caf inspect
-public:
-  template <class Inspector>
-  friend bool inspect(Inspector& f, CSVReader& reader) {
-    return f.object(reader).fields(f.field("type", reader.type_),
-                                   f.field("path", reader.path_));
-  }
 };
 
 }

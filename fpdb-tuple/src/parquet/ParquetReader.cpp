@@ -2,17 +2,61 @@
 // Created by matt on 12/8/20.
 //
 
-#include "fpdb/tuple/parquet/ParquetReader.h"
+#include <fpdb/tuple/parquet/ParquetReader.h>
 #include <filesystem>
 
 using namespace fpdb::tuple;
 
-ParquetReader::ParquetReader(std::string Path) :
-  FileReader(FileType::Parquet),
-  path_(std::move(Path)) {}
+namespace fpdb::tuple::parquet {
 
-tl::expected<std::shared_ptr<ParquetReader>, std::string> ParquetReader::make(const std::string &Path) {
-  return std::make_shared<ParquetReader>(Path);
+ParquetReader::ParquetReader(const std::string &path,
+                             const std::shared_ptr<FileFormat> &format,
+                             const std::shared_ptr<::arrow::Schema> &schema) :
+  FileReader(path, format, schema) {}
+
+std::shared_ptr<ParquetReader> ParquetReader::make(const std::string &path,
+                                                   const std::shared_ptr<FileFormat> &format,
+                                                   const std::shared_ptr<::arrow::Schema> &schema) {
+  return std::make_shared<ParquetReader>(path, format, schema);
+}
+
+tl::expected<std::shared_ptr<TupleSet>, std::string> ParquetReader::read(const std::vector<std::string> &columnNames) {
+  // open the file
+  auto expInFile = ::arrow::io::ReadableFile::Open(path_);
+  if (!expInFile.ok()) {
+    return tl::make_unexpected(expInFile.status().message());
+  }
+  auto inFile = *expInFile;
+
+  // create the reader
+  std::unique_ptr<::parquet::arrow::FileReader> parquetReader;
+  ::arrow::Status status = ::parquet::arrow::OpenFile(inFile,
+                                                      ::arrow::default_memory_pool(),
+                                                      &parquetReader);
+  if (!status.ok()) {
+    close(inFile);
+    return tl::make_unexpected(status.message());
+  }
+  parquetReader->set_use_threads(false);
+
+  // read the file
+  std::shared_ptr<arrow::Table> table;
+  std::vector<int> columnIndices;
+  for (const auto &columnName: columnNames) {
+    auto columnIndex = schema_->GetFieldIndex(ColumnName::canonicalize(columnName));
+    if (columnIndex == -1) {
+      close(inFile);
+      return tl::make_unexpected(fmt::format("Read Parquet Error: column {} not found", columnName));
+    }
+    columnIndices.emplace_back(columnIndex);
+  }
+  status = parquetReader->ReadTable(columnIndices, &table);
+  if (!status.ok()) {
+    close(inFile);
+    return tl::make_unexpected(status.message());
+  }
+
+  return TupleSet::make(table);
 }
 
 tl::expected<std::shared_ptr<TupleSet>, std::string>
@@ -35,13 +79,13 @@ ParquetReader::read(const std::vector<std::string> &columnNames, int64_t startPo
 
   // read
   auto metadata = arrowReader->parquet_reader()->metadata();
-  
+
   std::vector<int> rowGroupIndexes;
   for (int rowGroupIndex = 0; rowGroupIndex < metadata->num_row_groups(); ++rowGroupIndex) {
     auto rowGroupMetaData = metadata->RowGroup(rowGroupIndex);
     auto columnChunkMetaData = rowGroupMetaData->ColumnChunk(0);
     auto offset = columnChunkMetaData->file_offset();
-  
+
     if (offset >= startPos && offset <= finishPos) {
       rowGroupIndexes.emplace_back(rowGroupIndex);
     }
@@ -102,11 +146,4 @@ ParquetReader::read(const std::vector<std::string> &columnNames, int64_t startPo
   return tupleSet;
 }
 
-tl::expected<void, std::string> ParquetReader::close(const std::shared_ptr<arrow::io::ReadableFile> &inputStream) {
-  if (inputStream && !inputStream->closed()) {
-    auto result = inputStream->Close();
-    if (!result.ok())
-      return tl::make_unexpected(result.message());
-  }
-  return {};
 }

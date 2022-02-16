@@ -1,17 +1,18 @@
 //
-// Created by Matt Woicik on 2/19/21.
+// Created by Matt Woicik on 2/15/21.
 //
 
-#ifndef FPDB_FPDB_CORE_INCLUDE_FPDB_CORE_ARROW_ARROWGZIPCSVINPUTSTREAM2_H
-#define FPDB_FPDB_CORE_INCLUDE_FPDB_CORE_ARROW_ARROWGZIPCSVINPUTSTREAM2_H
+#ifndef FPDB_FPDB_CORE_INCLUDE_FPDB_CORE_ARROW_ARROWGZIPCSVINPUTSTREAM_H
+#define FPDB_FPDB_CORE_INCLUDE_FPDB_CORE_ARROW_ARROWGZIPCSVINPUTSTREAM_H
 
 #include <arrow/io/interfaces.h>
-#include <zlib-ng.h>
+#include <zlib.h>
+#include <zconf.h>
 
-class ArrowAWSGZIPInputStream2 : public arrow::io::InputStream {
+class [[maybe_unused]] ArrowGzipInputStream : public arrow::io::InputStream {
 public:
-  explicit ArrowAWSGZIPInputStream2(std::basic_iostream<char, std::char_traits<char>> &file);
-  ~ArrowAWSGZIPInputStream2() override;
+  [[maybe_unused]] explicit ArrowGzipInputStream(std::basic_istream<char, std::char_traits<char>> &file);
+  ~ArrowGzipInputStream() override;
 
   void resetZStream(int64_t bytesToRead);
 
@@ -43,14 +44,14 @@ public:
 
 
 protected:
-  std::basic_iostream<char, std::char_traits<char>>& underlyingFile_;
-  int64_t processedCompressedBytes_ = 0;
-  int64_t returnedUncompressedBytes_ = 0;
+  std::basic_istream<char, std::char_traits<char>>& underlyingFile_;
+  int64_t processedCompressedBytes = 0;
+  int64_t returnedUncompressedBytes = 0;
   int64_t decompressionTimeNS_ = 0;
   bool underlyingFileEmpty_ = false; // set to true once all bytes have been read from underlying file
   std::vector<char*> allocations_;
-  zng_stream currentZStream_{};
+  z_stream currentZStream_{};
 };
 
 
-#endif //FPDB_FPDB_CORE_INCLUDE_FPDB_CORE_ARROW_ARROWGZIPCSVINPUTSTREAM2_H
+#endif //FPDB_FPDB_CORE_INCLUDE_FPDB_CORE_ARROW_ARROWGZIPCSVINPUTSTREAM_H

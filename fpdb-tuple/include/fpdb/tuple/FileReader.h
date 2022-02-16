@@ -5,7 +5,7 @@
 #ifndef FPDB_FPDB_TUPLE_INCLUDE_FPDB_TUPLE_FILEREADER_H
 #define FPDB_FPDB_TUPLE_INCLUDE_FPDB_TUPLE_FILEREADER_H
 
-#include <fpdb/tuple/FileType.h>
+#include <fpdb/tuple/FileFormat.h>
 #include <fpdb/tuple/TupleSet.h>
 #include <tl/expected.hpp>
 #include <memory>
@@ -15,19 +15,42 @@ namespace fpdb::tuple {
 class FileReader {
   
 public:
-  FileReader(FileType type);
-  FileReader() = default;
-  FileReader(const FileReader&) = default;
-  FileReader& operator=(const FileReader&) = default;
+  FileReader(const std::string path,
+             const std::shared_ptr<FileFormat> &format,
+             const std::shared_ptr<::arrow::Schema> schema);
   virtual ~FileReader() = default;
 
-  FileType getType() const;
+  /**
+   * Read the whole file
+   * @return
+   */
+  tl::expected<std::shared_ptr<TupleSet>, std::string> read();
 
+  /**
+   * Read specific columns of the file
+   * @param inputSchema schema of the table to read
+   * @param outputSchema output schema
+   * @return
+   */
+  virtual tl::expected<std::shared_ptr<TupleSet>, std::string> read(const std::vector<std::string> &columnNames) = 0;
+
+  /**
+   * Read specific columns inside specific byte range of the file
+   * @param columnNames
+   * @param startPos
+   * @param finishPos
+   * @return
+   */
   virtual tl::expected<std::shared_ptr<TupleSet>, std::string>
   read(const std::vector<std::string> &columnNames, int64_t startPos, int64_t finishPos) = 0;
 
 protected:
-  FileType type_;
+  // close the input stream, in case getting exception or read finished
+  void close(const std::shared_ptr<arrow::io::ReadableFile> &inputStream);
+
+  std::string path_;
+  std::shared_ptr<FileFormat> format_;
+  std::shared_ptr<::arrow::Schema> schema_;
 
 };
 
