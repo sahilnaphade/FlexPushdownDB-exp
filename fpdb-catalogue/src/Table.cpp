@@ -10,7 +10,7 @@ namespace fpdb::catalogue {
 
 Table::Table(string name,
              const shared_ptr<arrow::Schema>& schema,
-             const shared_ptr<format::Format>& format,
+             const shared_ptr<fpdb::tuple::FileFormat>& format,
              const unordered_map<string, int> &apxColumnLengthMap,
              int apxRowLength,
              const unordered_set<string> &zonemapColumnNames) :
@@ -29,7 +29,7 @@ const shared_ptr<arrow::Schema> &Table::getSchema() const {
   return schema_;
 }
 
-const shared_ptr<format::Format> &Table::getFormat() const {
+const shared_ptr<fpdb::tuple::FileFormat> &Table::getFormat() const {
   return format_;
 }
 

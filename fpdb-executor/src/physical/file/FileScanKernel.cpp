@@ -3,45 +3,54 @@
 //
 
 #include <fpdb/executor/physical/file/FileScanKernel.h>
+#include <fpdb/tuple/FileReaderBuilder.h>
 
 using namespace fpdb::executor::physical::file;
 
-FileScanKernel::FileScanKernel(std::string path,
-							   std::shared_ptr<FileReader> reader,
-                 int64_t startPos,
-                 int64_t finishPos) :
-	path_(std::move(path)),
-	reader_(std::move(reader)),
-	startPos_(startPos),
-	finishPos_(finishPos) {}
+FileScanKernel::FileScanKernel(const std::string &path,
+                               const std::shared_ptr<FileFormat> &format,
+                               const std::shared_ptr<::arrow::Schema> &schema,
+                               const std::optional<std::pair<int64_t, int64_t>> &byteRange) :
+	path_(path),
+  format_(format),
+  schema_(schema),
+  byteRange_(byteRange) {}
 
 FileScanKernel FileScanKernel::make(const std::string &path,
-                                    FileType fileType,
-                                    int64_t startPos,
-                                    int64_t finishPos) {
+                                    const std::shared_ptr<FileFormat> &format,
+                                    const std::shared_ptr<::arrow::Schema> &schema,
+                                    const std::optional<std::pair<int64_t, int64_t>> &byteRange) {
+  return {path, format, schema, byteRange};
+}
 
-  auto reader = FileReaderBuilder::make(path, fileType);
-
-  return {path, std::move(reader), startPos, finishPos};
+tl::expected<std::shared_ptr<TupleSet>, std::string> FileScanKernel::scan() {
+  auto reader = FileReaderBuilder::make(path_, format_, schema_);
+  if (byteRange_.has_value()) {
+    return reader->read(byteRange_->first, byteRange_->second);
+  } else {
+    return reader->read();
+  }
 }
 
 tl::expected<std::shared_ptr<TupleSet>, std::string>
 FileScanKernel::scan(const std::vector<std::string> &columnNames) {
-  return reader_->read(columnNames, startPos_, finishPos_);
+  auto reader = FileReaderBuilder::make(path_, format_, schema_);
+  if (byteRange_.has_value()) {
+    return reader->read(columnNames, byteRange_->first, byteRange_->second);
+  } else {
+    return reader->read(columnNames);
+  }
 }
 
 const std::string &FileScanKernel::getPath() const {
   return path_;
 }
 
-FileType FileScanKernel::getFileType() const {
-  return reader_->getType();
-}
-
-int64_t FileScanKernel::getStartPos() const {
-  return startPos_;
-}
-
-int64_t FileScanKernel::getFinishPos() const {
-  return finishPos_;
+std::pair<int64_t, int64_t> FileScanKernel::getByteRange() const {
+  if (byteRange_.has_value()) {
+    return *byteRange_;
+  } else {
+    auto reader = FileReaderBuilder::make(path_, format_, schema_);
+    return {0, reader->getFileSize()};
+  }
 }

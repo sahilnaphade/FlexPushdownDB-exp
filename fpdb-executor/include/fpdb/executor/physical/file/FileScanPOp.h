@@ -20,20 +20,20 @@ namespace fpdb::executor::physical::file {
 class FileScanPOp : public PhysicalOp {
 
 public:
-  FileScanPOp(std::string name,
-       std::vector<std::string> columnNames,
+  FileScanPOp(const std::string &name,
+       const std::vector<std::string> &columnNames,
        int nodeId,
 		   const std::string &filePath,
-		   FileType fileType,
-		   unsigned long startOffset,
-		   unsigned long finishOffset,
+       const std::shared_ptr<FileFormat> &format,
+       const std::shared_ptr<::arrow::Schema> &schema,
+       const std::optional<std::pair<int64_t, int64_t>> &byteRange = std::nullopt,
 		   bool scanOnStart = false);
   FileScanPOp() = default;
   FileScanPOp(const FileScanPOp&) = default;
   FileScanPOp& operator=(const FileScanPOp&) = default;
 
-  [[nodiscard]] const FileScanKernel &getKernel() const;
-  [[nodiscard]] bool isScanOnStart() const;
+  const FileScanKernel &getKernel() const;
+  bool isScanOnStart() const;
 
   void onReceive(const Envelope &message) override;
   void clear() override;

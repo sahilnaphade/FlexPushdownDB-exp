@@ -14,9 +14,8 @@
 #include <fpdb/executor/serialization/AggregateFunctionSerializer.h>
 #include <fpdb/executor/serialization/HashJoinProbeAbstractKernelSerializer.h>
 #include <fpdb/catalogue/serialization/TableSerializer.h>
-#include <fpdb/catalogue/serialization/FormatSerializer.h>
 #include <fpdb/expression/gandiva/serialization/ExpressionSerializer.h>
-#include <fpdb/tuple/serialization/FileReaderSerializer.h>
+#include <fpdb/tuple/serialization/FileFormatSerializer.h>
 
 namespace fpdb::main {
 
@@ -42,9 +41,8 @@ void CAFInit::initCAFGlobalMetaObjects() {
   ::caf::init_global_meta_objects<::caf::id_block::AggregateFunction>();
   ::caf::init_global_meta_objects<::caf::id_block::Expression>();
   ::caf::init_global_meta_objects<::caf::id_block::POpContext>();
-  ::caf::init_global_meta_objects<::caf::id_block::FileReader>();
   ::caf::init_global_meta_objects<::caf::id_block::Table>();
-  ::caf::init_global_meta_objects<::caf::id_block::Format>();
+  ::caf::init_global_meta_objects<::caf::id_block::FileFormat>();
   ::caf::init_global_meta_objects<::caf::id_block::HashJoinProbeAbstractKernel>();
   ::caf::init_global_meta_objects<::caf::id_block::AggregateResult>();
 

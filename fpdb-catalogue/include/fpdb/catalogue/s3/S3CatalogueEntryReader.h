@@ -7,7 +7,7 @@
 
 #include <fpdb/catalogue/s3/S3CatalogueEntry.h>
 #include <fpdb/catalogue/Catalogue.h>
-#include <fpdb/catalogue/format/Format.h>
+#include <fpdb/tuple/FileFormat.h>
 #include <fpdb/tuple/Scalar.h>
 #include <nlohmann/json.hpp>
 #include <aws/s3/S3Client.h>
@@ -31,7 +31,7 @@ private:
                          const string &s3Bucket,
                          const string &schemaName,
                          unordered_map<string, shared_ptr<arrow::Schema>> &schemaMap,
-                         unordered_map<string, shared_ptr<format::Format>> &formatMap,
+                         unordered_map<string, shared_ptr<FileFormat>> &formatMap,
                          unordered_map<string, vector<shared_ptr<S3Partition>>> &s3PartitionsMap);
   static void readStats(const json &statsJObj,
                         unordered_map<string, unordered_map<string, int>> &apxColumnLengthMapMap,

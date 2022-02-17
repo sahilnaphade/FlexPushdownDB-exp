@@ -4,7 +4,7 @@
 
 #include <fpdb/executor/physical/s3/S3SelectScanKernel.h>
 #include <fpdb/executor/physical/s3/S3CSVParser.h>
-#include <fpdb/catalogue/format/CSVFormat.h>
+#include <fpdb/tuple/csv/CSVFormat.h>
 #include <utility>
 #include <aws/s3/model/ScanRange.h>
 #include <aws/s3/model/ExpressionType.h>
@@ -14,14 +14,13 @@ using namespace Aws::Client;
 using namespace Aws::S3;
 using namespace Aws::S3::Model;
 using namespace fpdb::executor::physical::s3;
-using namespace fpdb::catalogue::format;
 
 S3SelectScanKernel::S3SelectScanKernel(std::string s3Bucket,
 									   std::string s3Object,
 									   std::string sql,
 									   std::optional<int64_t> startPos,
 									   std::optional<int64_t> finishPos,
-									   FileType fileType,
+                     std::shared_ptr<FileFormat> format,
 									   std::optional<S3SelectCSVParseOptions> csvParseOptions,
 									   std::shared_ptr<Table> table,
 									   std::shared_ptr<fpdb::aws::AWSClient> awsClient)
@@ -30,7 +29,7 @@ S3SelectScanKernel::S3SelectScanKernel(std::string s3Bucket,
 	  sql_(std::move(sql)),
 	  startPos_(startPos),
 	  finishPos_(finishPos),
-	  fileType_(fileType),
+	  format_(std::move(format)),
 	  csvParseOptions_(std::move(csvParseOptions)),
     table_(std::move(table)),
 	  awsClient_(std::move(awsClient)) {}
@@ -40,7 +39,7 @@ std::unique_ptr<S3SelectScanKernel> S3SelectScanKernel::make(const std::string &
 															 const std::string &sql,
 															 std::optional<int64_t> startPos,
 															 std::optional<int64_t> finishPos,
-															 FileType fileType,
+                               const std::shared_ptr<FileFormat> &format,
 															 const std::optional< S3SelectCSVParseOptions> &csvParseOptions,
                                const std::shared_ptr<Table>& table,
                                const std::shared_ptr<fpdb::aws::AWSClient>& awsClient) {
@@ -49,7 +48,7 @@ std::unique_ptr<S3SelectScanKernel> S3SelectScanKernel::make(const std::string &
 											  sql,
 											  startPos,
 											  finishPos,
-											  fileType,
+											  format,
 											  csvParseOptions,
 											  table,
 											  awsClient);
@@ -116,8 +115,8 @@ S3SelectScanKernel::s3Select(const std::string &sql,
   selectObjectContentRequest.SetExpressionType(ExpressionType::SQL);
   selectObjectContentRequest.SetExpression(sql.c_str());
 
-  switch (fileType_) {
-  case FileType::CSV: {
+  switch (format_->getType()) {
+  case FileFormatType::CSV: {
 	CSVInput csvInput;
 	csvInput.SetFileHeaderInfo(FileHeaderInfo::USE);
 
@@ -131,7 +130,7 @@ S3SelectScanKernel::s3Select(const std::string &sql,
 	selectObjectContentRequest.SetInputSerialization(inputSerialization);
 	break;
   }
-  case FileType::Parquet: {
+  case FileFormatType::PARQUET: {
 	ParquetInput parquetInput;
 	InputSerialization inputSerialization;
 	inputSerialization.SetParquet(parquetInput);
@@ -145,8 +144,8 @@ S3SelectScanKernel::s3Select(const std::string &sql,
   outputSerialization.SetCSV(csvOutput);
   selectObjectContentRequest.SetOutputSerialization(outputSerialization);
 
-  auto csvTableFormat = std::static_pointer_cast<CSVFormat>(table_->getFormat());
-  S3CSVParser s3CSVParser{columnNames, table_->getSchema(), csvTableFormat->getFieldDelimiter()};
+  auto csvFormat = std::static_pointer_cast<csv::CSVFormat>(table_->getFormat());
+  S3CSVParser s3CSVParser{columnNames, table_->getSchema(), csvFormat->getFieldDelimiter()};
 
   SelectObjectContentHandler handler;
   handler.SetRecordsEventCallback([&](const RecordsEvent &recordsEvent) {

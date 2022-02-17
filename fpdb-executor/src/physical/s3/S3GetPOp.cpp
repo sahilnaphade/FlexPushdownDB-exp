@@ -6,9 +6,9 @@
 #include <fpdb/executor/physical/Globals.h>
 #include <fpdb/executor/message/Message.h>
 #include <fpdb/executor/message/cache/LoadResponseMessage.h>
-#include <fpdb/catalogue/format/CSVFormat.h>
+#include <fpdb/tuple/csv/CSVFormat.h>
 #include <fpdb/tuple/TupleSet.h>
-#include <fpdb/tuple/arrow/ArrowAWSInputStream.h>
+#include <fpdb/tuple/arrow/ArrowInputStream.h>
 
 #include <arrow/csv/options.h> 
 #include <arrow/csv/reader.h>
@@ -41,7 +41,6 @@ using namespace Aws::S3;
 using namespace Aws::S3::Model;
 
 using namespace fpdb::cache;
-using namespace fpdb::catalogue::format;
 
 namespace fpdb::executor::physical::s3 {
 
@@ -206,7 +205,7 @@ std::shared_ptr<TupleSet> S3GetPOp::s3GetFullRequest() {
   Aws::IOStream &retrievedFile = getResult.GetBody();
   if (s3Object_.find("csv") != std::string::npos) {
     std::shared_ptr<arrow::io::InputStream> inputStream;
-    auto csvTableFormat = std::static_pointer_cast<CSVFormat>(table_->getFormat());
+    auto csvFormat = std::static_pointer_cast<csv::CSVFormat>(table_->getFormat());
     if (s3Object_.find("gz") != std::string::npos) {
 #ifdef __AVX2__
       auto parser = CSVToArrowSIMDStreamParser(name(),
@@ -216,7 +215,7 @@ std::shared_ptr<TupleSet> S3GetPOp::s3GetFullRequest() {
                                                table_->getSchema(),
                                                outputSchema,
                                                true,
-                                               csvTableFormat->getFieldDelimiter());
+                                               csvFormat->getFieldDelimiter());
       try {
         tupleSet = parser.constructTupleSet();
       } catch (const std::runtime_error &err) {
@@ -235,7 +234,7 @@ std::shared_ptr<TupleSet> S3GetPOp::s3GetFullRequest() {
                                                table_->getSchema(),
                                                outputSchema,
                                                false,
-                                               csvTableFormat->getFieldDelimiter());
+                                               csvFormat->getFieldDelimiter());
       try {
         tupleSet = parser.constructTupleSet();
       } catch (const std::runtime_error &err) {
@@ -342,15 +341,15 @@ void S3GetPOp::s3GetIndividualReq(int reqNum, const std::string &s3Object, uint6
       fields.emplace_back(::arrow::field(column, table_->getSchema()->GetFieldByName(column)->type()));
     }
     auto outputSchema = std::make_shared<::arrow::Schema>(fields);
-    auto csvTableFormat = std::static_pointer_cast<CSVFormat>(table_->getFormat());
+    auto csvFormat = std::static_pointer_cast<csv::CSVFormat>(table_->getFormat());
     std::shared_ptr<CSVToArrowSIMDChunkParser> parser = std::make_shared<CSVToArrowSIMDChunkParser>(
             name(),
             DefaultS3ConversionBufferSize,
             table_->getSchema(),
             outputSchema,
-            csvTableFormat->getFieldDelimiter());
+            csvFormat->getFieldDelimiter());
     try {
-      parser->parseChunk(std::make_shared<ArrowAWSInputStream>(retrievedFile));
+      parser->parseChunk(std::make_shared<ArrowInputStream>(retrievedFile));
     } catch (const std::runtime_error &err) {
       ctx()->notifyError(err.what());
     }

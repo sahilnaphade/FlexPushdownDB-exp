@@ -19,13 +19,8 @@ add_library(fpdb-catalogue STATIC
         src/local-fs/LocalFSCatalogueEntry.cpp include/fpdb/catalogue/local-fs/LocalFSCatalogueEntry.h
         src/local-fs/LocalFSTable.cpp include/fpdb/catalogue/local-fs/LocalFSTable.h
         src/local-fs/LocalFSPartition.cpp include/fpdb/catalogue/local-fs/LocalFSPartition.h
-        include/fpdb/catalogue/format/FormatType.h
-        src/format/Format.cpp include/fpdb/catalogue/format/Format.h
-        src/format/CSVFormat.cpp include/fpdb/catalogue/format/CSVFormat.h
-        src/format/ParquetFormat.cpp include/fpdb/catalogue/format/ParquetFormat.h
         include/fpdb/catalogue/serialization/PartitionSerializer.h
-        include/fpdb/catalogue/serialization/TableSerializer.h
-        include/fpdb/catalogue/serialization/FormatSerializer.h)
+        include/fpdb/catalogue/serialization/TableSerializer.h)
 
 target_include_directories(fpdb-catalogue PUBLIC include)
 

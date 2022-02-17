@@ -18,7 +18,7 @@ class S3Table: public Table {
 public:
   S3Table(const string &name,
           const shared_ptr<arrow::Schema> &schema,
-          const shared_ptr<format::Format> &format,
+          const shared_ptr<fpdb::tuple::FileFormat> &format,
           const unordered_map<string, int> &apxColumnLengthMap,
           int apxRowLength,
           const unordered_set<string> &zonemapColumnNames,

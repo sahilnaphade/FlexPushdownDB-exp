@@ -60,6 +60,7 @@ function(fixDyldErrorForMac target)
           @rpath/libaws-crt-cpp.dylib
           @rpath/libcaf_core.0.18.5.dylib
           @rpath/libcaf_io.0.18.5.dylib
+          @rpath/libcaf_openssl.0.18.5.dylib
           @rpath/libarrow.600.dylib
           @rpath/libarrow_flight.600.dylib)
   set(change_libs ${CMAKE_BINARY_DIR}/_deps/graphviz_ep/install/lib/graphviz/libgvplugin_neato_layout.6.dylib
@@ -69,6 +70,7 @@ function(fixDyldErrorForMac target)
           ${CMAKE_BINARY_DIR}/_deps/aws-cpp-sdk_ep/install/lib/libaws-crt-cpp.dylib
           ${CMAKE_BINARY_DIR}/_deps/caf_ep/install/lib/libcaf_core.0.18.5.dylib
           ${CMAKE_BINARY_DIR}/_deps/caf_ep/install/lib/libcaf_io.0.18.5.dylib
+          ${CMAKE_BINARY_DIR}/_deps/caf_ep/install/lib/libcaf_openssl.0.18.5.dylib
           ${CMAKE_BINARY_DIR}/_deps/arrow_ep/install/lib/libarrow.600.dylib
           ${CMAKE_BINARY_DIR}/_deps/arrow_ep/install/lib/libarrow_flight.600.dylib)
   foreach(path_to_lib change_lib IN ZIP_LISTS path_to_libs change_libs)

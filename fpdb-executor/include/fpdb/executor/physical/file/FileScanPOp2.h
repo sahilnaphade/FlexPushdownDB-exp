@@ -35,29 +35,25 @@ using FileScanStatefulActor = FileScanActor::stateful_pointer<FileScanState>;
 class FileScanState : public POpActorState<FileScanStatefulActor> {
 public:
   void setState(FileScanStatefulActor actor,
-				std::string name,
+				const std::string &name,
 				const std::string &filePath,
-				FileType fileType,
+        const std::shared_ptr<FileFormat> &format,
+        const std::shared_ptr<::arrow::Schema> &schema,
 				const std::vector<std::string> &columnNames,
-				unsigned long startOffset,
-				unsigned long finishOffset,
 				long queryId,
 				const ::caf::actor &rootActorHandle,
 				const ::caf::actor &segmentCacheActorHandle,
+        const std::optional<std::pair<int64_t, int64_t>> &byteRange = std::nullopt,
 				bool scanOnStart = false) {
 
 	POpActorState::setBaseState(actor, std::move(name), queryId, rootActorHandle, segmentCacheActorHandle);
 
 	auto canonicalColumnNames = ColumnName::canonicalize(columnNames);
 
-	filePath_ = filePath;
-	fileType_ = fileType;
 	columnNames_ = canonicalColumnNames;
-	startOffset_ = startOffset;
-	finishOffset_ = finishOffset;
 	scanOnStart_ = scanOnStart;
 
-	kernel_ = FileScanKernel::make(filePath, fileType, startOffset, finishOffset);
+	kernel_ = FileScanKernel::make(filePath, format, schema, byteRange);
   }
 
   template<class... Handlers>
@@ -77,12 +73,8 @@ public:
   }
 
 private:
-  std::string filePath_;
-  FileType fileType_;
   std::vector<std::string> columnNames_;
-  unsigned long startOffset_;
-  unsigned long finishOffset_;
-  bool scanOnStart_ = false;
+  bool scanOnStart_;
 
   FileScanKernel kernel_;
 
@@ -133,17 +125,17 @@ private:
   void requestStoreSegmentsInCache(FileScanStatefulActor actor, const std::shared_ptr<TupleSet> &tupleSet) {
 
 	assert(tupleSet);
-	assert(startOffset_ >= 0);
-	assert(finishOffset_ > startOffset_);
 
 	auto partition = std::make_shared<catalogue::local_fs::LocalFSPartition>(kernel_.getPath());
+  auto byteRange = kernel_.getByteRange();
+
 
 	std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>> segmentsToStore;
 	for (int64_t c = 0; c < tupleSet->numColumns(); ++c) {
 	  auto column = tupleSet->getColumnByIndex(c).value();
 	  auto segmentKey = SegmentKey::make(partition,
 										 column->getName(),
-										 SegmentRange::make(startOffset_, finishOffset_),
+										 SegmentRange::make(byteRange.first, byteRange.second),
 										 SegmentMetadata::make(column->size()));
 	  auto segmentData = SegmentData::make(column);
 
@@ -181,15 +173,17 @@ private:
 };
 
 FileScanActor::behavior_type FileScanFunctor(FileScanStatefulActor actor,
-											 std::string name,
-											 const std::string &filePath,
-											 FileType fileType,
+                       const std::string &name,
+                       const std::string &filePath,
+                       const std::shared_ptr<FileFormat> &format,
+                       const std::shared_ptr<::arrow::Schema> &schema,
 											 const std::vector<std::string> &columnNames,
 											 unsigned long startOffset,
 											 unsigned long finishOffset,
 											 long queryId,
 											 const ::caf::actor &rootActorHandle,
 											 const ::caf::actor &segmentCacheActorHandle,
+                       const std::optional<std::pair<int64_t, int64_t>> &byteRange = std::nullopt,
 											 bool scanOnStart = false);
 
 }

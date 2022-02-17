@@ -35,6 +35,12 @@ public:
   virtual tl::expected<std::shared_ptr<TupleSet>, std::string> read(const std::vector<std::string> &columnNames) = 0;
 
   /**
+   * Read specific byte range of the file
+   * @return
+   */
+  tl::expected<std::shared_ptr<TupleSet>, std::string> read(int64_t startPos, int64_t finishPos);
+
+  /**
    * Read specific columns inside specific byte range of the file
    * @param columnNames
    * @param startPos
@@ -43,6 +49,10 @@ public:
    */
   virtual tl::expected<std::shared_ptr<TupleSet>, std::string>
   read(const std::vector<std::string> &columnNames, int64_t startPos, int64_t finishPos) = 0;
+
+  int64_t getFileSize() const;
+
+  const std::shared_ptr<FileFormat> &getFormat() const;
 
 protected:
   // close the input stream, in case getting exception or read finished

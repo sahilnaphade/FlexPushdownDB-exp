@@ -49,7 +49,7 @@ add_library(fpdb-tuple STATIC
         src/arrow/CSVToArrowSIMDChunkParser.cpp include/fpdb/tuple/arrow/CSVToArrowSIMDChunkParser.h
         src/serialization/ArrowSerializer.cpp include/fpdb/tuple/serialization/ArrowSerializer.h
         include/fpdb/tuple/serialization/TupleKeyElementSerializer.h
-        include/fpdb/tuple/serialization/FileReaderSerializer.h)
+        include/fpdb/tuple/serialization/FileFormatSerializer.h)
 
 target_include_directories(fpdb-tuple PUBLIC include)
 

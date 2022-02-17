@@ -3,8 +3,8 @@
 //
 
 #include <fpdb/catalogue/s3/S3CatalogueEntryReader.h>
-#include <fpdb/catalogue/format/CSVFormat.h>
-#include <fpdb/catalogue/format/ParquetFormat.h>
+#include <fpdb/tuple/csv/CSVFormat.h>
+#include <fpdb/tuple/parquet/ParquetFormat.h>
 #include <fpdb/tuple/ColumnName.h>
 #include <fpdb/aws/S3Util.h>
 #include <fpdb/util/Util.h>
@@ -40,7 +40,7 @@ S3CatalogueEntryReader::readS3CatalogueEntry(const shared_ptr<Catalogue> &catalo
   }
 
   // member variables to make S3CatalogueEntry and S3Table
-  unordered_map<string, shared_ptr<format::Format>> formatMap;
+  unordered_map<string, shared_ptr<FileFormat>> formatMap;
   unordered_map<string, shared_ptr<arrow::Schema>> schemaMap;
   unordered_map<string, unordered_map<string, int>> apxColumnLengthMapMap;
   unordered_map<string, int> apxRowLengthMap;
@@ -83,7 +83,7 @@ void S3CatalogueEntryReader::readSchema(const json &schemaJObj,
                                         const string &s3Bucket,
                                         const string &schemaName,
                                         unordered_map<string, shared_ptr<arrow::Schema>> &schemaMap,
-                                        unordered_map<string, shared_ptr<format::Format>> &formatMap,
+                                        unordered_map<string, shared_ptr<FileFormat>> &formatMap,
                                         unordered_map<string, vector<shared_ptr<S3Partition>>> &s3PartitionsMap) {
   // read schemas, formats and s3Partitions
   for (const auto &tableSchemasJObj: schemaJObj["tables"].get<vector<json>>()) {
@@ -95,10 +95,10 @@ void S3CatalogueEntryReader::readSchema(const json &schemaJObj,
     string s3ObjectSuffix;
     if (formatStr == "csv") {
       char fieldDelimiter = formatJObj["fieldDelimiter"].get<string>().c_str()[0];
-      formatMap.emplace(tableName, make_shared<format::CSVFormat>(fieldDelimiter));
+      formatMap.emplace(tableName, make_shared<csv::CSVFormat>(fieldDelimiter));
       s3ObjectSuffix = ".tbl";
     } else if (formatStr == "parquet") {
-      formatMap.emplace(tableName, make_shared<format::ParquetFormat>());
+      formatMap.emplace(tableName, make_shared<parquet::ParquetFormat>());
       s3ObjectSuffix = ".parquet";
     } else {
       throw runtime_error(fmt::format("Unsupported data format: {}", formatStr));

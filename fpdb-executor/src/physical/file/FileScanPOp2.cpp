@@ -8,27 +8,27 @@
 namespace fpdb::executor::physical::file {
 
 FileScanActor::behavior_type FileScanFunctor(FileScanStatefulActor self,
-											 std::string name,
-											 const std::string &filePath,
-											 FileType fileType,
-											 const std::vector<std::string> &columnNames,
-											 unsigned long startOffset,
-											 unsigned long finishOffset,
-											 long queryId,
-											 const ::caf::actor& rootActorHandle,
-											 const ::caf::actor& segmentCacheActorHandle,
-											 bool scanOnStart) {
+                       const std::string &name,
+                       const std::string &filePath,
+                       const std::shared_ptr<FileFormat> &format,
+                       const std::shared_ptr<::arrow::Schema> &schema,
+                       const std::vector<std::string> &columnNames,
+                       long queryId,
+                       const ::caf::actor &rootActorHandle,
+                       const ::caf::actor &segmentCacheActorHandle,
+                       const std::optional<std::pair<int64_t, int64_t>> &byteRange,
+                       bool scanOnStart) {
 
   self->state.setState(self,
-					   std::move(name),
+					   name,
 					   filePath,
-					   fileType,
+             format,
+             schema,
 					   columnNames,
-					   startOffset,
-					   finishOffset,
 					   queryId,
 					   rootActorHandle,
 					   segmentCacheActorHandle,
+             byteRange,
 					   scanOnStart);
 
   return self->state.makeBehavior(self);

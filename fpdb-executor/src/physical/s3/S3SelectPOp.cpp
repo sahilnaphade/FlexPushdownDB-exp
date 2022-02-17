@@ -5,7 +5,7 @@
 #include <fpdb/executor/physical/s3/S3SelectPOp.h>
 #include <fpdb/executor/physical/Globals.h>
 #include <fpdb/executor/message/Message.h>
-#include <fpdb/catalogue/format/CSVFormat.h>
+#include <fpdb/tuple/csv/CSVFormat.h>
 #include <fpdb/cache/SegmentKey.h>
 #include <fpdb/tuple/TupleSet.h>
 
@@ -40,7 +40,6 @@ using namespace Aws::S3;
 using namespace Aws::S3::Model;
 
 using namespace fpdb::cache;
-using namespace fpdb::catalogue::format;
 
 namespace fpdb::executor::physical::s3 {
 
@@ -102,10 +101,10 @@ std::shared_ptr<S3CSVParser> S3SelectPOp::generateCSVParser() {
   for (auto const &columnName: getProjectColumnNames()) {
     fields.emplace_back(table_->getSchema()->GetFieldByName(columnName));
   }
-  auto csvTableFormat = std::static_pointer_cast<CSVFormat>(table_->getFormat());
+  auto csvFormat = std::static_pointer_cast<csv::CSVFormat>(table_->getFormat());
   auto parser = std::make_shared<S3CSVParser>(getProjectColumnNames(),
                                               std::make_shared<::arrow::Schema>(fields),
-                                              csvTableFormat->getFieldDelimiter());
+                                              csvFormat->getFieldDelimiter());
   return parser;
 }
 
@@ -115,8 +114,8 @@ InputSerialization S3SelectPOp::getInputSerialization() {
   if (s3Object_.find("csv") != std::string::npos) {
     CSVInput csvInput;
     csvInput.SetFileHeaderInfo(FileHeaderInfo::USE);
-    auto csvTableFormat = std::static_pointer_cast<CSVFormat>(table_->getFormat());
-    std::string delimiter = std::string(1, csvTableFormat->getFieldDelimiter());
+    auto csvFormat = std::static_pointer_cast<csv::CSVFormat>(table_->getFormat());
+    std::string delimiter = std::string(1, csvFormat->getFieldDelimiter());
     csvInput.SetFieldDelimiter(Aws::String(delimiter));
     csvInput.SetRecordDelimiter("\n");
     inputSerialization.SetCSV(csvInput);
@@ -458,7 +457,7 @@ void S3SelectPOp::sendSegmentWeight() {
   auto processedBytes = (double) s3SelectScanStats_.processedBytes;
   auto lenRow = (double) table_->getApxRowLength();
   double selectivity;
-  if (table_->getFormat()->getType() == catalogue::format::CSV) {
+  if (table_->getFormat()->getType() == FileFormatType::CSV) {
     double lenColSum = 0.0;
     for (auto const &returnedColumnName: getProjectColumnNames()) {
       lenColSum += table_->getApxColumnLength(returnedColumnName);

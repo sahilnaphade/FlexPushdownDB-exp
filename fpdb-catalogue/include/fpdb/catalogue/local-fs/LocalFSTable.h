@@ -18,7 +18,7 @@ class LocalFSTable: public Table {
 public:
   LocalFSTable(const string &name,
                const shared_ptr<arrow::Schema> &schema,
-               const shared_ptr<format::Format> &format,
+               const shared_ptr<fpdb::tuple::FileFormat> &format,
                const unordered_map<string, int> &apxColumnLengthMap,
                int apxRowLength,
                const unordered_set<string> &zonemapColumnNames,

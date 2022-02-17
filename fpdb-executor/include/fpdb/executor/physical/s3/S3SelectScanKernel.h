@@ -10,7 +10,7 @@
 #include <fpdb/catalogue/Table.h>
 #include <fpdb/aws/AWSClient.h>
 #include <fpdb/tuple/TupleSet.h>
-#include <fpdb/tuple/FileType.h>
+#include <fpdb/tuple/FileFormat.h>
 #include <string>
 #include <vector>
 #include <memory>
@@ -31,7 +31,7 @@ public:
 					 std::string sql,
 					 std::optional<int64_t> startPos,
 					 std::optional<int64_t> finishPos,
-					 FileType fileType,
+					 std::shared_ptr<FileFormat> format,
 					 std::optional<S3SelectCSVParseOptions> csvParseOptions,
            std::shared_ptr<Table> table,
            std::shared_ptr<AWSClient> awsClient);
@@ -41,7 +41,7 @@ public:
 												  const std::string &sql,
 												  std::optional<int64_t> startPos,
 												  std::optional<int64_t> finishPos,
-												  FileType fileType,
+                          const std::shared_ptr<FileFormat> &format,
 												  const std::optional<S3SelectCSVParseOptions> &csvParseOptions,
                           const std::shared_ptr<Table>& table,
                           const std::shared_ptr<AWSClient>& awsClient);
@@ -65,7 +65,7 @@ private:
   std::string sql_;
   std::optional<int64_t> startPos_;
   std::optional<int64_t> finishPos_;
-  FileType fileType_;
+  std::shared_ptr<FileFormat> format_;
   std::optional< S3SelectCSVParseOptions> csvParseOptions_;
   std::shared_ptr<Table> table_;
   std::shared_ptr<AWSClient> awsClient_;

@@ -21,17 +21,17 @@ namespace arrow { class MemoryPool; }
 
 namespace fpdb::executor::physical::file {
 
-FileScanPOp::FileScanPOp(std::string name,
-           std::vector<std::string> columnNames,
-           int nodeId,
-				   const std::string& filePath,
-				   FileType fileType,
-				   unsigned long startOffset,
-				   unsigned long finishOffset,
-				   bool scanOnStart) :
-	PhysicalOp(std::move(name), FILE_SCAN, std::move(columnNames), nodeId),
+FileScanPOp::FileScanPOp(const std::string &name,
+                         const std::vector<std::string> &columnNames,
+                         int nodeId,
+                         const std::string &filePath,
+                         const std::shared_ptr<FileFormat> &format,
+                         const std::shared_ptr<::arrow::Schema> &schema,
+                         const std::optional<std::pair<int64_t, int64_t>> &byteRange,
+                         bool scanOnStart) :
+	PhysicalOp(name, FILE_SCAN, columnNames, nodeId),
 	scanOnStart_(scanOnStart),
-	kernel_(FileScanKernel::make(filePath, fileType, startOffset, finishOffset)){}
+	kernel_(FileScanKernel::make(filePath, format, schema, byteRange)){}
 
 std::string FileScanPOp::getTypeString() const {
   return "FileScanPOp";
@@ -92,7 +92,13 @@ void FileScanPOp::onCacheLoadResponse(const ScanMessage &Message) {
 
 void FileScanPOp::requestStoreSegmentsInCache(const std::shared_ptr<TupleSet> &tupleSet) {
   auto partition = std::make_shared<catalogue::local_fs::LocalFSPartition>(kernel_.getPath());
-  CacheHelper::requestStoreSegmentsInCache(tupleSet, partition, kernel_.getStartPos(), kernel_.getFinishPos(), name(), ctx());
+  auto byteRange = kernel_.getByteRange();
+  CacheHelper::requestStoreSegmentsInCache(tupleSet,
+                                           partition,
+                                           byteRange.first,
+                                           byteRange.second,
+                                           name(),
+                                           ctx());
 }
 
 bool FileScanPOp::isScanOnStart() const {

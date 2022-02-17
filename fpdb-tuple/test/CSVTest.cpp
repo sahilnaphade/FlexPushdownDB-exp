@@ -200,4 +200,24 @@ TEST_CASE ("csvReader-read-columns-test3x10000.csv" * doctest::skip(false || SKI
   FileReaderTestUtil::checkReadColumnsAllTestCsv3x10000(*expTupleSet);
 }
 
+TEST_CASE ("csvReader-file-size-test.csv" * doctest::skip(false || SKIP_SUITE)) {
+  auto filePath = "data/csv/test.csv";
+  auto csvFormat = std::make_shared<CSVFormat>(',');
+  auto schema = FileReaderTestUtil::makeTestSchema();
+  auto reader = FileReaderBuilder::make(filePath, csvFormat, schema);
+
+  int64_t fileSize = reader->getFileSize();
+  CHECK_EQ(fileSize, 24);
+}
+
+TEST_CASE ("csvReader-file-size-test3x10000.csv" * doctest::skip(false || SKIP_SUITE)) {
+  auto filePath = "data/csv/test3x10000.csv";
+  auto csvFormat = std::make_shared<CSVFormat>(',');
+  auto schema = FileReaderTestUtil::makeTestSchema();
+  auto reader = FileReaderBuilder::make(filePath, csvFormat, schema);
+
+  int64_t fileSize = reader->getFileSize();
+  CHECK_EQ(fileSize, 60006);
+}
+
 }
