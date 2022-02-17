@@ -52,7 +52,7 @@ function(linkMissingLibForMac target)
 endfunction()
 
 # fix "dyld: Library not loaded" on mac
-function(fixDyldErrorForMac target)
+function(fixDyldErrorForMac target output_file)
   set(path_to_libs libgvplugin_neato_layout.6.dylib
           libgvplugin_core.6.dylib
           @rpath/libaws-cpp-sdk-core.dylib
@@ -75,7 +75,7 @@ function(fixDyldErrorForMac target)
           ${CMAKE_BINARY_DIR}/_deps/arrow_ep/install/lib/libarrow_flight.600.dylib)
   foreach(path_to_lib change_lib IN ZIP_LISTS path_to_libs change_libs)
     add_custom_command(TARGET ${target} POST_BUILD
-            COMMAND install_name_tool -change ${path_to_lib} ${change_lib} ${target})
+            COMMAND install_name_tool -change ${path_to_lib} ${change_lib} ${output_file})
   endforeach()
 endfunction()
 
@@ -84,7 +84,14 @@ function(linkForMacExecutable target)
   removeLibcppfsLinkForMac(${target})
   removeLrtLinkForMac(${target})
   linkMissingLibForMac(${target})
-  fixDyldErrorForMac(${target})
+
+  # get name of output file
+  get_target_property(output_name ${target} OUTPUT_NAME)
+  if (${output_name} STREQUAL output_name-NOTFOUND)
+    set(output_name ${target})
+  endif()
+
+  fixDyldErrorForMac(${target} ${output_name})
 endfunction()
 
 # Fix link issues for mac shared libraries
@@ -92,6 +99,14 @@ function(linkForMacShared target)
   removeLibcppfsLinkForMac(${target})
   removeLrtLinkForMac(${target})
   linkMissingLibForMac(${target})
+
+  # get name of output file
+  get_target_property(output_name ${target} OUTPUT_NAME)
+  if (${output_name} STREQUAL output_name-NOTFOUND)
+    set(output_name ${target})
+  endif()
+
+  fixDyldErrorForMac(${target} lib${output_name}.dylib)
 endfunction()
 
 
