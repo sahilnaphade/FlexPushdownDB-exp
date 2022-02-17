@@ -275,10 +275,11 @@ Temporary Items
 # project .idea
 /.idea/
 
-# fpdb-calcite .idea
+# fpdb-calcite
 /fpdb-calcite/java/.idea/
 *.class
 /fpdb-calcite/cpp/gen-cpp/
 /fpdb-calcite/java/main/java/com/thrift/calciteserver/
 /fpdb-calcite/java/target/
 /fpdb-calcite/java/dependency-reduced-pom.xml
+/fpdb-calcite/java/*.iml
