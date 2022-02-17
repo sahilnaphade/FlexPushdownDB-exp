@@ -110,6 +110,7 @@ target_link_libraries(fpdb-tuple-benchmark doctest::doctest)
 target_link_libraries(fpdb-tuple-benchmark nanobench::nanobench)
 target_link_libraries(fpdb-tuple-benchmark fmt::fmt)
 target_link_libraries(fpdb-tuple-benchmark fpdb-tuple)
+target_link_libraries(fpdb-tuple-benchmark Backward::Backward)
 
 
 #-----------------------------------------------------------------------------------------------------------------------
