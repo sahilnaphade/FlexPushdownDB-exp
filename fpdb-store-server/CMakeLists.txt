@@ -152,6 +152,7 @@ target_link_libraries(fpdb-store-server-test fpdb-file-read-test-util)
 # need to fix link on mac
 if (${APPLE})
     linkForMacExecutable(fpdb-store-server-test)
+    target_link_directories(fpdb-store-server-test PRIVATE /usr/local/opt/binutils/lib)
 endif()
 
 add_custom_command(
