@@ -4,18 +4,18 @@
 
 #include <fpdb/tuple/Converter.h>
 #include <fpdb/tuple/Globals.h>
-#include <fpdb/tuple/FileReaderBuilder.h>
-#include <fpdb/tuple/parquet/ParquetReader.h>
+#include <fpdb/tuple/LocalFileReaderBuilder.h>
+#include <fpdb/tuple/parquet/LocalParquetReader.h>
 #include <fpdb/tuple/parquet/ParquetFormat.h>
 #include <fpdb/tuple/csv/CSVFormat.h>
+#include <fpdb/tuple/util/FileReaderTestUtil.h>
 #include <fpdb/util/Util.h>
-#include "FileReaderTestUtil.h"
 #include <filesystem>
 #include <doctest/doctest.h>
 #include <memory>
 
 using namespace fpdb::tuple;
-using namespace fpdb::tuple::test;
+using namespace fpdb::tuple::util;
 using namespace fpdb::tuple::csv;
 using namespace fpdb::tuple::parquet;
 using namespace fpdb::util;
@@ -64,7 +64,7 @@ TEST_CASE ("parquetReader-read-whole-test.csv-converted" * doctest::skip(false |
                                         ::parquet::Compression::type::UNCOMPRESSED);
   CHECK_MESSAGE(result.has_value(), result.error());
 
-  auto reader = FileReaderBuilder::make(parquetFilePath, parquetFormat, schema);
+  auto reader = LocalFileReaderBuilder::make(parquetFormat, schema, parquetFilePath);
   auto expTupleSet = reader->read();
   CHECK(expTupleSet.has_value());
 
@@ -88,7 +88,7 @@ TEST_CASE ("parquetReader-read-columns-test.csv-converted" * doctest::skip(false
                                         ::parquet::Compression::type::UNCOMPRESSED);
   CHECK_MESSAGE(result.has_value(), result.error());
 
-  auto reader = FileReaderBuilder::make(parquetFilePath, parquetFormat, schema);
+  auto reader = LocalFileReaderBuilder::make(parquetFormat, schema, parquetFilePath);
   auto expTupleSet = reader->read({"a", "b"});
   CHECK(expTupleSet.has_value());
 
@@ -112,14 +112,14 @@ TEST_CASE ("parquetReader-read-whole-test3x10000.csv-converted" * doctest::skip(
                                         ::parquet::Compression::type::UNCOMPRESSED);
   CHECK_MESSAGE(result.has_value(), result.error());
 
-  auto reader = FileReaderBuilder::make(parquetFilePath, parquetFormat, schema);
+  auto reader = LocalFileReaderBuilder::make(parquetFormat, schema, parquetFilePath);
   auto expTupleSet = reader->read();
   CHECK(expTupleSet.has_value());
 
   FileReaderTestUtil::checkReadWholeAllTestCsv3x10000(*expTupleSet);
 }
 
-TEST_CASE ("parquetReader-read-columns-test3x10000.csv" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("parquetReader-read-columns-test3x10000.csv-converted" * doctest::skip(false || SKIP_SUITE)) {
   auto csvFilePath = "data/csv/test3x10000.csv";
   auto parquetFilePath = fmt::format("tests/{}/{}/test.parquet",
                                      getCurrentTestSuiteName(),
@@ -136,7 +136,7 @@ TEST_CASE ("parquetReader-read-columns-test3x10000.csv" * doctest::skip(false ||
                                         ::parquet::Compression::type::UNCOMPRESSED);
   CHECK_MESSAGE(result.has_value(), result.error());
 
-  auto reader = FileReaderBuilder::make(parquetFilePath, parquetFormat, schema);
+  auto reader = LocalFileReaderBuilder::make(parquetFormat, schema, parquetFilePath);
   auto expTupleSet = reader->read({"a", "b"});
   CHECK(expTupleSet.has_value());
 
@@ -163,14 +163,14 @@ TEST_CASE ("parquetReader-read-byte-range" * doctest::skip(false || SKIP_SUITE))
   auto size = std::filesystem::file_size(outFile);
   auto scanRanges = fpdb::util::ranges<int>(0, size, 3);
 
-  auto reader = fpdb::tuple::parquet::ParquetReader::make(outFile,
-                                                          std::make_shared<fpdb::tuple::parquet::ParquetFormat>(),
-                                                          nullptr);
+  auto reader = fpdb::tuple::parquet::LocalParquetReader::make(std::make_shared<fpdb::tuple::parquet::ParquetFormat>(),
+                                                               nullptr,
+                                                               outFile);
 
   for (const auto &scanRange: scanRanges) {
-    auto expectedTupleSet = reader->read({"A","B","C"},
-                                         scanRange.first,
-                                         scanRange.second);
+    auto expectedTupleSet = reader->readRange({"A","B","C"},
+                                              scanRange.first,
+                                              scanRange.second);
     if (!expectedTupleSet)
               FAIL (expectedTupleSet.error());
     auto tupleSet = expectedTupleSet.value();

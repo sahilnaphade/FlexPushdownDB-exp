@@ -19,24 +19,12 @@ namespace fpdb::tuple::csv {
 class CSVParser {
 
 public:
-
-  CSVParser(std::string filePath,
-			std::optional<std::vector<std::string>> columnNames,
-			int64_t startOffset,
-			std::optional<int64_t> finishOffset,
-			int64_t bufferSize);
-
-  CSVParser(std::string filePath,
-			std::optional<std::vector<std::string>> columnNames,
-			int64_t startOffset,
-			std::optional<int64_t> finishOffset);
-
-  CSVParser(const std::string &filePath,
-			int64_t bufferSize);
-
-  CSVParser(const std::string &filePath, const std::vector<std::string> &columnNames);
-
-  explicit CSVParser(const std::string &filePath);
+  CSVParser(std::shared_ptr<::arrow::io::RandomAccessFile> inputStream,
+            std::shared_ptr<::arrow::Schema> schema,
+            std::optional<std::vector<std::string>> columnNames,
+            int64_t startOffset,
+            std::optional<int64_t> finishOffset,
+            int64_t bufferSize = DefaultBufferSize);
 
   /**
    * Parse a tuple set from the CSV file
@@ -44,31 +32,15 @@ public:
    */
   tl::expected<std::shared_ptr<TupleSet>, std::string> parse();
 
-  /**
-   * Parse a schema from the CSV file
-   * @return
-   */
-  tl::expected<std::shared_ptr<Schema>, std::string> parseSchema();
-
 private:
-
   static constexpr int64_t DefaultBufferSize = 16 * 1024;
 
-  std::string filePath_;
+  std::shared_ptr<::arrow::io::RandomAccessFile> inputStream_;
+  std::shared_ptr<::arrow::Schema> schema_;
   std::optional<std::vector<std::string>> columnNames_;
   int64_t startPos_;
   std::optional<int64_t> finishPos_;
   int64_t bufferSize_;
-
-  std::optional<std::shared_ptr<::arrow::io::ReadableFile>> inputStream_;
-
-  /**
-   * Opens the input stream for the file to be parsed
-   *
-   * @param filePath
-   * @return
-   */
-  tl::expected<void, std::string> openInputStream();
 
   /**
    * Arrow's CSV parser can't cope with a line containing only the end of a complete record.
@@ -81,12 +53,11 @@ private:
   tl::expected<std::shared_ptr<::arrow::Buffer>, std::string> advanceToNewLine();
 
   /**
-   * Extracts a schema from a block parser that has parsed a single row
+   * Make output schema
    *
-   * @param blockParser
    * @return
    */
-  static std::shared_ptr<Schema> extractSchema(const ::arrow::csv::BlockParser &blockParser);
+  tl::expected<std::shared_ptr<::arrow::Schema>, std::string> makeOutputSchema();
 
   /**
    * Extracts string arrays from a block parser
@@ -94,10 +65,9 @@ private:
    * @param blockParser
    * @return
    */
-  static tl::expected<std::vector<std::shared_ptr<::arrow::Array>>,
-					  std::string>
+  static tl::expected<std::vector<std::shared_ptr<::arrow::Array>>, std::string>
   extractArrays(const arrow::csv::BlockParser &blockParser,
-				const std::shared_ptr<Schema>& csvFileSchema,
+				const std::shared_ptr<::arrow::Schema>& csvFileSchema,
 				const std::optional<std::vector<std::string>> &columnNamesToRead);
 
   /**

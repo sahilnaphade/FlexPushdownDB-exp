@@ -1,39 +1,34 @@
 //
-// Created by matt on 12/8/20.
+// Created by Yifei Yang on 2/18/22.
 //
 
-#ifndef FPDB_FPDB_TUPLE_INCLUDE_FPDB_TUPLE_PARQUETREADER_H
-#define FPDB_FPDB_TUPLE_INCLUDE_FPDB_TUPLE_PARQUETREADER_H
+#ifndef FPDB_FPDB_TUPLE_INCLUDE_FPDB_TUPLE_PARQUET_PARQUETREADER_H
+#define FPDB_FPDB_TUPLE_INCLUDE_FPDB_TUPLE_PARQUET_PARQUETREADER_H
 
 #include <fpdb/tuple/FileReader.h>
 #include <fpdb/tuple/TupleSet.h>
-#include <tl/expected.hpp>
-#include <arrow/io/api.h>
-#include <parquet/arrow/reader.h>
-#include <string>
-#include <memory>
 
 namespace fpdb::tuple::parquet {
 
-class ParquetReader : public FileReader {
+class ParquetReader : virtual public FileReader {
 
 public:
-  explicit ParquetReader(const std::string &path,
-                         const std::shared_ptr<FileFormat> &format,
-                         const std::shared_ptr<::arrow::Schema> &schema);
-  ~ParquetReader() = default;
+  ParquetReader() = default;
+  virtual ~ParquetReader() = default;
 
-  static std::shared_ptr<ParquetReader> make(const std::string &path,
-                                             const std::shared_ptr<FileFormat> &format,
-                                             const std::shared_ptr<::arrow::Schema> &schema);
-
-  tl::expected<std::shared_ptr<TupleSet>, std::string> read(const std::vector<std::string> &columnNames) override;
+protected:
+  tl::expected<std::shared_ptr<TupleSet>, std::string>
+  readImpl(const std::vector<std::string> &columnNames,
+           const std::shared_ptr<::arrow::io::RandomAccessFile> &inputStream);
 
   tl::expected<std::shared_ptr<TupleSet>, std::string>
-  read(const std::vector<std::string> &columnNames, int64_t startPos, int64_t finishPos) override;
-
+  readRangeImpl(const std::vector<std::string> &columnNames,
+           int64_t startPos,
+           int64_t finishPos,
+           const std::shared_ptr<::arrow::io::RandomAccessFile> &inputStream);
 };
 
 }
 
-#endif //FPDB_FPDB_TUPLE_INCLUDE_FPDB_TUPLE_PARQUETREADER_H
+
+#endif //FPDB_FPDB_TUPLE_INCLUDE_FPDB_TUPLE_PARQUET_PARQUETREADER_H

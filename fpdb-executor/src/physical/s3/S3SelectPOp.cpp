@@ -89,7 +89,7 @@ std::shared_ptr<CSVToArrowSIMDChunkParser> S3SelectPOp::generateSIMDCSVParser() 
   // FIXME: temporary fix of "parseChunkSize < payload size" issue on Airmettle Select
   auto conversionBufferSize = (awsClient_->getAwsConfig()->getS3ClientType() != AIRMETTLE) ?
                               DefaultS3ConversionBufferSize : DefaultS3ConversionBufferSizeAirmettleSelect;
-  auto simdParser = std::make_shared<CSVToArrowSIMDChunkParser>(name(), conversionBufferSize,
+  auto simdParser = std::make_shared<CSVToArrowSIMDChunkParser>(conversionBufferSize,
                                                                 std::make_shared<::arrow::Schema>(fields),
                                                                 std::make_shared<::arrow::Schema>(fields),
                                                                 ',');

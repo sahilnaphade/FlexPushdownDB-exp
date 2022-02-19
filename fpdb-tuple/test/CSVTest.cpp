@@ -7,11 +7,11 @@
 #include <doctest/doctest.h>
 #include <fpdb/tuple/csv/CSVParser.h>
 #include <fpdb/tuple/csv/CSVFormat.h>
-#include <fpdb/tuple/FileReaderBuilder.h>
-#include "FileReaderTestUtil.h"
+#include <fpdb/tuple/LocalFileReaderBuilder.h>
+#include <fpdb/tuple/util/FileReaderTestUtil.h>
 
 using namespace fpdb::tuple::csv;
-using namespace fpdb::tuple::test;
+using namespace fpdb::tuple::util;
 using namespace fpdb::tuple;
 
 #define SKIP_SUITE false
@@ -87,23 +87,12 @@ void checkAll(const std::shared_ptr<TupleSet> &tupleSet) {
   checkDataRow3(tupleSet, 2);
 }
 
-std::shared_ptr<Schema> parseSchema(int64_t bufferSize) {
-  CSVParser parser("data/csv/test.csv", bufferSize);
-
-  auto maybeSchema = parser.parseSchema();
-	  CHECK_MESSAGE(maybeSchema.has_value(), maybeSchema.error());
-
-  auto schema = maybeSchema.value();
-  SPDLOG_DEBUG("Output:\n{}", schema->showString());
-
-  return schema;
-}
-
 std::shared_ptr<TupleSet> parseData(int64_t bufferSize,
                                     int64_t startOffset = 0,
                                     std::optional<int64_t> finishOffset = std::nullopt) {
-
-  CSVParser parser("data/csv/test.csv", std::nullopt, startOffset, finishOffset, bufferSize);
+  auto expInFile = ::arrow::io::ReadableFile::Open("data/csv/test.csv");
+  auto schema = FileReaderTestUtil::makeTestSchema();
+  CSVParser parser(*expInFile, schema, std::nullopt, startOffset, finishOffset, bufferSize);
 
   auto maybeTupleSet = parser.parse();
 	  CHECK_MESSAGE(maybeTupleSet.has_value(), maybeTupleSet.error());
@@ -112,14 +101,6 @@ std::shared_ptr<TupleSet> parseData(int64_t bufferSize,
   SPDLOG_DEBUG("Output:\n{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 
   return tupleSet;
-}
-
-TEST_CASE ("csvParser-parse-schema-small-buffer" * doctest::skip(false || SKIP_SUITE)) {
-  checkSchemaAll(parseSchema(2));
-}
-
-TEST_CASE ("csvParser-read-schema-large-buffer" * doctest::skip(false || SKIP_SUITE)) {
-  checkSchemaAll(parseSchema(16 * 1024));
 }
 
 TEST_CASE ("csvParser-read-byte-range-row1-aligned-boundaries" * doctest::skip(false || SKIP_SUITE)) {
@@ -156,7 +137,7 @@ TEST_CASE ("csvReader-read-whole-test.csv" * doctest::skip(false || SKIP_SUITE))
   auto filePath = "data/csv/test.csv";
   auto csvFormat = std::make_shared<CSVFormat>(',');
   auto schema = FileReaderTestUtil::makeTestSchema();
-  auto reader = FileReaderBuilder::make(filePath, csvFormat, schema);
+  auto reader = LocalFileReaderBuilder::make(csvFormat, schema, filePath);
 
   auto expTupleSet = reader->read();
           CHECK(expTupleSet.has_value());
@@ -168,7 +149,7 @@ TEST_CASE ("csvReader-read-columns-test.csv" * doctest::skip(false || SKIP_SUITE
   auto filePath = "data/csv/test.csv";
   auto csvFormat = std::make_shared<CSVFormat>(',');
   auto schema = FileReaderTestUtil::makeTestSchema();
-  auto reader = FileReaderBuilder::make(filePath, csvFormat, schema);
+  auto reader = LocalFileReaderBuilder::make(csvFormat, schema, filePath);
 
   auto expTupleSet = reader->read({"a", "b"});
           CHECK(expTupleSet.has_value());
@@ -180,7 +161,7 @@ TEST_CASE ("csvReader-read-whole-test3x10000.csv" * doctest::skip(false || SKIP_
   auto filePath = "data/csv/test3x10000.csv";
   auto csvFormat = std::make_shared<CSVFormat>(',');
   auto schema = FileReaderTestUtil::makeTestSchema();
-  auto reader = FileReaderBuilder::make(filePath, csvFormat, schema);
+  auto reader = LocalFileReaderBuilder::make(csvFormat, schema, filePath);
 
   auto expTupleSet = reader->read();
   CHECK(expTupleSet.has_value());
@@ -192,7 +173,7 @@ TEST_CASE ("csvReader-read-columns-test3x10000.csv" * doctest::skip(false || SKI
   auto filePath = "data/csv/test3x10000.csv";
   auto csvFormat = std::make_shared<CSVFormat>(',');
   auto schema = FileReaderTestUtil::makeTestSchema();
-  auto reader = FileReaderBuilder::make(filePath, csvFormat, schema);
+  auto reader = LocalFileReaderBuilder::make(csvFormat, schema, filePath);
 
   auto expTupleSet = reader->read({"a", "b"});
   CHECK(expTupleSet.has_value());
@@ -204,20 +185,22 @@ TEST_CASE ("csvReader-file-size-test.csv" * doctest::skip(false || SKIP_SUITE)) 
   auto filePath = "data/csv/test.csv";
   auto csvFormat = std::make_shared<CSVFormat>(',');
   auto schema = FileReaderTestUtil::makeTestSchema();
-  auto reader = FileReaderBuilder::make(filePath, csvFormat, schema);
+  auto reader = LocalFileReaderBuilder::make(csvFormat, schema, filePath);
 
-  int64_t fileSize = reader->getFileSize();
-  CHECK_EQ(fileSize, 24);
+  auto expFileSize = reader->getFileSize();
+  CHECK(expFileSize.has_value());
+  CHECK_EQ(*expFileSize, 24);
 }
 
 TEST_CASE ("csvReader-file-size-test3x10000.csv" * doctest::skip(false || SKIP_SUITE)) {
   auto filePath = "data/csv/test3x10000.csv";
   auto csvFormat = std::make_shared<CSVFormat>(',');
   auto schema = FileReaderTestUtil::makeTestSchema();
-  auto reader = FileReaderBuilder::make(filePath, csvFormat, schema);
+  auto reader = LocalFileReaderBuilder::make(csvFormat, schema, filePath);
 
-  int64_t fileSize = reader->getFileSize();
-  CHECK_EQ(fileSize, 60006);
+  auto expFileSize = reader->getFileSize();
+  CHECK(expFileSize.has_value());
+  CHECK_EQ(*expFileSize, 60006);
 }
 
 }

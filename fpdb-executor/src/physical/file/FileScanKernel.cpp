@@ -3,7 +3,7 @@
 //
 
 #include <fpdb/executor/physical/file/FileScanKernel.h>
-#include <fpdb/tuple/FileReaderBuilder.h>
+#include <fpdb/tuple/LocalFileReaderBuilder.h>
 
 using namespace fpdb::executor::physical::file;
 
@@ -24,9 +24,9 @@ FileScanKernel FileScanKernel::make(const std::string &path,
 }
 
 tl::expected<std::shared_ptr<TupleSet>, std::string> FileScanKernel::scan() {
-  auto reader = FileReaderBuilder::make(path_, format_, schema_);
+  auto reader = LocalFileReaderBuilder::make(format_, schema_, path_);
   if (byteRange_.has_value()) {
-    return reader->read(byteRange_->first, byteRange_->second);
+    return reader->readRange(byteRange_->first, byteRange_->second);
   } else {
     return reader->read();
   }
@@ -34,9 +34,9 @@ tl::expected<std::shared_ptr<TupleSet>, std::string> FileScanKernel::scan() {
 
 tl::expected<std::shared_ptr<TupleSet>, std::string>
 FileScanKernel::scan(const std::vector<std::string> &columnNames) {
-  auto reader = FileReaderBuilder::make(path_, format_, schema_);
+  auto reader = LocalFileReaderBuilder::make(format_, schema_, path_);
   if (byteRange_.has_value()) {
-    return reader->read(columnNames, byteRange_->first, byteRange_->second);
+    return reader->readRange(columnNames, byteRange_->first, byteRange_->second);
   } else {
     return reader->read(columnNames);
   }
@@ -46,11 +46,15 @@ const std::string &FileScanKernel::getPath() const {
   return path_;
 }
 
-std::pair<int64_t, int64_t> FileScanKernel::getByteRange() const {
+tl::expected<std::pair<int64_t, int64_t>, std::string> FileScanKernel::getByteRange() const {
   if (byteRange_.has_value()) {
     return *byteRange_;
   } else {
-    auto reader = FileReaderBuilder::make(path_, format_, schema_);
-    return {0, reader->getFileSize()};
+    auto reader = LocalFileReaderBuilder::make(format_, schema_, path_);
+    auto expFileSize = reader->getFileSize();
+    if (!expFileSize.has_value()) {
+      return tl::make_unexpected(expFileSize.error());
+    }
+    return std::make_pair(0, *expFileSize);
   }
 }
