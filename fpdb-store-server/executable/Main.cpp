@@ -12,7 +12,8 @@ using namespace fpdb::store::server::flight;
 
 int main(int /*argc*/, char** /*argv*/) {
 
-  auto server = Server::make("1", 10000);
+  auto server = Server::make(ServerConfig{"node1", 10000, true, std::nullopt, 10001,  10002, "./data"}, std::nullopt,
+                             std::nullopt);
 
   // Start the server
   auto init_result = server->init();

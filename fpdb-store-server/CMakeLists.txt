@@ -139,9 +139,12 @@ add_executable(fpdb-store-server-test
         test/FlightTest.cpp
         test/DistributedTest.cpp)
 
+find_package(LibBFD REQUIRED)
+
 target_link_libraries(fpdb-store-server-test fmt::fmt)
 target_link_libraries(fpdb-store-server-test spdlog::spdlog)
 target_link_libraries(fpdb-store-server-test doctest::doctest)
+target_link_libraries(fpdb-store-server-test LibBFD)
 target_link_libraries(fpdb-store-server-test Backward::Backward)
 target_link_libraries(fpdb-store-server-test arrow_flight_static)
 target_link_libraries(fpdb-store-server-test fpdb-store-server-static)
@@ -149,7 +152,6 @@ target_link_libraries(fpdb-store-server-test fpdb-file-read-test-util)
 # need to fix link on mac
 if (${APPLE})
     linkForMacExecutable(fpdb-store-server-test)
-    target_link_directories(fpdb-store-server-test PRIVATE /usr/local/opt/binutils/lib)
 endif()
 
 add_custom_command(
