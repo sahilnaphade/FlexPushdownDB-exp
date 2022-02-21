@@ -51,8 +51,8 @@ add_library(fpdb-tuple STATIC
         src/arrow/SIMDParserHelpers.cpp include/fpdb/tuple/arrow/SIMDParserHelpers.h
         src/arrow/CSVToArrowSIMDChunkParser.cpp include/fpdb/tuple/arrow/CSVToArrowSIMDChunkParser.h
         src/serialization/ArrowSerializer.cpp include/fpdb/tuple/serialization/ArrowSerializer.h
-        include/fpdb/tuple/serialization/TupleKeyElementSerializer.h
-        include/fpdb/tuple/serialization/FileFormatSerializer.h)
+        include/fpdb/tuple/caf-serialization/CAFTupleKeyElementSerializer.h
+        include/fpdb/tuple/caf-serialization/CAFFileFormatSerializer.h)
 
 target_include_directories(fpdb-tuple PUBLIC include)
 

@@ -11,7 +11,7 @@
 #include <fpdb/executor/cache/SegmentCacheActor.h>
 #include <fpdb/executor/message/TupleMessage.h>
 #include <fpdb/executor/message/cache/StoreRequestMessage.h>
-#include <fpdb/executor/serialization/MessageSerializer.h>
+#include <fpdb/executor/caf-serialization/CAFMessageSerializer.h>
 #include <fpdb/catalogue/local-fs/LocalFSPartition.h>
 #include <fpdb/caf/CAFUtil.h>
 #include <utility>
