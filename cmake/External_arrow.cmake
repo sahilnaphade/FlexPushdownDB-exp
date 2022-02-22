@@ -33,6 +33,17 @@ set(ARROW_GANDIVA_STATIC_LIB ${ARROW_LIB_DIR}/${CMAKE_STATIC_LIBRARY_PREFIX}gand
 #set(ARROW_SNAPPY_BASE_DIR ${ARROW_BASE_DIR}/src/${ARROW_BASE}-build/snappy_ep/src/snappy_ep-install)
 #set(ARROW_SNAPPY_INCLUDE_DIR ${ARROW_SNAPPY_BASE_DIR}/include)
 #set(ARROW_SNAPPY_STATIC_LIB ${ARROW_SNAPPY_BASE_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}snappy${CMAKE_STATIC_LIBRARY_SUFFIX})
+set(ARROW_GRPC_BASE_DIR ${ARROW_BASE_DIR}/src/${ARROW_BASE}-build/grpc_ep-install)
+set(ARROW_GRPC_INCLUDE_DIR ${ARROW_GRPC_BASE_DIR}/include)
+set(ARROW_GRPC_STATIC_LIB ${ARROW_GRPC_BASE_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}grpc${CMAKE_STATIC_LIBRARY_SUFFIX})
+set(ARROW_GRPCPP_REFLECTION_STATIC_LIB ${ARROW_GRPC_BASE_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}grpc++_reflection${CMAKE_STATIC_LIBRARY_SUFFIX})
+set(ARROW_GRPC_BIN_DIR ${ARROW_GRPC_BASE_DIR}/bin)
+set(ARROW_GRPC_CPP_PLUGIN ${ARROW_GRPC_BIN_DIR}/grpc_cpp_plugin)
+set(ARROW_PROTOBUF_BASE_DIR ${ARROW_BASE_DIR}/src/${ARROW_BASE}-build/protobuf_ep-install)
+set(ARROW_PROTOBUF_INCLUDE_DIR ${ARROW_PROTOBUF_BASE_DIR}/include)
+set(ARROW_PROTOBUF_STATIC_LIB ${ARROW_PROTOBUF_BASE_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}protobuf${CMAKE_STATIC_LIBRARY_SUFFIX})
+set(ARROW_PROTOBUF_BIN_DIR ${ARROW_PROTOBUF_BASE_DIR}/bin)
+set(ARROW_PROTOC ${ARROW_PROTOBUF_BIN_DIR}/protoc)
 set(ARROW_PARQUET_SHARED_LIB ${ARROW_LIB_DIR}/${CMAKE_SHARED_LIBRARY_PREFIX}parquet${CMAKE_SHARED_LIBRARY_SUFFIX})
 set(ARROW_PARQUET_STATIC_LIB ${ARROW_LIB_DIR}/${CMAKE_STATIC_LIBRARY_PREFIX}parquet${CMAKE_STATIC_LIBRARY_SUFFIX})
 set(ARROW_FLIGHT_SHARED_LIB ${ARROW_LIB_DIR}/${CMAKE_SHARED_LIBRARY_PREFIX}arrow_flight${CMAKE_SHARED_LIBRARY_SUFFIX})
@@ -137,27 +148,12 @@ target_link_libraries(arrow_bundled_dependencies_static INTERFACE absl::str_form
 target_link_libraries(arrow_bundled_dependencies_static INTERFACE absl::time)
 target_link_libraries(arrow_bundled_dependencies_static INTERFACE absl::optional)
 target_link_libraries(arrow_bundled_dependencies_static INTERFACE absl::synchronization)
-
-#add_library(jemalloc_static STATIC IMPORTED)
-#set_target_properties(jemalloc_static PROPERTIES IMPORTED_LOCATION ${ARROW_JEMALLOC_STATIC_LIB})
-#target_include_directories(jemalloc_static INTERFACE ${ARROW_JEMALLOC_INCLUDE_DIR})
-#target_link_libraries(jemalloc_static INTERFACE pthread)
-#add_dependencies(jemalloc_static ${ARROW_BASE})
-
-#add_library(re2_static STATIC IMPORTED)
-#set_target_properties(re2_static PROPERTIES IMPORTED_LOCATION ${ARROW_RE2_STATIC_LIB})
-#target_include_directories(re2_static INTERFACE ${ARROW_RE2_INCLUDE_DIR})
-#add_dependencies(re2_static ${ARROW_BASE})
-#
-#add_library(thrift_static STATIC IMPORTED)
-#set_target_properties(thrift_static PROPERTIES IMPORTED_LOCATION ${ARROW_THRIFT_STATIC_LIB})
-#target_include_directories(thrift_static INTERFACE ${ARROW_THRIFT_INCLUDE_DIR})
-#add_dependencies(thrift_static ${ARROW_BASE})
-
-#add_library(snappy_static STATIC IMPORTED)
-#set_target_properties(snappy_static PROPERTIES IMPORTED_LOCATION ${ARROW_SNAPPY_STATIC_LIB})
-#target_include_directories(snappy_static INTERFACE ${ARROW_SNAPPY_INCLUDE_DIR})
-#add_dependencies(snappy_static ${ARROW_BASE})
+# additional libs needed on mac
+if (${APPLE})
+  find_library(FoundationLib CoreFoundation)
+  target_link_libraries(arrow_bundled_dependencies_static INTERFACE ${FoundationLib})
+  target_link_libraries(arrow_bundled_dependencies_static INTERFACE /usr/lib/libresolv.dylib)
+endif()
 
 add_library(arrow_static STATIC IMPORTED)
 set_target_properties(arrow_static PROPERTIES IMPORTED_LOCATION ${ARROW_CORE_STATIC_LIBS})
@@ -234,6 +230,48 @@ set_target_properties(arrow_flight_shared PROPERTIES IMPORTED_LOCATION ${ARROW_F
 target_include_directories(arrow_flight_shared INTERFACE ${ARROW_INCLUDE_DIR})
 target_link_libraries(arrow_flight_shared INTERFACE arrow_shared)
 add_dependencies(arrow_flight_shared ${ARROW_BASE})
+
+
+# third-party of arrow
+
+#add_library(jemalloc_static STATIC IMPORTED)
+#set_target_properties(jemalloc_static PROPERTIES IMPORTED_LOCATION ${ARROW_JEMALLOC_STATIC_LIB})
+#target_include_directories(jemalloc_static INTERFACE ${ARROW_JEMALLOC_INCLUDE_DIR})
+#target_link_libraries(jemalloc_static INTERFACE pthread)
+#add_dependencies(jemalloc_static ${ARROW_BASE})
+
+#add_library(re2_static STATIC IMPORTED)
+#set_target_properties(re2_static PROPERTIES IMPORTED_LOCATION ${ARROW_RE2_STATIC_LIB})
+#target_include_directories(re2_static INTERFACE ${ARROW_RE2_INCLUDE_DIR})
+#add_dependencies(re2_static ${ARROW_BASE})
+#
+#add_library(thrift_static STATIC IMPORTED)
+#set_target_properties(thrift_static PROPERTIES IMPORTED_LOCATION ${ARROW_THRIFT_STATIC_LIB})
+#target_include_directories(thrift_static INTERFACE ${ARROW_THRIFT_INCLUDE_DIR})
+#add_dependencies(thrift_static ${ARROW_BASE})
+
+#add_library(snappy_static STATIC IMPORTED)
+#set_target_properties(snappy_static PROPERTIES IMPORTED_LOCATION ${ARROW_SNAPPY_STATIC_LIB})
+#target_include_directories(snappy_static INTERFACE ${ARROW_SNAPPY_INCLUDE_DIR})
+#add_dependencies(snappy_static ${ARROW_BASE})
+
+add_library(protobuf_static STATIC IMPORTED)
+set_target_properties(protobuf_static PROPERTIES IMPORTED_LOCATION ${ARROW_PROTOBUF_STATIC_LIB})
+target_include_directories(protobuf_static INTERFACE ${ARROW_PROTOBUF_INCLUDE_DIR})
+add_dependencies(protobuf_static ${ARROW_BASE})
+
+add_library(grpcpp_reflection_static STATIC IMPORTED)
+set_target_properties(grpcpp_reflection_static PROPERTIES IMPORTED_LOCATION ${ARROW_GRPCPP_REFLECTION_STATIC_LIB})
+target_include_directories(grpcpp_reflection_static INTERFACE ${ARROW_GRPC_INCLUDE_DIR})
+add_dependencies(grpcpp_reflection_static ${ARROW_BASE})
+
+add_library(grpc_static STATIC IMPORTED)
+set_target_properties(grpc_static PROPERTIES IMPORTED_LOCATION ${ARROW_GRPC_STATIC_LIB})
+target_include_directories(grpc_static INTERFACE ${ARROW_GRPC_INCLUDE_DIR})
+add_dependencies(grpc_static ${ARROW_BASE})
+target_link_libraries(grpc_static INTERFACE protobuf_static)
+target_link_libraries(grpc_static INTERFACE grpcpp_reflection_static)
+target_link_libraries(grpc_static INTERFACE arrow_bundled_dependencies_static)
 
 #showTargetProps(arrow_static)
 #showTargetProps(arrow_dataset_static)

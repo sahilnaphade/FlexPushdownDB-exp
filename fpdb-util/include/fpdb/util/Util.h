@@ -20,6 +20,7 @@ namespace fpdb::util {
    */
   string readFile(const string& filePath);
   vector<string> readFileByLine(const string& filePath);
+  int64_t getFileSize(const string& filePath);
 
   /**
    * Config utils

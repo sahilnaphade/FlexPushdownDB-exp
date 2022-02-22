@@ -2,10 +2,10 @@
 // Created by Yifei Yang on 1/18/22.
 //
 
-#include <fpdb/tuple/Util.h>
+#include <fpdb/tuple/util/Util.h>
 #include <fpdb/tuple/ArrayAppenderWrapper.h>
 
-namespace fpdb::tuple {
+namespace fpdb::tuple::util {
 
 tl::expected<std::shared_ptr<arrow::Array>, std::string>
 Util::makeEmptyArray(const std::shared_ptr<arrow::DataType> &type) {

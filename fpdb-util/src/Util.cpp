@@ -36,6 +36,11 @@ vector<string> fpdb::util::readFileByLine(const string &filePath) {
   return lines;
 }
 
+int64_t fpdb::util::getFileSize(const string& filePath) {
+  std::filesystem::path fsPath(filePath);
+  return std::filesystem::file_size(fsPath);
+}
+
 unordered_map<string, string> fpdb::util::readConfig(const string &fileName) {
   unordered_map<string, string> configMap;
   string configPath = filesystem::current_path()

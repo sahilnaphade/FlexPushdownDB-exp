@@ -15,10 +15,12 @@ namespace fpdb::tuple {
 class FileReader {
   
 public:
-  FileReader(const std::string path,
-             const std::shared_ptr<FileFormat> &format,
+  FileReader(const std::shared_ptr<FileFormat> &format,
              const std::shared_ptr<::arrow::Schema> schema);
+//  FileReader() = default;
   virtual ~FileReader() = default;
+
+  const std::shared_ptr<FileFormat> &getFormat() const;
 
   /**
    * Read the whole file
@@ -38,7 +40,7 @@ public:
    * Read specific byte range of the file
    * @return
    */
-  tl::expected<std::shared_ptr<TupleSet>, std::string> read(int64_t startPos, int64_t finishPos);
+  tl::expected<std::shared_ptr<TupleSet>, std::string> readRange(int64_t startPos, int64_t finishPos);
 
   /**
    * Read specific columns inside specific byte range of the file
@@ -48,17 +50,14 @@ public:
    * @return
    */
   virtual tl::expected<std::shared_ptr<TupleSet>, std::string>
-  read(const std::vector<std::string> &columnNames, int64_t startPos, int64_t finishPos) = 0;
+  readRange(const std::vector<std::string> &columnNames, int64_t startPos, int64_t finishPos) = 0;
 
-  int64_t getFileSize() const;
-
-  const std::shared_ptr<FileFormat> &getFormat() const;
+  virtual tl::expected<int64_t, std::string> getFileSize() const = 0;
 
 protected:
   // close the input stream, in case getting exception or read finished
-  void close(const std::shared_ptr<arrow::io::ReadableFile> &inputStream);
+  void close(const std::shared_ptr<arrow::io::InputStream> &inputStream);
 
-  std::string path_;
   std::shared_ptr<FileFormat> format_;
   std::shared_ptr<::arrow::Schema> schema_;
 

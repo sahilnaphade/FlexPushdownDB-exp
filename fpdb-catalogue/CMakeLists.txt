@@ -19,8 +19,8 @@ add_library(fpdb-catalogue STATIC
         src/local-fs/LocalFSCatalogueEntry.cpp include/fpdb/catalogue/local-fs/LocalFSCatalogueEntry.h
         src/local-fs/LocalFSTable.cpp include/fpdb/catalogue/local-fs/LocalFSTable.h
         src/local-fs/LocalFSPartition.cpp include/fpdb/catalogue/local-fs/LocalFSPartition.h
-        include/fpdb/catalogue/serialization/PartitionSerializer.h
-        include/fpdb/catalogue/serialization/TableSerializer.h)
+        include/fpdb/catalogue/caf-serialization/CAFPartitionSerializer.h
+        include/fpdb/catalogue/caf-serialization/CAFTableSerializer.h)
 
 target_include_directories(fpdb-catalogue PUBLIC include)
 

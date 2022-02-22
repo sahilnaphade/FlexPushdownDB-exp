@@ -13,15 +13,13 @@
 #include <cstdlib>
 #include <utility>
 
-CSVToArrowSIMDStreamParser::CSVToArrowSIMDStreamParser(std::string callerName,
-                                                       uint64_t parseChunkSize,
+CSVToArrowSIMDStreamParser::CSVToArrowSIMDStreamParser(uint64_t parseChunkSize,
                                                        std::basic_istream<char, std::char_traits<char>> &file,
                                                        bool discardHeader,
                                                        std::shared_ptr<arrow::Schema> inputSchema,
                                                        std::shared_ptr<arrow::Schema> outputSchema,
                                                        bool gzipCompressed,
                                                        char csvFileDelimiter):
-  callerName_(std::move(callerName)),
   parseChunkSize_(parseChunkSize),
   discardHeader_(discardHeader),
   inputSchema_(std::move(inputSchema)),

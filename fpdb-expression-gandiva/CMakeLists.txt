@@ -39,7 +39,7 @@ add_library(fpdb-expression-gandiva STATIC
         src/BinaryExpression.cpp include/fpdb/expression/gandiva/BinaryExpression.h
         src/Canonicalizer.cpp include/fpdb/expression/gandiva/Canonicalizer.h
         src/Util.cpp include/fpdb/expression/gandiva/Util.h
-        include/fpdb/expression/gandiva/serialization/ExpressionSerializer.h)
+        include/fpdb/expression/gandiva/caf-serialization/CAFExpressionSerializer.h)
 
 target_include_directories(fpdb-expression-gandiva PUBLIC include)
 

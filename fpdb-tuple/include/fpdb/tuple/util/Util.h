@@ -2,13 +2,13 @@
 // Created by Yifei Yang on 1/18/22.
 //
 
-#ifndef FPDB_FPDB_TUPLE_INCLUDE_FPDB_TUPLE_UTIL_H
-#define FPDB_FPDB_TUPLE_INCLUDE_FPDB_TUPLE_UTIL_H
+#ifndef FPDB_FPDB_TUPLE_INCLUDE_FPDB_TUPLE_UTIL_UTIL_H
+#define FPDB_FPDB_TUPLE_INCLUDE_FPDB_TUPLE_UTIL_UTIL_H
 
 #include <arrow/api.h>
 #include <tl/expected.hpp>
 
-namespace fpdb::tuple {
+namespace fpdb::tuple::util {
 
 class Util {
 
@@ -21,4 +21,4 @@ public:
 }
 
 
-#endif //FPDB_FPDB_TUPLE_INCLUDE_FPDB_TUPLE_UTIL_H
+#endif //FPDB_FPDB_TUPLE_INCLUDE_FPDB_TUPLE_UTIL_UTIL_H

@@ -283,3 +283,4 @@ Temporary Items
 /fpdb-calcite/java/target/
 /fpdb-calcite/java/dependency-reduced-pom.xml
 /fpdb-calcite/java/*.iml
+/fpdb-store-server/gen-cpp/

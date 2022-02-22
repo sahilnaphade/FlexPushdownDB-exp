@@ -5,7 +5,7 @@
 #include <fpdb/expression/gandiva/Filter.h>
 #include <fpdb/expression/gandiva/Globals.h>
 #include <fpdb/tuple/Globals.h>
-#include <fpdb/tuple/Util.h>
+#include <fpdb/tuple/util/Util.h>
 #include <gandiva/tree_expr_builder.h>
 #include <utility>
 
@@ -50,7 +50,7 @@ Filter::evaluateBySelectionVectorStatic(const arrow::RecordBatch &recordBatch,
   }
   else{
     for (const auto &field: recordBatch.schema()->fields()) {
-      const auto &expArray = fpdb::tuple::Util::makeEmptyArray(field->type());
+      const auto &expArray = fpdb::tuple::util::Util::makeEmptyArray(field->type());
       if (!expArray) {
         return tl::make_unexpected(expArray.error());
       }
@@ -193,7 +193,7 @@ Filter::evaluateBySelectionVector(const arrow::RecordBatch &recordBatch,
   }
   else{
     for (const auto &field: recordBatch.schema()->fields()) {
-      const auto &expArray = fpdb::tuple::Util::makeEmptyArray(field->type());
+      const auto &expArray = fpdb::tuple::util::Util::makeEmptyArray(field->type());
       if (!expArray) {
         return tl::make_unexpected(expArray.error());
       }

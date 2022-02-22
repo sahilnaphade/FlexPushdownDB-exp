@@ -11,12 +11,10 @@
 #include <cstdlib>
 #include <utility>
 
-CSVToArrowSIMDChunkParser::CSVToArrowSIMDChunkParser(std::string callerName,
-                                                       uint64_t parseChunkSize,
-                                                       const std::shared_ptr<arrow::Schema>& inputSchema,
-                                                       std::shared_ptr<arrow::Schema> outputSchema,
-                                                       char csvFileDelimiter):
-  callerName_(std::move(callerName)),
+CSVToArrowSIMDChunkParser::CSVToArrowSIMDChunkParser(uint64_t parseChunkSize,
+                                                     const std::shared_ptr<arrow::Schema>& inputSchema,
+                                                     std::shared_ptr<arrow::Schema> outputSchema,
+                                                     char csvFileDelimiter):
   parseChunkSize_(parseChunkSize),
   inputSchema_(inputSchema),
   outputSchema_(std::move(outputSchema)),

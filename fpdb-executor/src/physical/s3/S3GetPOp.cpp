@@ -208,8 +208,7 @@ std::shared_ptr<TupleSet> S3GetPOp::s3GetFullRequest() {
     auto csvFormat = std::static_pointer_cast<csv::CSVFormat>(table_->getFormat());
     if (s3Object_.find("gz") != std::string::npos) {
 #ifdef __AVX2__
-      auto parser = CSVToArrowSIMDStreamParser(name(),
-                                               DefaultS3ConversionBufferSize,
+      auto parser = CSVToArrowSIMDStreamParser(DefaultS3ConversionBufferSize,
                                                retrievedFile,
                                                true,
                                                table_->getSchema(),
@@ -227,8 +226,7 @@ std::shared_ptr<TupleSet> S3GetPOp::s3GetFullRequest() {
 #endif
     } else {
 #ifdef __AVX2__
-      auto parser = CSVToArrowSIMDStreamParser(name(),
-                                               DefaultS3ConversionBufferSize,
+      auto parser = CSVToArrowSIMDStreamParser(DefaultS3ConversionBufferSize,
                                                retrievedFile,
                                                true,
                                                table_->getSchema(),
@@ -343,7 +341,6 @@ void S3GetPOp::s3GetIndividualReq(int reqNum, const std::string &s3Object, uint6
     auto outputSchema = std::make_shared<::arrow::Schema>(fields);
     auto csvFormat = std::static_pointer_cast<csv::CSVFormat>(table_->getFormat());
     std::shared_ptr<CSVToArrowSIMDChunkParser> parser = std::make_shared<CSVToArrowSIMDChunkParser>(
-            name(),
             DefaultS3ConversionBufferSize,
             table_->getSchema(),
             outputSchema,

@@ -2,8 +2,8 @@
 // Created by Yifei Yang on 1/12/22.
 //
 
-#ifndef FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_SERIALIZATION_MESSAGESERIALIZER_H
-#define FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_SERIALIZATION_MESSAGESERIALIZER_H
+#ifndef FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_CAFSERIALIZATION_CAFMESSAGESERIALIZER_H
+#define FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_CAFSERIALIZATION_CAFMESSAGESERIALIZER_H
 
 #include <fpdb/executor/message/Message.h>
 #include <fpdb/executor/message/StartMessage.h>
@@ -19,7 +19,7 @@
 #include <fpdb/executor/message/cache/WeightRequestMessage.h>
 #include <fpdb/executor/message/cache/CacheMetricsMessage.h>
 #include <fpdb/caf/CAFUtil.h>
-#include <fpdb/tuple/serialization/TupleKeyElementSerializer.h>
+#include <fpdb/tuple/caf-serialization/CAFTupleKeyElementSerializer.h>
 
 using namespace fpdb::executor::message;
 
@@ -181,4 +181,4 @@ struct inspector_access<MessagePtr> : variant_inspector_access<MessagePtr> {
 
 } // namespace caf
 
-#endif //FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_SERIALIZATION_MESSAGESERIALIZER_H
+#endif //FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_CAFSERIALIZATION_CAFMESSAGESERIALIZER_H

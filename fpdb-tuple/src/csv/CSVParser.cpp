@@ -9,45 +9,18 @@
 using namespace fpdb::tuple::csv;
 using namespace fpdb::tuple;
 
-CSVParser::CSVParser(std::string filePath,
-					 std::optional<std::vector<std::string>> columnNames,
-					 int64_t startPos,
-					 std::optional<int64_t> finishPos,
-					 int64_t bufferSize) :
-	filePath_(std::move(filePath)),
+CSVParser::CSVParser(std::shared_ptr<::arrow::io::RandomAccessFile> inputStream,
+                     std::shared_ptr<::arrow::Schema> schema,
+                     std::optional<std::vector<std::string>> columnNames,
+                     int64_t startPos,
+                     std::optional<int64_t> finishPos,
+                     int64_t bufferSize) :
+	inputStream_(std::move(inputStream)),
+  schema_(std::move(schema)),
 	columnNames_(std::move(columnNames)),
 	startPos_(startPos),
 	finishPos_(finishPos),
-	bufferSize_(bufferSize) {
-}
-
-CSVParser::CSVParser(std::string filePath,
-					 std::optional<std::vector<std::string>> columnNames,
-					 int64_t startPos,
-					 std::optional<int64_t> finishPos) :
-	CSVParser(std::move(filePath), std::move(columnNames), startPos, finishPos, DefaultBufferSize) {
-}
-
-CSVParser::CSVParser(const std::string &filePath, int64_t bufferSize) :
-	CSVParser(filePath, std::nullopt, 0, std::nullopt, bufferSize) {
-}
-
-CSVParser::CSVParser(const std::string &filePath, const std::vector<std::string> &columnNames) :
-	CSVParser(filePath, columnNames, 0, std::nullopt, DefaultBufferSize) {
-}
-
-CSVParser::CSVParser(const std::string &filePath) :
-	CSVParser(filePath, DefaultBufferSize) {
-}
-
-tl::expected<void, std::string> CSVParser::openInputStream() {
-  auto result = ::arrow::io::ReadableFile::Open(filePath_);
-  if (!result.ok()) {
-	return tl::unexpected(result.status().message());
-  } else {
-	inputStream_ = std::optional(*result);
-	return {};
-  }
+  bufferSize_(bufferSize) {
 }
 
 tl::expected<std::shared_ptr<::arrow::Buffer>, std::string> CSVParser::advanceToNewLine() {
@@ -60,10 +33,10 @@ tl::expected<std::shared_ptr<::arrow::Buffer>, std::string> CSVParser::advanceTo
   bool done = false;
   while (!done) {
 
-	long chunkStartOffset = inputStream_.value()->Tell().ValueOrDie();
+	long chunkStartOffset = inputStream_->Tell().ValueOrDie();
 
 	// Read a chunk
-	auto maybeChunkBuffer = inputStream_.value()->Read(bufferSize_);
+	auto maybeChunkBuffer = inputStream_->Read(bufferSize_);
 	if (!maybeChunkBuffer.ok())
 	  return tl::unexpected(maybeChunkBuffer.status().ToString());
 	auto chunkBuffer = *maybeChunkBuffer;
@@ -93,7 +66,7 @@ tl::expected<std::shared_ptr<::arrow::Buffer>, std::string> CSVParser::advanceTo
 		}
 
 		// Seek to new line position
-		status = inputStream_.value()->Seek(chunkStartOffset + newLinePos + 1);
+		status = inputStream_->Seek(chunkStartOffset + newLinePos + 1);
 		if (status.ok()) {
 		  done = true;
 		} else {
@@ -115,18 +88,8 @@ tl::expected<std::shared_ptr<TupleSet>, std::string> CSVParser::parse() {
 
   ::arrow::Status status;
 
-  // Open input stream
-  if (!inputStream_.has_value()) {
-	auto expectedInputStream = openInputStream();
-	if (!expectedInputStream.has_value())
-	  return tl::unexpected(expectedInputStream.error());
-  }
-
-  // Parse schema
-  auto expectedSchema = parseSchema();
-  if (!expectedSchema.has_value())
-	return tl::unexpected(expectedSchema.error());
-  auto schema = expectedSchema.value();
+  // Skip the first row which are column names
+  advanceToNewLine();
 
   std::vector<std::shared_ptr<::arrow::Buffer>> blockBuffers;
 
@@ -134,21 +97,21 @@ tl::expected<std::shared_ptr<TupleSet>, std::string> CSVParser::parse() {
    * FIXME: max_num_rows is set to max of an int. Feels hacky.
    */
   arrow::csv::BlockParser blockParser{arrow::csv::ParseOptions::Defaults(),
-									  static_cast<int32_t>(schema->fields().size()),
+									  static_cast<int32_t>(schema_->fields().size()),
 									  std::numeric_limits<int>::max()};
 
   bool done = false;
 
   // The offset where the data starts
-  int64_t dataStartPos = inputStream_.value()->Tell().ValueOrDie();
+  int64_t dataStartPos = inputStream_->Tell().ValueOrDie();
 
   // Advance the input stream to (just before) the start pos
-  status = inputStream_.value()->Seek((dataStartPos + startPos_) - 1);
+  status = inputStream_->Seek((dataStartPos + startPos_) - 1);
   if (!status.ok())
 	return tl::unexpected(status.ToString());
   advanceToNewLine();
 
-  int64_t currentPos = inputStream_.value()->Tell().ValueOrDie();
+  int64_t currentPos = inputStream_->Tell().ValueOrDie();
 
   while (!done) {
 
@@ -163,7 +126,7 @@ tl::expected<std::shared_ptr<TupleSet>, std::string> CSVParser::parse() {
 
 	assert(finishPos_.has_value() ? currentPos + numBytesToRead <= dataStartPos + finishPos_.value() : true);
 
-	auto maybeChunkBuffer = inputStream_.value()->Read(numBytesToRead);
+	auto maybeChunkBuffer = inputStream_->Read(numBytesToRead);
 	if (!maybeChunkBuffer.ok())
 	  return tl::unexpected(maybeChunkBuffer.status().ToString());
 	auto chunkBuffer = *maybeChunkBuffer;
@@ -212,29 +175,20 @@ tl::expected<std::shared_ptr<TupleSet>, std::string> CSVParser::parse() {
   if (!status.ok())
 	return tl::unexpected(status.ToString());
 
-  // Create the destination schema
-  std::vector<std::shared_ptr<::arrow::Field>> destinationFields;
-  for(const auto &field: schema->fields()){
-	if(!columnNames_.has_value()) {
-	  destinationFields.emplace_back(field);
-	}
-	else{
-	  auto it = std::find(columnNames_->begin(), columnNames_->end(), field->name());
-	  if(it != columnNames_->end()){
-		destinationFields.emplace_back(field);
-	  }
-	}
+  // Make output schema
+  auto expOutputSchema = makeOutputSchema();
+  if (!expOutputSchema.has_value()) {
+    return tl::make_unexpected(expOutputSchema.error());
   }
-  auto destinationSchema = std::make_shared<::arrow::Schema>(destinationFields);
+  auto outputSchema = *expOutputSchema;
 
   // Get the parsed arrays
-  auto expectedArrays = extractArrays(blockParser, schema, columnNames_);
+  auto expectedArrays = extractArrays(blockParser, schema_, columnNames_);
   if (!expectedArrays.has_value())
 	return tl::unexpected(expectedArrays.error());
 
-  auto tupleSet = TupleSet::make(destinationSchema, expectedArrays.value());
+  auto tupleSet = TupleSet::make(outputSchema, expectedArrays.value());
 
-  status = this->inputStream_.value()->Close();
   if(!status.ok())
 	return tl::make_unexpected(status.message());
 
@@ -258,72 +212,25 @@ CSVParser::concatenateBuffers(std::shared_ptr<::arrow::Buffer> buffer1, std::sha
   return buffer;
 }
 
-tl::expected<std::shared_ptr<Schema>, std::string> CSVParser::parseSchema() {
-
-  ::arrow::Status status;
-  ::arrow::csv::BlockParser blockParser{arrow::csv::ParseOptions::Defaults()};
-  unsigned int numBytesParsed;
-
-  if (!inputStream_.has_value()) {
-	auto expectedInputStream = openInputStream();
-	if (!expectedInputStream.has_value())
-	  return tl::unexpected(expectedInputStream.error());
+tl::expected<std::shared_ptr<::arrow::Schema>, std::string> CSVParser::makeOutputSchema() {
+  if (!columnNames_.has_value()) {
+    return schema_;
   }
 
-  auto expectedBlockBuffer = advanceToNewLine();
-  if (!expectedBlockBuffer.has_value())
-	return tl::unexpected(expectedBlockBuffer.error());
-  auto blockBuffer = expectedBlockBuffer.value();
-
-  // Parse the buffer
-  status = blockParser.Parse(::arrow::util::string_view(*blockBuffer), &numBytesParsed);
-  if (!status.ok())
-	return tl::unexpected(status.ToString());
-
-  auto expectedSchema = extractSchema(blockParser);
-
-  return expectedSchema;
-}
-
-std::shared_ptr<Schema> CSVParser::extractSchema(const arrow::csv::BlockParser &blockParser) {
-
-  assert(blockParser.num_rows() == 1);
-
-  ::arrow::Status status;
-  std::vector<std::shared_ptr<::arrow::Field>> fields;
-
-  for (int i = 0; i < blockParser.num_cols(); ++i) {
-
-	status = blockParser.VisitColumn(i, [&](const uint8_t *data, uint32_t size, bool /*quoted*/) -> arrow::Status {
-	  std::string fieldName{reinterpret_cast<const char *>(data), size};
-
-	  // TODO: Seems quotes are already removed, need to figure out why the quoted flag is passed in?
-	  // Remove quotes
-//	  if (quoted) {
-//		fieldName.erase(0);
-//		fieldName.erase(fieldName.length());
-//	  }
-
-	  // Canonicalize
-	  auto canonicalFieldName = ColumnName::canonicalize(fieldName);
-
-	  auto field = std::make_shared<::arrow::Field>(canonicalFieldName, arrow::utf8());
-	  fields.push_back(field);
-
-	  return arrow::Status::OK();
-	});
-
-	if (!status.ok())
-	  throw std::runtime_error(status.message());
+  ::arrow::FieldVector outputFields;
+  for (const auto &columnName: *columnNames_) {
+    auto field = schema_->GetFieldByName(columnName);
+    if (!field) {
+      return tl::make_unexpected(fmt::format("Read CSV Error: column {} not found", columnName));
+    }
+    outputFields.emplace_back(field);
   }
-
-  return Schema::make(std::make_shared<::arrow::Schema>(fields));
+  return ::arrow::schema(outputFields);
 }
 
-tl::expected<std::vector<std::shared_ptr<::arrow::Array>>,
-			 std::string>
+tl::expected<std::vector<std::shared_ptr<::arrow::Array>>, std::string>
 CSVParser::extractArrays(const arrow::csv::BlockParser &blockParser,
-						 const std::shared_ptr<Schema>& csvFileSchema,
+						 const std::shared_ptr<::arrow::Schema>& csvFileSchema,
 						 const std::optional<std::vector<std::string>> &columnNamesToRead) {
 
   ::arrow::Status status;
@@ -332,7 +239,7 @@ CSVParser::extractArrays(const arrow::csv::BlockParser &blockParser,
   for (int i = 0; i < blockParser.num_cols(); ++i) {
 
     bool readColumn = false;
-    auto csvFileField = csvFileSchema->fields()[i];
+    auto csvFileField = csvFileSchema->field(i);
     if(!columnNamesToRead.has_value()) {
 	  readColumn = true;
 	}

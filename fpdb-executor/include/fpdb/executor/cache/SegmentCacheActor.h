@@ -10,7 +10,7 @@
 #include <fpdb/executor/message/cache/StoreRequestMessage.h>
 #include <fpdb/executor/message/cache/WeightRequestMessage.h>
 #include <fpdb/executor/message/cache/CacheMetricsMessage.h>
-#include <fpdb/executor/serialization/MessageSerializer.h>
+#include <fpdb/executor/caf-serialization/CAFMessageSerializer.h>
 #include <fpdb/cache/policy/CachingPolicy.h>
 #include <fpdb/cache/SegmentCache.h>
 #include <fpdb/plan/Mode.h>

@@ -11,7 +11,7 @@
 #include <fpdb/executor/cache/SegmentCacheActor.h>
 #include <fpdb/executor/message/TupleMessage.h>
 #include <fpdb/executor/message/cache/StoreRequestMessage.h>
-#include <fpdb/executor/serialization/MessageSerializer.h>
+#include <fpdb/executor/caf-serialization/CAFMessageSerializer.h>
 #include <fpdb/catalogue/local-fs/LocalFSPartition.h>
 #include <fpdb/caf/CAFUtil.h>
 #include <utility>
@@ -122,20 +122,23 @@ private:
 	return readAndSendTuples(actor, columnsToScan);
   }
 
-  void requestStoreSegmentsInCache(FileScanStatefulActor actor, const std::shared_ptr<TupleSet> &tupleSet) {
+  tl::expected<void, std::string> requestStoreSegmentsInCache(FileScanStatefulActor actor,
+                                                              const std::shared_ptr<TupleSet> &tupleSet) {
 
 	assert(tupleSet);
 
 	auto partition = std::make_shared<catalogue::local_fs::LocalFSPartition>(kernel_.getPath());
-  auto byteRange = kernel_.getByteRange();
-
+  auto expByteRange = kernel_.getByteRange();
+  if (!expByteRange.has_value()) {
+    return tl::make_unexpected(expByteRange.error());
+  }
 
 	std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>> segmentsToStore;
 	for (int64_t c = 0; c < tupleSet->numColumns(); ++c) {
 	  auto column = tupleSet->getColumnByIndex(c).value();
 	  auto segmentKey = SegmentKey::make(partition,
 										 column->getName(),
-										 SegmentRange::make(byteRange.first, byteRange.second),
+										 SegmentRange::make(expByteRange->first, expByteRange->second),
 										 SegmentMetadata::make(column->size()));
 	  auto segmentData = SegmentData::make(column);
 
@@ -146,6 +149,8 @@ private:
 				  getSegmentCacheActorHandle().value(),
 				  StoreAtom_v,
 				  StoreRequestMessage::make(segmentsToStore, name));
+
+  return {};
   }
 
   [[nodiscard]] tl::expected<void, std::string>
@@ -163,7 +168,10 @@ private:
 	  readTupleSet = expectedReadTupleSet.value();
 
 	  // Store the read columns in the cache
-	  requestStoreSegmentsInCache(actor, readTupleSet);
+	  auto result = requestStoreSegmentsInCache(actor, readTupleSet);
+    if (!result.has_value()) {
+      return result;
+    }
 	}
 
 	std::shared_ptr<Message> message = std::make_shared<TupleMessage>(readTupleSet, this->name);
