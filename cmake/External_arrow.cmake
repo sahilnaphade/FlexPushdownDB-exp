@@ -1,3 +1,5 @@
+include(GNUInstallDirs)
+
 # Arrow
 set(ARROW_VERSION "apache-arrow-6.0.0")
 set(ARROW_GIT_URL "https://github.com/apache/arrow.git")
@@ -68,29 +70,31 @@ ExternalProject_Add(${ARROW_BASE}
         ${ARROW_FLIGHT_STATIC_LIB}
         ${ARROW_DEPENDENCIES_SHARED_LIBS}
         ${ARROW_DEPENDENCIES_STATIC_LIBS}
+#        CMAKE_COMMAND
+#        "${CMAKE_COMMAND}" -E env LDFLAGS="${CMAKE_SHARED_LINKER_FLAGS}" "${CMAKE_COMMAND}"
         CMAKE_ARGS
-        -DARROW_USE_CCACHE:BOOL=ON
-        -DARROW_CSV:BOOL=ON
-        -DARROW_DATASET:BOOL=OFF
-        -DARROW_FLIGHT:BOOL=ON
-        -DARROW_IPC:BOOL=OFF
-        -DARROW_PARQUET:BOOL=ON
-        -DARROW_WITH_SNAPPY:BOOL=ON
-        -DARROW_WITH_ZLIB:BOOL=ON
-        -DARROW_JEMALLOC:BOOL=ON
-        -DARROW_GANDIVA:BOOL=ON
+        -DARROW_USE_CCACHE=ON
+        -DARROW_CSV=ON
+        -DARROW_DATASET=OFF
+        -DARROW_FLIGHT=ON
+        -DARROW_IPC=OFF
+        -DARROW_PARQUET=ON
+        -DARROW_WITH_SNAPPY=ON
+        -DARROW_WITH_ZLIB=ON
+        -DARROW_JEMALLOC=ON
+        -DARROW_GANDIVA=ON
         -DARROW_GRPC_USE_SHARED=OFF
         -DARROW_DEPENDENCY_SOURCE=BUNDLED
+        -DLLVM_ROOT=/usr/local/opt/llvm@12
         -DCMAKE_INSTALL_MESSAGE=NEVER
         -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
         -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
         -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
         -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
         -DCMAKE_CXX_EXTENSIONS=OFF
-        -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
+        -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
         -DCMAKE_INSTALL_PREFIX=${ARROW_INSTALL_DIR}
         )
-
 
 #file(MAKE_DIRECTORY ${ARROW_JEMALLOC_INCLUDE_DIR}) # Include directory needs to exist to run configure step
 #file(MAKE_DIRECTORY ${ARROW_RE2_INCLUDE_DIR}) # Include directory needs to exist to run configure step
@@ -124,8 +128,18 @@ file(MAKE_DIRECTORY ${_ABSL_EP_INSTALL_DIR}/${CMAKE_INSTALL_INCLUDEDIR})
 
 # Absl's lib structure is very complicated so use the targets exported by cmake
 set(_IMPORT_PREFIX ${_ABSL_EP_INSTALL_DIR})
-include(${CMAKE_CURRENT_LIST_DIR}/absl/abslTargets.cmake)
+if(LINUX)
+    include(${CMAKE_CURRENT_LIST_DIR}/absl/abslTargets-linux.cmake)
+elseif(APPLE)
+    include(${CMAKE_CURRENT_LIST_DIR}/absl/abslTargets-apple.cmake)
+endif()
 set(_IMPORT_PREFIX)
+
+add_dependencies(absl::base ${ARROW_BASE})
+add_dependencies(absl::str_format_internal ${ARROW_BASE})
+add_dependencies(absl::time ${ARROW_BASE})
+add_dependencies(absl::optional ${ARROW_BASE})
+add_dependencies(absl::synchronization ${ARROW_BASE})
 
 add_library(arrow_bundled_dependencies_static STATIC IMPORTED)
 set_target_properties(arrow_bundled_dependencies_static PROPERTIES IMPORTED_LOCATION ${ARROW_DEPENDENCIES_STATIC_LIBS})
@@ -170,8 +184,10 @@ target_link_libraries(arrow_static INTERFACE OpenSSL::SSL)
 target_link_libraries(arrow_static INTERFACE OpenSSL::Crypto)
 target_link_libraries(arrow_static INTERFACE Threads::Threads)
 target_link_libraries(arrow_static INTERFACE dl)
-target_link_libraries(arrow_static INTERFACE rt)
-target_link_libraries(arrow_static INTERFACE z)
+if(LINUX)
+    target_link_libraries(arrow_static INTERFACE rt)
+endif()
+#target_link_libraries(arrow_static INTERFACE z)
 add_dependencies(arrow_static ${ARROW_BASE})
 
 add_library(arrow_shared SHARED IMPORTED)
@@ -181,8 +197,8 @@ target_link_libraries(arrow_shared INTERFACE arrow_bundled_dependencies_static)
 #target_link_libraries(arrow_shared INTERFACE jemalloc_static)
 #target_link_libraries(arrow_shared INTERFACE re2_static)
 #target_link_libraries(arrow_shared INTERFACE snappy_static)
-target_link_libraries(arrow_shared INTERFACE pthread)
-target_link_libraries(arrow_shared INTERFACE z)
+target_link_libraries(arrow_shared INTERFACE Threads::Threads)
+#target_link_libraries(arrow_shared INTERFACE z)
 add_dependencies(arrow_shared ${ARROW_BASE})
 
 # Gandiva needs LLVM
@@ -192,7 +208,7 @@ add_library(gandiva_static STATIC IMPORTED)
 set_target_properties(gandiva_static PROPERTIES IMPORTED_LOCATION ${ARROW_GANDIVA_STATIC_LIB})
 target_include_directories(gandiva_static INTERFACE ${ARROW_INCLUDE_DIR})
 target_link_libraries(gandiva_static INTERFACE arrow_static)
-target_link_libraries(gandiva_static INTERFACE LLVM)
+#target_link_libraries(gandiva_static INTERFACE LLVM)
 #target_link_libraries(gandiva_static INTERFACE arrow_static)
 #target_link_libraries(gandiva_static INTERFACE re2_static)
 add_dependencies(gandiva_static ${ARROW_BASE})
@@ -200,7 +216,7 @@ add_dependencies(gandiva_static ${ARROW_BASE})
 add_library(gandiva_shared SHARED IMPORTED)
 set_target_properties(gandiva_shared PROPERTIES IMPORTED_LOCATION ${ARROW_GANDIVA_SHARED_LIB})
 target_include_directories(gandiva_shared INTERFACE ${ARROW_INCLUDE_DIR})
-target_link_libraries(gandiva_shared INTERFACE arrow_static)
+target_link_libraries(gandiva_shared INTERFACE arrow_shared)
 target_link_libraries(gandiva_shared INTERFACE LLVM)
 #target_link_libraries(gandiva_shared INTERFACE arrow_static)
 #target_link_libraries(gandiva_shared INTERFACE re2_static)
@@ -218,7 +234,7 @@ add_dependencies(parquet_static ${ARROW_BASE})
 add_library(parquet_shared SHARED IMPORTED)
 set_target_properties(parquet_shared PROPERTIES IMPORTED_LOCATION ${ARROW_PARQUET_SHARED_LIB})
 target_include_directories(parquet_shared INTERFACE ${ARROW_INCLUDE_DIR})
-target_link_libraries(parquet_shared INTERFACE arrow_static)
+target_link_libraries(parquet_shared INTERFACE arrow_shared)
 #target_link_libraries(parquet_shared INTERFACE thrift_static)
 #target_link_libraries(parquet_shared INTERFACE snappy_static)
 add_dependencies(parquet_shared ${ARROW_BASE})

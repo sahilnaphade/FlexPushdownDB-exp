@@ -1,6 +1,6 @@
 # nlohmann json
 
-set(NLOHMANNJSON_VERSION "v3.10.4")
+set(NLOHMANNJSON_VERSION "v3.10.2")
 set(NLOHMANNJSON_GIT_URL "https://github.com/nlohmann/json.git")
 
 include(ExternalProject)

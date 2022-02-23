@@ -6,12 +6,13 @@
 # filesystem support. This works on mac. The linux version is linking to the gcc stdlib which contains filesystem
 # support. FIXME: Get it linking properly to the LLVM lib.
 
+set(LLVM_ROOT /usr/local/opt/llvm@12)
 find_package(LLVM)
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-    add_library(LLVM-filesystem STATIC IMPORTED)
-    get_filename_component(LLVM_FS_LIB ${LLVM_DIR}/../../${CMAKE_STATIC_LIBRARY_PREFIX}c++fs${CMAKE_STATIC_LIBRARY_SUFFIX} REALPATH)
-    set_target_properties(LLVM-filesystem PROPERTIES IMPORTED_LOCATION ${LLVM_FS_LIB})
+#    add_library(LLVM-filesystem STATIC IMPORTED)
+#    get_filename_component(LLVM_FS_LIB ${LLVM_DIR}/../../${CMAKE_STATIC_LIBRARY_PREFIX}c++fs${CMAKE_STATIC_LIBRARY_SUFFIX} REALPATH)
+#    set_target_properties(LLVM-filesystem PROPERTIES IMPORTED_LOCATION ${LLVM_FS_LIB})
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 #    add_library(LLVM-filesystem STATIC IMPORTED)
 #    get_filename_component(LLVM_FS_LIB ${LLVM_DIR}/../lib/${CMAKE_STATIC_LIBRARY_PREFIX}c++fs${CMAKE_STATIC_LIBRARY_SUFFIX} REALPATH)

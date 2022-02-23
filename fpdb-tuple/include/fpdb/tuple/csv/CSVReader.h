@@ -34,7 +34,10 @@ public:
   read(const std::vector<std::string> &columnNames, int64_t startPos, int64_t finishPos) override;
 
 private:
+#ifdef __AVX2__
   tl::expected<std::shared_ptr<TupleSet>, std::string> readUsingSimdParser(const std::vector<std::string> &columnNames);
+#endif
+
   tl::expected<std::shared_ptr<TupleSet>, std::string> readUsingArrowImpl(const std::vector<std::string> &columnNames);
 
 };

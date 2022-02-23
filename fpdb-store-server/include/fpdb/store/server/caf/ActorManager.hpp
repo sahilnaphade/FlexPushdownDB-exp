@@ -5,6 +5,8 @@
 #ifndef FPDB_FPDB_STORE_SERVER_INCLUDE_FPDB_STORE_SERVER_CAF_ACTORMANAGER_HPP
 #define FPDB_FPDB_STORE_SERVER_INCLUDE_FPDB_STORE_SERVER_CAF_ACTORMANAGER_HPP
 
+#include <optional>
+
 #include <caf/all.hpp>
 #include <caf/io/all.hpp>
 #include <tl/expected.hpp>

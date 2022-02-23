@@ -44,6 +44,7 @@ CSVReader::read(const std::vector<std::string> &columnNames, int64_t startPos, i
   return parser.parse();
 }
 
+#ifdef __AVX2__
 tl::expected<std::shared_ptr<TupleSet>, std::string>
 CSVReader::readUsingSimdParser(const std::vector<std::string> &columnNames) {
   std::shared_ptr<TupleSet> tupleSet;
@@ -81,6 +82,7 @@ CSVReader::readUsingSimdParser(const std::vector<std::string> &columnNames) {
   is.close();
   return tupleSet;
 }
+#endif
 
 tl::expected<std::shared_ptr<TupleSet>, std::string>
 CSVReader::readUsingArrowImpl(const std::vector<std::string> &columnNames) {

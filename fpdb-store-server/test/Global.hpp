@@ -14,7 +14,7 @@
 #define LOG_LEVEL SPDLOG_LEVEL_DEBUG
 
 #define SPDLOG_ACTIVE_LEVEL LOG_LEVEL
-#include "spdlog/spdlog.h"
+#include <spdlog/spdlog.h>
 
 extern std::shared_ptr<fpdb::store::server::caf::ActorManager> actor_manager;
 

@@ -15,12 +15,14 @@ set(LibBFD_LIBRARIES ${LibBFD_LIBRARY} ${LibDL_LIBRARY})
 find_package_handle_standard_args(LibBFD ${_name_mismatched_arg}
         REQUIRED_VARS LibBFD_LIBRARY LibBFD_INCLUDE_DIR)
 
-mark_as_advanced(LibBFD_INCLUDE_DIR LibBFD_LIBRARY)
-
-add_library(LibBFD SHARED IMPORTED)
-set_target_properties(LibBFD PROPERTIES IMPORTED_LOCATION ${LibBFD_LIBRARY})
-target_include_directories(LibBFD INTERFACE ${LibBFD_INCLUDE_DIR})
-target_link_libraries(LibBFD INTERFACE ${CMAKE_DL_LIBS})
+if(LibBFD_FOUND)
+    add_library(LibBFD::LibBFD UNKNOWN IMPORTED)
+    set_target_properties(LibBFD::LibBFD PROPERTIES IMPORTED_LOCATION ${LibBFD_LIBRARY})
+    target_include_directories(LibBFD::LibBFD INTERFACE ${LibBFD_INCLUDE_DIR})
+    target_link_libraries(LibBFD::LibBFD INTERFACE ${CMAKE_DL_LIBS})
+else()
+    message(FATAL_ERROR "BFD library not found")
+endif()
 
 #message(STATUS ${LibBFD_LIBRARY})
 #message(STATUS ${LibBFD_INCLUDE_DIR})

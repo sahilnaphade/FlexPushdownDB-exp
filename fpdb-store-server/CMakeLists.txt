@@ -32,14 +32,16 @@ set_target_properties(fpdb_store_server_objlib PROPERTIES OUTPUT_NAME fpdb_store
 list(APPEND _PUBLIC_LINK_LIBRARIES expected)
 list(APPEND _PUBLIC_LINK_LIBRARIES fpdb-tuple)
 list(APPEND _PUBLIC_LINK_LIBRARIES nlohmann_json)
-
-list(APPEND _PRIVATE_LINK_LIBRARIES fmt::fmt)
 list(APPEND _PUBLIC_LINK_LIBRARIES caf::libcaf_core_shared)
 list(APPEND _PUBLIC_LINK_LIBRARIES caf::libcaf_io_shared)
 list(APPEND _PUBLIC_LINK_LIBRARIES caf::libcaf_openssl_shared)
-list(APPEND _PUBLIC_LINK_LIBRARIES fpdb-catalogue)
-list(APPEND _PUBLIC_LINK_LIBRARIES fpdb-calcite)
-list(APPEND _PUBLIC_LINK_LIBRARIES fpdb-executor)
+
+list(APPEND _PRIVATE_LINK_LIBRARIES arrow_shared)
+list(APPEND _PRIVATE_LINK_LIBRARIES fmt::fmt)
+list(APPEND _PRIVATE_LINK_LIBRARIES spdlog::spdlog)
+list(APPEND _PRIVATE_LINK_LIBRARIES fpdb-catalogue)
+list(APPEND _PRIVATE_LINK_LIBRARIES fpdb-calcite)
+list(APPEND _PRIVATE_LINK_LIBRARIES fpdb-executor)
 
 list(APPEND _PUBLIC_SHARED_LINK_LIBRARIES arrow_flight_shared)
 list(APPEND _PUBLIC_SHARED_LINK_LIBRARIES fpdb_store_client_shared)
@@ -57,14 +59,14 @@ add_library(fpdb_store_server_static STATIC $<TARGET_OBJECTS:fpdb_store_server_o
 set_target_properties(fpdb_store_server_static PROPERTIES OUTPUT_NAME $<TARGET_PROPERTY:fpdb_store_server_objlib,OUTPUT_NAME>)
 target_include_directories(fpdb_store_server_static PUBLIC $<TARGET_PROPERTY:fpdb_store_server_objlib,INCLUDE_DIRECTORIES>)
 target_link_libraries(fpdb_store_server_static PUBLIC ${_PUBLIC_LINK_LIBRARIES})
-target_link_libraries(fpdb_store_server_static PRIVATE ${_PUBLIC_STATIC_LINK_LIBRARIES})
+target_link_libraries(fpdb_store_server_static PUBLIC ${_PUBLIC_STATIC_LINK_LIBRARIES})
 target_link_libraries(fpdb_store_server_static PRIVATE ${_PRIVATE_LINK_LIBRARIES})
 
 add_library(fpdb_store_server_shared SHARED $<TARGET_OBJECTS:fpdb_store_server_objlib>)
 set_target_properties(fpdb_store_server_shared PROPERTIES OUTPUT_NAME $<TARGET_PROPERTY:fpdb_store_server_objlib,OUTPUT_NAME>)
 target_include_directories(fpdb_store_server_shared PUBLIC $<TARGET_PROPERTY:fpdb_store_server_objlib,INCLUDE_DIRECTORIES>)
 target_link_libraries(fpdb_store_server_shared PUBLIC ${_PUBLIC_LINK_LIBRARIES})
-target_link_libraries(fpdb_store_server_shared PRIVATE ${_PUBLIC_SHARED_LINK_LIBRARIES})
+target_link_libraries(fpdb_store_server_shared PUBLIC ${_PUBLIC_SHARED_LINK_LIBRARIES})
 target_link_libraries(fpdb_store_server_shared PRIVATE ${_PRIVATE_LINK_LIBRARIES})
 # need to fix link on mac
 if (${APPLE})
@@ -88,14 +90,19 @@ target_link_libraries(fpdb_store_server_executable fpdb_store_server_static)
 #-----------------------------------------------------------------------------------------------------------------------
 
 add_executable(fpdb_store_server_test
-        test/Global.cpp test/Global.hpp test/Main.cpp test/FlightTest.cpp test/DistributedTest.cpp test/FlightMacExceptionMain.cpp)
+        test/Global.cpp
+        test/Global.hpp
+        test/Main.cpp
+        test/FlightTest.cpp
+        test/DistributedTest.cpp
+        test/FlightMacExceptionMain.cpp)
 
 find_package(LibBFD REQUIRED)
 
 target_link_libraries(fpdb_store_server_test fmt::fmt)
 target_link_libraries(fpdb_store_server_test spdlog::spdlog)
 target_link_libraries(fpdb_store_server_test doctest::doctest)
-target_link_libraries(fpdb_store_server_test LibBFD)
+target_link_libraries(fpdb_store_server_test LibBFD::LibBFD)
 target_link_libraries(fpdb_store_server_test Backward::Backward)
 target_link_libraries(fpdb_store_server_test arrow_flight_shared)
 target_link_libraries(fpdb_store_server_test fpdb_store_server_shared)

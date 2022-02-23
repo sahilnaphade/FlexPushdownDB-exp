@@ -11,6 +11,11 @@
 using namespace ::arrow::flight;
 using namespace ::arrow;
 
+#define BACKWARD_HAS_BFD 1
+#include <backward.hpp>
+
+backward::SignalHandling sh;
+
 class FlightExceptionServer : public FlightServerBase {
 
   Status DoGet(const ServerCallContext& context, const Ticket& request,
@@ -53,45 +58,45 @@ class FlightExceptionServer : public FlightServerBase {
 
 };
 
-//int main() {
-//  int port = 4321;
-//
-//  // server
-//  Location serverLocation;
-//  Location::ForGrpcTcp("0.0.0.0", port, &serverLocation);
-//  FlightServerOptions serverOptions(serverLocation);
-//
-//  auto server = std::make_unique<FlightExceptionServer>();
-//  server->Init(serverOptions);
-//  server->SetShutdownOnSignals({SIGTERM});
-//
-//  SPDLOG_INFO("Server listening on localhost:{}", server->port());
-//  auto serverFuture = std::async(std::launch::async, [&]() { return server->Serve(); });
-//
-//  // client
-//  Location clientLocation;
-//  Location::ForGrpcTcp("localhost", port, &clientLocation);
-//  FlightClientOptions clientOptions = FlightClientOptions::Defaults();
-//
-//  std::unique_ptr<FlightClient> client;
-//  auto st = FlightClient::Connect(clientLocation, clientOptions, &client);
-//
-//  Ticket ticket;
-//  ticket.ticket = "DUMMY";
-//  std::unique_ptr<::arrow::flight::FlightStreamReader> reader;
-//  client->DoGet(ticket, &reader);
-//
-//  std::shared_ptr<::arrow::Table> table;
-//  st = reader->ReadAll(&table);
-//
-//  auto printOptions = ::arrow::PrettyPrintOptions::Defaults();
-//  printOptions.skip_new_lines = true;
-//  st = ::arrow::PrettyPrint(*table, printOptions, &std::cout);
-//
-//  // stop
-//  server->Shutdown();
-//  server->Wait();
-//  serverFuture.wait();
-//
-//  return 0;
-//}
+int main() {
+  int port = 4321;
+
+  // server
+  Location serverLocation;
+  Location::ForGrpcTcp("0.0.0.0", port, &serverLocation);
+  FlightServerOptions serverOptions(serverLocation);
+
+  auto server = std::make_unique<FlightExceptionServer>();
+  server->Init(serverOptions);
+  server->SetShutdownOnSignals({SIGTERM});
+
+  SPDLOG_INFO("Server listening on localhost:{}", server->port());
+  auto serverFuture = std::async(std::launch::async, [&]() { return server->Serve(); });
+
+  // client
+  Location clientLocation;
+  Location::ForGrpcTcp("localhost", port, &clientLocation);
+  FlightClientOptions clientOptions = FlightClientOptions::Defaults();
+
+  std::unique_ptr<FlightClient> client;
+  auto st = FlightClient::Connect(clientLocation, clientOptions, &client);
+
+  Ticket ticket;
+  ticket.ticket = "DUMMY";
+  std::unique_ptr<::arrow::flight::FlightStreamReader> reader;
+  client->DoGet(ticket, &reader);
+
+  std::shared_ptr<::arrow::Table> table;
+  st = reader->ReadAll(&table);
+
+  auto printOptions = ::arrow::PrettyPrintOptions::Defaults();
+  printOptions.skip_new_lines = true;
+  st = ::arrow::PrettyPrint(*table, printOptions, &std::cout);
+
+  // stop
+  server->Shutdown();
+  server->Wait();
+  serverFuture.wait();
+
+  return 0;
+}

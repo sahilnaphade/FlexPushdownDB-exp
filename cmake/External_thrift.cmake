@@ -53,6 +53,8 @@ ExternalProject_Add(${THRIFT_BASE}
         -DCMAKE_POSITION_INDEPENDENT_CODE=TRUE
         -DBoost_ROOT=${BOOST_INSTALL_DIR}
         -DBoost_INCLUDE_DIR=${BOOST_INCLUDE_DIR}
+        -DCMAKE_POLICY_DEFAULT_CMP0074=NEW
+        -DBISON_ROOT=/usr/local/opt/bison
         )
 add_dependencies(${THRIFT_BASE} ${BOOST_BASE})
 

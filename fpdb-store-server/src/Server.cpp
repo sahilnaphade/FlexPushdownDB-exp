@@ -26,7 +26,6 @@ namespace fpdb::store::server {
 using namespace std::chrono_literals;
 using namespace fpdb::store::server::cluster;
 using namespace fpdb::catalogue;
-using namespace fpdb::catalogue::s3;
 using namespace fpdb::calcite;
 using namespace fpdb::executor::physical;
 
