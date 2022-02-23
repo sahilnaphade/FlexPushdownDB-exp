@@ -27,6 +27,9 @@ list(APPEND CMAKE_SYSTEM_PREFIX_PATH /usr/local/opt)
 
 find_package(OpenSSL REQUIRED)
 
+find_program(BISON_COMMAND bison PATHS /usr/bin /usr/local/opt)
+get_filename_component(BISON_ROOT ${BISON_COMMAND} DIRECTORY)
+
 ExternalProject_Add(${THRIFT_BASE}
         PREFIX ${THRIFT_BASE_DIR}
         GIT_REPOSITORY ${THRIFT_GIT_URL}
@@ -54,7 +57,7 @@ ExternalProject_Add(${THRIFT_BASE}
         -DBoost_ROOT=${BOOST_INSTALL_DIR}
         -DBoost_INCLUDE_DIR=${BOOST_INCLUDE_DIR}
         -DCMAKE_POLICY_DEFAULT_CMP0074=NEW
-        -DBISON_ROOT=/usr/local/opt/bison
+        -DBISON_ROOT=${BISON_ROOT}
         )
 add_dependencies(${THRIFT_BASE} ${BOOST_BASE})
 

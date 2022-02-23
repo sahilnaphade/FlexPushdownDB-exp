@@ -139,9 +139,9 @@ file(MAKE_DIRECTORY ${_ABSL_EP_INSTALL_DIR}/${CMAKE_INSTALL_INCLUDEDIR})
 
 # Absl's lib structure is very complicated so use the targets exported by cmake
 set(_IMPORT_PREFIX ${_ABSL_EP_INSTALL_DIR})
-if(LINUX)
+if("${CMAKE_SYSTEM}" MATCHES "Linux")
     include(${CMAKE_CURRENT_LIST_DIR}/absl/abslTargets-linux.cmake)
-elseif(APPLE)
+elseif("${CMAKE_SYSTEM}" MATCHES "Apple")
     include(${CMAKE_CURRENT_LIST_DIR}/absl/abslTargets-apple.cmake)
 endif()
 set(_IMPORT_PREFIX)
@@ -271,6 +271,9 @@ add_dependencies(arrow_flight_shared ${ARROW_BASE})
 #target_include_directories(snappy_static INTERFACE ${ARROW_SNAPPY_INCLUDE_DIR})
 #add_dependencies(snappy_static ${ARROW_BASE})
 
+set(_PROTOBUF_EP_INSTALL_DIR ${ARROW_BASE_DIR}/src/${ARROW_BASE}-build/protobuf_ep-install)
+file(MAKE_DIRECTORY ${_PROTOBUF_EP_INSTALL_DIR}/${CMAKE_INSTALL_INCLUDEDIR})
+
 add_library(protobuf_static STATIC IMPORTED)
 set_target_properties(protobuf_static PROPERTIES IMPORTED_LOCATION ${ARROW_PROTOBUF_STATIC_LIB})
 target_include_directories(protobuf_static INTERFACE ${ARROW_PROTOBUF_INCLUDE_DIR})
@@ -280,6 +283,9 @@ add_library(grpcpp_reflection_static STATIC IMPORTED)
 set_target_properties(grpcpp_reflection_static PROPERTIES IMPORTED_LOCATION ${ARROW_GRPCPP_REFLECTION_STATIC_LIB})
 target_include_directories(grpcpp_reflection_static INTERFACE ${ARROW_GRPC_INCLUDE_DIR})
 add_dependencies(grpcpp_reflection_static ${ARROW_BASE})
+
+set(_GRPC_EP_INSTALL_DIR ${ARROW_BASE_DIR}/src/${ARROW_BASE}-build/grpc_ep-install)
+file(MAKE_DIRECTORY ${_GRPC_EP_INSTALL_DIR}/${CMAKE_INSTALL_INCLUDEDIR})
 
 add_library(grpc_static STATIC IMPORTED)
 set_target_properties(grpc_static PROPERTIES IMPORTED_LOCATION ${ARROW_GRPC_STATIC_LIB})

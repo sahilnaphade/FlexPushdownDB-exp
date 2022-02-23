@@ -33,6 +33,9 @@ set(GRAPHVIZ_NEATOGEN_STATIC_LIB ${GRAPHVIZ_BUILD_DIR}/lib/neatogen/${CMAKE_SHAR
 
 # Note the version cloned from git, does not built properly, and nor do the cmake scripts. Need to use autoconf.
 
+find_program(BISON_COMMAND bison PATHS /usr/bin /usr/local/opt)
+get_filename_component(BISON_ROOT ${BISON_COMMAND} DIRECTORY)
+
 ExternalProject_Add(${GRAPHVIZ_BASE}
         PREFIX ${GRAPHVIZ_PREFIX}
         GIT_REPOSITORY ${GRAPHVIZ_GIT_URL}
@@ -60,7 +63,7 @@ ExternalProject_Add(${GRAPHVIZ_BASE}
         -DCMAKE_INSTALL_PREFIX=${GRAPHVIZ_INSTALL_DIR}
         -DCMAKE_POLICY_DEFAULT_CMP0074=NEW
         -DCMAKE_POLICY_DEFAULT_CMP0042=NEW
-        -DBISON_ROOT=/usr/local/opt/bison
+        -DBISON_ROOT=${BISON_ROOT}
         )
 
 

@@ -6,8 +6,8 @@
 # filesystem support. This works on mac. The linux version is linking to the gcc stdlib which contains filesystem
 # support. FIXME: Get it linking properly to the LLVM lib.
 
-set(LLVM_ROOT /usr/local/opt/llvm@12)
-find_package(LLVM)
+#set(LLVM_ROOT /usr/local/opt/llvm@12)
+#find_package(LLVM)
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
 #    add_library(LLVM-filesystem STATIC IMPORTED)
