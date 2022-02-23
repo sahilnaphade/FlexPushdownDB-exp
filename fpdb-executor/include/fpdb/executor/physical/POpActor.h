@@ -8,7 +8,7 @@
 #include <fpdb/executor/physical/PhysicalOp.h>
 #include <fpdb/executor/message/Message.h>
 #include <fpdb/executor/message/StartMessage.h>
-#include <fpdb/executor/serialization/MessageSerializer.h>
+#include <fpdb/executor/caf-serialization/CAFMessageSerializer.h>
 #include <fpdb/executor/physical/Forward.h>
 #include <fpdb/caf/CAFUtil.h>
 #include <memory>

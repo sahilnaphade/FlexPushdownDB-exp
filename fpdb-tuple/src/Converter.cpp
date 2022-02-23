@@ -4,7 +4,7 @@
 
 #include <fpdb/tuple/Globals.h>
 #include <fpdb/tuple/Converter.h>
-#include <fpdb/tuple/FileReaderBuilder.h>
+#include <fpdb/tuple/LocalFileReaderBuilder.h>
 
 #include <filesystem>
 
@@ -27,7 +27,7 @@ tl::expected<void, std::string> Converter::csvToParquet(const std::string &inFil
   }
 
   // read csv into arrow table
-  auto reader = FileReaderBuilder::make(inFile, csvFormat, schema);
+  auto reader = LocalFileReaderBuilder::make(csvFormat, schema, inFile);
   auto expTupleSet = reader->read();
   if (!expTupleSet.has_value()) {
     return tl::make_unexpected(expTupleSet.error());

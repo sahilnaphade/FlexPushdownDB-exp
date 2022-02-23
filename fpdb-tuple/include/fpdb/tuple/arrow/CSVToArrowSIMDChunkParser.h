@@ -14,11 +14,10 @@
 
 class CSVToArrowSIMDChunkParser {
 public:
-  explicit CSVToArrowSIMDChunkParser(std::string callerName,
-                                      uint64_t parseChunkSize,
-                                      const std::shared_ptr<arrow::Schema>& inputSchema,
-                                      std::shared_ptr<arrow::Schema> outputSchema,
-                                      char csvFileDelimiter);
+  explicit CSVToArrowSIMDChunkParser(uint64_t parseChunkSize,
+                                     const std::shared_ptr<arrow::Schema>& inputSchema,
+                                     std::shared_ptr<arrow::Schema> outputSchema,
+                                     char csvFileDelimiter);
   ~CSVToArrowSIMDChunkParser();
 
   void parseChunk(char* data, uint64_t size);
@@ -54,7 +53,6 @@ private:
 
   [[maybe_unused]] void prettyPrintPCSV(ParsedCSV & pcsv);
 
-  [[maybe_unused]] std::string callerName_;
   uint64_t parseChunkSize_;
   // Use inputstream as it provides a nice wrapper for both uncompressed and compressed data
   char* buffer_ = nullptr;

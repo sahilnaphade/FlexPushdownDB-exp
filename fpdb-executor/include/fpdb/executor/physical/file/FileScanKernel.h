@@ -8,7 +8,7 @@
 #include <fpdb/tuple/FileReader.h>
 #include <fpdb/tuple/FileFormat.h>
 #include <fpdb/tuple/TupleSet.h>
-#include <fpdb/tuple/FileReaderBuilder.h>
+#include <fpdb/tuple/LocalFileReaderBuilder.h>
 #include <tl/expected.hpp>
 #include <string>
 #include <vector>
@@ -39,7 +39,7 @@ public:
   tl::expected<std::shared_ptr<TupleSet>, std::string> scan(const std::vector<std::string> &columnNames);
 
   const std::string &getPath() const;
-  std::pair<int64_t, int64_t> getByteRange() const;
+  tl::expected<std::pair<int64_t, int64_t>, std::string> getByteRange() const;
 
 private:
   std::string path_;

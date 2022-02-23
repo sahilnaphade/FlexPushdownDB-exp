@@ -92,11 +92,14 @@ void FileScanPOp::onCacheLoadResponse(const ScanMessage &Message) {
 
 void FileScanPOp::requestStoreSegmentsInCache(const std::shared_ptr<TupleSet> &tupleSet) {
   auto partition = std::make_shared<catalogue::local_fs::LocalFSPartition>(kernel_.getPath());
-  auto byteRange = kernel_.getByteRange();
+  auto expByteRange = kernel_.getByteRange();
+  if (!expByteRange.has_value()) {
+    ctx()->notifyError(expByteRange.error());
+  }
   CacheHelper::requestStoreSegmentsInCache(tupleSet,
                                            partition,
-                                           byteRange.first,
-                                           byteRange.second,
+                                           expByteRange->first,
+                                           expByteRange->second,
                                            name(),
                                            ctx());
 }

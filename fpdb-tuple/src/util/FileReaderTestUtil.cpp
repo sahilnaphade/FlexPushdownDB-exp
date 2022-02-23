@@ -2,10 +2,10 @@
 // Created by Yifei Yang on 2/14/22.
 //
 
-#include "FileReaderTestUtil.h"
+#include <fpdb/tuple/util/FileReaderTestUtil.h>
 #include <doctest/doctest.h>
 
-namespace fpdb::tuple::test {
+namespace fpdb::tuple::util {
 
 std::shared_ptr<::arrow::Schema> FileReaderTestUtil::makeTestSchema() {
   return arrow::schema({

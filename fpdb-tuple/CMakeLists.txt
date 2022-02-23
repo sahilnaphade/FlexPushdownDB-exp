@@ -22,15 +22,18 @@ add_library(fpdb-tuple STATIC
         src/TupleSetIndexFinder.cpp include/fpdb/tuple/TupleSetIndexFinder.h
         src/Converter.cpp include/fpdb/tuple/Converter.h
         src/FileReader.cpp include/fpdb/tuple/FileReader.h
-        src/FileReaderBuilder.cpp include/fpdb/tuple/FileReaderBuilder.h
+        src/LocalFileReader.cpp include/fpdb/tuple/LocalFileReader.h
+        src/LocalFileReaderBuilder.cpp include/fpdb/tuple/LocalFileReaderBuilder.h
         src/FileFormat.cpp include/fpdb/tuple/FileFormat.h
         include/fpdb/tuple/FileFormatType.h
-        src/Util.cpp include/fpdb/tuple/Util.h
+        src/util/Util.cpp include/fpdb/tuple/util/Util.h
         src/csv/CSVParser.cpp include/fpdb/tuple/csv/CSVParser.h
-        src/csv/CSVReader.cpp include/fpdb/tuple/csv/CSVReader.h
         src/csv/CSVFormat.cpp include/fpdb/tuple/csv/CSVFormat.h
-        src/parquet/ParquetReader.cpp include/fpdb/tuple/parquet/ParquetReader.h
+        src/csv/CSVReader.cpp include/fpdb/tuple/csv/CSVReader.h
+        src/csv/LocalCSVReader.cpp include/fpdb/tuple/csv/LocalCSVReader.h
         src/parquet/ParquetFormat.cpp include/fpdb/tuple/parquet/ParquetFormat.h
+        src/parquet/ParquetReader.cpp include/fpdb/tuple/parquet/ParquetReader.h
+        src/parquet/LocalParquetReader.cpp include/fpdb/tuple/parquet/LocalParquetReader.h
         src/arrow/Arrays.cpp include/fpdb/tuple/arrow/Arrays.h
         src/arrow/SchemaHelper.cpp include/fpdb/tuple/arrow/SchemaHelper.h
         include/fpdb/tuple/arrow/ArrayHelper.h
@@ -45,8 +48,8 @@ add_library(fpdb-tuple STATIC
         src/arrow/SIMDParserHelpers.cpp include/fpdb/tuple/arrow/SIMDParserHelpers.h
         src/arrow/CSVToArrowSIMDChunkParser.cpp include/fpdb/tuple/arrow/CSVToArrowSIMDChunkParser.h
         src/serialization/ArrowSerializer.cpp include/fpdb/tuple/serialization/ArrowSerializer.h
-        include/fpdb/tuple/serialization/TupleKeyElementSerializer.h
-        include/fpdb/tuple/serialization/FileFormatSerializer.h)
+        include/fpdb/tuple/caf-serialization/CAFTupleKeyElementSerializer.h
+        include/fpdb/tuple/caf-serialization/CAFFileFormatSerializer.h)
 
 target_include_directories(fpdb-tuple PUBLIC include)
 
@@ -68,6 +71,15 @@ target_link_libraries(fpdb-tuple PUBLIC zlibstatic)
 # Test
 #-----------------------------------------------------------------------------------------------------------------------
 
+add_library(fpdb-file-read-test-util
+        src/util/FileReaderTestUtil.cpp include/fpdb/tuple/util/FileReaderTestUtil.h)
+
+target_include_directories(fpdb-file-read-test-util PUBLIC include)
+
+target_link_libraries(fpdb-file-read-test-util fpdb-tuple)
+target_link_libraries(fpdb-file-read-test-util doctest::doctest)
+
+
 add_executable(fpdb-tuple-test
         test/Globals.h
         test/MainTest.cpp
@@ -75,15 +87,15 @@ add_executable(fpdb-tuple-test
         test/CSVTest.cpp
         test/ParquetTest.cpp
         test/ArrayAppenderTest.cpp
-        test/TupleSetIndexTest.cpp
-        test/FileReaderTestUtil.cpp test/FileReaderTestUtil.h)
+        test/TupleSetIndexTest.cpp)
 
 target_include_directories(fpdb-tuple-test PRIVATE include)
 
+target_link_libraries(fpdb-tuple-test fpdb-tuple)
+target_link_libraries(fpdb-tuple-test fpdb-file-read-test-util)
 target_link_libraries(fpdb-tuple-test spdlog::spdlog)
 target_link_libraries(fpdb-tuple-test doctest::doctest)
 target_link_libraries(fpdb-tuple-test fmt::fmt)
-target_link_libraries(fpdb-tuple-test fpdb-tuple)
 # need to fix link on mac
 if (${APPLE})
   linkForMacExecutable(fpdb-tuple-test)

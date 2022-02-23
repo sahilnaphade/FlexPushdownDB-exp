@@ -8,7 +8,7 @@
 #include <fpdb/cache/SegmentRange.h>
 #include <fpdb/cache/SegmentMetadata.h>
 #include <fpdb/catalogue/Partition.h>
-#include <fpdb/catalogue/serialization/PartitionSerializer.h>
+#include <fpdb/catalogue/caf-serialization/CAFPartitionSerializer.h>
 #include <fpdb/caf/CAFUtil.h>
 #include <memory>
 

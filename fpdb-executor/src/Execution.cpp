@@ -8,7 +8,7 @@
 #include <fpdb/executor/physical/POpConnection.h>
 #include <fpdb/executor/physical/POpRelationshipType.h>
 #include <fpdb/executor/physical/filter/FilterPOp.h>
-#include <fpdb/executor/serialization/POpSerializer.h>
+#include <fpdb/executor/caf-serialization/CAFPOpSerializer.h>
 #include <caf/io/all.hpp>
 #include <graphviz/gvc.h>
 

@@ -2,14 +2,12 @@
 // Created by Yifei Yang on 2/14/22.
 //
 
-#ifndef FPDB_FPDB_TUPLE_TEST_FILEREADERTESTUTIL_H
-#define FPDB_FPDB_TUPLE_TEST_FILEREADERTESTUTIL_H
+#ifndef FPDB_FPDB_TUPLE_INCLUDE_FPDB_TUPLE_UTIL_FILEREADERTESTUTIL_H
+#define FPDB_FPDB_TUPLE_INCLUDE_FPDB_TUPLE_UTIL_FILEREADERTESTUTIL_H
 
 #include <fpdb/tuple/TupleSet.h>
 
-using namespace fpdb::tuple;
-
-namespace fpdb::tuple::test {
+namespace fpdb::tuple::util {
 
 class FileReaderTestUtil {
 
@@ -38,4 +36,4 @@ private:
 
 }
 
-#endif // FPDB_FPDB_TUPLE_TEST_FILEREADERTESTUTIL_H
+#endif // FPDB_FPDB_TUPLE_INCLUDE_FPDB_TUPLE_UTIL_FILEREADERTESTUTIL_H

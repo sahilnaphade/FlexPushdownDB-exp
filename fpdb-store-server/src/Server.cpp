@@ -3,31 +3,18 @@
 //
 
 #include "fpdb/store/server/Server.hpp"
-
-#include <future>
-#include <utility>
-
-#include <caf/io/all.hpp>
-#include <fpdb/catalogue/Catalogue.h>
-#include <fpdb/catalogue/local-fs/LocalFSCatalogueEntry.h>
-#include <fpdb/calcite/CalciteConfig.h>
-#include <fpdb/calcite/CalciteClient.h>
-#include <fpdb/executor/physical/PhysicalPlan.h>
-#include <fpdb/plan/calcite/CalcitePlanJsonDeserializer.h>
-#include <fpdb/executor/physical/transform/PrePToPTransformer.h>
-
 #include "fpdb/store/server/Global.hpp"
 #include "fpdb/store/server/caf/ServerMeta.hpp"
 #include "fpdb/store/server/cluster/ClusterActor.hpp"
 #include "fpdb/store/server/cluster/NodeActor.hpp"
+#include <caf/io/all.hpp>
+#include <future>
+#include <utility>
 
 namespace fpdb::store::server {
 
 using namespace std::chrono_literals;
 using namespace fpdb::store::server::cluster;
-using namespace fpdb::catalogue;
-using namespace fpdb::calcite;
-using namespace fpdb::executor::physical;
 
 Server::Server(const ServerConfig& cfg, std::optional<ClusterActor> remote_coordinator_actor_handle,
                std::shared_ptr<caf::ActorManager> actor_manager)
@@ -124,32 +111,6 @@ tl::expected<void, std::string> Server::start() {
 
     SPDLOG_DEBUG("Started Node actor (port: {})", node_port_);
   }
-
-  // catalogue
-  auto catalogue_ = make_shared<fpdb::catalogue::Catalogue>("main", std::filesystem::current_path().parent_path().append("resources/metadata"));
-
-  // calcite client
-  const auto &calciteConfig = fpdb::calcite::CalciteConfig::parseCalciteConfig();
-  auto calciteClient_ = make_shared<fpdb::calcite::CalciteClient>(calciteConfig);
-  calciteClient_->startServer();
-  SPDLOG_INFO("Calcite server started");
-  calciteClient_->startClient();
-  SPDLOG_INFO("Calcite client started");
-
-  // fetch catalogue entry
-  const auto &catalogue = std::make_shared<fpdb::catalogue::Catalogue>("Stuff", "/home/matt/Work/FlexPushdownDB-Dev/resources/metadata/ssb-sf1-sortlineorder");
-  const auto &catalogueEntry = std::make_shared<fpdb::catalogue::local_fs::LocalFSCatalogueEntry>("ssb-sf1-sortlineorder/csv/", catalogue);
-
-  // plan
-  // calcite planning
-  string planResult = calciteClient_->planQuery("select * from s3object", "ssb-sf1-sortlineorder/csv/");
-
-  // deserialize plan json string into prephysical plan
-  auto planDeserializer = std::make_shared<fpdb::plan::calcite::CalcitePlanJsonDeserializer>(planResult, catalogueEntry);
-  const auto &prePhysicalPlan = planDeserializer->deserialize();
-
-  // trim unused fields (Calcite trimmer does not trim completely)
-  prePhysicalPlan->populateAndTrimProjectColumns();
 
   flight_future_ = std::async(std::launch::async, [=]() { return flight_handler_->serve(); });
 

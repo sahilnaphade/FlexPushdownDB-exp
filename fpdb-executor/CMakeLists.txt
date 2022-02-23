@@ -89,10 +89,10 @@ add_library(fpdb-executor STATIC
         src/physical/transform/PrePToS3PTransformer.cpp include/fpdb/executor/physical/transform/PrePToS3PTransformer.h
         src/physical/prune/PartitionPruner.cpp include/fpdb/executor/physical/prune/PartitionPruner.h
 #        CAF serializer
-        include/fpdb/executor/serialization/MessageSerializer.h
-        include/fpdb/executor/serialization/POpSerializer.h
-        include/fpdb/executor/serialization/AggregateFunctionSerializer.h
-        include/fpdb/executor/serialization/HashJoinProbeAbstractKernelSerializer.h
+        include/fpdb/executor/caf-serialization/CAFMessageSerializer.h
+        include/fpdb/executor/caf-serialization/CAFPOpSerializer.h
+        include/fpdb/executor/caf-serialization/CAFAggregateFunctionSerializer.h
+        include/fpdb/executor/caf-serialization/CAFHashJoinProbeAbstractKernelSerializer.h
 #        executor
         src/Executor.cpp include/fpdb/executor/Executor.h
         src/Execution.cpp include/fpdb/executor/Execution.h)
