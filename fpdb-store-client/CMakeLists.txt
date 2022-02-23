@@ -48,6 +48,8 @@ endif()
 add_executable(fpdb-store-client-test
         test/Global.cpp test/Global.hpp test/Main.cpp)
 
+find_package(LibBFD REQUIRED)
+
 target_link_libraries(fpdb-store-client-test fmt::fmt)
 target_link_libraries(fpdb-store-client-test spdlog::spdlog)
 target_link_libraries(fpdb-store-client-test doctest::doctest)

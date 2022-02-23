@@ -137,14 +137,15 @@ add_executable(fpdb-store-server-test
         test/Main.cpp
         test/FileServiceTest.cpp
         test/FlightTest.cpp
-        test/DistributedTest.cpp)
+        test/DistributedTest.cpp
+        test/FlightMacExceptionMain.cpp)
 
 find_package(LibBFD REQUIRED)
 
 target_link_libraries(fpdb-store-server-test fmt::fmt)
 target_link_libraries(fpdb-store-server-test spdlog::spdlog)
 target_link_libraries(fpdb-store-server-test doctest::doctest)
-target_link_libraries(fpdb-store-server-test LibBFD)
+target_link_libraries(fpdb-store-server-test LibBFD::LibBFD)
 target_link_libraries(fpdb-store-server-test Backward::Backward)
 target_link_libraries(fpdb-store-server-test arrow_flight_static)
 target_link_libraries(fpdb-store-server-test fpdb-store-server-static)

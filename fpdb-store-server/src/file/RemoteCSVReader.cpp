@@ -67,7 +67,11 @@ RemoteCSVReader::readUsingSimdParser(const std::vector<std::string> &columnNames
   std::istream inputStream(&mbuf);
 
   // parse bytes into table
-  auto expTupleSet = CSVReader::readUsingSimdParserImpl(columnNames, inputStream);
+#ifdef __AVX2__
+    auto expTupleSet = CSVReader::readUsingSimdParserImpl(columnNames, inputStream);
+#else
+    auto expTupleSet = TupleSet::makeWithEmptyTable();
+#endif
   close(arrowInputStream);
   free(out);
   return expTupleSet;

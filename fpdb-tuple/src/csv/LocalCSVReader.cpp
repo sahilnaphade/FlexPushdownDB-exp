@@ -51,10 +51,15 @@ LocalCSVReader::readUsingSimdParser(const std::vector<std::string> &columnNames)
   std::ifstream inputStream(path_, std::ifstream::binary);
 
   // read
+#ifdef __AVX2__
   auto expTupleSet = CSVReader::readUsingSimdParserImpl(columnNames, inputStream);
+#else
+  auto expTupleSet = TupleSet::makeWithEmptyTable();
+#endif
   inputStream.close();
   return expTupleSet;
 }
+
 
 tl::expected<std::shared_ptr<TupleSet>, std::string>
 LocalCSVReader::readUsingArrowApi(const std::vector<std::string> &columnNames) {

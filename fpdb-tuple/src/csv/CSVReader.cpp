@@ -16,10 +16,11 @@ tl::expected<std::shared_ptr<TupleSet>, std::string> CSVReader::read(const std::
 #ifdef __AVX2__
   return readUsingSimdParser(columnNames);
 #else
-  return readUsingArrowImpl(columnNames);
+  return readUsingArrowApi(columnNames);
 #endif
 }
 
+#ifdef __AVX2__
 tl::expected<std::shared_ptr<TupleSet>, std::string>
 CSVReader::readUsingSimdParserImpl(const std::vector<std::string> &columnNames,
                                    std::basic_istream<char, std::char_traits<char>> &inputStream) {
@@ -54,6 +55,7 @@ CSVReader::readUsingSimdParserImpl(const std::vector<std::string> &columnNames,
 
   return tupleSet;
 }
+#endif
 
 tl::expected<std::shared_ptr<TupleSet>, std::string>
 CSVReader::readUsingArrowApiImpl(const std::vector<std::string> &columnNames,
