@@ -20,5 +20,5 @@ else()
     message(FATAL_ERROR "LibOpcodes library not found")
 endif()
 
-message(STATUS ${LibOpcodes_LIBRARY})
-message(STATUS ${LibOpcodes_INCLUDE_DIR})
+#message(STATUS ${LibOpcodes_LIBRARY})
+#message(STATUS ${LibOpcodes_INCLUDE_DIR})
