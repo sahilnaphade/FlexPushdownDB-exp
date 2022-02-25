@@ -9,6 +9,7 @@
 #include <fpdb/tuple/csv/CSVFormat.h>
 #include <fpdb/tuple/TupleSet.h>
 #include <fpdb/tuple/arrow/ArrowInputStream.h>
+#include <fpdb/tuple/arrow/ArrowGzipInputStream2.h>
 
 #include <arrow/csv/options.h> 
 #include <arrow/csv/reader.h>
@@ -221,7 +222,7 @@ std::shared_ptr<TupleSet> S3GetPOp::s3GetFullRequest() {
         ctx()->notifyError(err.what());
       }
 #else
-      inputStream = std::make_shared<ArrowAWSGZIPInputStream2>(retrievedFile, resultSize);
+      inputStream = std::make_shared<ArrowGzipInputStream2>(retrievedFile);
       tupleSet = readCSVFile(inputStream);
 #endif
     } else {
@@ -239,7 +240,7 @@ std::shared_ptr<TupleSet> S3GetPOp::s3GetFullRequest() {
         ctx()->notifyError(err.what());
       }
 #else
-      inputStream = std::make_shared<ArrowAWSInputStream>(retrievedFile);
+      inputStream = std::make_shared<ArrowInputStream>(retrievedFile);
       tupleSet = readCSVFile(inputStream);
 #endif
     }
@@ -516,7 +517,9 @@ void S3GetPOp::processScanMessage(const ScanMessage &message) {
 
 void S3GetPOp::clear() {
   reqNumToAdditionalOutput_.clear();
+#ifdef __AVX2__
   reqNumToParser_.clear();
+#endif
   columnsReadFromS3_.clear();
   splitReqNumToTable_.clear();
 }

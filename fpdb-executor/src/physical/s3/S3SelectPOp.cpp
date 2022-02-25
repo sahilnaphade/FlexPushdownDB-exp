@@ -312,10 +312,11 @@ std::shared_ptr<TupleSet> S3SelectPOp::s3Select(uint64_t startOffset, uint64_t e
   }
 #else
   // If no results are returned then there is nothing to process
-  if (s3Result_.size() > 0) {std::shared_ptr<TupleSet> tupleSetV1 = parser_->parseCompletePayload(s3Result_.begin(), s3Result_.end());
-    auto tupleSet = TupleSet::create(tupleSetV1);
+  if (s3Result_.size() > 0) {
+      auto tupleSetV1 = parser_->parseCompletePayload(s3Result_.begin(), s3Result_.end());
+    auto tupleSet = TupleSet::make(tupleSetV1.value()->table());
   } else {
-    tupleSet = TupleSet::make2();
+    tupleSet = TupleSet::makeWithEmptyTable();
   }
 #endif
   std::chrono::steady_clock::time_point stopConversionTime = std::chrono::steady_clock::now();

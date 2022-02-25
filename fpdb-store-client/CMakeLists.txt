@@ -9,8 +9,6 @@ add_library(fpdb-store-client-objlib OBJECT
 set_target_properties(fpdb-store-client-objlib PROPERTIES POSITION_INDEPENDENT_CODE ON)
 set_target_properties(fpdb-store-client-objlib PROPERTIES OUTPUT_NAME fpdb-store-client)
 
-find_package(LibBFD REQUIRED)
-
 list(APPEND _PUBLIC_LINK_LIBRARIES expected)
 
 list(APPEND _PRIVATE_LINK_LIBRARIES fmt::fmt)
@@ -50,9 +48,12 @@ endif()
 add_executable(fpdb-store-client-test
         test/Global.cpp test/Global.hpp test/Main.cpp)
 
+find_package(LibBFD REQUIRED)
+
 target_link_libraries(fpdb-store-client-test fmt::fmt)
 target_link_libraries(fpdb-store-client-test spdlog::spdlog)
 target_link_libraries(fpdb-store-client-test doctest::doctest)
+target_link_libraries(fpdb-store-client-test LibBFD::LibBFD)
 target_link_libraries(fpdb-store-client-test Backward::Backward)
 target_link_libraries(fpdb-store-client-test fpdb-store-client-static)
 # need to add and link libraries on mac

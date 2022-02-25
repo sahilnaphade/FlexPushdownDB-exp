@@ -1,6 +1,3 @@
-project(fpdb-tuple VERSION "${PROJECT_VERSION}" LANGUAGES C CXX)
-
-
 #-------------------------------------------------------------------------------------------------------------
 # Target
 #-----------------------------------------------------------------------------------------------------------------------
@@ -62,10 +59,10 @@ target_link_libraries(fpdb-tuple PUBLIC fpdb-util)
 target_link_libraries(fpdb-tuple PUBLIC fpdb-caf)
 target_link_libraries(fpdb-tuple PUBLIC spdlog::spdlog)
 target_link_libraries(fpdb-tuple PUBLIC fmt::fmt)
-target_link_libraries(fpdb-tuple PUBLIC LLVM-filesystem)
+#target_link_libraries(fpdb-tuple PUBLIC LLVM-filesystem)
 target_link_libraries(fpdb-tuple PUBLIC expected)
-target_link_libraries(fpdb-tuple PUBLIC arrow_static)
-target_link_libraries(fpdb-tuple PUBLIC parquet_static)
+target_link_libraries(fpdb-tuple PUBLIC arrow_shared)
+target_link_libraries(fpdb-tuple PUBLIC parquet_shared)
 target_link_libraries(fpdb-tuple PUBLIC deflate)
 target_link_libraries(fpdb-tuple PUBLIC zlibstatic)
 target_link_libraries(fpdb-tuple PUBLIC nlohmann_json)

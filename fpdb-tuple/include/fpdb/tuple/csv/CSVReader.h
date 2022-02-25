@@ -19,9 +19,11 @@ public:
   tl::expected<std::shared_ptr<TupleSet>, std::string> read(const std::vector<std::string> &columnNames) override;
 
 protected:
+#ifdef __AVX2__
   tl::expected<std::shared_ptr<TupleSet>, std::string>
   readUsingSimdParserImpl(const std::vector<std::string> &columnNames,
                           std::basic_istream<char, std::char_traits<char>> &inputStream);
+#endif
 
   tl::expected<std::shared_ptr<TupleSet>, std::string>
   readUsingArrowApiImpl(const std::vector<std::string> &columnNames,
