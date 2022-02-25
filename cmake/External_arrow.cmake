@@ -41,7 +41,7 @@ set(ARROW_PROTOBUF_BIN_DIR ${ARROW_PROTOBUF_BASE_DIR}/bin)
 set(ARROW_PROTOC ${ARROW_PROTOBUF_BIN_DIR}/protoc)
 set(ARROW_THRIFT_BASE_DIR ${ARROW_BASE_DIR}/src/${ARROW_BASE}-build/thrift_ep-install)
 set(ARROW_THRIFT_INCLUDE_DIR ${ARROW_THRIFT_BASE_DIR}/include)
-if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(ARROW_THRIFT_STATIC_LIB ${ARROW_THRIFT_BASE_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}thriftd${CMAKE_STATIC_LIBRARY_SUFFIX})
 else()
     set(ARROW_THRIFT_STATIC_LIB ${ARROW_THRIFT_BASE_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}thrift${CMAKE_STATIC_LIBRARY_SUFFIX})
@@ -105,13 +105,17 @@ ExternalProject_Add(${ARROW_BASE}
         -DCMAKE_CXX_EXTENSIONS=OFF
         -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
         -DCMAKE_INSTALL_PREFIX=${ARROW_INSTALL_DIR}
+        -DOPENSSL_ROOT_DIR=${OPENSSL_ROOT_DIR}
         )
 
-#file(MAKE_DIRECTORY ${ARROW_JEMALLOC_INCLUDE_DIR}) # Include directory needs to exist to run configure step
-#file(MAKE_DIRECTORY ${ARROW_RE2_INCLUDE_DIR}) # Include directory needs to exist to run configure step
-#file(MAKE_DIRECTORY ${ARROW_THRIFT_INCLUDE_DIR}) # Include directory needs to exist to run configure step
-#file(MAKE_DIRECTORY ${ARROW_SNAPPY_INCLUDE_DIR}) # Include directory needs to exist to run configure step
-file(MAKE_DIRECTORY ${ARROW_INCLUDE_DIR}) # Include directory needs to exist to run configure step
+# Include directory needs to exist to run configure step
+file(MAKE_DIRECTORY ${ARROW_INCLUDE_DIR})
+file(MAKE_DIRECTORY ${ARROW_PROTOBUF_INCLUDE_DIR})
+file(MAKE_DIRECTORY ${ARROW_GRPC_INCLUDE_DIR})
+file(MAKE_DIRECTORY ${ARROW_THRIFT_INCLUDE_DIR})
+#file(MAKE_DIRECTORY ${ARROW_JEMALLOC_INCLUDE_DIR})
+#file(MAKE_DIRECTORY ${ARROW_RE2_INCLUDE_DIR})
+#file(MAKE_DIRECTORY ${ARROW_SNAPPY_INCLUDE_DIR})
 
 ## Needed by the re2 find_package module
 #include(FindPkgConfig)
@@ -266,9 +270,6 @@ add_dependencies(arrow_flight_shared ${ARROW_BASE})
 #target_include_directories(snappy_static INTERFACE ${ARROW_SNAPPY_INCLUDE_DIR})
 #add_dependencies(snappy_static ${ARROW_BASE})
 
-set(_PROTOBUF_EP_INSTALL_DIR ${ARROW_BASE_DIR}/src/${ARROW_BASE}-build/protobuf_ep-install)
-file(MAKE_DIRECTORY ${_PROTOBUF_EP_INSTALL_DIR}/${CMAKE_INSTALL_INCLUDEDIR})
-
 add_library(protobuf_static STATIC IMPORTED)
 set_target_properties(protobuf_static PROPERTIES IMPORTED_LOCATION ${ARROW_PROTOBUF_STATIC_LIB})
 target_include_directories(protobuf_static INTERFACE ${ARROW_PROTOBUF_INCLUDE_DIR})
@@ -278,9 +279,6 @@ add_library(grpcpp_reflection_static STATIC IMPORTED)
 set_target_properties(grpcpp_reflection_static PROPERTIES IMPORTED_LOCATION ${ARROW_GRPCPP_REFLECTION_STATIC_LIB})
 target_include_directories(grpcpp_reflection_static INTERFACE ${ARROW_GRPC_INCLUDE_DIR})
 add_dependencies(grpcpp_reflection_static ${ARROW_BASE})
-
-set(_GRPC_EP_INSTALL_DIR ${ARROW_BASE_DIR}/src/${ARROW_BASE}-build/grpc_ep-install)
-file(MAKE_DIRECTORY ${_GRPC_EP_INSTALL_DIR}/${CMAKE_INSTALL_INCLUDEDIR})
 
 add_library(grpc_static STATIC IMPORTED)
 set_target_properties(grpc_static PROPERTIES IMPORTED_LOCATION ${ARROW_GRPC_STATIC_LIB})

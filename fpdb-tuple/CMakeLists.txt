@@ -63,7 +63,7 @@ target_link_libraries(fpdb-tuple PUBLIC fmt::fmt)
 target_link_libraries(fpdb-tuple PUBLIC expected)
 target_link_libraries(fpdb-tuple PUBLIC arrow_shared)
 target_link_libraries(fpdb-tuple PUBLIC parquet_shared)
-target_link_libraries(fpdb-tuple PUBLIC deflate)
+#target_link_libraries(fpdb-tuple PUBLIC deflate)
 target_link_libraries(fpdb-tuple PUBLIC zlibstatic)
 target_link_libraries(fpdb-tuple PUBLIC nlohmann_json)
 
