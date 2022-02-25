@@ -31,10 +31,6 @@ target_link_libraries(fpdb-util-test fpdb-util)
 target_link_libraries(fpdb-util-test fmt::fmt)
 target_link_libraries(fpdb-util-test spdlog::spdlog)
 target_link_libraries(fpdb-util-test doctest::doctest)
-# need to add and link libraries on mac
-if (${APPLE})
-  linkForMacExecutable(fpdb-util-test)
-endif()
 
 
 #-----------------------------------------------------------------------------------------------------------------------

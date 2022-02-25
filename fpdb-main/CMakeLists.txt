@@ -16,7 +16,6 @@ target_include_directories(fpdb-main PUBLIC include)
 
 target_link_libraries(fpdb-main PUBLIC fpdb-executor)
 target_link_libraries(fpdb-main PUBLIC fpdb-util)
-target_link_libraries(fpdb-main PUBLIC ssl crypto)
 
 
 # fpdb-main-client
@@ -24,10 +23,6 @@ add_executable(fpdb-main-client
         src/ClientMain.cpp)
 
 target_link_libraries(fpdb-main-client PRIVATE fpdb-main)
-# need to add and link libraries on mac
-if (${APPLE})
-  linkForMacExecutable(fpdb-main-client)
-endif()
 
 
 # fpdb-main-server
@@ -35,9 +30,6 @@ add_executable(fpdb-main-server
         src/ServerMain.cpp)
 
 target_link_libraries(fpdb-main-server PRIVATE fpdb-main)
-if (${APPLE})
-  linkForMacExecutable(fpdb-main-server)
-endif()
 
 add_dependencies(fpdb-main-server resources)
 
@@ -56,9 +48,5 @@ add_executable(fpdb-main-test
 
 target_link_libraries(fpdb-main-test PRIVATE fpdb-main)
 target_link_libraries(fpdb-main-test PRIVATE doctest::doctest)
-# need to add and link libraries on mac
-if (${APPLE})
-  linkForMacExecutable(fpdb-main-test)
-endif()
 
 add_dependencies(fpdb-main-test resources)

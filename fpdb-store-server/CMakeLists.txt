@@ -109,10 +109,6 @@ target_include_directories(fpdb-store-server-shared PUBLIC $<TARGET_PROPERTY:fpd
 target_link_libraries(fpdb-store-server-shared PUBLIC ${_PUBLIC_LINK_LIBRARIES})
 target_link_libraries(fpdb-store-server-shared PRIVATE ${_PUBLIC_SHARED_LINK_LIBRARIES})
 target_link_libraries(fpdb-store-server-shared PRIVATE ${_PRIVATE_LINK_LIBRARIES})
-# need to fix link on mac
-if (${APPLE})
-    linkForMacShared(fpdb-store-server-shared)
-endif()
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -136,7 +132,8 @@ add_executable(fpdb-store-server-test
         test/FileServiceTest.cpp
         test/FlightBasicTest.cpp
         test/FlightSelectTest.cpp
-        test/DistributedTest.cpp)
+        test/DistributedTest.cpp
+        )
 
 find_package(LibBFD REQUIRED)
 
@@ -148,11 +145,6 @@ target_link_libraries(fpdb-store-server-test Backward::Backward)
 target_link_libraries(fpdb-store-server-test arrow_flight_static)
 target_link_libraries(fpdb-store-server-test fpdb-store-server-static)
 target_link_libraries(fpdb-store-server-test fpdb-file-read-test-util)
-# need to fix link on mac
-if (${APPLE})
-    linkForMacExecutable(fpdb-store-server-test)
-    target_link_directories(fpdb-store-server-test PRIVATE /usr/local/opt/binutils/lib)
-endif()
 
 add_custom_command(
         TARGET fpdb-store-server-test POST_BUILD

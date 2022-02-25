@@ -61,8 +61,8 @@ target_link_libraries(fpdb-tuple PUBLIC spdlog::spdlog)
 target_link_libraries(fpdb-tuple PUBLIC fmt::fmt)
 #target_link_libraries(fpdb-tuple PUBLIC LLVM-filesystem)
 target_link_libraries(fpdb-tuple PUBLIC expected)
-target_link_libraries(fpdb-tuple PUBLIC arrow_shared)
-target_link_libraries(fpdb-tuple PUBLIC parquet_shared)
+target_link_libraries(fpdb-tuple PUBLIC arrow_static)
+target_link_libraries(fpdb-tuple PUBLIC parquet_static)
 #target_link_libraries(fpdb-tuple PUBLIC deflate)
 target_link_libraries(fpdb-tuple PUBLIC zlibstatic)
 target_link_libraries(fpdb-tuple PUBLIC nlohmann_json)
@@ -97,10 +97,6 @@ target_link_libraries(fpdb-tuple-test fpdb-file-read-test-util)
 target_link_libraries(fpdb-tuple-test spdlog::spdlog)
 target_link_libraries(fpdb-tuple-test doctest::doctest)
 target_link_libraries(fpdb-tuple-test fmt::fmt)
-# need to fix link on mac
-if (${APPLE})
-  linkForMacExecutable(fpdb-tuple-test)
-endif()
 
 
 #-----------------------------------------------------------------------------------------------------------------------

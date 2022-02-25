@@ -43,7 +43,7 @@ target_include_directories(fpdb-expression-gandiva PUBLIC include)
 
 set_target_properties(fpdb-expression-gandiva PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
-target_link_libraries(fpdb-expression-gandiva PUBLIC gandiva_shared)
+target_link_libraries(fpdb-expression-gandiva PUBLIC gandiva_static)
 target_link_libraries(fpdb-expression-gandiva PUBLIC fpdb-expression)
 target_link_libraries(fpdb-expression-gandiva PUBLIC fpdb-caf)
 target_link_libraries(fpdb-expression-gandiva PUBLIC fpdb-util)
