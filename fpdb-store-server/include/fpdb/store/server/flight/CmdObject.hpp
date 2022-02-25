@@ -6,9 +6,9 @@
 #define FPDB_FPDB_STORE_SERVER_INCLUDE_FPDB_STORE_SERVER_FLIGHT_CMDOBJECT_HPP
 
 #include <memory>
-
+#include "tl/expected.hpp"
+#include "nlohmann/json.hpp"
 #include "CmdType.hpp"
-#include "FlightSelectObjectContentRequest.hpp"
 
 namespace fpdb::store::server::flight {
 
@@ -22,39 +22,17 @@ public:
 
   virtual ~CmdObject() = default;
 
+  virtual tl::expected<std::string, std::string> serialize(bool pretty) = 0;
+
+  static tl::expected<std::shared_ptr<CmdObject>, std::string> deserialize(const std::string& cmd_string);
+
   [[nodiscard]] const std::shared_ptr<CmdType>& type() const;
-
-  virtual nlohmann::json to_json() = 0;
-
-  std::string serialize(bool pretty = false);
-
-  static tl::expected<std::shared_ptr<CmdObject>, std::string> from_json(const nlohmann::json& json);
-
-  static tl::expected<std::shared_ptr<CmdObject>, std::string> deserialize(const std::string& string);
 
 private:
   std::shared_ptr<CmdType> type_;
 };
 
-class SelectObjectContentCmd : public CmdObject {
-public:
-  explicit SelectObjectContentCmd(std::shared_ptr<FlightSelectObjectContentRequest> select_object_content);
 
-  static std::shared_ptr<SelectObjectContentCmd>
-  make(std::shared_ptr<FlightSelectObjectContentRequest> select_object_content);
-
-  [[nodiscard]] const std::shared_ptr<FlightSelectObjectContentRequest>& select_object_content() const;
-
-  [[nodiscard]] nlohmann::json to_json() override;
-
-  static tl::expected<std::shared_ptr<SelectObjectContentCmd>, std::string>
-  deserialize(const std::string& command_string);
-
-  static tl::expected<std::shared_ptr<SelectObjectContentCmd>, std::string> from_json(const nlohmann::json& json);
-
-private:
-  std::shared_ptr<FlightSelectObjectContentRequest> select_object_content_;
-};
 
 } // namespace fpdb::store::server::flight
 

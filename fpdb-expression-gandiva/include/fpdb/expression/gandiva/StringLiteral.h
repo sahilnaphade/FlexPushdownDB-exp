@@ -25,8 +25,10 @@ public:
 
   void compile(const std::shared_ptr<arrow::Schema> &schema) override;
   std::string alias() override;
-  std::string getTypeString() override;
+  std::string getTypeString() const override;
   std::set<std::string> involvedColumnNames() override;
+  ::nlohmann::json toJson() const override;
+  static tl::expected<std::shared_ptr<StringLiteral>, std::string> fromJson(const nlohmann::json &jObj);
 
   const std::optional<std::string> &value() const;
 

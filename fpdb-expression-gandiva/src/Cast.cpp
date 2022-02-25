@@ -3,7 +3,8 @@
 //
 
 #include "fpdb/expression/gandiva/Cast.h"
-
+#include <fpdb/tuple/serialization/ArrowSerializer.h>
+#include <fmt/format.h>
 #include <utility>
 
 #include <gandiva/tree_expr_builder.h>
@@ -106,8 +107,33 @@ const std::shared_ptr<Expression> &Cast::getExpr() const {
   return expr_;
 }
 
-std::string Cast::getTypeString() {
+std::string Cast::getTypeString() const {
   return "Cast";
+}
+
+::nlohmann::json Cast::toJson() const {
+  ::nlohmann::json jObj;
+  jObj.emplace("type", getTypeString());
+  jObj.emplace("expr", expr_->toJson());
+  jObj.emplace("dataType", fpdb::tuple::ArrowSerializer::dataType_to_bytes(dataType_));
+  return jObj;
+}
+
+tl::expected<std::shared_ptr<Cast>, std::string> Cast::fromJson(const nlohmann::json &jObj) {
+  if (!jObj.contains("expr")) {
+    return tl::make_unexpected(fmt::format("Expr not specified in Cast expression JSON '{}'", jObj));
+  }
+  auto expExpr = Expression::fromJson(jObj["expr"]);
+  if (!expExpr.has_value()) {
+    return tl::make_unexpected(expExpr.error());
+  }
+
+  if (!jObj.contains("dataType")) {
+    return tl::make_unexpected(fmt::format("DataType not specified in Cast expression JSON '{}'", jObj));
+  }
+  auto dataType = fpdb::tuple::ArrowSerializer::bytes_to_dataType(jObj["dataType"].get<std::vector<uint8_t>>());
+
+  return std::make_shared<Cast>(*expExpr, dataType);
 }
 
 std::shared_ptr<Expression> fpdb::expression::gandiva::cast(const std::shared_ptr<Expression>& expr,

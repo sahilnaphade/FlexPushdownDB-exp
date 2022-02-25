@@ -3,6 +3,7 @@
 //
 
 #include "fpdb/store/server/flight/CmdType.hpp"
+#include "fpdb/store/server/flight/Util.hpp"
 
 namespace fpdb::store::server::flight {
 
@@ -18,7 +19,7 @@ const std::string& CmdType::name() const {
 }
 
 std::shared_ptr<CmdType> CmdType::select_object_content() {
-  return std::make_shared<CmdType>(CmdTypeId::SelectObjectContent, "select-object-content");
+  return std::make_shared<CmdType>(CmdTypeId::SelectObjectContent, SelectObjectCmdTypeName.data());
 }
 
 } // namespace fpdb::store::server::flight

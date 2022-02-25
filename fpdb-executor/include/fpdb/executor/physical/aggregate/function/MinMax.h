@@ -22,6 +22,9 @@ public:
   MinMax(const MinMax&) = default;
   MinMax& operator=(const MinMax&) = default;
 
+  std::string getTypeString() const override;
+  ::nlohmann::json toJson() const override;
+
   tl::expected<shared_ptr<arrow::Scalar>, string> computeComplete(const shared_ptr<TupleSet> &tupleSet) override;
   tl::expected<shared_ptr<AggregateResult>, string> computePartial(const shared_ptr<TupleSet> &tupleSet) override;
 

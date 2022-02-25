@@ -6,10 +6,10 @@
 #define FPDB_FPDB_STORE_SERVER_INCLUDE_FPDB_STORE_SERVER_CAF_SERVERMETA_HPP
 
 #include <caf/typed_actor.hpp>
-
 #include "AbstractActor.hpp"
+#include "fpdb/store/server/Global.hpp"
 
-CAF_BEGIN_TYPE_ID_BLOCK(Server, ::caf::first_custom_type_id)
+CAF_BEGIN_TYPE_ID_BLOCK(Server, fpdb::store::server::FPDB_STORE_FIRST_CAF_TYPE_ID)
 
 // Event fired when server coming online
 CAF_ADD_ATOM(Server, NodeUpAtom)

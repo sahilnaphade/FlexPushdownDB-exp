@@ -3,7 +3,6 @@
 //
 
 #include <gandiva/tree_expr_builder.h>
-
 #include <utility>
 #include "fpdb/expression/gandiva/Divide.h"
 
@@ -30,8 +29,16 @@ std::string Divide::alias() {
   return "?column?";
 }
 
-std::string Divide::getTypeString() {
+std::string Divide::getTypeString() const {
   return "Divide";
+}
+
+tl::expected<std::shared_ptr<Divide>, std::string> Divide::fromJson(const nlohmann::json &jObj) {
+  auto expOperands = BinaryExpression::fromJson(jObj);
+  if (!expOperands.has_value()) {
+    return tl::make_unexpected(expOperands.error());
+  }
+  return std::make_shared<Divide>((*expOperands).first, (*expOperands).second);
 }
 
 std::shared_ptr<Expression> fpdb::expression::gandiva::divide(const std::shared_ptr<Expression>& left,

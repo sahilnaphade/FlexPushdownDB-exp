@@ -68,6 +68,7 @@ target_link_libraries(fpdb-tuple PUBLIC arrow_static)
 target_link_libraries(fpdb-tuple PUBLIC parquet_static)
 target_link_libraries(fpdb-tuple PUBLIC deflate)
 target_link_libraries(fpdb-tuple PUBLIC zlibstatic)
+target_link_libraries(fpdb-tuple PUBLIC nlohmann_json)
 
 
 #-----------------------------------------------------------------------------------------------------------------------

@@ -15,6 +15,10 @@ Count::Count(const string &outputColumnName,
              const shared_ptr<fpdb::expression::gandiva::Expression> &expression):
   AggregateFunction(COUNT, outputColumnName, expression) {}
 
+std::string Count::getTypeString() const {
+  return "Count";
+}
+
 shared_ptr<arrow::DataType> Count::returnType() const {
   return arrow::int64();
 }

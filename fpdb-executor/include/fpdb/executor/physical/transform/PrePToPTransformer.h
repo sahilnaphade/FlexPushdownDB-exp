@@ -90,18 +90,6 @@ private:
   shared_ptr<aggregate::AggregateFunction> transformAggReduceFunction(const string &outputColumnName,
                                                                       const shared_ptr<AggregatePrePFunction> &prePFunction);
 
-  /**
-   * Connect producers and consumers
-   * @param producers
-   * @param consumers
-   */
-  void connectOneToOne(vector<shared_ptr<PhysicalOp>> &producers,
-                       vector<shared_ptr<PhysicalOp>> &consumers);
-  void connectManyToMany(vector<shared_ptr<PhysicalOp>> &producers,
-                         vector<shared_ptr<PhysicalOp>> &consumers);
-  void connectManyToOne(vector<shared_ptr<PhysicalOp>> &producers,
-                        shared_ptr<PhysicalOp> &consumer);
-
   shared_ptr<PrePhysicalPlan> prePhysicalPlan_;
   shared_ptr<AWSClient> awsClient_;
   shared_ptr<Mode> mode_;

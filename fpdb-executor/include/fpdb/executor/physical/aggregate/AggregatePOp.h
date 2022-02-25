@@ -34,6 +34,8 @@ public:
   void clear() override;
   std::string getTypeString() const override;
 
+  const vector<shared_ptr<AggregateFunction>> &getFunctions() const;
+
 private:
   void onStart();
   void onTuple(const TupleMessage &message);

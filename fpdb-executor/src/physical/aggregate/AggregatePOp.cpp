@@ -32,6 +32,10 @@ std::string AggregatePOp::getTypeString() const {
   return "AggregatePOp";
 }
 
+const vector<shared_ptr<AggregateFunction>> &AggregatePOp::getFunctions() const {
+  return functions_;
+}
+
 void AggregatePOp::onStart() {
   SPDLOG_DEBUG("Starting operator  |  name: '{}'", this->name());
 }

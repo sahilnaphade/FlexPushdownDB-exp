@@ -24,14 +24,16 @@ namespace fpdb::executor::physical::file {
 FileScanPOp::FileScanPOp(const std::string &name,
                          const std::vector<std::string> &columnNames,
                          int nodeId,
-                         const std::string &filePath,
+                         const std::string &bucket,
+                         const std::string &object,
+                         const std::string &storeRootPath,
                          const std::shared_ptr<FileFormat> &format,
                          const std::shared_ptr<::arrow::Schema> &schema,
                          const std::optional<std::pair<int64_t, int64_t>> &byteRange,
                          bool scanOnStart) :
 	PhysicalOp(name, FILE_SCAN, columnNames, nodeId),
 	scanOnStart_(scanOnStart),
-	kernel_(FileScanKernel::make(filePath, format, schema, byteRange)){}
+	kernel_(FileScanKernel::make(bucket, object, storeRootPath, format, schema, byteRange)){}
 
 std::string FileScanPOp::getTypeString() const {
   return "FileScanPOp";
@@ -60,15 +62,15 @@ void FileScanPOp::onComplete(const CompleteMessage &) {
 void FileScanPOp::onStart() {
   SPDLOG_DEBUG("Starting operator  |  name: '{}'", this->name());
   if(scanOnStart_){
-	readAndSendTuples(getProjectColumnNames());
-	ctx()->notifyComplete();
+    readAndSendTuples(getProjectColumnNames());
+    ctx()->notifyComplete();
   }
 }
 
 void FileScanPOp::readAndSendTuples(const std::vector<std::string> &columnNames){
   // Read the columns not present in the cache
   /*
-   * FIXME: Should support reading the file in pieces
+   * TODO: support reading the file in pieces
    */
 
   std::shared_ptr<TupleSet> readTupleSet;
@@ -91,15 +93,23 @@ void FileScanPOp::onCacheLoadResponse(const ScanMessage &Message) {
 }
 
 void FileScanPOp::requestStoreSegmentsInCache(const std::shared_ptr<TupleSet> &tupleSet) {
-  auto partition = std::make_shared<catalogue::local_fs::LocalFSPartition>(kernel_.getPath());
-  auto expByteRange = kernel_.getByteRange();
-  if (!expByteRange.has_value()) {
-    ctx()->notifyError(expByteRange.error());
+  auto partition = std::make_shared<catalogue::local_fs::LocalFSPartition>(kernel_.getFilePath());
+  std::pair<int64_t, int64_t> byteRange;
+  auto optByteRange = kernel_.getByteRange();
+  if (optByteRange.has_value()) {
+    byteRange = *optByteRange;
+  } else {
+    auto expFileSize = kernel_.getFileSize();
+    if (!expFileSize.has_value()) {
+      ctx()->notifyError(expFileSize.error());
+    }
+    byteRange = {0, *expFileSize};
   }
+
   CacheHelper::requestStoreSegmentsInCache(tupleSet,
                                            partition,
-                                           expByteRange->first,
-                                           expByteRange->second,
+                                           byteRange.first,
+                                           byteRange.second,
                                            name(),
                                            ctx());
 }

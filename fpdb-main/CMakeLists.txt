@@ -9,7 +9,6 @@ project(fpdb-main VERSION "${PROJECT_VERSION}" LANGUAGES C CXX)
 add_library(fpdb-main
         src/ExecConfig.cpp include/fpdb/main/ExecConfig.h
         include/fpdb/main/ActorSystemConfig.h
-        src/CAFInit.cpp include/fpdb/main/CAFInit.h
         src/Client.cpp include/fpdb/main/Client.h
         src/Server.cpp include/fpdb/main/Server.h)
 

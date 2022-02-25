@@ -3,32 +3,26 @@
 //
 
 #include "fpdb/store/server/flight/FlightHandler.hpp"
-
-#include <fmt/format.h>
+#include "fpdb/store/server/flight/HeaderMiddlewareFactory.hpp"
+#include "fpdb/store/server/flight/GetObjectTicket.hpp"
+#include "fpdb/store/server/flight/Util.hpp"
+#include "fpdb/executor/physical/serialization/PhysicalPlanDeserializer.h"
+#include "fpdb/executor/caf/CAFInit.h"
+#include "fpdb/executor/Execution.h"
+#include "fpdb/tuple/serialization/ArrowSerializer.h"
 #include <fpdb/tuple/arrow/Arrays.h>
 
-#include "fpdb/store/server/flight/HeaderMiddlewareFactory.hpp"
+using namespace fpdb::executor::physical;
+using namespace fpdb::tuple;
 
 namespace fpdb::store::server::flight {
 
-tl::expected<std::string, std::string> serialize_to_string(const ::arrow::Schema& schema) {
-  ::arrow::ipc::DictionaryMemo unused_dict_memo;
-  auto maybe_serialized_schema = ::arrow::ipc::SerializeSchema(schema);
-  if(!maybe_serialized_schema.ok()) {
-    return tl::make_unexpected(maybe_serialized_schema.status().message());
-  }
-
-  auto string = std::string(reinterpret_cast<const char*>((*maybe_serialized_schema)->data()),
-                            static_cast<size_t>((*maybe_serialized_schema)->size()));
-  return {};
-}
-
-constexpr std::string_view HeaderMiddlewareKey = "header-middleware";
-constexpr std::string_view BucketHeaderKey = "bucket";
-constexpr std::string_view ObjectHeaderKey = "object";
-
-FlightHandler::FlightHandler(Location location) : location_(std::move(location)) {
-}
+FlightHandler::FlightHandler(Location location,
+                             std::string store_root_path,
+                             std::shared_ptr<::caf::actor_system> actor_system) :
+  location_(std::move(location)),
+  store_root_path_(std::move(store_root_path)),
+  actor_system_(std::move(actor_system)) {}
 
 FlightHandler::~FlightHandler() {
   this->shutdown();
@@ -44,6 +38,10 @@ tl::expected<void, std::string> FlightHandler::init() {
 
   // NOTE: This appears to swallow the signal and not allow anything else to handle it
   //  this->SetShutdownOnSignals({SIGTERM});
+
+  // Init CAF objects for executor
+  fpdb::executor::caf::CAFInit::initCAFGlobalMetaObjects();
+
   return {};
 }
 
@@ -75,24 +73,6 @@ int FlightHandler::port() {
   return FlightServerBase::port();
 }
 
-tl::expected<HeaderMiddleware*, std::string>
-FlightHandler::get_header_middleware(const ::arrow::flight::ServerCallContext& context) {
-  auto* header_middleware = context.GetMiddleware(std::string{HeaderMiddlewareKey.data(), HeaderMiddlewareKey.size()});
-  if(header_middleware == nullptr) {
-    return tl::make_unexpected("HeaderMiddleware not found in ServerCallContext");
-  }
-  return dynamic_cast<HeaderMiddleware*>(header_middleware);
-}
-
-tl::expected<std::string, std::string> FlightHandler::parse_header(const std::string& key,
-                                                                   const HeaderMiddleware& middleware) {
-  auto it = middleware.headers().find(key);
-  if(it == middleware.headers().end()) {
-    return tl::make_unexpected(fmt::format("Header '{}' not found", key));
-  }
-  return std::string{it->second};
-}
-
 ::arrow::Status FlightHandler::GetFlightInfo(const ServerCallContext& context, const FlightDescriptor& request,
                                              std::unique_ptr<FlightInfo>* info) {
   auto expected_flight_info = get_flight_info(context, request);
@@ -111,6 +91,24 @@ tl::expected<std::string, std::string> FlightHandler::parse_header(const std::st
   }
   *stream = std::move(expected_flight_stream.value());
   return ::arrow::Status::OK();
+}
+
+tl::expected<HeaderMiddleware*, std::string>
+FlightHandler::get_header_middleware(const ::arrow::flight::ServerCallContext& context) {
+  auto* header_middleware = context.GetMiddleware(std::string{HeaderMiddlewareKey.data(), HeaderMiddlewareKey.size()});
+  if(header_middleware == nullptr) {
+    return tl::make_unexpected("HeaderMiddleware not found in ServerCallContext");
+  }
+  return dynamic_cast<HeaderMiddleware*>(header_middleware);
+}
+
+tl::expected<std::string, std::string> FlightHandler::parse_header(const std::string& key,
+                                                                   const HeaderMiddleware& middleware) {
+  auto it = middleware.headers().find(key);
+  if(it == middleware.headers().end()) {
+    return tl::make_unexpected(fmt::format("Header '{}' not found", key));
+  }
+  return std::string{it->second};
 }
 
 tl::expected<std::unique_ptr<FlightInfo>, ::arrow::Status>
@@ -157,21 +155,22 @@ FlightHandler::get_flight_info_for_path(const ServerCallContext& context, const 
 
   // Create the ticket
   auto ticket_object = GetObjectTicket::make(std::move(bucket), std::move(object));
+  auto exp_ticket = ticket_object->to_ticket(false);
+  if (!exp_ticket.has_value()) {
+    return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed, exp_ticket.error()));
+  }
 
   // Create the endpoints (dummy for now)
   std::vector<FlightEndpoint> endpoints;
-  FlightEndpoint endpoint{ticket_object->to_ticket(false), {}};
+  FlightEndpoint endpoint{*exp_ticket, {}};
   endpoints.push_back(endpoint);
 
   // Create the FlightInfo object, contains the original descriptor and the endpoints to find the data
   FlightInfo::Data flight_data;
   flight_data.descriptor = request;
   flight_data.endpoints = endpoints;
-  auto expected_serialized_schema = serialize_to_string(*::arrow::schema({}));
-  if(!expected_serialized_schema.has_value()) {
-    return tl::make_unexpected(MakeFlightError(FlightStatusCode::Internal, "Internal error"));
-  }
-  flight_data.schema = expected_serialized_schema.value();
+  auto schemaBytes = ArrowSerializer::schema_to_bytes(::arrow::schema({}));
+  flight_data.schema = std::string(schemaBytes.begin(), schemaBytes.end());
   flight_data.total_records = -1;
   flight_data.total_bytes = -1;
 
@@ -192,8 +191,7 @@ FlightHandler::get_flight_info_for_cmd(const ServerCallContext& context, const F
   switch(cmd_object->type()->id()) {
     case CmdTypeId::SelectObjectContent: {
       auto select_object_content_cmd = std::static_pointer_cast<SelectObjectContentCmd>(cmd_object);
-      return get_flight_info_for_select_object_content_cmd(context, request, std::move(bucket), std::move(object),
-                                                           select_object_content_cmd);
+      return get_flight_info_for_select_object_content_cmd(context, request, select_object_content_cmd);
     }
   }
 
@@ -201,44 +199,67 @@ FlightHandler::get_flight_info_for_cmd(const ServerCallContext& context, const F
 }
 
 tl::expected<std::unique_ptr<FlightInfo>, ::arrow::Status> FlightHandler::get_flight_info_for_select_object_content_cmd(
-  const ServerCallContext& context, const FlightDescriptor& request, std::string bucket, std::string object,
+  const ServerCallContext& context, const FlightDescriptor& request,
   const std::shared_ptr<SelectObjectContentCmd>& select_object_content_cmd) {
 
   // Create the ticket
-  auto ticket_object = SelectObjectContentTicket::make(std::move(bucket), std::move(object),
-                                                       select_object_content_cmd->select_object_content());
+  auto ticket_object = SelectObjectContentTicket::make(select_object_content_cmd->query_plan_string());
+  auto exp_ticket = ticket_object->to_ticket(false);
+  if (!exp_ticket.has_value()) {
+    return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed, exp_ticket.error()));
+  }
 
   // Create the endpoints (dummy for now)
   std::vector<FlightEndpoint> endpoints;
-  FlightEndpoint endpoint{ticket_object->to_ticket(false), {}};
+  FlightEndpoint endpoint{*exp_ticket, {}};
   endpoints.push_back(endpoint);
 
   // Create the FlightInfo object, contains the original descriptor and the endpoints to find the data
   FlightInfo::Data flight_data;
   flight_data.descriptor = request;
   flight_data.endpoints = endpoints;
-  auto expected_serialized_schema = serialize_to_string(*::arrow::schema({}));
-  if(!expected_serialized_schema.has_value()) {
-    return tl::make_unexpected(MakeFlightError(FlightStatusCode::Internal, "Internal error"));
-  }
-  flight_data.schema = expected_serialized_schema.value();
+  auto schemaBytes = ArrowSerializer::schema_to_bytes(::arrow::schema({}));
+  flight_data.schema = std::string(schemaBytes.begin(), schemaBytes.end());
   flight_data.total_records = -1;
   flight_data.total_bytes = -1;
 
   return std::make_unique<FlightInfo>(flight_data);
 }
 
-tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::do_get_select_object_content(
-  const ServerCallContext& context, const std::shared_ptr<SelectObjectContentTicket>& select_object_content_ticket) {
+tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::do_get(const ServerCallContext& context,
+                                                                                       const Ticket& request) {
 
-  const auto& bucket_name = select_object_content_ticket->bucket();
-  const auto& object_name = select_object_content_ticket->object();
+    auto expected_ticket_object = TicketObject::deserialize(request);
+    if(!expected_ticket_object.has_value()) {
+      return tl::make_unexpected(
+              MakeFlightError(FlightStatusCode::Failed, fmt::format("Cannot parse Flight Ticket '{}'", request.ticket)));
+    }
+    auto ticket_object = expected_ticket_object.value();
 
+    switch(ticket_object->type()->id()) {
+      case TicketTypeId::GetObject: {
+        auto get_object_ticket = std::static_pointer_cast<GetObjectTicket>(ticket_object);
+        return do_get_get_object(context, get_object_ticket);
+      }
+      case TicketTypeId::SelectObjectContent: {
+        auto select_object_content_ticket = std::static_pointer_cast<SelectObjectContentTicket>(ticket_object);
+        return do_get_select_object_content(context, select_object_content_ticket);
+      }
+    }
+
+    return tl::make_unexpected(MakeFlightError(
+            FlightStatusCode::Failed, fmt::format("Unrecognized Flight Ticket type '{}'", ticket_object->type()->name())));
+  }
+
+tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status>
+FlightHandler::do_get_get_object(const ServerCallContext& context,
+                                 const std::shared_ptr<GetObjectTicket>& get_object_ticket) {
+  // TODO: currently just return a toy table
   auto schema = ::arrow::schema({
-    {field("f0", ::arrow::int32())},
-    {field("f1", ::arrow::int32())},
-    {field("f2", ::arrow::int32())},
-  });
+                                        {field("f0", ::arrow::int32())},
+                                        {field("f1", ::arrow::int32())},
+                                        {field("f2", ::arrow::int32())},
+                                });
 
   auto array_0_0 = Arrays::make<::arrow::Int32Type>({0, 1, 2, 3, 4, 5, 6, 7, 8, 9}).value();
   auto array_0_1 = Arrays::make<::arrow::Int32Type>({10, 11, 12, 13, 14, 15, 16, 17, 18, 19}).value();
@@ -252,28 +273,39 @@ tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::
   return std::make_unique<::arrow::flight::RecordBatchStream>(*rb_reader);
 }
 
-tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::do_get(const ServerCallContext& context,
-                                                                                       const Ticket& request) {
+tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::do_get_select_object_content(
+  const ServerCallContext& context, const std::shared_ptr<SelectObjectContentTicket>& select_object_content_ticket) {
 
-  auto expected_ticket_object = TicketObject::deserialize(request);
-  if(!expected_ticket_object.has_value()) {
-    return tl::make_unexpected(
-      MakeFlightError(FlightStatusCode::Failed, fmt::format("Cannot parse Flight Ticket '{}'", request.ticket)));
-  }
-  auto ticket_object = expected_ticket_object.value();
-
-  switch(ticket_object->type()->id()) {
-    case TicketTypeId::GetObject: {
-      return tl::make_unexpected(::arrow::flight::MakeFlightError(FlightStatusCode::Internal, "NYI"));
-    }
-    case TicketTypeId::SelectObjectContent: {
-      auto select_object_content_ticket = std::static_pointer_cast<SelectObjectContentTicket>(ticket_object);
-      return do_get_select_object_content(context, select_object_content_ticket);
-    }
+  // deserialize the query plan
+  PhysicalPlanDeserializer deserializer(select_object_content_ticket->query_plan_string(), store_root_path_);
+  auto exp_physical_plan = deserializer.deserialize();
+  if (!exp_physical_plan.has_value()) {
+    return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed, exp_physical_plan.error()));
   }
 
-  return tl::make_unexpected(MakeFlightError(
-    FlightStatusCode::Failed, fmt::format("Unrecognized Flight Ticket type '{}'", ticket_object->type()->name())));
+  // execute the query plan
+  auto execution = std::make_shared<fpdb::executor::Execution>(0,
+                                                               actor_system_,
+                                                               std::vector<::caf::node_id>{},
+                                                               nullptr,
+                                                               *exp_physical_plan,
+                                                               false);
+
+  auto table = execution->execute()->table();
+
+  // make record batch stream
+  ::arrow::RecordBatchVector batches;
+  std::shared_ptr<arrow::RecordBatch> batch;
+  ::arrow::TableBatchReader tbl_reader(*table);
+  tbl_reader.set_chunksize(fpdb::tuple::DefaultChunkSize);
+
+  auto status = tbl_reader.ReadAll(&batches);
+  if (!status.ok()) {
+    return tl::make_unexpected(status);
+  }
+
+  auto rb_reader = ::arrow::RecordBatchReader::Make(batches);
+  return std::make_unique<::arrow::flight::RecordBatchStream>(*rb_reader);
 }
 
 } // namespace fpdb::store::server::flight

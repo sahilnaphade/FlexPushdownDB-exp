@@ -29,8 +29,16 @@ std::string Add::alias() {
   return "?column?";
 }
 
-std::string Add::getTypeString() {
+std::string Add::getTypeString() const {
   return "Add";
+}
+
+tl::expected<std::shared_ptr<Add>, std::string> Add::fromJson(const nlohmann::json &jObj) {
+  auto expOperands = BinaryExpression::fromJson(jObj);
+  if (!expOperands.has_value()) {
+    return tl::make_unexpected(expOperands.error());
+  }
+  return std::make_shared<Add>((*expOperands).first, (*expOperands).second);
 }
 
 std::shared_ptr<Expression> fpdb::expression::gandiva::plus(const std::shared_ptr<Expression>& left,

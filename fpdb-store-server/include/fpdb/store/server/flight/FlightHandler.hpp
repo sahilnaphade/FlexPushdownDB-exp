@@ -9,9 +9,12 @@
 #include <arrow/flight/api.h>
 #include <tl/expected.hpp>
 
-#include "fpdb/store/server/flight/CmdObject.hpp"
+#include "fpdb/store/server/flight/SelectObjectContentCmd.hpp"
+#include "fpdb/store/server/flight/SelectObjectContentTicket.hpp"
+#include "fpdb/store/server/flight/GetObjectTicket.hpp"
 #include "fpdb/store/server/flight/HeaderMiddleware.hpp"
 #include "fpdb/store/server/flight/TicketObject.hpp"
+#include "fpdb/store/server/caf/ActorManager.hpp"
 
 namespace fpdb::store::server::flight {
 
@@ -24,7 +27,9 @@ public:
    *
    * @param location
    */
-  explicit FlightHandler(Location location);
+  explicit FlightHandler(Location location,
+                         std::string store_root_path,
+                         std::shared_ptr<::caf::actor_system> actor_system);
 
   /**
    *
@@ -102,6 +107,15 @@ private:
    *
    * @param context
    * @param request
+   * @return
+   */
+  tl::expected<std::unique_ptr<FlightInfo>, ::arrow::Status> get_flight_info(const ServerCallContext& context,
+                                                                             const FlightDescriptor& request);
+
+  /**
+   *
+   * @param context
+   * @param request
    * @param bucket
    * @param object
    * @return
@@ -132,28 +146,8 @@ private:
    * @return
    */
   static tl::expected<std::unique_ptr<FlightInfo>, ::arrow::Status> get_flight_info_for_select_object_content_cmd(
-    const ServerCallContext& context, const FlightDescriptor& request, std::string bucket, std::string object,
+    const ServerCallContext& context, const FlightDescriptor& request,
     const std::shared_ptr<SelectObjectContentCmd>& select_object_content_cmd);
-
-  /**
-   *
-   * @param context
-   * @param request
-   * @return
-   */
-  tl::expected<std::unique_ptr<FlightInfo>, ::arrow::Status> get_flight_info(const ServerCallContext& context,
-                                                                             const FlightDescriptor& request);
-
-  /**
-   *
-   * @param context
-   * @param account
-   * @param select_object_content_ticket
-   * @return
-   */
-  static tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status>
-  do_get_select_object_content(const ServerCallContext& context,
-                               const std::shared_ptr<SelectObjectContentTicket>& select_object_content_ticket);
 
   /**
    *
@@ -164,7 +158,29 @@ private:
   tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> do_get(const ServerCallContext& context,
                                                                           const Ticket& request);
 
+  /**
+   *
+   * @param context
+   * @param get_object_ticket
+   * @return
+   */
+  tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status>
+  do_get_get_object(const ServerCallContext& context,
+                    const std::shared_ptr<GetObjectTicket>& get_object_ticket);
+
+  /**
+   *
+   * @param context
+   * @param select_object_content_ticket
+   * @return
+   */
+  tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status>
+  do_get_select_object_content(const ServerCallContext& context,
+                               const std::shared_ptr<SelectObjectContentTicket>& select_object_content_ticket);
+
   ::arrow::flight::Location location_;
+  std::string store_root_path_;
+  std::shared_ptr<::caf::actor_system> actor_system_;
 };
 
 } // namespace fpdb::store::server::flight

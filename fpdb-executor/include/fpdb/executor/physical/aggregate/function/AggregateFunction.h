@@ -10,6 +10,7 @@
 #include <fpdb/expression/Projector.h>
 #include <fpdb/expression/gandiva/Expression.h>
 #include <fpdb/tuple/TupleSet.h>
+#include <nlohmann/json.hpp>
 #include <memory>
 
 using namespace fpdb::tuple;
@@ -34,8 +35,12 @@ public:
   AggregateFunctionType getType() const;
   const string &getOutputColumnName() const;
   const shared_ptr<fpdb::expression::gandiva::Expression> &getExpression() const;
+
+  virtual std::string getTypeString() const = 0;
   virtual shared_ptr<arrow::DataType> returnType() const;
   virtual set<string> involvedColumnNames() const;
+  virtual ::nlohmann::json toJson() const;
+  static tl::expected<std::shared_ptr<AggregateFunction>, std::string> fromJson(const nlohmann::json &jObj);
 
   /**
    * Perform complete aggregation (i.e. input is complete), return an arrow::Scalar

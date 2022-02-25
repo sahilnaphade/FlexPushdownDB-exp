@@ -30,8 +30,16 @@ string NotEqualTo::alias() {
   return genAliasForComparison("<>");
 }
 
-string NotEqualTo::getTypeString() {
+string NotEqualTo::getTypeString() const {
   return "NotEqualTo";
+}
+
+tl::expected<std::shared_ptr<NotEqualTo>, std::string> NotEqualTo::fromJson(const nlohmann::json &jObj) {
+  auto expOperands = BinaryExpression::fromJson(jObj);
+  if (!expOperands.has_value()) {
+    return tl::make_unexpected(expOperands.error());
+  }
+  return std::make_shared<NotEqualTo>((*expOperands).first, (*expOperands).second);
 }
 
 shared_ptr<Expression> neq(const shared_ptr<Expression>& left, const shared_ptr<Expression>& right) {

@@ -24,7 +24,8 @@ enum POpType {
   S3_SELECT,
   SHUFFLE,
   SORT,
-  SPLIT
+  SPLIT,
+  STORE_SUPER
 };
 
 }

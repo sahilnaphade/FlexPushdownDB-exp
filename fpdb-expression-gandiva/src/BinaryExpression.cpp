@@ -3,7 +3,7 @@
 //
 
 #include "fpdb/expression/gandiva/BinaryExpression.h"
-
+#include <fmt/format.h>
 #include <utility>
 #include <gandiva/tree_expr_builder.h>
 
@@ -21,6 +21,37 @@ std::set<std::string> BinaryExpression::involvedColumnNames() {
   auto rightInvolvedColumnNames = getRight()->involvedColumnNames();
   leftInvolvedColumnNames.insert(rightInvolvedColumnNames.begin(), rightInvolvedColumnNames.end());
   return leftInvolvedColumnNames;
+}
+
+::nlohmann::json BinaryExpression::toJson() const {
+  ::nlohmann::json jObj;
+  jObj.emplace("type", getTypeString());
+  jObj.emplace("left", left_->toJson());
+  jObj.emplace("right", right_->toJson());
+  return jObj;
+}
+
+tl::expected<std::pair<std::shared_ptr<Expression>, std::shared_ptr<Expression>>, std::string>
+BinaryExpression::fromJson(const nlohmann::json &jObj) {
+  auto type = jObj["type"].get<std::string>();
+
+  if (!jObj.contains("left")) {
+    return tl::make_unexpected(fmt::format("Left expression not specified in '{}' expression JSON '{}'", type, jObj));
+  }
+  auto expLeft = Expression::fromJson(jObj["left"]);
+  if (!expLeft.has_value()) {
+    return tl::make_unexpected(expLeft.error());
+  }
+
+  if (!jObj.contains("right")) {
+    return tl::make_unexpected(fmt::format("Right expression not specified in '{}' expression JSON '{}'", type, jObj));
+  }
+  auto expRight = Expression::fromJson(jObj["right"]);
+  if (!expRight.has_value()) {
+    return tl::make_unexpected(expRight.error());
+  }
+
+  return std::make_pair(*expLeft, *expRight);
 }
 
 std::tuple<shared_ptr<arrow::DataType>, ::gandiva::NodePtr, ::gandiva::NodePtr>

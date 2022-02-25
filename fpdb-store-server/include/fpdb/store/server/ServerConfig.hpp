@@ -5,7 +5,7 @@
 #ifndef FPDB_FPDB_STORE_SERVER_INCLUDE_FPDB_STORE_SERVER_SERVERCONFIG_HPP
 #define FPDB_FPDB_STORE_SERVER_INCLUDE_FPDB_STORE_SERVER_SERVERCONFIG_HPP
 
-#include <filesystem>
+#include <string>
 #include <optional>
 
 namespace fpdb::store::server {
@@ -21,7 +21,7 @@ public:
 
   int flight_port;
 
-  std::filesystem::path data_path;
+  std::string store_root_path;
 };
 
 } // namespace fpdb::store::server

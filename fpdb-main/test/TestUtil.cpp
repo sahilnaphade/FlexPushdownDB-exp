@@ -3,8 +3,8 @@
 //
 
 #include "TestUtil.h"
-#include <fpdb/main/CAFInit.h>
 #include <fpdb/main/ExecConfig.h>
+#include <fpdb/executor/caf/CAFInit.h>
 #include <fpdb/executor/physical/transform/PrePToPTransformer.h>
 #include <fpdb/calcite/CalciteConfig.h>
 #include <fpdb/plan/calcite/CalcitePlanJsonDeserializer.h>
@@ -116,7 +116,7 @@ void TestUtil::makeExecutor() {
   const auto &remoteIps = readRemoteIps();
   int CAFServerPort = ExecConfig::parseCAFServerPort();
   actorSystemConfig_ = make_shared<ActorSystemConfig>(CAFServerPort, remoteIps, false);
-  CAFInit::initCAFGlobalMetaObjects();
+  fpdb::executor::caf::CAFInit::initCAFGlobalMetaObjects();
   actorSystem_ = make_shared<::caf::actor_system>(*actorSystemConfig_);
 
   // create the executor

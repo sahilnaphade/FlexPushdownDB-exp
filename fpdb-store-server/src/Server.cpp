@@ -24,6 +24,7 @@ Server::Server(const ServerConfig& cfg, std::optional<ClusterActor> remote_coord
       coordinator_host_(cfg.coordinator_host),
       coordinator_port_(cfg.coordinator_port),
       flight_port_(cfg.flight_port),
+      store_root_path_(cfg.store_root_path),
       actor_manager_(std::move(actor_manager)),
       cluster_actor_handle_(std::move(remote_coordinator_actor_handle)) {
 }
@@ -63,7 +64,9 @@ tl::expected<void, std::string> Server::init() {
   if(!st.ok()) {
     return tl::make_unexpected(fmt::format("Could not start FlightHandler, {}", st.message()));
   }
-  flight_handler_ = std::make_unique<FlightHandler>(server_location);
+  flight_handler_ = std::make_unique<FlightHandler>(server_location,
+                                                    store_root_path_,
+                                                    actor_manager_->actor_system());
   auto ex = flight_handler_->init();
   if(!ex.has_value()) {
     return tl::make_unexpected(fmt::format("Could not start FlightHandler, {}", st.message()));
@@ -82,31 +85,32 @@ tl::expected<void, std::string> Server::start() {
 
   if(start_coordinator_) {
     // Local coordinator, start coordinator and node actor
-    cluster_actor_handle_ = actor_manager_->actor_system().spawn(ClusterActorState::actor_functor);
-    auto expected_coordinator_port = actor_manager_->actor_system().middleman().publish(cluster_actor_handle_.value(),
+    cluster_actor_handle_ = actor_manager_->actor_system()->spawn(ClusterActorState::actor_functor);
+    
+    auto expected_coordinator_port = actor_manager_->actor_system()->middleman().publish(cluster_actor_handle_.value(),
                                                                                         coordinator_port_.value());
     coordinator_port_ = expected_coordinator_port.value();
 
     SPDLOG_DEBUG("Started local Coordinator actor (port: {})", coordinator_port_.value());
 
-    node_actor_handle_ = actor_manager_->actor_system().spawn(NodeActorState::actor_functor, cluster_actor_handle_,
+    node_actor_handle_ = actor_manager_->actor_system()->spawn(NodeActorState::actor_functor, cluster_actor_handle_,
                                                               std::nullopt, std::nullopt);
-    auto expected_node_port = actor_manager_->actor_system().middleman().publish(node_actor_handle_, node_port_);
+    auto expected_node_port = actor_manager_->actor_system()->middleman().publish(node_actor_handle_, node_port_);
     node_port_ = expected_node_port.value();
 
     SPDLOG_DEBUG("Started Node actor (port: {})", node_port_);
   } else {
     // Remote coordinator, just start node actor
     if(cluster_actor_handle_.has_value()) {
-      node_actor_handle_ = actor_manager_->actor_system().spawn(NodeActorState::actor_functor,
+      node_actor_handle_ = actor_manager_->actor_system()->spawn(NodeActorState::actor_functor,
                                                                 cluster_actor_handle_.value(), std::nullopt,
                                                                 std::nullopt);
     } else {
-      node_actor_handle_ = actor_manager_->actor_system().spawn(NodeActorState::actor_functor, std::nullopt,
+      node_actor_handle_ = actor_manager_->actor_system()->spawn(NodeActorState::actor_functor, std::nullopt,
                                                                 coordinator_host_, coordinator_port_);
     }
 
-    auto expected_node_port = actor_manager_->actor_system().middleman().publish(node_actor_handle_, node_port_);
+    auto expected_node_port = actor_manager_->actor_system()->middleman().publish(node_actor_handle_, node_port_);
     node_port_ = expected_node_port.value();
 
     SPDLOG_DEBUG("Started Node actor (port: {})", node_port_);
@@ -132,7 +136,7 @@ void Server::stop() {
 
   SPDLOG_INFO("FlexPushdownDB Store Server ({}) stopping", name_);
 
-  ::caf::scoped_actor self(actor_manager_->actor_system());
+  ::caf::scoped_actor self(*actor_manager_->actor_system());
   self->send_exit(node_actor_handle_, ::caf::exit_reason::user_shutdown);
   if(start_coordinator_) {
     self->send_exit(cluster_actor_handle_.value(), ::caf::exit_reason::user_shutdown);

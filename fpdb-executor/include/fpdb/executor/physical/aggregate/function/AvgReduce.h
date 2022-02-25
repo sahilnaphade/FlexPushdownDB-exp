@@ -21,6 +21,7 @@ public:
   AvgReduce(const AvgReduce&) = default;
   AvgReduce& operator=(const AvgReduce&) = default;
 
+  std::string getTypeString() const override;
   set<string> involvedColumnNames() const override;
 
   tl::expected<shared_ptr<arrow::Scalar>, string> computeComplete(const shared_ptr<TupleSet> &tupleSet) override;

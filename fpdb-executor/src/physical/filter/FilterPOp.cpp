@@ -33,6 +33,10 @@ std::string FilterPOp::getTypeString() const {
   return "FilterPOp";
 }
 
+const std::shared_ptr<fpdb::expression::gandiva::Expression> &FilterPOp::getPredicate() const {
+  return predicate_;
+}
+
 void FilterPOp::onReceive(const Envelope &Envelope) {
   const auto& message = Envelope.message();
 
@@ -54,6 +58,7 @@ void FilterPOp::onReceive(const Envelope &Envelope) {
 void FilterPOp::onStart() {
   assert(received_->validate());
   assert(filtered_->validate());
+  SPDLOG_DEBUG("Starting operator  |  name: '{}'", this->name());
 }
 
 void FilterPOp::onTuple(const TupleMessage &Message) {

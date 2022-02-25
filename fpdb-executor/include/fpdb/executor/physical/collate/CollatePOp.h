@@ -38,13 +38,14 @@ public:
   std::string getTypeString() const override;
 
 private:
+  static constexpr uint tablesCutoff_ = 20;
+
   void onStart();
   void onComplete(const fpdb::executor::message::CompleteMessage &message);
   void onTuple(const fpdb::executor::message::TupleMessage& message);
 
   std::shared_ptr<TupleSet> tuples_;
   std::vector<std::shared_ptr<arrow::Table>> tables_;
-  size_t tablesCutoff_ = 20;
 
 // caf inspect
 public:
@@ -57,8 +58,7 @@ public:
                                f.field("queryId", op.queryId_),
                                f.field("opContext", op.opContext_),
                                f.field("producers", op.producers_),
-                               f.field("consumers", op.consumers_),
-                               f.field("tablesCutoff", op.tablesCutoff_));
+                               f.field("consumers", op.consumers_));
   }
 };
 

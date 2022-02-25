@@ -22,7 +22,9 @@ namespace fpdb::executor::physical::file {
 class FileScanKernel {
 
 public:
-  FileScanKernel(const std::string &path,
+  FileScanKernel(const std::string &bucket,
+                 const std::string &object,
+                 const std::string &storeRootPath,
                  const std::shared_ptr<FileFormat> &format,
                  const std::shared_ptr<::arrow::Schema> &schema,
                  const std::optional<std::pair<int64_t, int64_t>> &byteRange);
@@ -30,7 +32,9 @@ public:
   FileScanKernel(const FileScanKernel&) = default;
   FileScanKernel& operator=(const FileScanKernel&) = default;
 
-  static FileScanKernel make(const std::string &path,
+  static FileScanKernel make(const std::string &bucket,
+                             const std::string &object,
+                             const std::string &storeRootPath,
                              const std::shared_ptr<FileFormat> &format,
                              const std::shared_ptr<::arrow::Schema> &schema,
                              const std::optional<std::pair<int64_t, int64_t>> &byteRange = std::nullopt);
@@ -38,11 +42,19 @@ public:
   tl::expected<std::shared_ptr<TupleSet>, std::string> scan();
   tl::expected<std::shared_ptr<TupleSet>, std::string> scan(const std::vector<std::string> &columnNames);
 
-  const std::string &getPath() const;
-  tl::expected<std::pair<int64_t, int64_t>, std::string> getByteRange() const;
+  const std::string &getBucket() const;
+  const std::string &getObject() const;
+  const std::shared_ptr<FileFormat> &getFormat() const;
+  const std::shared_ptr<::arrow::Schema> &getSchema() const;
+  const std::optional<std::pair<int64_t, int64_t>> &getByteRange() const;
+
+  std::string getFilePath() const;
+  tl::expected<int64_t, std::string> getFileSize() const;
 
 private:
-  std::string path_;
+  std::string bucket_;
+  std::string object_;
+  std::string storeRootPath_;
   std::shared_ptr<FileFormat> format_;
   std::shared_ptr<::arrow::Schema> schema_;
   std::optional<std::pair<int64_t, int64_t>> byteRange_;
@@ -58,7 +70,9 @@ public:
       kernel.schema_ = ArrowSerializer::bytes_to_schema(bytes);
       return true;
     };
-    return f.object(kernel).fields(f.field("path", kernel.path_),
+    return f.object(kernel).fields(f.field("bucket", kernel.bucket_),
+                                   f.field("object", kernel.object_),
+                                   f.field("storeRootPath", kernel.storeRootPath_),
                                    f.field("format", kernel.format_),
                                    f.field("schema", schemaToBytes, schemaFromBytes),
                                    f.field("byteRange", kernel.byteRange_));

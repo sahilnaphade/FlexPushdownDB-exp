@@ -7,7 +7,7 @@
 
 #include <fpdb/executor/physical/POpActor.h>
 #include <fpdb/executor/physical/PhysicalOp.h>
-#include <fpdb/executor/serialization/POpSerializer.h>
+#include <fpdb/executor/caf-serialization/CAFPOpSerializer.h>
 #include <caf/io/all.hpp>
 
 using namespace fpdb::executor::physical;

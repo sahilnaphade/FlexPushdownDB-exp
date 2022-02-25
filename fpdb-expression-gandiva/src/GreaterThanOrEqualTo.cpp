@@ -32,8 +32,17 @@ std::string GreaterThanOrEqualTo::alias() {
   return genAliasForComparison(">=");
 }
 
-std::string GreaterThanOrEqualTo::getTypeString() {
+std::string GreaterThanOrEqualTo::getTypeString() const {
   return "GreaterThanOrEqualTo";
+}
+
+tl::expected<std::shared_ptr<GreaterThanOrEqualTo>, std::string>
+GreaterThanOrEqualTo::fromJson(const nlohmann::json &jObj) {
+  auto expOperands = BinaryExpression::fromJson(jObj);
+  if (!expOperands.has_value()) {
+    return tl::make_unexpected(expOperands.error());
+  }
+  return std::make_shared<GreaterThanOrEqualTo>((*expOperands).first, (*expOperands).second);
 }
 
 std::shared_ptr<Expression> fpdb::expression::gandiva::gte(const std::shared_ptr<Expression>& Left, const std::shared_ptr<Expression>& Right) {

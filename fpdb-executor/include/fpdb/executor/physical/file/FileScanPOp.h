@@ -23,11 +23,13 @@ public:
   FileScanPOp(const std::string &name,
        const std::vector<std::string> &columnNames,
        int nodeId,
-		   const std::string &filePath,
+       const std::string &bucket,
+       const std::string &object,
+       const std::string &storeRootPath,
        const std::shared_ptr<FileFormat> &format,
        const std::shared_ptr<::arrow::Schema> &schema,
        const std::optional<std::pair<int64_t, int64_t>> &byteRange = std::nullopt,
-		   bool scanOnStart = false);
+		   bool scanOnStart = true);
   FileScanPOp() = default;
   FileScanPOp(const FileScanPOp&) = default;
   FileScanPOp& operator=(const FileScanPOp&) = default;

@@ -4,7 +4,7 @@
 
 #include <fpdb/main/Server.h>
 #include <fpdb/main/ExecConfig.h>
-#include <fpdb/main/CAFInit.h>
+#include <fpdb/executor/caf/CAFInit.h>
 #include <fpdb/aws/AWSClient.h>
 #include <fpdb/util/Util.h>
 #include <iostream>
@@ -26,7 +26,7 @@ void Server::start() {
 
   // create the actor system
   actorSystemConfig_ = std::make_shared<ActorSystemConfig>(CAFServerPort, remoteIps, true);
-  CAFInit::initCAFGlobalMetaObjects();
+  fpdb::executor::caf::CAFInit::initCAFGlobalMetaObjects();
   actorSystem_ = std::make_shared<::caf::actor_system>(*actorSystemConfig_);
 
   // open the port

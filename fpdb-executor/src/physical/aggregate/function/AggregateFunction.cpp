@@ -3,6 +3,11 @@
 //
 
 #include <fpdb/executor/physical/aggregate/function/AggregateFunction.h>
+#include <fpdb/executor/physical/aggregate/function/Avg.h>
+#include <fpdb/executor/physical/aggregate/function/AvgReduce.h>
+#include <fpdb/executor/physical/aggregate/function/Count.h>
+#include <fpdb/executor/physical/aggregate/function/MinMax.h>
+#include <fpdb/executor/physical/aggregate/function/Sum.h>
 #include <fpdb/expression/gandiva/Projector.h>
 #include <fpdb/expression/gandiva/Column.h>
 #include <utility>
@@ -37,6 +42,52 @@ set<string> AggregateFunction::involvedColumnNames() const {
     return expression_->involvedColumnNames();
   } else {
     return {};
+  }
+}
+
+::nlohmann::json AggregateFunction::toJson() const {
+  ::nlohmann::json jObj;
+  jObj.emplace("type", getTypeString());
+  jObj.emplace("outputColumnName", outputColumnName_);
+  if (expression_) {
+    jObj.emplace("expression", expression_->toJson());
+  }
+  return jObj;
+}
+
+tl::expected<std::shared_ptr<AggregateFunction>, std::string> AggregateFunction::fromJson(const nlohmann::json &jObj) {
+  if (!jObj.contains("type")) {
+    return tl::make_unexpected(fmt::format("Type not specified in aggregate function JSON '{}'", jObj));
+  }
+  auto type = jObj["type"].get<std::string>();
+
+  if (!jObj.contains("outputColumnName")) {
+    return tl::make_unexpected(fmt::format("OutputColumnName not specified in aggregate function JSON '{}'", jObj));
+  }
+  auto outputColumnName = jObj["outputColumnName"].get<std::string>();
+
+  std::shared_ptr<fpdb::expression::gandiva::Expression> expression = nullptr;
+  if (jObj.contains("expression")) {
+    auto expExpression = fpdb::expression::gandiva::Expression::fromJson(jObj["expression"]);
+    if (!expExpression.has_value()) {
+      return tl::make_unexpected(expExpression.error());
+    }
+    expression = *expExpression;
+  }
+
+  if (type == "Min" || type == "Max") {
+    bool isMin = (type == "Min");
+    return std::make_shared<MinMax>(isMin, outputColumnName, expression);
+  } else if (type == "Sum") {
+    return std::make_shared<Sum>(outputColumnName, expression);
+  } else if (type == "Count") {
+    return std::make_shared<Count>(outputColumnName, expression);
+  } else if (type == "Avg") {
+    return std::make_shared<Avg>(outputColumnName, expression);
+  } else if (type == "AvgReduce") {
+    return std::make_shared<AvgReduce>(outputColumnName, expression);
+  } else {
+    return tl::make_unexpected(fmt::format("Unsupported aggregate function type: '{}'", type));
   }
 }
 

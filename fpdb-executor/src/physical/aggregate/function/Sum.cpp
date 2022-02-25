@@ -12,6 +12,10 @@ Sum::Sum(const string &outputColumnName,
          const shared_ptr<fpdb::expression::gandiva::Expression> &expression)
   : AggregateFunction(SUM, outputColumnName, expression) {}
 
+std::string Sum::getTypeString() const {
+  return "Sum";
+}
+
 tl::expected<shared_ptr<arrow::Scalar>, string> Sum::computeComplete(const shared_ptr<TupleSet> &tupleSet) {
   // evaluate the expression to get input of aggregation
   const auto &expAggChunkedArray = evaluateExpr(tupleSet);

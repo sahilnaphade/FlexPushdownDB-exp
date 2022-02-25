@@ -22,6 +22,7 @@
 #include <fpdb/executor/physical/shuffle/ShufflePOp.h>
 #include <fpdb/executor/physical/split/SplitPOp.h>
 #include <fpdb/executor/physical/collate/CollatePOp.h>
+#include <fpdb/executor/physical/Util.h>
 #include <fpdb/expression/gandiva/Column.h>
 
 namespace fpdb::executor::physical {
@@ -45,11 +46,11 @@ shared_ptr<PhysicalPlan> PrePToPTransformer::transform() {
 
   // make a collate operator
   shared_ptr<PhysicalOp> collatePOp = make_shared<collate::CollatePOp>(
-          "collate",
+          "Collate",
           ColumnName::canonicalize(prePhysicalPlan_->getOutputColumnNames()),
           0);
   allPOps.emplace_back(collatePOp);
-  connectManyToOne(upConnPOps, collatePOp);
+  Util::connectManyToOne(upConnPOps, collatePOp);
 
   return make_shared<PhysicalPlan>(allPOps);
 }
@@ -135,7 +136,7 @@ PrePToPTransformer::transformSort(const shared_ptr<SortPrePOp> &sortPrePOp) {
   allPOps.emplace_back(sortPOp);
 
   // connect to upstream
-  connectManyToOne(upConnPOps, sortPOp);
+  Util::connectManyToOne(upConnPOps, sortPOp);
 
   return make_pair(vector<shared_ptr<PhysicalOp>>{sortPOp}, allPOps);
 }
@@ -169,7 +170,7 @@ PrePToPTransformer::transformLimitSort(const shared_ptr<LimitSortPrePOp> &limitS
   allPOps.emplace_back(limitSortPOp);
 
   // connect to upstream
-  connectManyToOne(upConnPOps, limitSortPOp);
+  Util::connectManyToOne(upConnPOps, limitSortPOp);
 
   return make_pair(vector<shared_ptr<PhysicalOp>>{limitSortPOp}, allPOps);
 }
@@ -249,14 +250,14 @@ PrePToPTransformer::transformAggregate(const shared_ptr<AggregatePrePOp> &aggreg
             projectColumnNames,
             0,
             aggReduceFunctions);
-    connectManyToOne(selfPOps, aggReducePOp);
+    Util::connectManyToOne(selfPOps, aggReducePOp);
     selfConnUpPOps = selfPOps;
     selfConnDownPOps.emplace_back(aggReducePOp);
     selfPOps.emplace_back(aggReducePOp);
   }
 
   // connect to upstream
-  connectOneToOne(upConnPOps, selfConnUpPOps);
+  Util::connectOneToOne(upConnPOps, selfConnUpPOps);
 
   // collect all physical ops
   allPOps.insert(allPOps.end(), selfPOps.begin(), selfPOps.end());
@@ -307,7 +308,7 @@ PrePToPTransformer::transformGroup(const shared_ptr<GroupPrePOp> &groupPrePOp) {
   // if num > 1, then we add a shuffle stage ahead
   if (parallelDegree_ * numNodes_ == 1) {
     // connect to upstream
-    connectManyToOne(producerTransRes.first, groupPOps[0]);
+    Util::connectManyToOne(producerTransRes.first, groupPOps[0]);
   } else {
     vector<shared_ptr<PhysicalOp>> shufflePOps;
     for (const auto &upConnPOp: producerTransRes.first) {
@@ -317,11 +318,11 @@ PrePToPTransformer::transformGroup(const shared_ptr<GroupPrePOp> &groupPrePOp) {
               upConnPOp->getNodeId(),
               groupPrePOp->getGroupColumnNames()));
     }
-    connectManyToMany(shufflePOps, groupPOps);
+    Util::connectManyToMany(shufflePOps, groupPOps);
     allPOps.insert(allPOps.end(), shufflePOps.begin(), shufflePOps.end());
 
     // connect to upstream
-    connectOneToOne(producerTransRes.first, shufflePOps);
+    Util::connectOneToOne(producerTransRes.first, shufflePOps);
   }
 
   return make_pair(groupPOps, allPOps);
@@ -357,7 +358,7 @@ PrePToPTransformer::transformProject(const shared_ptr<ProjectPrePOp> &projectPre
   }
 
   // connect to upstream
-  connectOneToOne(upConnPOps, selfPOps);
+  Util::connectOneToOne(upConnPOps, selfPOps);
 
   // collect all physical ops
   allPOps.insert(allPOps.end(), selfPOps.begin(), selfPOps.end());
@@ -394,7 +395,7 @@ PrePToPTransformer::transformFilter(const shared_ptr<FilterPrePOp> &filterPrePOp
   }
 
   // connect to upstream
-  connectOneToOne(upConnPOps, selfPOps);
+  Util::connectOneToOne(upConnPOps, selfPOps);
 
   // collect all physical ops
   allPOps.insert(allPOps.end(), selfPOps.begin(), selfPOps.end());
@@ -444,13 +445,13 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
   }
   allPOps.insert(allPOps.end(), hashJoinBuildPOps.begin(), hashJoinBuildPOps.end());
   allPOps.insert(allPOps.end(), hashJoinProbePOps.begin(), hashJoinProbePOps.end());
-  connectOneToOne(hashJoinBuildPOps, hashJoinProbePOps);
+  Util::connectOneToOne(hashJoinBuildPOps, hashJoinProbePOps);
 
   // if num > 1, then we need shuffle operators
   if (parallelDegree_ * numNodes_ == 1) {
     // connect to upstream
-    connectManyToOne(leftTransRes.first, hashJoinBuildPOps[0]);
-    connectManyToOne(rightTransRes.first, hashJoinProbePOps[0]);
+    Util::connectManyToOne(leftTransRes.first, hashJoinBuildPOps[0]);
+    Util::connectManyToOne(rightTransRes.first, hashJoinProbePOps[0]);
   } else {
     vector<shared_ptr<PhysicalOp>> shuffleLeftPOps, shuffleRightPOps;
     for (const auto &upLeftConnPOp: leftTransRes.first) {
@@ -467,15 +468,15 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
               upRightConnPOp->getNodeId(),
               rightColumnNames));
     }
-    connectManyToMany(shuffleLeftPOps, hashJoinBuildPOps);
-    connectManyToMany(shuffleRightPOps, hashJoinProbePOps);
+    Util::connectManyToMany(shuffleLeftPOps, hashJoinBuildPOps);
+    Util::connectManyToMany(shuffleRightPOps, hashJoinProbePOps);
     allPOps.insert(allPOps.end(), shuffleLeftPOps.begin(), shuffleLeftPOps.end());
     allPOps.insert(allPOps.end(), shuffleRightPOps.begin(), shuffleRightPOps.end());
 
     // connect to upstream
-    connectOneToOne(leftTransRes.first, shuffleLeftPOps);
-    connectOneToOne(rightTransRes.first, shuffleRightPOps);
-  };
+    Util::connectOneToOne(leftTransRes.first, shuffleLeftPOps);
+    Util::connectOneToOne(rightTransRes.first, shuffleRightPOps);
+  }
 
   return make_pair(hashJoinProbePOps, allPOps);
 }
@@ -547,7 +548,7 @@ PrePToPTransformer::transformNestedLoopJoin(const shared_ptr<NestedLoopJoinPrePO
     allPOps.insert(allPOps.end(), splitPOps.begin(), splitPOps.end());
 
     // connect to upstream
-    connectOneToOne(rightTransRes.first, splitPOps);
+    Util::connectOneToOne(rightTransRes.first, splitPOps);
   }
 
   return make_pair(nestedLoopJoinPOps, allPOps);
@@ -623,36 +624,6 @@ PrePToPTransformer::transformAggReduceFunction(const string &outputColumnName,
     default: {
       throw runtime_error(fmt::format("Unsupported aggregate function type for parallel execution: {}", prePFunction->getTypeString()));
     }
-  }
-}
-
-void PrePToPTransformer::connectOneToOne(vector<shared_ptr<PhysicalOp>> &producers,
-                                         vector<shared_ptr<PhysicalOp>> &consumers) {
-  if (producers.size() != consumers.size()) {
-    throw runtime_error(fmt::format("Bad one-to-one operator connection input, producers has {}, but consumers has {}",
-                                    producers.size(), consumers.size()));
-  }
-  for (size_t i = 0; i < producers.size(); ++i) {
-    producers[i]->produce(consumers[i]);
-    consumers[i]->consume(producers[i]);
-  }
-}
-
-void PrePToPTransformer::connectManyToMany(vector<shared_ptr<PhysicalOp>> &producers,
-                                           vector<shared_ptr<PhysicalOp>> &consumers) {
-  for (const auto &producer: producers) {
-    for (const auto &consumer: consumers) {
-      producer->produce(consumer);
-      consumer->consume(producer);
-    }
-  }
-}
-
-void PrePToPTransformer::connectManyToOne(vector<shared_ptr<PhysicalOp>> &producers,
-                                          shared_ptr<PhysicalOp> &consumer) {
-  for (const auto &producer: producers) {
-    producer->produce(consumer);
-    consumer->consume(producer);
   }
 }
 

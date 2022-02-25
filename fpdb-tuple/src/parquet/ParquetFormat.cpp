@@ -4,9 +4,21 @@
 
 #include <fpdb/tuple/parquet/ParquetFormat.h>
 
+using json = ::nlohmann::json;
+
 namespace fpdb::tuple::parquet {
 
 ParquetFormat::ParquetFormat() :
   FileFormat(FileFormatType::PARQUET) {}
+
+json ParquetFormat::toJson() const {
+  json jObj;
+  jObj.emplace("type", "Parquet");
+  return jObj;
+}
+
+tl::expected<std::shared_ptr<ParquetFormat>, std::string> ParquetFormat::fromJson(const nlohmann::json &jObj) {
+  return std::make_shared<ParquetFormat>();
+}
 
 }

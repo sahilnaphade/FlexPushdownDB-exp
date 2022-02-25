@@ -26,7 +26,8 @@ public:
 
   void compile(const std::shared_ptr<arrow::Schema> &schema) override;
   std::string alias() override;
-  std::string getTypeString() override;
+  std::string getTypeString() const override;
+  static tl::expected<std::shared_ptr<Multiply>, std::string> fromJson(const nlohmann::json &jObj);
 
 // caf inspect
 public:

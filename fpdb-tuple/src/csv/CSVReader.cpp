@@ -72,7 +72,7 @@ CSVReader::readUsingArrowApiImpl(const std::vector<std::string> &columnNames,
   auto read_options = arrow::csv::ReadOptions::Defaults();
   auto convert_options = arrow::csv::ConvertOptions::Defaults();
   read_options.use_threads = false;
-  read_options.skip_rows = 1; // Skip the header
+  read_options.skip_rows = csvFormat->getSkipRows(); // Skip the header
   read_options.column_names = schema_->field_names();
   parse_options.delimiter = csvFormat->getFieldDelimiter();
   convert_options.column_types = columnTypes;

@@ -86,16 +86,24 @@ add_library(fpdb-executor STATIC
         src/physical/s3/S3CSVParser.cpp include/fpdb/executor/physical/s3/S3CSVParser.h
         src/physical/s3/S3SelectCSVParseOptions.cpp include/fpdb/executor/physical/s3/S3SelectCSVParseOptions.h
         src/physical/s3/S3SelectScanKernel.cpp include/fpdb/executor/physical/s3/S3SelectScanKernel.h
+        src/physical/store/StoreSuperPOp.cpp include/fpdb/executor/physical/store/StoreSuperPOp.h
 #        physical plan
         src/physical/PhysicalPlan.cpp include/fpdb/executor/physical/PhysicalPlan.h
         src/physical/transform/PrePToPTransformer.cpp include/fpdb/executor/physical/transform/PrePToPTransformer.h
         src/physical/transform/PrePToS3PTransformer.cpp include/fpdb/executor/physical/transform/PrePToS3PTransformer.h
         src/physical/prune/PartitionPruner.cpp include/fpdb/executor/physical/prune/PartitionPruner.h
-#        CAF serializer
+#        util
+        src/physical/Util.cpp include/fpdb/executor/physical/Util.h
+#        CAF serialization
         include/fpdb/executor/caf-serialization/CAFMessageSerializer.h
         include/fpdb/executor/caf-serialization/CAFPOpSerializer.h
         include/fpdb/executor/caf-serialization/CAFAggregateFunctionSerializer.h
         include/fpdb/executor/caf-serialization/CAFHashJoinProbeAbstractKernelSerializer.h
+#        serialization
+        src/physical/serialization/PhysicalPlanSerializer.cpp include/fpdb/executor/physical/serialization/PhysicalPlanSerializer.h
+        src/physical/serialization/PhysicalPlanDeserializer.cpp include/fpdb/executor/physical/serialization/PhysicalPlanDeserializer.h
+#        CAF Initialization
+        src/caf/CAFInit.cpp include/fpdb/executor/caf/CAFInit.h
 #        executor
         src/Executor.cpp include/fpdb/executor/Executor.h
         src/Execution.cpp include/fpdb/executor/Execution.h)

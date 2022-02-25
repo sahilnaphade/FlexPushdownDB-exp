@@ -27,7 +27,7 @@ public:
                   std::vector<std::string> projectColumnNames,
                   int nodeId,
                   std::shared_ptr<fpdb::expression::gandiva::Expression> predicate,
-                  std::shared_ptr<Table> table,
+                  std::shared_ptr<Table> table = nullptr,
                   std::vector<std::shared_ptr<fpdb::cache::SegmentKey>> weightedSegmentKeys = {});
   FilterPOp() = default;
   FilterPOp(const FilterPOp&) = default;
@@ -37,12 +37,14 @@ public:
   void clear() override;
   std::string getTypeString() const override;
 
+  const std::shared_ptr<fpdb::expression::gandiva::Expression> &getPredicate() const;
+
   [[nodiscard]] size_t getFilterTimeNS() const;
   [[nodiscard]] size_t getFilterInputBytes() const;
   [[nodiscard]] size_t getFilterOutputBytes() const;
 
 private:
-  shared_ptr<fpdb::expression::gandiva::Expression> predicate_;
+  std::shared_ptr<fpdb::expression::gandiva::Expression> predicate_;
 
   std::optional<std::shared_ptr<fpdb::expression::Filter>> filter_;
 

@@ -18,8 +18,8 @@ public:
   Count(const Count&) = default;
   Count& operator=(const Count&) = default;
 
+  std::string getTypeString() const override;
   shared_ptr<arrow::DataType> returnType() const override;
-
   set<string> involvedColumnNames() const override;
 
   tl::expected<shared_ptr<arrow::Scalar>, string> computeComplete(const shared_ptr<TupleSet> &tupleSet) override;

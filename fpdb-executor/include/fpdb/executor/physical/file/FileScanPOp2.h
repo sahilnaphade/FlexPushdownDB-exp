@@ -36,7 +36,9 @@ class FileScanState : public POpActorState<FileScanStatefulActor> {
 public:
   void setState(FileScanStatefulActor actor,
 				const std::string &name,
-				const std::string &filePath,
+        const std::string &bucket,
+        const std::string &object,
+        const std::string &storeRootPath,
         const std::shared_ptr<FileFormat> &format,
         const std::shared_ptr<::arrow::Schema> &schema,
 				const std::vector<std::string> &columnNames,
@@ -53,7 +55,7 @@ public:
 	columnNames_ = canonicalColumnNames;
 	scanOnStart_ = scanOnStart;
 
-	kernel_ = FileScanKernel::make(filePath, format, schema, byteRange);
+	kernel_ = FileScanKernel::make(bucket, object, storeRootPath, format, schema, byteRange);
   }
 
   template<class... Handlers>
@@ -127,10 +129,17 @@ private:
 
 	assert(tupleSet);
 
-	auto partition = std::make_shared<catalogue::local_fs::LocalFSPartition>(kernel_.getPath());
-  auto expByteRange = kernel_.getByteRange();
-  if (!expByteRange.has_value()) {
-    return tl::make_unexpected(expByteRange.error());
+	auto partition = std::make_shared<catalogue::local_fs::LocalFSPartition>(kernel_.getFilePath());
+  std::pair<int64_t, int64_t> byteRange;
+  auto optByteRange = kernel_.getByteRange();
+  if (optByteRange.has_value()) {
+    byteRange = *optByteRange;
+  } else {
+    auto expFileSize = kernel_.getFileSize();
+    if (!expFileSize.has_value()) {
+      return tl::make_unexpected(expFileSize.error());
+    }
+    byteRange = {0, *expFileSize};
   }
 
 	std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>> segmentsToStore;
@@ -138,7 +147,7 @@ private:
 	  auto column = tupleSet->getColumnByIndex(c).value();
 	  auto segmentKey = SegmentKey::make(partition,
 										 column->getName(),
-										 SegmentRange::make(expByteRange->first, expByteRange->second),
+										 SegmentRange::make(byteRange.first, byteRange.second),
 										 SegmentMetadata::make(column->size()));
 	  auto segmentData = SegmentData::make(column);
 
@@ -182,7 +191,9 @@ private:
 
 FileScanActor::behavior_type FileScanFunctor(FileScanStatefulActor actor,
                        const std::string &name,
-                       const std::string &filePath,
+                       const std::string &bucket,
+                       const std::string &object,
+                       const std::string &storeRootPath,
                        const std::shared_ptr<FileFormat> &format,
                        const std::shared_ptr<::arrow::Schema> &schema,
 											 const std::vector<std::string> &columnNames,

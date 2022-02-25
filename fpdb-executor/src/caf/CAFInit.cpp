@@ -2,22 +2,22 @@
 // Created by Yifei Yang on 1/14/22.
 //
 
-#include <fpdb/main/CAFInit.h>
+#include <fpdb/executor/caf/CAFInit.h>
 #include <fpdb/executor/physical/POpActor.h>
 #include <fpdb/executor/physical/POpActor2.h>
 #include <fpdb/executor/physical/collate/CollatePOp2.h>
 #include <fpdb/executor/physical/file/FileScanPOp2.h>
 #include <fpdb/executor/cache/SegmentCacheActor.h>
 #include <fpdb/executor/message/Envelope.h>
-#include <fpdb/executor/serialization/MessageSerializer.h>
-#include <fpdb/executor/serialization/POpSerializer.h>
-#include <fpdb/executor/serialization/AggregateFunctionSerializer.h>
-#include <fpdb/executor/serialization/HashJoinProbeAbstractKernelSerializer.h>
-#include <fpdb/catalogue/serialization/TableSerializer.h>
-#include <fpdb/expression/gandiva/serialization/ExpressionSerializer.h>
-#include <fpdb/tuple/serialization/FileFormatSerializer.h>
+#include <fpdb/executor/caf-serialization/CAFMessageSerializer.h>
+#include <fpdb/executor/caf-serialization/CAFPOpSerializer.h>
+#include <fpdb/executor/caf-serialization/CAFAggregateFunctionSerializer.h>
+#include <fpdb/executor/caf-serialization/CAFHashJoinProbeAbstractKernelSerializer.h>
+#include <fpdb/catalogue/caf-serialization/CAFTableSerializer.h>
+#include <fpdb/expression/gandiva/caf-serialization/CAFExpressionSerializer.h>
+#include <fpdb/tuple/caf-serialization/CAFFileFormatSerializer.h>
 
-namespace fpdb::main {
+namespace fpdb::executor::caf {
 
 void CAFInit::initCAFGlobalMetaObjects() {
   ::caf::init_global_meta_objects<::caf::id_block::SegmentCacheActor>();

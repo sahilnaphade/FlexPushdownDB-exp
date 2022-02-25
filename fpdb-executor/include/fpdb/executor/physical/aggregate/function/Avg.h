@@ -18,6 +18,8 @@ public:
   Avg(const Avg&) = default;
   Avg& operator=(const Avg&) = default;
 
+  std::string getTypeString() const override;
+
   tl::expected<shared_ptr<arrow::Scalar>, string> computeComplete(const shared_ptr<TupleSet> &tupleSet) override;
   tl::expected<shared_ptr<AggregateResult>, string> computePartial(const shared_ptr<TupleSet> &tupleSet) override;
 

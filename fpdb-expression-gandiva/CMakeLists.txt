@@ -25,7 +25,7 @@ add_library(fpdb-expression-gandiva STATIC
         src/GreaterThanOrEqualTo.cpp include/fpdb/expression/gandiva/GreaterThanOrEqualTo.h
         src/GreaterThan.cpp include/fpdb/expression/gandiva/GreaterThan.h
         src/And.cpp include/fpdb/expression/gandiva/And.h
-        include/fpdb/expression/gandiva/DateIntervalType.h
+        src/DateIntervalType.cpp include/fpdb/expression/gandiva/DateIntervalType.h
         src/DateAdd.cpp include/fpdb/expression/gandiva/DateAdd.h
         src/Or.cpp include/fpdb/expression/gandiva/Or.h
         src/StringLiteral.cpp include/fpdb/expression/gandiva/StringLiteral.h

@@ -15,6 +15,10 @@ public:
   ParquetFormat();
   ParquetFormat(const ParquetFormat&) = default;
   ParquetFormat& operator=(const ParquetFormat&) = default;
+  ~ParquetFormat() = default;
+
+  ::nlohmann::json toJson() const override;
+  static tl::expected<std::shared_ptr<ParquetFormat>, std::string> fromJson(const nlohmann::json &jObj);
 
 // caf inspect
 public:

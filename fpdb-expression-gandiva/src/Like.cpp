@@ -25,8 +25,16 @@ std::string Like::alias() {
   return left_->alias() + " like " + right_->alias();
 }
 
-std::string Like::getTypeString() {
+std::string Like::getTypeString() const {
   return "Like";
+}
+
+tl::expected<std::shared_ptr<Like>, std::string> Like::fromJson(const nlohmann::json &jObj) {
+  auto expOperands = BinaryExpression::fromJson(jObj);
+  if (!expOperands.has_value()) {
+    return tl::make_unexpected(expOperands.error());
+  }
+  return std::make_shared<Like>((*expOperands).first, (*expOperands).second);
 }
 
 shared_ptr<Expression> like(const shared_ptr<Expression>& left, const shared_ptr<Expression>& right) {

@@ -44,15 +44,14 @@ private:
 
   bool running_ = false;
 
+  // config
   std::string name_ = "<no-name>";
-
   int node_port_ = 0;
-
   bool start_coordinator_ = false;
   std::optional<std::string> coordinator_host_ = std::nullopt;
   std::optional<int> coordinator_port_ = 0;
-
   int flight_port_ = 0;
+  std::string store_root_path_;
 
   std::unique_ptr<SignalHandler> signal_handler_;
   std::unique_ptr<FlightHandler> flight_handler_;

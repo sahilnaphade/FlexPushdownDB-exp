@@ -53,19 +53,17 @@ target_link_libraries(fpdb-store-server-file fmt::fmt)
 
 add_library(fpdb-store-server-objlib OBJECT
         src/Module.cpp include/fpdb/store/server/Module.hpp
+        include/fpdb/store/server/flight/Util.hpp
         src/flight/FlightHandler.cpp include/fpdb/store/server/flight/FlightHandler.hpp
-        src/flight/CmdObject.cpp include/fpdb/store/server/flight/CmdObject.hpp
-        src/flight/CmdType.cpp include/fpdb/store/server/flight/CmdType.hpp
         src/flight/HeaderMiddleware.cpp include/fpdb/store/server/flight/HeaderMiddleware.hpp
         src/flight/HeaderMiddlewareFactory.cpp include/fpdb/store/server/flight/HeaderMiddlewareFactory.hpp
-        src/flight/TicketObject.cpp include/fpdb/store/server/flight/TicketObject.hpp
+        src/flight/CmdType.cpp include/fpdb/store/server/flight/CmdType.hpp
+        src/flight/CmdObject.cpp include/fpdb/store/server/flight/CmdObject.hpp
+        src/flight/SelectObjectContentCmd.cpp include/fpdb/store/server/flight/SelectObjectContentCmd.hpp
         src/flight/TicketType.cpp include/fpdb/store/server/flight/TicketType.hpp
-        src/flight/FlightSelectObjectContentRequest.cpp include/fpdb/store/server/flight/FlightSelectObjectContentRequest.hpp
-        src/flight/FlightInputSerialization.cpp include/fpdb/store/server/flight/FlightInputSerialization.hpp
-        src/FileHeaderInfo.cpp include/fpdb/store/server/FileHeaderInfo.hpp
-        src/CSVInput.cpp include/fpdb/store/server/CSVInput.hpp
-        src/InputSerializationType.cpp include/fpdb/store/server/InputSerializationType.hpp
-        src/ParquetInput.cpp include/fpdb/store/server/ParquetInput.hpp
+        src/flight/TicketObject.cpp include/fpdb/store/server/flight/TicketObject.hpp
+        src/flight/GetObjectTicket.cpp include/fpdb/store/server/flight/GetObjectTicket.hpp
+        src/flight/SelectObjectContentTicket.cpp include/fpdb/store/server/flight/SelectObjectContentTicket.hpp
         src/Server.cpp include/fpdb/store/server/Server.hpp include/fpdb/store/server/Global.hpp
         src/SignalHandler.cpp include/fpdb/store/server/SignalHandler.hpp
         src/caf/ActorManager.cpp include/fpdb/store/server/caf/ActorManager.hpp
@@ -79,7 +77,7 @@ set_target_properties(fpdb-store-server-objlib PROPERTIES OUTPUT_NAME fpdb-store
 
 list(APPEND _PUBLIC_LINK_LIBRARIES expected)
 list(APPEND _PUBLIC_LINK_LIBRARIES fpdb-store-server-file)
-#list(APPEND _PUBLIC_LINK_LIBRARIES fpdb-executor)
+list(APPEND _PUBLIC_LINK_LIBRARIES fpdb-executor)
 list(APPEND _PUBLIC_LINK_LIBRARIES nlohmann_json)
 list(APPEND _PUBLIC_LINK_LIBRARIES caf::libcaf_core_shared)
 list(APPEND _PUBLIC_LINK_LIBRARIES caf::libcaf_io_shared)
@@ -136,7 +134,8 @@ add_executable(fpdb-store-server-test
         test/Global.cpp test/Global.hpp
         test/Main.cpp
         test/FileServiceTest.cpp
-        test/FlightTest.cpp
+        test/FlightBasicTest.cpp
+        test/FlightSelectTest.cpp
         test/DistributedTest.cpp)
 
 find_package(LibBFD REQUIRED)

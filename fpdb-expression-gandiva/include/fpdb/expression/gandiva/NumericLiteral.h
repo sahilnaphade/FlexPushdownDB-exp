@@ -7,6 +7,7 @@
 
 #include "Expression.h"
 #include "DateIntervalType.h"
+#include <fpdb/tuple/serialization/ArrowSerializer.h>
 #include <arrow/api.h>
 #include <gandiva/node.h>
 #include <fmt/format.h>
@@ -31,7 +32,7 @@ public:
   void compile(const std::shared_ptr<arrow::Schema> &) override;
 
   std::string alias() override {
-    const shared_ptr<arrow::DataType> &arrowType = ::arrow::TypeTraits<ARROW_TYPE>::type_singleton();
+    const std::shared_ptr<arrow::DataType> &arrowType = ::arrow::TypeTraits<ARROW_TYPE>::type_singleton();
     if (arrowType->id() == arrow::Type::INT32 || arrowType->id() == arrow::Type::INT64) {
       if (value_.has_value()) {
         return prefixInt_ + std::to_string(*value_);
@@ -43,7 +44,7 @@ public:
         return prefixFloat_ + std::to_string(*value_);
       } else {
         return prefixFloat_ + "0.0";
-      };
+      }
     } else {
       if (value_.has_value()) {
         return std::to_string(*value_);
@@ -53,10 +54,42 @@ public:
     }
   }
 
-  std::string getTypeString() override;
+  std::string getTypeString() const override;
 
   std::set<std::string> involvedColumnNames() override{
     return {};
+  }
+
+  ::nlohmann::json toJson() const override {
+    ::nlohmann::json jObj;
+    jObj.emplace("type", "NumericLiteral");
+    jObj.emplace("dataType", fpdb::tuple::ArrowSerializer::dataType_to_bytes(
+            ::arrow::TypeTraits<ARROW_TYPE>::type_singleton()));
+    if (value_.has_value()) {
+      jObj.emplace("value", *value_);
+    }
+    if (intervalType_.has_value()) {
+      jObj.emplace("intervalType", intervalTypeToString(*intervalType_));
+    }
+    return jObj;
+  }
+
+  static tl::expected<std::shared_ptr<NumericLiteral>, std::string> fromJson(const nlohmann::json &jObj) {
+    std::optional<C_TYPE> value = std::nullopt;
+    if (jObj.contains("value")) {
+      value = jObj["value"].get<C_TYPE>();
+    }
+
+    std::optional<DateIntervalType> intervalType = std::nullopt;
+    if (jObj.contains("intervalType")) {
+      auto expIntervalType = stringToIntervalType(jObj["intervalType"].get<std::string>());
+      if (!expIntervalType.has_value()) {
+        return tl::make_unexpected(expIntervalType.error());
+      }
+      intervalType = *expIntervalType;
+    }
+
+    return std::make_shared<NumericLiteral>(value, intervalType);
   }
 
   std::optional<C_TYPE> value() const {
@@ -72,7 +105,7 @@ public:
     if (value_.has_value()) {
       value_ = std::optional<C_TYPE>(-*value_);
     } else {
-      throw runtime_error("Cannot make opposite on null literal");
+      throw std::runtime_error("Cannot make opposite on null literal");
     }
   }
 

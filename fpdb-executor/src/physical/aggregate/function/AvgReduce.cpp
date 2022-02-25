@@ -16,6 +16,10 @@ AvgReduce::AvgReduce(const string &outputColumnName,
                      const shared_ptr<fpdb::expression::gandiva::Expression> &expression)
   : AvgBase(AVG_REDUCE, outputColumnName, expression) {}
 
+std::string AvgReduce::getTypeString() const {
+  return "AvgReduce";
+}
+
 set<string> AvgReduce::involvedColumnNames() const {
   return {AggregatePrePFunction::AVG_PARALLEL_SUM_COLUMN_PREFIX + outputColumnName_,
           AggregatePrePFunction::AVG_PARALLEL_COUNT_COLUMN_PREFIX + outputColumnName_};

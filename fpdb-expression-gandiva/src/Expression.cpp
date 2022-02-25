@@ -3,15 +3,33 @@
 //
 
 #include <fpdb/expression/gandiva/Expression.h>
+#include <fpdb/expression/gandiva/Add.h>
 #include <fpdb/expression/gandiva/And.h>
-#include <fpdb/expression/gandiva/Or.h>
-#include <fpdb/expression/gandiva/EqualTo.h>
 #include <fpdb/expression/gandiva/Cast.h>
+#include <fpdb/expression/gandiva/Column.h>
+#include <fpdb/expression/gandiva/DateAdd.h>
+#include <fpdb/expression/gandiva/DateExtract.h>
+#include <fpdb/expression/gandiva/Divide.h>
+#include <fpdb/expression/gandiva/EqualTo.h>
 #include <fpdb/expression/gandiva/GreaterThan.h>
 #include <fpdb/expression/gandiva/GreaterThanOrEqualTo.h>
+#include <fpdb/expression/gandiva/If.h>
+#include <fpdb/expression/gandiva/In.h>
+#include <fpdb/expression/gandiva/IsNull.h>
 #include <fpdb/expression/gandiva/LessThan.h>
 #include <fpdb/expression/gandiva/LessThanOrEqualTo.h>
+#include <fpdb/expression/gandiva/Like.h>
+#include <fpdb/expression/gandiva/Multiply.h>
+#include <fpdb/expression/gandiva/Not.h>
+#include <fpdb/expression/gandiva/NotEqualTo.h>
+#include <fpdb/expression/gandiva/NumericLiteral.h>
+#include <fpdb/expression/gandiva/Or.h>
+#include <fpdb/expression/gandiva/StringLiteral.h>
+#include <fpdb/expression/gandiva/Substr.h>
+#include <fpdb/expression/gandiva/Subtract.h>
+#include <fpdb/tuple/serialization/ArrowSerializer.h>
 #include <fpdb/util/Util.h>
+#include <fmt/format.h>
 
 using namespace fpdb::expression::gandiva;
 using namespace fpdb::util;
@@ -29,6 +47,104 @@ const gandiva::NodePtr &Expression::getGandivaExpression() const {
 
 std::string Expression::showString() {
   return gandivaExpression_->ToString();
+}
+
+tl::expected<std::shared_ptr<fpdb::expression::gandiva::Expression>, std::string>
+Expression::fromJson(const nlohmann::json &jObj) {
+  if (!jObj.contains("type")) {
+    return tl::make_unexpected(fmt::format("Type not specified in file format JSON '{}'", jObj));
+  }
+  auto type = jObj["type"].get<std::string>();
+
+  if (type == "Add") {
+    return Add::fromJson(jObj);
+  } else if (type == "And") {
+    return And::fromJson(jObj);
+  } else if (type == "Cast") {
+    return Cast::fromJson(jObj);
+  } else if (type == "Column") {
+    return Column::fromJson(jObj);
+  } else if (type == "DateAdd") {
+    return DateAdd::fromJson(jObj);
+  } else if (type == "DateExtract") {
+    return DateExtract::fromJson(jObj);
+  } else if (type == "Divide") {
+    return Divide::fromJson(jObj);
+  } else if (type == "EqualTo") {
+    return EqualTo::fromJson(jObj);
+  } else if (type == "GreaterThan") {
+    return GreaterThan::fromJson(jObj);
+  } else if (type == "GreaterThanOrEqualTo") {
+    return GreaterThanOrEqualTo::fromJson(jObj);
+  } else if (type == "If") {
+    return If::fromJson(jObj);
+  } else if (type == "IsNull") {
+    return IsNull::fromJson(jObj);
+  } else if (type == "LessThan") {
+    return LessThan::fromJson(jObj);
+  } else if (type == "LessThanOrEqualTo") {
+    return LessThanOrEqualTo::fromJson(jObj);
+  } else if (type == "Like") {
+    return Like::fromJson(jObj);
+  } else if (type == "Multiply") {
+    return Multiply::fromJson(jObj);
+  } else if (type == "Not") {
+    return Not::fromJson(jObj);
+  } else if (type == "NotEqualTo") {
+    return NotEqualTo::fromJson(jObj);
+  } else if (type == "Or") {
+    return Or::fromJson(jObj);
+  } else if (type == "StringLiteral") {
+    return StringLiteral::fromJson(jObj);
+  } else if (type == "Substr") {
+    return Substr::fromJson(jObj);
+  } else if (type == "Subtract") {
+    return Subtract::fromJson(jObj);
+  }
+
+  else if (type == "In") {
+    if (!jObj.contains("dataType")) {
+      return tl::make_unexpected(fmt::format("Data type not specified in In expression JSON '{}'", jObj));
+    }
+    auto dataType = fpdb::tuple::ArrowSerializer::bytes_to_dataType(jObj["dataType"].get<std::vector<uint8_t>>());
+    if (dataType->id() == ::arrow::int32()->id()) {
+      return In<::arrow::Int32Type, int32_t>::fromJson(jObj);
+    } else if (dataType->id() == ::arrow::int64()->id()) {
+      return In<::arrow::Int64Type, int64_t>::fromJson(jObj);
+    } else if (dataType->id() == ::arrow::float64()->id()) {
+      return In<::arrow::DoubleType, double>::fromJson(jObj);
+    } else if (dataType->id() == ::arrow::utf8()->id()) {
+      return In<::arrow::StringType, std::string>::fromJson(jObj);
+    } else if (dataType->id() == ::arrow::date64()->id()) {
+      return In<::arrow::Date64Type, int64_t>::fromJson(jObj);
+    } else {
+      return tl::make_unexpected(fmt::format("Unsupported data type in In expression '{}'", dataType->name()));
+    }
+  }
+
+  else if (type == "NumericLiteral") {
+    if (!jObj.contains("dataType")) {
+      return tl::make_unexpected(fmt::format("Data type not specified in NumericLiteral expression JSON '{}'", jObj));
+    }
+    auto dataType = fpdb::tuple::ArrowSerializer::bytes_to_dataType(jObj["dataType"].get<std::vector<uint8_t>>());
+    if (dataType->id() == ::arrow::int32()->id()) {
+      return NumericLiteral<::arrow::Int32Type>::fromJson(jObj);
+    } else if (dataType->id() == ::arrow::int64()->id()) {
+      return NumericLiteral<::arrow::Int64Type>::fromJson(jObj);
+    } else if (dataType->id() == ::arrow::float64()->id()) {
+      return NumericLiteral<::arrow::DoubleType>::fromJson(jObj);
+    } else if (dataType->id() == ::arrow::boolean()->id()) {
+      return NumericLiteral<::arrow::BooleanType>::fromJson(jObj);
+    } else if (dataType->id() == ::arrow::date64()->id()) {
+      return NumericLiteral<::arrow::Date64Type>::fromJson(jObj);
+    } else {
+      return tl::make_unexpected(fmt::format("Unsupported data type in NumericLiteral expression '{}'", dataType->name()));
+    }
+  }
+
+  else {
+    return tl::make_unexpected(fmt::format("Unsupported expression type: '{}'", type));
+  }
 }
 
 std::shared_ptr<std::string> fpdb::expression::gandiva::removePrefixInt(const std::string& str) {

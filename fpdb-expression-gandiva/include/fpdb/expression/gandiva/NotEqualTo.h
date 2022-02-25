@@ -23,7 +23,8 @@ public:
 
   void compile(const shared_ptr<arrow::Schema> &schema) override;
   string alias() override;
-  string getTypeString() override;
+  string getTypeString() const override;
+  static tl::expected<std::shared_ptr<NotEqualTo>, std::string> fromJson(const nlohmann::json &jObj);
 
 // caf inspect
 public:

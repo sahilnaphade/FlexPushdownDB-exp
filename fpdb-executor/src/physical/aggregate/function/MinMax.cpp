@@ -14,6 +14,19 @@ MinMax::MinMax(bool isMin,
   AggregateFunction(MIN_MAX, outputColumnName, expression),
   isMin_(isMin) {}
 
+std::string MinMax::getTypeString() const {
+  return "MinMax";
+}
+
+::nlohmann::json MinMax::toJson() const {
+  ::nlohmann::json jObj;
+  auto typeString = isMin_ ? "Min" : "Max";
+  jObj.emplace("type", typeString);
+  jObj.emplace("outputColumnName", outputColumnName_);
+  jObj.emplace("expression", expression_->toJson());
+  return jObj;
+}
+
 tl::expected<shared_ptr<arrow::Scalar>, string> MinMax::computeComplete(const shared_ptr<TupleSet> &tupleSet) {
   // evaluate the expression to get input of aggregation
   const auto &expAggChunkedArray = evaluateExpr(tupleSet);

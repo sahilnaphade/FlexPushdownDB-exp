@@ -13,6 +13,10 @@ Avg::Avg(const string &outputColumnName,
          const shared_ptr<fpdb::expression::gandiva::Expression> &expression)
   : AvgBase(AVG, outputColumnName, expression) {}
 
+std::string Avg::getTypeString() const {
+  return "Avg";
+}
+
 tl::expected<shared_ptr<arrow::Scalar>, string> Avg::computeComplete(const shared_ptr<TupleSet> &tupleSet) {
   // evaluate the expression to get input of aggregation
   const auto &expAggChunkedArray = evaluateExpr(tupleSet);

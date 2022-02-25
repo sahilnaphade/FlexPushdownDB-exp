@@ -35,19 +35,19 @@ public:
     // Load modules
     actor_manager->actor_system_config_->load<::caf::io::middleman>();
     // Create actor system
-    actor_manager->actor_system_ = std::make_unique<::caf::actor_system>(*actor_manager->actor_system_config_);
+    actor_manager->actor_system_ = std::make_shared<::caf::actor_system>(*actor_manager->actor_system_config_);
     actor_manager->actor_system_->await_actors_before_shutdown(true);
 
     return actor_manager;
   }
 
-  [[nodiscard]] ::caf::actor_system& actor_system() const;
+  [[nodiscard]] const std::shared_ptr<::caf::actor_system>& actor_system() const;
 
 private:
   inline static constexpr uint DefaultReservedCores = 4;
 
-  std::unique_ptr<::caf::actor_system_config> actor_system_config_;
-  std::unique_ptr<::caf::actor_system> actor_system_;
+  std::shared_ptr<::caf::actor_system_config> actor_system_config_;
+  std::shared_ptr<::caf::actor_system> actor_system_;
 };
 
 } // namespace fpdb::store::server::caf

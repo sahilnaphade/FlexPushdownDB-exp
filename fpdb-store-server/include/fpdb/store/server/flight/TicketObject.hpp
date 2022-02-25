@@ -11,7 +11,6 @@
 #include <tl/expected.hpp>
 
 #include "TicketType.hpp"
-#include "fpdb/store/server/flight/FlightSelectObjectContentRequest.hpp"
 
 namespace fpdb::store::server::flight {
 
@@ -25,63 +24,18 @@ public:
 
   virtual ~TicketObject() = default;
 
-  virtual std::string serialize(bool pretty) = 0;
-
-  ::arrow::flight::Ticket to_ticket(bool pretty);
+  virtual tl::expected<std::string, std::string> serialize(bool pretty) = 0;
 
   static tl::expected<std::shared_ptr<TicketObject>, std::string> deserialize(const std::string& ticket_string);
 
   static tl::expected<std::shared_ptr<TicketObject>, std::string> deserialize(const ::arrow::flight::Ticket& ticket);
 
+  tl::expected<::arrow::flight::Ticket, std::string> to_ticket(bool pretty);
+
   [[nodiscard]] const std::shared_ptr<TicketType>& type() const;
 
 private:
   std::shared_ptr<TicketType> type_;
-};
-
-/**
- * Ticket for retrieving a whole object from the store.
- */
-class GetObjectTicket : public TicketObject {
-public:
-  GetObjectTicket(std::string bucket, std::string object);
-
-  static std::shared_ptr<GetObjectTicket> make(std::string bucket, std::string object);
-
-  std::string serialize(bool pretty) override;
-
-  [[nodiscard]] const std::string& bucket() const;
-
-  [[nodiscard]] const std::string& object() const;
-
-private:
-  std::string bucket_;
-  std::string object_;
-};
-
-/**
- * Ticket for executing and returning the results of a query on an object in the store.
- */
-class SelectObjectContentTicket : public TicketObject {
-public:
-  SelectObjectContentTicket(std::string bucket, std::string object,
-                            std::shared_ptr<FlightSelectObjectContentRequest> select_object_content);
-
-  static std::shared_ptr<SelectObjectContentTicket>
-  make(std::string bucket, std::string object, std::shared_ptr<FlightSelectObjectContentRequest> select_object_content);
-
-  std::string serialize(bool pretty) override;
-
-  [[nodiscard]] const std::string& bucket() const;
-
-  [[nodiscard]] const std::string& object() const;
-
-  [[nodiscard]] const std::shared_ptr<FlightSelectObjectContentRequest>& select_object_content() const;
-
-private:
-  std::string bucket_;
-  std::string object_;
-  std::shared_ptr<FlightSelectObjectContentRequest> select_object_content_;
 };
 
 } // namespace fpdb::store::server::flight

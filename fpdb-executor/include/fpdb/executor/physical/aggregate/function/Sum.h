@@ -18,6 +18,8 @@ public:
   Sum(const Sum&) = default;
   Sum& operator=(const Sum&) = default;
 
+  std::string getTypeString() const override;
+
   tl::expected<shared_ptr<arrow::Scalar>, string> computeComplete(const shared_ptr<TupleSet> &tupleSet) override;
   tl::expected<shared_ptr<AggregateResult>, string> computePartial(const shared_ptr<TupleSet> &tupleSet) override;
 
