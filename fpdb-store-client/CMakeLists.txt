@@ -36,10 +36,7 @@ target_include_directories(fpdb-store-client-shared PUBLIC $<TARGET_PROPERTY:fpd
 target_link_libraries(fpdb-store-client-shared PUBLIC ${_PUBLIC_LINK_LIBRARIES})
 target_link_libraries(fpdb-store-client-shared PRIVATE ${_PUBLIC_SHARED_LINK_LIBRARIES})
 target_link_libraries(fpdb-store-client-shared PRIVATE ${_PRIVATE_LINK_LIBRARIES})
-# need to fix link on mac
-if (${APPLE})
-    linkForMacShared(fpdb-store-client-shared)
-endif()
+
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Tests
@@ -56,8 +53,3 @@ target_link_libraries(fpdb-store-client-test doctest::doctest)
 target_link_libraries(fpdb-store-client-test LibBFD::LibBFD)
 target_link_libraries(fpdb-store-client-test Backward::Backward)
 target_link_libraries(fpdb-store-client-test fpdb-store-client-static)
-# need to add and link libraries on mac
-if (${APPLE})
-    linkForMacExecutable(fpdb-store-client-test)
-    target_link_directories(fpdb-store-client-test PRIVATE /usr/local/opt/binutils/lib)
-endif()

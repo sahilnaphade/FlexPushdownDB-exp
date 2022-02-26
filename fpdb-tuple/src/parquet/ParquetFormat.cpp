@@ -17,7 +17,7 @@ json ParquetFormat::toJson() const {
   return jObj;
 }
 
-tl::expected<std::shared_ptr<ParquetFormat>, std::string> ParquetFormat::fromJson(const nlohmann::json &jObj) {
+tl::expected<std::shared_ptr<ParquetFormat>, std::string> ParquetFormat::fromJson(const nlohmann::json &) {
   return std::make_shared<ParquetFormat>();
 }
 
