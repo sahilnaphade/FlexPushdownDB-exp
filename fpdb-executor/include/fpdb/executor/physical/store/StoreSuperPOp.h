@@ -19,6 +19,10 @@ public:
                 const std::vector<std::string> &projectColumnNames,
                 int nodeId,
                 const std::shared_ptr<PhysicalPlan> &subPlan);
+  StoreSuperPOp() = default;
+  StoreSuperPOp(const StoreSuperPOp&) = default;
+  StoreSuperPOp& operator=(const StoreSuperPOp&) = default;
+  ~StoreSuperPOp() = default;
 
   void onReceive(const Envelope &message) override;
   void clear() override;
@@ -26,8 +30,23 @@ public:
 
   std::string serialize(bool pretty);
 
-public:
+private:
   std::shared_ptr<PhysicalPlan> subPlan_;
+
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, StoreSuperPOp& op) {
+    return f.object(op).fields(f.field("name", op.name_),
+                               f.field("type", op.type_),
+                               f.field("projectColumnNames", op.projectColumnNames_),
+                               f.field("nodeId", op.nodeId_),
+                               f.field("queryId", op.queryId_),
+                               f.field("opContext", op.opContext_),
+                               f.field("producers", op.producers_),
+                               f.field("consumers", op.consumers_),
+                               f.field("subPlan", op.subPlan_));
+  }
 
 };
 

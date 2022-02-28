@@ -23,7 +23,7 @@ private:
 
   tl::expected<std::vector<std::shared_ptr<PhysicalOp>>, std::string> deserializeProducers(::nlohmann::json jObj);
 
-  tl::expected<std::shared_ptr<PhysicalOp>, std::string> deserializeFileScanPOp(::nlohmann::json jObj);
+  tl::expected<std::shared_ptr<PhysicalOp>, std::string> deserializeStoreFileScanPOp(::nlohmann::json jObj);
 
   tl::expected<std::shared_ptr<PhysicalOp>, std::string> deserializeFilterPOp(::nlohmann::json jObj);
 

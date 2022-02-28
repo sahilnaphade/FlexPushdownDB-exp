@@ -3,7 +3,7 @@
 //
 
 #include <fpdb/executor/physical/serialization/PhysicalPlanDeserializer.h>
-#include <fpdb/executor/physical/file/FileScanPOp.h>
+#include <fpdb/executor/physical/store/StoreFileScanPOp.h>
 #include <fpdb/executor/physical/filter/FilterPOp.h>
 #include <fpdb/executor/physical/aggregate/AggregatePOp.h>
 #include <fpdb/executor/physical/collate/CollatePOp.h>
@@ -45,8 +45,8 @@ tl::expected<std::shared_ptr<PhysicalOp>, std::string> PhysicalPlanDeserializer:
   }
 
   auto type = jObj["type"].get<std::string>();
-  if (type == "FileScanPOp") {
-    return deserializeFileScanPOp(jObj);
+  if (type == "StoreFileScanPOp") {
+    return deserializeStoreFileScanPOp(jObj);
   } else if (type == "FilterPOp") {
     return deserializeFilterPOp(jObj);
   } else if (type == "AggregatePOp") {
@@ -77,7 +77,7 @@ PhysicalPlanDeserializer::deserializeProducers(::nlohmann::json jObj) {
 }
 
 tl::expected<std::shared_ptr<PhysicalOp>, std::string>
-PhysicalPlanDeserializer::deserializeFileScanPOp(::nlohmann::json jObj) {
+PhysicalPlanDeserializer::deserializeStoreFileScanPOp(::nlohmann::json jObj) {
   // deserialize self
   if (!jObj.contains("name")) {
     return tl::make_unexpected(fmt::format("Name not specified in FileScanPOp JSON '{}'", jObj));
@@ -127,16 +127,16 @@ PhysicalPlanDeserializer::deserializeFileScanPOp(::nlohmann::json jObj) {
     byteRange = {startOffset, finishOffset};
   }
 
-  std::shared_ptr<PhysicalOp> fileScanPOp = std::make_shared<file::FileScanPOp>(name,
-                                                                                projectColumnNames,
-                                                                                0,
-                                                                                bucket,
-                                                                                object,
-                                                                                storeRootPath_,
-                                                                                format,
-                                                                                schema,
-                                                                                byteRange);
-  physicalOps_.emplace_back(fileScanPOp);
+  std::shared_ptr<PhysicalOp> storeFileScanPOp = std::make_shared<store::StoreFileScanPOp>(name,
+                                                                                           projectColumnNames,
+                                                                                           0,
+                                                                                           storeRootPath_,
+                                                                                           bucket,
+                                                                                           object,
+                                                                                           format,
+                                                                                           schema,
+                                                                                           byteRange);
+  physicalOps_.emplace_back(storeFileScanPOp);
   
   // deserialize producers
   auto expProducers = deserializeProducers(jObj);
@@ -145,9 +145,9 @@ PhysicalPlanDeserializer::deserializeFileScanPOp(::nlohmann::json jObj) {
   }
 
   // connect
-  Util::connectManyToOne(*expProducers, fileScanPOp);
+  Util::connectManyToOne(*expProducers, storeFileScanPOp);
 
-  return fileScanPOp;
+  return storeFileScanPOp;
 }
 
 tl::expected<std::shared_ptr<PhysicalOp>, std::string>

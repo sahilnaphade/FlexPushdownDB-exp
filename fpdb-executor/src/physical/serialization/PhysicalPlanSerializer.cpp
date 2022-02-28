@@ -30,8 +30,8 @@ tl::expected<std::string, std::string> PhysicalPlanSerializer::serialize(bool pr
 
 tl::expected<json, std::string> PhysicalPlanSerializer::serializeDfs(const std::shared_ptr<PhysicalOp> &op) {
   switch (op->getType()) {
-    case POpType::FILE_SCAN:
-      return serializeFileScanPOp(std::static_pointer_cast<file::FileScanPOp>(op));
+    case POpType::STORE_FILE_SCAN:
+      return serializeStoreFileScanPOp(std::static_pointer_cast<store::StoreFileScanPOp>(op));
     case POpType::FILTER:
       return serializeFilterPOp(std::static_pointer_cast<filter::FilterPOp>(op));
     case POpType::AGGREGATE:
@@ -63,20 +63,20 @@ tl::expected<json, std::string> PhysicalPlanSerializer::serializeProducers(const
 }
 
 tl::expected<::nlohmann::json, std::string>
-PhysicalPlanSerializer::serializeFileScanPOp(const std::shared_ptr<file::FileScanPOp> &fileScanPOp) {
+PhysicalPlanSerializer::serializeStoreFileScanPOp(const std::shared_ptr<store::StoreFileScanPOp> &storeFileScanPOp) {
   json jObj;
-  auto kernel = fileScanPOp->getKernel();
+  auto kernel = storeFileScanPOp->getKernel();
 
   // serialize self
-  jObj.emplace("type", fileScanPOp->getTypeString());
-  jObj.emplace("name", fileScanPOp->name());
-  jObj.emplace("projectColumnNames", fileScanPOp->getProjectColumnNames());
-  jObj.emplace("bucket", kernel.getBucket());
-  jObj.emplace("object", kernel.getObject());
-  jObj.emplace("format", kernel.getFormat()->toJson());
-  jObj.emplace("schema", ArrowSerializer::schema_to_bytes(kernel.getSchema()));
+  jObj.emplace("type", storeFileScanPOp->getTypeString());
+  jObj.emplace("name", storeFileScanPOp->name());
+  jObj.emplace("projectColumnNames", storeFileScanPOp->getProjectColumnNames());
+  jObj.emplace("bucket", storeFileScanPOp->getBucket());
+  jObj.emplace("object", storeFileScanPOp->getObject());
+  jObj.emplace("format", kernel->getFormat()->toJson());
+  jObj.emplace("schema", ArrowSerializer::schema_to_bytes(kernel->getSchema()));
 
-  auto optByteRange = kernel.getByteRange();
+  auto optByteRange = kernel->getByteRange();
   if (optByteRange.has_value()) {
     json byteRangeJObj;
     byteRangeJObj.emplace("startOffset", optByteRange->first);
@@ -85,7 +85,7 @@ PhysicalPlanSerializer::serializeFileScanPOp(const std::shared_ptr<file::FileSca
   }
 
   // serialize producers
-  auto expProducersJObj = serializeProducers(fileScanPOp);
+  auto expProducersJObj = serializeProducers(storeFileScanPOp);
   if (!expProducersJObj.has_value()) {
     return expProducersJObj.error();
   }

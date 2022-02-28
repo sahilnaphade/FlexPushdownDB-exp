@@ -37,6 +37,8 @@ public:
   inline static constexpr ::caf::type_id_t FileFormat_first_custom_type_id = ::caf::first_custom_type_id + 2200;
   inline static constexpr ::caf::type_id_t HashJoinProbeAbstractKernel_first_custom_type_id = ::caf::first_custom_type_id + 2300;
   inline static constexpr ::caf::type_id_t AggregateResult_first_custom_type_id = ::caf::first_custom_type_id + 2400;
+  inline static constexpr ::caf::type_id_t FileScanKernel_first_custom_type_id = ::caf::first_custom_type_id + 2500;
+  inline static constexpr ::caf::type_id_t PhysicalPlan_first_custom_type_id = ::caf::first_custom_type_id + 2600;
 
 };
 

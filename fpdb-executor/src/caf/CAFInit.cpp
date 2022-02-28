@@ -7,12 +7,14 @@
 #include <fpdb/executor/physical/POpActor2.h>
 #include <fpdb/executor/physical/collate/CollatePOp2.h>
 #include <fpdb/executor/physical/file/FileScanPOp2.h>
+#include <fpdb/executor/physical/PhysicalPlan.h>
 #include <fpdb/executor/cache/SegmentCacheActor.h>
 #include <fpdb/executor/message/Envelope.h>
 #include <fpdb/executor/caf-serialization/CAFMessageSerializer.h>
 #include <fpdb/executor/caf-serialization/CAFPOpSerializer.h>
 #include <fpdb/executor/caf-serialization/CAFAggregateFunctionSerializer.h>
 #include <fpdb/executor/caf-serialization/CAFHashJoinProbeAbstractKernelSerializer.h>
+#include <fpdb/executor/caf-serialization/CAFFileScanKernelSerializer.h>
 #include <fpdb/catalogue/caf-serialization/CAFTableSerializer.h>
 #include <fpdb/expression/gandiva/caf-serialization/CAFExpressionSerializer.h>
 #include <fpdb/tuple/caf-serialization/CAFFileFormatSerializer.h>
@@ -45,6 +47,8 @@ void CAFInit::initCAFGlobalMetaObjects() {
   ::caf::init_global_meta_objects<::caf::id_block::FileFormat>();
   ::caf::init_global_meta_objects<::caf::id_block::HashJoinProbeAbstractKernel>();
   ::caf::init_global_meta_objects<::caf::id_block::AggregateResult>();
+  ::caf::init_global_meta_objects<::caf::id_block::FileScanKernel>();
+  ::caf::init_global_meta_objects<::caf::id_block::PhysicalPlan>();
 
   ::caf::core::init_global_meta_objects();
   ::caf::io::middleman::init_global_meta_objects();

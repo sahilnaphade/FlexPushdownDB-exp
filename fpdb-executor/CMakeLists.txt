@@ -51,9 +51,13 @@ add_library(fpdb-executor STATIC
         src/physical/cache/CacheHelper.cpp include/fpdb/executor/physical/cache/CacheHelper.h
         src/physical/collate/CollatePOp.cpp include/fpdb/executor/physical/collate/CollatePOp.h
         src/physical/collate/CollatePOp2.cpp include/fpdb/executor/physical/collate/CollatePOp2.h
-        src/physical/file/FileScanPOp.cpp include/fpdb/executor/physical/file/FileScanPOp.h
-        src/physical/file/FileScanPOp2.cpp include/fpdb/executor/physical/file/FileScanPOp2.h
+        src/physical/file/FileScanAbstractPOp.cpp include/fpdb/executor/physical/file/FileScanAbstractPOp.h
+        src/physical/file/LocalFileScanPOp.cpp include/fpdb/executor/physical/file/LocalFileScanPOp.h
+        src/physical/file/RemoteFileScanPOp.cpp include/fpdb/executor/physical/file/RemoteFileScanPOp.h
         src/physical/file/FileScanKernel.cpp include/fpdb/executor/physical/file/FileScanKernel.h
+        src/physical/file/LocalFileScanKernel.cpp include/fpdb/executor/physical/file/LocalFileScanKernel.h
+        src/physical/file/RemoteFileScanKernel.cpp include/fpdb/executor/physical/file/RemoteFileScanKernel.h
+        src/physical/file/FileScanPOp2.cpp include/fpdb/executor/physical/file/FileScanPOp2.h
         src/physical/filter/FilterPOp.cpp include/fpdb/executor/physical/filter/FilterPOp.h
         src/physical/group/GroupPOp.cpp include/fpdb/executor/physical/group/GroupPOp.h
         src/physical/group/GroupKernel.cpp include/fpdb/executor/physical/group/GroupKernel.h
@@ -84,6 +88,7 @@ add_library(fpdb-executor STATIC
         src/physical/s3/S3SelectCSVParseOptions.cpp include/fpdb/executor/physical/s3/S3SelectCSVParseOptions.h
         src/physical/s3/S3SelectScanKernel.cpp include/fpdb/executor/physical/s3/S3SelectScanKernel.h
         src/physical/store/StoreSuperPOp.cpp include/fpdb/executor/physical/store/StoreSuperPOp.h
+        src/physical/store/StoreFileScanPOp.cpp include/fpdb/executor/physical/store/StoreFileScanPOp.h
 #        physical plan
         src/physical/PhysicalPlan.cpp include/fpdb/executor/physical/PhysicalPlan.h
         src/physical/transform/PrePToPTransformer.cpp include/fpdb/executor/physical/transform/PrePToPTransformer.h
@@ -96,6 +101,7 @@ add_library(fpdb-executor STATIC
         include/fpdb/executor/caf-serialization/CAFPOpSerializer.h
         include/fpdb/executor/caf-serialization/CAFAggregateFunctionSerializer.h
         include/fpdb/executor/caf-serialization/CAFHashJoinProbeAbstractKernelSerializer.h
+        include/fpdb/executor/caf-serialization/CAFFileScanKernelSerializer.h
 #        serialization
         src/physical/serialization/PhysicalPlanSerializer.cpp include/fpdb/executor/physical/serialization/PhysicalPlanSerializer.h
         src/physical/serialization/PhysicalPlanDeserializer.cpp include/fpdb/executor/physical/serialization/PhysicalPlanDeserializer.h
@@ -110,6 +116,7 @@ target_include_directories(fpdb-executor PUBLIC include)
 target_link_libraries(fpdb-executor PUBLIC fpdb-plan)
 target_link_libraries(fpdb-executor PUBLIC fpdb-cache)
 target_link_libraries(fpdb-executor PUBLIC fpdb-caf)
+target_link_libraries(fpdb-executor PUBLIC fpdb-store-server-file)
 target_link_libraries(fpdb-executor PUBLIC graphviz_gvc_shared)
 target_link_libraries(fpdb-executor PUBLIC graphviz_dot_layout_shared)
 target_link_libraries(fpdb-executor PUBLIC graphviz_neato_layout_shared)

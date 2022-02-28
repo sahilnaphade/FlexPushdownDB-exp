@@ -6,7 +6,7 @@
 #define FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_SERIALIZATION_PHYSICALPLANSERIALIZER_H
 
 #include <fpdb/executor/physical/PhysicalPlan.h>
-#include <fpdb/executor/physical/file/FileScanPOp.h>
+#include <fpdb/executor/physical/store/StoreFileScanPOp.h>
 #include <fpdb/executor/physical/filter/FilterPOp.h>
 #include <fpdb/executor/physical/aggregate/AggregatePOp.h>
 #include <fpdb/executor/physical/collate/CollatePOp.h>
@@ -26,10 +26,17 @@ private:
   tl::expected<::nlohmann::json, std::string> serializeDfs(const std::shared_ptr<PhysicalOp> &op);
   tl::expected<::nlohmann::json, std::string> serializeProducers(const std::shared_ptr<PhysicalOp> &op);
 
-  tl::expected<::nlohmann::json, std::string> serializeFileScanPOp(const std::shared_ptr<file::FileScanPOp> &fileScanPOp);
-  tl::expected<::nlohmann::json, std::string> serializeFilterPOp(const std::shared_ptr<filter::FilterPOp> &filterPOp);
-  tl::expected<::nlohmann::json, std::string> serializeAggregatePOp(const std::shared_ptr<aggregate::AggregatePOp> &aggregatePOp);
-  tl::expected<::nlohmann::json, std::string> serializeCollatePOp(const std::shared_ptr<collate::CollatePOp> &collatePOp);
+  tl::expected<::nlohmann::json, std::string>
+  serializeStoreFileScanPOp(const std::shared_ptr<store::StoreFileScanPOp> &storeFileScanPOp);
+
+  tl::expected<::nlohmann::json, std::string>
+  serializeFilterPOp(const std::shared_ptr<filter::FilterPOp> &filterPOp);
+
+  tl::expected<::nlohmann::json, std::string>
+  serializeAggregatePOp(const std::shared_ptr<aggregate::AggregatePOp> &aggregatePOp);
+
+  tl::expected<::nlohmann::json, std::string>
+  serializeCollatePOp(const std::shared_ptr<collate::CollatePOp> &collatePOp);
 
   std::unordered_map<std::string, std::shared_ptr<PhysicalOp>> operatorMap_;
 

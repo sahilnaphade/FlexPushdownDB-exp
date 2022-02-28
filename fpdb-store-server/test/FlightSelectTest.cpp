@@ -4,7 +4,7 @@
 
 #include <fpdb/store/server/Server.hpp>
 #include <fpdb/executor/physical/store/StoreSuperPOp.h>
-#include <fpdb/executor/physical/file/FileScanPOp.h>
+#include <fpdb/executor/physical/store/StoreFileScanPOp.h>
 #include <fpdb/executor/physical/filter/FilterPOp.h>
 #include <fpdb/executor/physical/aggregate/AggregatePOp.h>
 #include <fpdb/executor/physical/collate/CollatePOp.h>
@@ -24,17 +24,16 @@ using namespace fpdb::expression::gandiva;
 using namespace fpdb::tuple;
 
 // file scan: test.csv, columns: {a, b}
-std::shared_ptr<file::FileScanPOp> makeFileScanPOp() {
+std::shared_ptr<store::StoreFileScanPOp> makeStoreFileScanPOp() {
   auto format = std::make_shared<csv::CSVFormat>(',');
   auto schema = util::FileReaderTestUtil::makeTestSchema();
-  return std::make_shared<file::FileScanPOp>("FileScan",
-                                             std::vector<std::string>{"a", "b"},
-                                             0,
-                                             "test-resources",
-                                             "simple_data/csv/test.csv",
-                                             ".",
-                                             format,
-                                             schema);
+  return std::make_shared<store::StoreFileScanPOp>("StoreFileScan",
+                                                   std::vector<std::string>{"a", "b"},
+                                                   0,
+                                                   "test-resources",
+                                                   "simple_data/csv/test.csv",
+                                                   format,
+                                                   schema);
 }
 
 // filter: a <= 4
@@ -86,18 +85,18 @@ TEST_SUITE("fpdb-store-server/FlightSelectTest" * doctest::skip(false)) {
 TEST_CASE("fpdb-store-server/FlightSelectTest/scan-filter-aggregate" * doctest::skip(false)) {
 
   // create store super op
-  auto fileScanPOp = makeFileScanPOp();
+  auto storeFileScanPOp = makeStoreFileScanPOp();
   auto filterPOp = makeFilterPOp();
   auto aggregatePOp = makeAggregatePOp();
   auto collatePOp = makeCollatePOp({"sum_b"});
 
   connect(std::vector<std::pair<std::shared_ptr<PhysicalOp>, std::shared_ptr<PhysicalOp>>>{
-          {fileScanPOp, filterPOp},
+          {storeFileScanPOp, filterPOp},
           {filterPOp, aggregatePOp},
           {aggregatePOp, collatePOp}
   });
 
-  auto storeSuperPOp = makeStoreSuperPOp({fileScanPOp, filterPOp, aggregatePOp, collatePOp}, {"sum_b"});
+  auto storeSuperPOp = makeStoreSuperPOp({storeFileScanPOp, filterPOp, aggregatePOp, collatePOp}, {"sum_b"});
 
   // server
   ::arrow::Status st;
