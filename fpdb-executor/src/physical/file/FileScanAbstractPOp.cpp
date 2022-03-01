@@ -7,7 +7,7 @@
 #include <fpdb/executor/physical/file/RemoteFileScanKernel.h>
 #include <fpdb/executor/physical/cache/CacheHelper.h>
 #include <fpdb/catalogue/local-fs/LocalFSPartition.h>
-#include <fpdb/catalogue/s3/S3Partition.h>
+#include <fpdb/catalogue/obj-store/ObjStorePartition.h>
 
 using namespace fpdb::catalogue;
 
@@ -89,10 +89,13 @@ void FileScanAbstractPOp::requestStoreSegmentsInCache(const std::shared_ptr<Tupl
       partition = std::make_shared<local_fs::LocalFSPartition>(typedKernel->getPath());
       break;
     }
-    case CatalogueEntryType::S3: {
+    case CatalogueEntryType::OBJ_STORE: {
       auto typedKernel = std::static_pointer_cast<RemoteFileScanKernel>(kernel_);
-      partition = std::make_shared<fpdb::catalogue::s3::S3Partition>(typedKernel->getBucket(),
-                                                                     typedKernel->getObject());
+      partition = std::make_shared<fpdb::catalogue::obj_store::ObjStorePartition>(typedKernel->getBucket(),
+                                                                                  typedKernel->getObject());
+    }
+    default: {
+      ctx()->notifyError("Unknown catalogue entry type");
     }
   }
 

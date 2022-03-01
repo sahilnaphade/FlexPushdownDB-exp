@@ -77,7 +77,7 @@ set_target_properties(fpdb-store-server-objlib PROPERTIES OUTPUT_NAME fpdb-store
 
 list(APPEND _PUBLIC_LINK_LIBRARIES expected)
 list(APPEND _PUBLIC_LINK_LIBRARIES fpdb-store-server-file)
-list(APPEND _PUBLIC_LINK_LIBRARIES fpdb-executor)
+list(APPEND _PRIVATE_LINK_LIBRARIES fpdb-executor)
 list(APPEND _PUBLIC_LINK_LIBRARIES nlohmann_json)
 list(APPEND _PUBLIC_LINK_LIBRARIES caf::libcaf_core_shared)
 list(APPEND _PUBLIC_LINK_LIBRARIES caf::libcaf_io_shared)

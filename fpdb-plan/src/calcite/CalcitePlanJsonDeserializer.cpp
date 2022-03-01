@@ -5,7 +5,7 @@
 #include <fpdb/plan/calcite/CalcitePlanJsonDeserializer.h>
 #include <fpdb/plan/prephysical/JoinType.h>
 #include <fpdb/plan/Util.h>
-#include <fpdb/catalogue/s3/S3CatalogueEntry.h>
+#include <fpdb/catalogue/obj-store/ObjStoreCatalogueEntry.h>
 #include <fpdb/expression/gandiva/Expression.h>
 #include <fpdb/expression/gandiva/Column.h>
 #include <fpdb/expression/gandiva/And.h>
@@ -800,9 +800,9 @@ shared_ptr<prephysical::FilterableScanPrePOp> CalcitePlanJsonDeserializer::deser
 
   set<string> columnNameSet;
   // fetch table from catalogue entry
-  if (catalogueEntry_->getType() == S3) {
-    const auto s3CatalogueEntry = static_pointer_cast<s3::S3CatalogueEntry>(catalogueEntry_);
-    table = s3CatalogueEntry->getS3Table(tableName);
+  if (catalogueEntry_->getType() == CatalogueEntryType::OBJ_STORE) {
+    const auto objStoreCatalogueEntry = static_pointer_cast<obj_store::ObjStoreCatalogueEntry>(catalogueEntry_);
+    table = objStoreCatalogueEntry->getTable(tableName);
     const vector<string> &columnNames = table->getColumnNames();
     columnNameSet.insert(columnNames.begin(), columnNames.end());
   } else {

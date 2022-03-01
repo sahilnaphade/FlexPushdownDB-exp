@@ -16,7 +16,7 @@ RemoteFileScanKernel::RemoteFileScanKernel(const std::shared_ptr<FileFormat> &fo
                                            const std::string &object,
                                            const std::string &host,
                                            int port):
-  FileScanKernel(CatalogueEntryType::S3, format, schema, byteRange),
+  FileScanKernel(CatalogueEntryType::OBJ_STORE, format, schema, byteRange),
   bucket_(bucket),
   object_(object),
   host_(host),

@@ -6,7 +6,7 @@
 #define FPDB_FPDB_CATALOGUE_INCLUDE_FPDB_CATALOGUE_CAFSERIALIZATION_CAFPARTITIONSERIALIZER_H
 
 #include <fpdb/catalogue/Partition.h>
-#include <fpdb/catalogue/s3/S3Partition.h>
+#include <fpdb/catalogue/obj-store/ObjStorePartition.h>
 #include <fpdb/catalogue/local-fs/LocalFSPartition.h>
 #include <fpdb/caf/CAFUtil.h>
 
@@ -14,9 +14,9 @@ using PartitionPtr = std::shared_ptr<fpdb::catalogue::Partition>;
 
 CAF_BEGIN_TYPE_ID_BLOCK(Partition, fpdb::caf::CAFUtil::Partition_first_custom_type_id)
 CAF_ADD_TYPE_ID(Partition, (PartitionPtr))
-CAF_ADD_TYPE_ID(Partition, (fpdb::catalogue::s3::S3Partition))
+CAF_ADD_TYPE_ID(Partition, (fpdb::catalogue::obj_store::ObjStorePartition))
 CAF_ADD_TYPE_ID(Partition, (fpdb::catalogue::local_fs::LocalFSPartition))
-CAF_ADD_TYPE_ID(Partition, (std::shared_ptr<fpdb::catalogue::s3::S3Partition>))
+CAF_ADD_TYPE_ID(Partition, (std::shared_ptr<fpdb::catalogue::obj_store::ObjStorePartition>))
 CAF_ADD_TYPE_ID(Partition, (std::shared_ptr<fpdb::catalogue::local_fs::LocalFSPartition>))
 CAF_END_TYPE_ID_BLOCK(Partition)
 
@@ -29,7 +29,7 @@ struct variant_inspector_traits<PartitionPtr> {
   // Lists all allowed types and gives them a 0-based index.
   static constexpr type_id_t allowed_types[] = {
           type_id_v<none_t>,
-          type_id_v<fpdb::catalogue::s3::S3Partition>,
+          type_id_v<fpdb::catalogue::obj_store::ObjStorePartition>,
           type_id_v<fpdb::catalogue::local_fs::LocalFSPartition>
   };
 
@@ -37,7 +37,7 @@ struct variant_inspector_traits<PartitionPtr> {
   static auto type_index(const value_type &x) {
     if (!x)
       return 0;
-    else if (x->getCatalogueEntryType() == fpdb::catalogue::S3)
+    else if (x->getCatalogueEntryType() == fpdb::catalogue::OBJ_STORE)
       return 1;
     else if (x->getCatalogueEntryType() == fpdb::catalogue::LOCAL_FS)
       return 2;
@@ -50,7 +50,7 @@ struct variant_inspector_traits<PartitionPtr> {
   static auto visit(F &&f, const value_type &x) {
     switch (type_index(x)) {
       case 1:
-        return f(dynamic_cast<fpdb::catalogue::s3::S3Partition &>(*x));
+        return f(dynamic_cast<fpdb::catalogue::obj_store::ObjStorePartition &>(*x));
       case 2:
         return f(dynamic_cast<fpdb::catalogue::local_fs::LocalFSPartition &>(*x));
       default: {
@@ -81,8 +81,8 @@ struct variant_inspector_traits<PartitionPtr> {
         continuation(dummy);
         return true;
       }
-      case type_id_v<fpdb::catalogue::s3::S3Partition>: {
-        auto tmp = fpdb::catalogue::s3::S3Partition{};
+      case type_id_v<fpdb::catalogue::obj_store::ObjStorePartition>: {
+        auto tmp = fpdb::catalogue::obj_store::ObjStorePartition{};
         continuation(tmp);
         return true;
       }

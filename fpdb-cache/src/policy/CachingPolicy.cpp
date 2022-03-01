@@ -4,7 +4,7 @@
 
 #include <fpdb/cache/policy/CachingPolicy.h>
 #include <fpdb/cache/Util.h>
-#include <fpdb/catalogue/s3/S3CatalogueEntry.h>
+#include <fpdb/catalogue/obj-store/ObjStoreCatalogueEntry.h>
 #include <fmt/format.h>
 #include <utility>
 
@@ -20,16 +20,20 @@ CachingPolicy::CachingPolicy(CachingPolicyType type,
   catalogueEntry_(std::move(catalogueEntry)) {
 
   // read segment size if the caching policy needs
+  // TODO: support local-fs and fpdb-store
   if (readSegmentSize && catalogueEntry_) {
-    if (catalogueEntry_->getType() == S3) {
-      const auto schemaName = catalogueEntry_->getSchemaName();
-      filesystem::path metadataPath = catalogueEntry_
-              ->getCatalogue().lock()
-              ->getMetadataPath()
-              .append(schemaName)
-              .append("segment_info");
-      const auto &s3Bucket = std::static_pointer_cast<s3::S3CatalogueEntry>(catalogueEntry_)->getS3Bucket();
-      segmentSizeMap_ = Util::readSegmentKeySize(s3Bucket, schemaName, metadataPath);
+    if (catalogueEntry_->getType() == CatalogueEntryType::OBJ_STORE) {
+      auto objStoreCatalogueEntry = std::static_pointer_cast<obj_store::ObjStoreCatalogueEntry>(catalogueEntry_);
+      if (objStoreCatalogueEntry->getStoreType() == obj_store::ObjStoreType::S3) {
+        auto schemaName = objStoreCatalogueEntry->getSchemaName();
+        filesystem::path metadataPath = objStoreCatalogueEntry
+                ->getCatalogue().lock()
+                ->getMetadataPath()
+                .append(schemaName)
+                .append("segment_info");
+        auto bucket = objStoreCatalogueEntry->getBucket();
+        segmentSizeMap_ = Util::readSegmentKeySize(bucket, schemaName, metadataPath);
+      }
     } else {
       throw runtime_error(fmt::format("Read segment size unsupported, catalogue entry: {}",
                                       catalogueEntry->getName()));

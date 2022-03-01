@@ -5,7 +5,7 @@
 #ifndef FPDB_FPDB_CATALOGUE_INCLUDE_FPDB_CATALOGUE_CAFSERIALIZATION_CAFTABLESERIALIZER_H
 #define FPDB_FPDB_CATALOGUE_INCLUDE_FPDB_CATALOGUE_CAFSERIALIZATION_CAFTABLESERIALIZER_H
 
-#include <fpdb/catalogue/s3/S3Table.h>
+#include <fpdb/catalogue/obj-store/ObjStoreTable.h>
 #include <fpdb/catalogue/local-fs/LocalFSTable.h>
 #include <fpdb/caf/CAFUtil.h>
 
@@ -13,7 +13,7 @@ using TablePtr = std::shared_ptr<fpdb::catalogue::Table>;
 
 CAF_BEGIN_TYPE_ID_BLOCK(Table, fpdb::caf::CAFUtil::Table_first_custom_type_id)
 CAF_ADD_TYPE_ID(Table, (TablePtr))
-CAF_ADD_TYPE_ID(Table, (fpdb::catalogue::s3::S3Table))
+CAF_ADD_TYPE_ID(Table, (fpdb::catalogue::obj_store::ObjStoreTable))
 CAF_ADD_TYPE_ID(Table, (fpdb::catalogue::local_fs::LocalFSTable))
 CAF_END_TYPE_ID_BLOCK(Table)
 
@@ -26,7 +26,7 @@ struct variant_inspector_traits<TablePtr> {
   // Lists all allowed types and gives them a 0-based index.
   static constexpr type_id_t allowed_types[] = {
           type_id_v<none_t>,
-          type_id_v<fpdb::catalogue::s3::S3Table>,
+          type_id_v<fpdb::catalogue::obj_store::ObjStoreTable>,
           type_id_v<fpdb::catalogue::local_fs::LocalFSTable>
   };
 
@@ -34,7 +34,7 @@ struct variant_inspector_traits<TablePtr> {
   static auto type_index(const value_type &x) {
     if (!x)
       return 0;
-    else if (x->getCatalogueEntryType() == fpdb::catalogue::S3)
+    else if (x->getCatalogueEntryType() == fpdb::catalogue::OBJ_STORE)
       return 1;
     else if (x->getCatalogueEntryType() == fpdb::catalogue::LOCAL_FS)
       return 2;
@@ -47,7 +47,7 @@ struct variant_inspector_traits<TablePtr> {
   static auto visit(F &&f, const value_type &x) {
     switch (type_index(x)) {
       case 1:
-        return f(dynamic_cast<fpdb::catalogue::s3::S3Table &>(*x));
+        return f(dynamic_cast<fpdb::catalogue::obj_store::ObjStoreTable &>(*x));
       case 2:
         return f(dynamic_cast<fpdb::catalogue::local_fs::LocalFSTable &>(*x));
       default: {
@@ -78,8 +78,8 @@ struct variant_inspector_traits<TablePtr> {
         continuation(dummy);
         return true;
       }
-      case type_id_v<fpdb::catalogue::s3::S3Table>: {
-        auto tmp = fpdb::catalogue::s3::S3Table{};
+      case type_id_v<fpdb::catalogue::obj_store::ObjStoreTable>: {
+        auto tmp = fpdb::catalogue::obj_store::ObjStoreTable{};
         continuation(tmp);
         return true;
       }

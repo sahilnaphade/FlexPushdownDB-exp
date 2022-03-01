@@ -9,10 +9,10 @@
 #include <fpdb/executor/physical/filter/FilterPOp.h>
 #include <fpdb/executor/physical/cache/CacheLoadPOp.h>
 #include <fpdb/executor/physical/merge/MergePOp.h>
-#include <fpdb/catalogue/s3/S3Table.h>
+#include <fpdb/catalogue/obj-store/ObjStoreTable.h>
 #include <fpdb/util/Util.h>
 
-using namespace fpdb::catalogue::s3;
+using namespace fpdb::catalogue::obj_store;
 using namespace fpdb::util;
 
 namespace fpdb::executor::physical {
@@ -28,8 +28,8 @@ PrePToS3PTransformer::PrePToS3PTransformer(uint prePOpId,
 
 pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
 PrePToS3PTransformer::transformFilterableScan(const shared_ptr<FilterableScanPrePOp> &filterableScanPrePOp) {
-  const auto &s3Table = std::static_pointer_cast<S3Table>(filterableScanPrePOp->getTable());
-  const auto &partitions = (const vector<shared_ptr<Partition>> &) s3Table->getS3Partitions();
+  const auto &s3Table = std::static_pointer_cast<ObjStoreTable>(filterableScanPrePOp->getTable());
+  const auto &partitions = (const vector<shared_ptr<Partition>> &) s3Table->getObjStorePartitions();
   const auto &partitionPredicates = PartitionPruner::prune(partitions, filterableScanPrePOp->getPredicate());
   vector<string> projectColumnNames{filterableScanPrePOp->getProjectColumnNames().begin(),
                                     filterableScanPrePOp->getProjectColumnNames().end()};
@@ -61,7 +61,7 @@ PrePToS3PTransformer::transformFilterableScanPullup(const shared_ptr<FilterableS
    */
   uint partitionId = 0;
   for (const auto &partitionPredicateIt: partitionPredicates) {
-    const auto &s3Partition = static_pointer_cast<S3Partition>(partitionPredicateIt.first);
+    const auto &s3Partition = static_pointer_cast<ObjStorePartition>(partitionPredicateIt.first);
     const auto &predicate = partitionPredicateIt.second;
     const auto &s3Bucket = s3Partition->getBucket();
     const auto &s3Object = s3Partition->getObject();
@@ -127,7 +127,7 @@ PrePToS3PTransformer::transformFilterableScanPushdown(const shared_ptr<Filterabl
    */
   uint partitionId = 0;
   for (const auto &partitionPredicateIt: partitionPredicates) {
-    const auto &s3Partition = static_pointer_cast<S3Partition>(partitionPredicateIt.first);
+    const auto &s3Partition = static_pointer_cast<ObjStorePartition>(partitionPredicateIt.first);
     const auto &predicate = partitionPredicateIt.second;
     const auto &s3Bucket = s3Partition->getBucket();
     const auto &s3Object = s3Partition->getObject();
@@ -167,7 +167,7 @@ PrePToS3PTransformer::transformFilterableScanCachingOnly(const shared_ptr<Filter
    */
   uint partitionId = 0;
   for (const auto &partitionPredicateIt: partitionPredicates) {
-    const auto &s3Partition = static_pointer_cast<S3Partition>(partitionPredicateIt.first);
+    const auto &s3Partition = static_pointer_cast<ObjStorePartition>(partitionPredicateIt.first);
     const auto &predicate = partitionPredicateIt.second;
     const auto &s3Bucket = s3Partition->getBucket();
     const auto &s3Object = s3Partition->getObject();
@@ -265,7 +265,7 @@ PrePToS3PTransformer::transformFilterableScanHybrid(const shared_ptr<FilterableS
    */
   uint partitionId = 0;
   for (const auto &partitionPredicateIt: partitionPredicates) {
-    const auto &s3Partition = static_pointer_cast<S3Partition>(partitionPredicateIt.first);
+    const auto &s3Partition = static_pointer_cast<ObjStorePartition>(partitionPredicateIt.first);
     const auto &predicate = partitionPredicateIt.second;
     const auto &s3Bucket = s3Partition->getBucket();
     const auto &s3Object = s3Partition->getObject();

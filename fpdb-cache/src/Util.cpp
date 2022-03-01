@@ -3,10 +3,10 @@
 //
 
 #include <fpdb/cache/Util.h>
-#include <fpdb/catalogue/s3/S3Partition.h>
+#include <fpdb/catalogue/obj-store/ObjStorePartition.h>
 #include <fpdb/util/Util.h>
 
-using namespace fpdb::catalogue::s3;
+using namespace fpdb::catalogue::obj_store;
 using namespace fpdb::util;
 
 std::vector<std::string> split(const std::string& str, const std::string& splitStr) {
@@ -44,7 +44,7 @@ unordered_map<shared_ptr<SegmentKey>, size_t, cache::SegmentKeyPointerHash, cach
 
     string s3Object = schemaName + objectName;
     // create the SegmentKey
-    auto segmentPartition = make_shared<S3Partition>(s3Bucket, s3Object);
+    auto segmentPartition = make_shared<ObjStorePartition>(s3Bucket, s3Object);
     auto segmentRange = SegmentRange::make(startOffset, endOffset);
     auto segmentKey = SegmentKey::make(segmentPartition, column, segmentRange);
     res.emplace(segmentKey, sizeInBytes);
