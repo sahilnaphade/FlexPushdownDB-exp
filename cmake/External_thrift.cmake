@@ -63,11 +63,13 @@ add_dependencies(${THRIFT_BASE} ${BOOST_BASE})
 
 file(MAKE_DIRECTORY ${THRIFT_INCLUDE_DIR}) # Include directory needs to exist to run configure step
 
-add_library(thrift_static STATIC IMPORTED)
-set_target_properties(thrift_static PROPERTIES IMPORTED_LOCATION ${THRIFT_STATIC_LIB})
-target_include_directories(thrift_static INTERFACE ${THRIFT_INCLUDE_DIR})
-add_dependencies(thrift_static ${THRIFT_BASE})
+#add_library(thrift_static STATIC IMPORTED)
+#set_target_properties(thrift_static PROPERTIES IMPORTED_LOCATION ${THRIFT_STATIC_LIB})
+#target_include_directories(thrift_static INTERFACE ${THRIFT_INCLUDE_DIR})
+#add_dependencies(thrift_static ${THRIFT_BASE})
 
 add_executable(thrift_executable IMPORTED)
 set_target_properties(thrift_executable PROPERTIES IMPORTED_LOCATION ${THRIFT_INSTALL_DIR}/${CMAKE_INSTALL_BINDIR}/thrift)
 add_dependencies(thrift_executable ${THRIFT_BASE})
+
+get_target_property(THRIFT_EXECUTABLE thrift_executable LOCATION)

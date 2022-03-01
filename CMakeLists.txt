@@ -10,6 +10,7 @@ include(CMakeUtils)
 
 setDefaults()
 
+set(FPDB_LLVM_VERSIONS "13.0" "12.0" "11.1" "11.0" "10" CACHE STRING "")
 include(Configure_LLVM)
 
 
@@ -49,8 +50,8 @@ include(External_Backward)
 include(External_CallableTraits)
 include(External_zlib_ng)
 include(External_boost)
+include(External_thrift)
 include(External_nlohmannjson)
-
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Modules
