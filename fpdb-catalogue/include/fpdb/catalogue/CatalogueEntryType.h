@@ -9,7 +9,7 @@ namespace fpdb::catalogue {
 
 enum CatalogueEntryType {
   LOCAL_FS,
-  S3
+  OBJ_STORE
 };
 
 }

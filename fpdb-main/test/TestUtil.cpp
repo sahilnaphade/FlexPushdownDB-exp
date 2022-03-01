@@ -8,13 +8,13 @@
 #include <fpdb/executor/physical/transform/PrePToPTransformer.h>
 #include <fpdb/calcite/CalciteConfig.h>
 #include <fpdb/plan/calcite/CalcitePlanJsonDeserializer.h>
-#include <fpdb/catalogue/s3/S3CatalogueEntryReader.h>
+#include <fpdb/catalogue/obj-store/ObjStoreCatalogueEntryReader.h>
 #include <fpdb/aws/AWSConfig.h>
 #include <fpdb/util/Util.h>
 
 using namespace fpdb::executor::physical;
 using namespace fpdb::plan::calcite;
-using namespace fpdb::catalogue::s3;
+using namespace fpdb::catalogue::obj_store;
 using namespace fpdb::util;
 
 namespace fpdb::main::test {
@@ -84,10 +84,10 @@ void TestUtil::makeCatalogueEntry() {
   catalogue_ = make_shared<Catalogue>("main", metadataPath);
 
   // read catalogue entry
-  catalogueEntry_ = S3CatalogueEntryReader::readS3CatalogueEntry(catalogue_,
-                                                                 s3Bucket,
-                                                                 schemaName_,
-                                                                 awsClient_->getS3Client());
+  catalogueEntry_ = ObjStoreCatalogueEntryReader::readS3CatalogueEntry(catalogue_,
+                                                                       s3Bucket,
+                                                                       schemaName_,
+                                                                       awsClient_->getS3Client());
   catalogue_->putEntry(catalogueEntry_);
 }
 

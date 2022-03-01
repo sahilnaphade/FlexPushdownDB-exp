@@ -8,13 +8,13 @@
 #include <fpdb/cache/policy/LFUSCachingPolicy.h>
 #include <fpdb/cache/policy/WLFUCachingPolicy.h>
 #include <fpdb/catalogue/CatalogueEntry.h>
-#include <fpdb/catalogue/s3/S3CatalogueEntryReader.h>
+#include <fpdb/catalogue/obj-store/ObjStoreCatalogueEntryReader.h>
 #include <fpdb/util/Util.h>
 #include <fmt/format.h>
 #include <string>
 #include <utility>
 
-using namespace fpdb::catalogue::s3;
+using namespace fpdb::catalogue::obj_store;
 using namespace fpdb::util;
 
 namespace fpdb::main {
@@ -58,7 +58,10 @@ shared_ptr<ExecConfig> ExecConfig::parseExecConfig(const shared_ptr<Catalogue> &
   if (expCatalogueEntry.has_value()) {
     catalogueEntry = expCatalogueEntry.value();
   } else {
-    catalogueEntry = S3CatalogueEntryReader::readS3CatalogueEntry(catalogue, s3Bucket, schemaName, awsClient->getS3Client());
+    catalogueEntry = ObjStoreCatalogueEntryReader::readS3CatalogueEntry(catalogue,
+                                                                        s3Bucket,
+                                                                        schemaName,
+                                                                        awsClient->getS3Client());
     catalogue->putEntry(catalogueEntry);
   }
 

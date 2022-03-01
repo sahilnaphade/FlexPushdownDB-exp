@@ -8,7 +8,7 @@
 #include <fpdb/executor/message/Message.h>
 #include <fpdb/executor/message/TupleMessage.h>
 #include <fpdb/executor/message/cache/LoadResponseMessage.h>
-#include <fpdb/catalogue/s3/S3Partition.h>
+#include <fpdb/catalogue/obj-store/ObjStorePartition.h>
 #include <fpdb/tuple/TupleSet.h>
 #include <arrow/type_fwd.h>
 #include <aws/s3/model/GetObjectRequest.h>
@@ -29,7 +29,7 @@ using namespace Aws::S3::Model;
 using namespace fpdb::executor::message;
 using namespace fpdb::executor::physical::cache;
 using namespace fpdb::cache;
-using namespace fpdb::catalogue::s3;
+using namespace fpdb::catalogue::obj_store;
 
 namespace fpdb::executor::physical::s3 {
 
@@ -146,7 +146,7 @@ void S3SelectScanAbstractPOp::onCacheLoadResponse(const ScanMessage &message) {
 }
 
 void S3SelectScanAbstractPOp::requestStoreSegmentsInCache(const std::shared_ptr<TupleSet> &tupleSet) {
-  auto partition = std::make_shared<S3Partition>(s3Bucket_, s3Object_, finishOffset_ - startOffset_);
+  auto partition = std::make_shared<ObjStorePartition>(s3Bucket_, s3Object_, finishOffset_ - startOffset_);
   CacheHelper::requestStoreSegmentsInCache(tupleSet, partition, startOffset_, finishOffset_, name(), ctx());
 }
 

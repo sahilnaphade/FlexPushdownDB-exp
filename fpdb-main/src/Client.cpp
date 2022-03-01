@@ -6,11 +6,11 @@
 #include <fpdb/executor/caf/CAFInit.h>
 #include <fpdb/executor/physical/transform/PrePToPTransformer.h>
 #include <fpdb/plan/calcite/CalcitePlanJsonDeserializer.h>
-#include <fpdb/catalogue/s3/S3CatalogueEntryReader.h>
+#include <fpdb/catalogue/obj-store/ObjStoreCatalogueEntryReader.h>
 #include <fpdb/util/Util.h>
 
 using namespace fpdb::plan::calcite;
-using namespace fpdb::catalogue::s3;
+using namespace fpdb::catalogue::obj_store;
 using namespace fpdb::util;
 
 namespace fpdb::main {
@@ -121,10 +121,10 @@ shared_ptr<CatalogueEntry> Client::getCatalogueEntry(const string &schemaName) {
   if (expCatalogueEntry.has_value()) {
     return expCatalogueEntry.value();
   } else {
-    catalogueEntry = S3CatalogueEntryReader::readS3CatalogueEntry(catalogue_,
-                                                                  execConfig_->getS3Bucket(),
-                                                                  schemaName,
-                                                                  awsClient_->getS3Client());
+    catalogueEntry = ObjStoreCatalogueEntryReader::readS3CatalogueEntry(catalogue_,
+                                                                        execConfig_->getS3Bucket(),
+                                                                        schemaName,
+                                                                        awsClient_->getS3Client());
     catalogue_->putEntry(catalogueEntry);
     return catalogueEntry;
   }
