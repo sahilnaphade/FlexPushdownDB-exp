@@ -3,7 +3,7 @@
 //
 
 #include <fpdb/executor/physical/serialization/PhysicalPlanDeserializer.h>
-#include <fpdb/executor/physical/store/StoreFileScanPOp.h>
+#include <fpdb/executor/physical/fpdb-store/FPDBStoreFileScanPOp.h>
 #include <fpdb/executor/physical/filter/FilterPOp.h>
 #include <fpdb/executor/physical/aggregate/AggregatePOp.h>
 #include <fpdb/executor/physical/collate/CollatePOp.h>
@@ -45,8 +45,8 @@ tl::expected<std::shared_ptr<PhysicalOp>, std::string> PhysicalPlanDeserializer:
   }
 
   auto type = jObj["type"].get<std::string>();
-  if (type == "StoreFileScanPOp") {
-    return deserializeStoreFileScanPOp(jObj);
+  if (type == "FPDBStoreFileScanPOp") {
+    return deserializeFPDBStoreFileScanPOp(jObj);
   } else if (type == "FilterPOp") {
     return deserializeFilterPOp(jObj);
   } else if (type == "AggregatePOp") {
@@ -77,7 +77,7 @@ PhysicalPlanDeserializer::deserializeProducers(::nlohmann::json jObj) {
 }
 
 tl::expected<std::shared_ptr<PhysicalOp>, std::string>
-PhysicalPlanDeserializer::deserializeStoreFileScanPOp(::nlohmann::json jObj) {
+PhysicalPlanDeserializer::deserializeFPDBStoreFileScanPOp(::nlohmann::json jObj) {
   // deserialize self
   if (!jObj.contains("name")) {
     return tl::make_unexpected(fmt::format("Name not specified in FileScanPOp JSON '{}'", jObj));
@@ -127,15 +127,15 @@ PhysicalPlanDeserializer::deserializeStoreFileScanPOp(::nlohmann::json jObj) {
     byteRange = {startOffset, finishOffset};
   }
 
-  std::shared_ptr<PhysicalOp> storeFileScanPOp = std::make_shared<store::StoreFileScanPOp>(name,
-                                                                                           projectColumnNames,
-                                                                                           0,
-                                                                                           storeRootPath_,
-                                                                                           bucket,
-                                                                                           object,
-                                                                                           format,
-                                                                                           schema,
-                                                                                           byteRange);
+  std::shared_ptr<PhysicalOp> storeFileScanPOp = std::make_shared<fpdb_store::FPDBStoreFileScanPOp>(name,
+                                                                                                    projectColumnNames,
+                                                                                                    0,
+                                                                                                    storeRootPath_,
+                                                                                                    bucket,
+                                                                                                    object,
+                                                                                                    format,
+                                                                                                    schema,
+                                                                                                    byteRange);
   physicalOps_.emplace_back(storeFileScanPOp);
   
   // deserialize producers

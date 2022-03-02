@@ -7,12 +7,14 @@
 
 #include <fpdb/executor/physical/PhysicalOp.h>
 #include <fpdb/plan/prephysical/FilterableScanPrePOp.h>
+#include <fpdb/plan/prephysical/separable/SeparableSuperPrePOp.h>
 #include <fpdb/plan/Mode.h>
 #include <fpdb/catalogue/Partition.h>
 #include <fpdb/aws/AWSClient.h>
 
 using namespace fpdb::plan;
 using namespace fpdb::plan::prephysical;
+using namespace fpdb::plan::prephysical::separable;
 using namespace fpdb::expression::gandiva;
 using namespace fpdb::catalogue;
 using namespace fpdb::aws;
@@ -27,14 +29,17 @@ public:
                        int numNodes);
 
   /**
-   * Transform filterable scan prephysical op to physical op
-   * @param prePOp: prephysical op
+   * Transform separable super prephysical op to physical op
+   * @param separableSuperPrePOp
    * @return a pair of connect physical ops (to producer) and current all (cumulative) physical ops
    */
   pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
-  transformFilterableScan(const shared_ptr<FilterableScanPrePOp> &filterableScanPrePOp);
+  transformSeparableSuper(const shared_ptr<SeparableSuperPrePOp> &separableSuperPrePOp);
 
 private:
+  pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
+  transformFilterableScan(const shared_ptr<FilterableScanPrePOp> &filterableScanPrePOp);
+
   pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
   transformFilterableScanPullup(const shared_ptr<FilterableScanPrePOp> &filterableScanPrePOp,
                                 const unordered_map<shared_ptr<Partition>, shared_ptr<Expression>, PartitionPointerHash, PartitionPointerPredicate> &partitionPredicates,

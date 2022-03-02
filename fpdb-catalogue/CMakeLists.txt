@@ -20,6 +20,9 @@ add_library(fpdb-catalogue STATIC
         src/obj-store/ObjStoreTable.cpp include/fpdb/catalogue/obj-store/ObjStoreTable.h
         src/obj-store/ObjStorePartition.cpp include/fpdb/catalogue/obj-store/ObjStorePartition.h
         src/obj-store/ObjStoreCatalogueEntryReader.cpp include/fpdb/catalogue/obj-store/ObjStoreCatalogueEntryReader.h
+        src/obj-store/ObjStoreConnector.cpp include/fpdb/catalogue/obj-store/ObjStoreConnector.h
+        src/obj-store/s3/S3Connector.cpp include/fpdb/catalogue/obj-store/s3/S3Connector.h
+        src/obj-store/fpdb-store/FPDBStoreConnector.cpp include/fpdb/catalogue/obj-store/fpdb-store/FPDBStoreConnector.h
         include/fpdb/catalogue/caf-serialization/CAFPartitionSerializer.h
         include/fpdb/catalogue/caf-serialization/CAFTableSerializer.h)
 

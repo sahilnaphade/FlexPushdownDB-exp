@@ -87,8 +87,8 @@ add_library(fpdb-executor STATIC
         src/physical/s3/S3CSVParser.cpp include/fpdb/executor/physical/s3/S3CSVParser.h
         src/physical/s3/S3SelectCSVParseOptions.cpp include/fpdb/executor/physical/s3/S3SelectCSVParseOptions.h
         src/physical/s3/S3SelectScanKernel.cpp include/fpdb/executor/physical/s3/S3SelectScanKernel.h
-        src/physical/store/StoreSuperPOp.cpp include/fpdb/executor/physical/store/StoreSuperPOp.h
-        src/physical/store/StoreFileScanPOp.cpp include/fpdb/executor/physical/store/StoreFileScanPOp.h
+        src/physical/fpdb-store/FPDBStoreSuperPOp.cpp include/fpdb/executor/physical/fpdb-store/FPDBStoreSuperPOp.h
+        src/physical/fpdb-store/FPDBStoreFileScanPOp.cpp include/fpdb/executor/physical/fpdb-store/FPDBStoreFileScanPOp.h
 #        physical plan
         src/physical/PhysicalPlan.cpp include/fpdb/executor/physical/PhysicalPlan.h
         src/physical/transform/PrePToPTransformer.cpp include/fpdb/executor/physical/transform/PrePToPTransformer.h

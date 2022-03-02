@@ -8,12 +8,15 @@
 #include <fpdb/executor/physical/transform/PrePToPTransformer.h>
 #include <fpdb/calcite/CalciteConfig.h>
 #include <fpdb/plan/calcite/CalcitePlanJsonDeserializer.h>
+#include <fpdb/plan/prephysical/separable/SeparablePrePOpTransformer.h>
 #include <fpdb/catalogue/obj-store/ObjStoreCatalogueEntryReader.h>
+#include <fpdb/catalogue/obj-store/s3/S3Connector.h>
 #include <fpdb/aws/AWSConfig.h>
 #include <fpdb/util/Util.h>
 
 using namespace fpdb::executor::physical;
 using namespace fpdb::plan::calcite;
+using namespace fpdb::plan::prephysical::separable;
 using namespace fpdb::catalogue::obj_store;
 using namespace fpdb::util;
 
@@ -151,10 +154,16 @@ void TestUtil::executeQueryFile(const string &queryFileName) {
   // trim unused fields (Calcite trimmer does not trim completely)
   prePhysicalPlan->populateAndTrimProjectColumns();
 
+  // detect separable operators
+  auto separableTransformer = make_shared<SeparablePrePOpTransformer>(catalogueEntry_);
+  separableTransformer->transform(prePhysicalPlan);
+
   // transform prephysical plan to physical plan
   int numNodes = isDistributed_ ? (int) nodes_.size() : 1;
+  auto s3Connector = make_shared<obj_store::S3Connector>(awsClient_);
   auto prePToPTransformer = make_shared<PrePToPTransformer>(prePhysicalPlan,
-                                                            awsClient_,
+                                                            catalogueEntry_,
+                                                            s3Connector,
                                                             mode_,
                                                             parallelDegree_,
                                                             numNodes);

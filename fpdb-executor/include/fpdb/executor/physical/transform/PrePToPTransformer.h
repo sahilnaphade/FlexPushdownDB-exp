@@ -18,19 +18,24 @@
 #include <fpdb/plan/prephysical/HashJoinPrePOp.h>
 #include <fpdb/plan/prephysical/NestedLoopJoinPrePOp.h>
 #include <fpdb/plan/prephysical/FilterableScanPrePOp.h>
+#include <fpdb/plan/prephysical/separable/SeparableSuperPrePOp.h>
 #include <fpdb/plan/Mode.h>
-#include <fpdb/aws/AWSClient.h>
+#include <fpdb/catalogue/CatalogueEntry.h>
+#include <fpdb/catalogue/obj-store/ObjStoreConnector.h>
 
 using namespace fpdb::plan;
 using namespace fpdb::plan::prephysical;
-using namespace fpdb::aws;
+using namespace fpdb::plan::prephysical::separable;
+using namespace fpdb::catalogue;
+using namespace fpdb::catalogue::obj_store;
 
 namespace fpdb::executor::physical {
 
 class PrePToPTransformer {
 public:
   PrePToPTransformer(const shared_ptr<PrePhysicalPlan> &prePhysicalPlan,
-                     const shared_ptr<AWSClient> &awsClient,
+                     const shared_ptr<CatalogueEntry> &catalogueEntry,
+                     const shared_ptr<ObjStoreConnector> &objStoreConnector,
                      const shared_ptr<Mode> &mode,
                      int parallelDegree,
                      int numNodes);
@@ -76,6 +81,9 @@ private:
   pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
   transformFilterableScan(const shared_ptr<FilterableScanPrePOp> &filterableScanPrePOp);
 
+  pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
+  transformSeparableSuper(const shared_ptr<SeparableSuperPrePOp> &separableSuperPrePOp);
+
   /**
    * Transform aggregate and aggregate reduce function
    * @param outputColumnName
@@ -91,7 +99,8 @@ private:
                                                                       const shared_ptr<AggregatePrePFunction> &prePFunction);
 
   shared_ptr<PrePhysicalPlan> prePhysicalPlan_;
-  shared_ptr<AWSClient> awsClient_;
+  shared_ptr<CatalogueEntry> catalogueEntry_;
+  shared_ptr<ObjStoreConnector> objStoreConnector_;
   shared_ptr<Mode> mode_;
   int parallelDegree_;
   int numNodes_;

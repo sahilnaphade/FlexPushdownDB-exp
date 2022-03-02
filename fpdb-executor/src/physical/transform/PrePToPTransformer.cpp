@@ -23,17 +23,21 @@
 #include <fpdb/executor/physical/split/SplitPOp.h>
 #include <fpdb/executor/physical/collate/CollatePOp.h>
 #include <fpdb/executor/physical/Util.h>
+#include <fpdb/catalogue/obj-store/ObjStoreCatalogueEntry.h>
+#include <fpdb/catalogue/obj-store/s3/S3Connector.h>
 #include <fpdb/expression/gandiva/Column.h>
 
 namespace fpdb::executor::physical {
 
 PrePToPTransformer::PrePToPTransformer(const shared_ptr<PrePhysicalPlan> &prePhysicalPlan,
-                                       const shared_ptr<AWSClient> &awsClient,
+                                       const shared_ptr<CatalogueEntry> &catalogueEntry,
+                                       const shared_ptr<ObjStoreConnector> &objStoreConnector,
                                        const shared_ptr<Mode> &mode,
                                        int parallelDegree,
                                        int numNodes) :
   prePhysicalPlan_(prePhysicalPlan),
-  awsClient_(awsClient),
+  catalogueEntry_(catalogueEntry),
+  objStoreConnector_(objStoreConnector),
   mode_(mode),
   parallelDegree_(parallelDegree),
   numNodes_(numNodes) {}
@@ -93,6 +97,10 @@ PrePToPTransformer::transformDfs(const shared_ptr<PrePhysicalOp> &prePOp) {
     case PrePOpType::FILTERABLE_SCAN: {
       const auto &filterableScanPrePOp = std::static_pointer_cast<FilterableScanPrePOp>(prePOp);
       return transformFilterableScan(filterableScanPrePOp);
+    }
+    case PrePOpType::SEPARABLE_SUPER: {
+      const auto &separableSuperPrePOp = std::static_pointer_cast<SeparableSuperPrePOp>(prePOp);
+      return transformSeparableSuper(separableSuperPrePOp);
     }
     default: {
       throw runtime_error(fmt::format("Unsupported prephysical operator type: {}", prePOp->getTypeString()));
@@ -555,12 +563,43 @@ PrePToPTransformer::transformNestedLoopJoin(const shared_ptr<NestedLoopJoinPrePO
 }
 
 pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
-PrePToPTransformer::transformFilterableScan(const shared_ptr<FilterableScanPrePOp> &filterableScanPrePOp) {
-  const auto s3PTransformer = make_shared<PrePToS3PTransformer>(filterableScanPrePOp->getId(),
-                                                                awsClient_,
-                                                                mode_,
-                                                                numNodes_);
-  return s3PTransformer->transformFilterableScan(filterableScanPrePOp);
+PrePToPTransformer::transformFilterableScan(const shared_ptr<FilterableScanPrePOp> &) {
+  switch (catalogueEntry_->getType()) {
+    case CatalogueEntryType::LOCAL_FS: {
+      throw runtime_error(fmt::format("Unsupported catalogue entry type for filterable scan prephysical operator: {}",
+                                      catalogueEntry_->getTypeName()));
+    }
+    case CatalogueEntryType::OBJ_STORE: {
+      throw runtime_error(fmt::format("Filterable scan should be contained by separable super prephysical operator for object store"));
+    }
+    default: {
+      throw runtime_error(fmt::format("Unknown catalogue entry type: {}", catalogueEntry_->getTypeName()));
+    }
+  }
+}
+
+pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
+PrePToPTransformer::transformSeparableSuper(const shared_ptr<SeparableSuperPrePOp> &separableSuperPrePOp) {
+  if (catalogueEntry_->getType() != CatalogueEntryType::OBJ_STORE) {
+    throw runtime_error(fmt::format("Unsupported catalogue entry type for separable super prephysical operator: {}",
+                        catalogueEntry_->getTypeName()));
+  }
+  auto objStoreCatalogueEntry = std::static_pointer_cast<obj_store::ObjStoreCatalogueEntry>(catalogueEntry_);
+
+  if (objStoreCatalogueEntry->getStoreType() == obj_store::ObjStoreType::S3) {
+    if (objStoreConnector_->getStoreType() != obj_store::ObjStoreType::S3) {
+      throw runtime_error("object store type for catalogue entry and connector mismatch");
+    }
+    auto s3Connector = static_pointer_cast<obj_store::S3Connector>(objStoreConnector_);
+    auto s3PTransformer = make_shared<PrePToS3PTransformer>(separableSuperPrePOp->getId(),
+                                                            s3Connector->getAwsClient(),
+                                                            mode_,
+                                                            numNodes_);
+    return s3PTransformer->transformSeparableSuper(separableSuperPrePOp);
+  } else {
+    throw runtime_error(fmt::format("Unsupported object store type for separable super prephysical operator: {}",
+                                    objStoreCatalogueEntry->getStoreTypeName()));
+  }
 }
 
 vector<shared_ptr<aggregate::AggregateFunction>>

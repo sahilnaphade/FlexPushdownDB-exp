@@ -27,6 +27,17 @@ PrePToS3PTransformer::PrePToS3PTransformer(uint prePOpId,
   numNodes_(numNodes) {}
 
 pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
+PrePToS3PTransformer::transformSeparableSuper(const shared_ptr<SeparableSuperPrePOp> &separableSuperPrePOp) {
+  // currently only support push filterable scan to S3
+  auto rootOp = separableSuperPrePOp->getRootOp();
+  if (rootOp->getType() != PrePOpType::FILTERABLE_SCAN) {
+    throw runtime_error(fmt::format("Unsupported prephysical operator type for S3 pushdown: {}", rootOp->getTypeString()));
+  }
+  auto filterableScanPrePOp = static_pointer_cast<FilterableScanPrePOp>(rootOp);
+  return transformFilterableScan(filterableScanPrePOp);
+}
+
+pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
 PrePToS3PTransformer::transformFilterableScan(const shared_ptr<FilterableScanPrePOp> &filterableScanPrePOp) {
   const auto &s3Table = std::static_pointer_cast<ObjStoreTable>(filterableScanPrePOp->getTable());
   const auto &partitions = (const vector<shared_ptr<Partition>> &) s3Table->getObjStorePartitions();

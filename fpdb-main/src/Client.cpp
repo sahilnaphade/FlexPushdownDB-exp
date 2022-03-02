@@ -7,6 +7,7 @@
 #include <fpdb/executor/physical/transform/PrePToPTransformer.h>
 #include <fpdb/plan/calcite/CalcitePlanJsonDeserializer.h>
 #include <fpdb/catalogue/obj-store/ObjStoreCatalogueEntryReader.h>
+#include <fpdb/catalogue/obj-store/s3/S3Connector.h>
 #include <fpdb/util/Util.h>
 
 using namespace fpdb::plan::calcite;
@@ -142,8 +143,10 @@ shared_ptr<PhysicalPlan> Client::plan(const string &query, const shared_ptr<Cata
   prePhysicalPlan->populateAndTrimProjectColumns();
 
   // transform prephysical plan to physical plan
+  auto s3Connector = make_shared<obj_store::S3Connector>(awsClient_);
   auto prePToPTransformer = make_shared<PrePToPTransformer>(prePhysicalPlan,
-                                                            awsClient_,
+                                                            catalogueEntry,
+                                                            s3Connector,
                                                             execConfig_->getMode(),
                                                             execConfig_->getParallelDegree(),
                                                             nodes_.size() + 1);

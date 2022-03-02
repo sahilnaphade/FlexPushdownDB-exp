@@ -11,6 +11,10 @@ SeparableSuperPrePOp::SeparableSuperPrePOp(uint id, const std::shared_ptr<PrePhy
   PrePhysicalOp(id, SEPARABLE_SUPER),
   rootOp_(rootOp) {}
 
+const std::shared_ptr<PrePhysicalOp> &SeparableSuperPrePOp::getRootOp() const {
+  return rootOp_;
+}
+
 std::string SeparableSuperPrePOp::getTypeString() {
   return "SeparableSuperPrePOp";
 }

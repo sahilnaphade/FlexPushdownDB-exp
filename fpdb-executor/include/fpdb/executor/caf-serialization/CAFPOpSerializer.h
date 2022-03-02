@@ -24,8 +24,8 @@
 #include <fpdb/executor/physical/shuffle/ShufflePOp.h>
 #include <fpdb/executor/physical/sort/SortPOp.h>
 #include <fpdb/executor/physical/split/SplitPOp.h>
-#include <fpdb/executor/physical/store/StoreFileScanPOp.h>
-#include <fpdb/executor/physical/store/StoreSuperPOp.h>
+#include <fpdb/executor/physical/fpdb-store/FPDBStoreFileScanPOp.h>
+#include <fpdb/executor/physical/fpdb-store/FPDBStoreSuperPOp.h>
 #include <fpdb/tuple/serialization/ArrowSerializer.h>
 #include <fpdb/caf/CAFUtil.h>
 
@@ -53,8 +53,8 @@ CAF_ADD_TYPE_ID(POp, (fpdb::executor::physical::s3::S3SelectPOp))
 CAF_ADD_TYPE_ID(POp, (shuffle::ShufflePOp))
 CAF_ADD_TYPE_ID(POp, (sort::SortPOp))
 CAF_ADD_TYPE_ID(POp, (split::SplitPOp))
-CAF_ADD_TYPE_ID(POp, (store::StoreFileScanPOp))
-CAF_ADD_TYPE_ID(POp, (store::StoreSuperPOp))
+CAF_ADD_TYPE_ID(POp, (fpdb_store::FPDBStoreFileScanPOp))
+CAF_ADD_TYPE_ID(POp, (fpdb_store::FPDBStoreSuperPOp))
 CAF_ADD_TYPE_ID(POp, (caf::spawn_options))
 CAF_END_TYPE_ID_BLOCK(POp)
 
@@ -86,8 +86,8 @@ struct variant_inspector_traits<POpPtr> {
           type_id_v<shuffle::ShufflePOp>,
           type_id_v<sort::SortPOp>,
           type_id_v<split::SplitPOp>,
-          type_id_v<store::StoreFileScanPOp>,
-          type_id_v<store::StoreSuperPOp>
+          type_id_v<fpdb_store::FPDBStoreFileScanPOp>,
+          type_id_v<fpdb_store::FPDBStoreSuperPOp>
   };
 
   // Returns which type in allowed_types corresponds to x.
@@ -130,9 +130,9 @@ struct variant_inspector_traits<POpPtr> {
       return 17;
     else if (x->getType() == POpType::SPLIT)
       return 18;
-    else if (x->getType() == POpType::STORE_FILE_SCAN)
+    else if (x->getType() == POpType::FPDB_STORE_FILE_SCAN)
       return 19;
-    else if (x->getType() == POpType::STORE_SUPER)
+    else if (x->getType() == POpType::FPDB_STORE_SUPER)
       return 20;
     else
       return -1;
@@ -179,9 +179,9 @@ struct variant_inspector_traits<POpPtr> {
       case 18:
         return f(dynamic_cast<split::SplitPOp &>(*x));
       case 19:
-        return f(dynamic_cast<store::StoreFileScanPOp &>(*x));
+        return f(dynamic_cast<fpdb_store::FPDBStoreFileScanPOp &>(*x));
       case 20:
-        return f(dynamic_cast<store::StoreSuperPOp &>(*x));
+        return f(dynamic_cast<fpdb_store::FPDBStoreSuperPOp &>(*x));
       default: {
         none_t dummy;
         return f(dummy);
@@ -300,13 +300,13 @@ struct variant_inspector_traits<POpPtr> {
         continuation(tmp);
         return true;
       }
-      case type_id_v<store::StoreFileScanPOp>: {
-        auto tmp = store::StoreFileScanPOp{};
+      case type_id_v<fpdb_store::FPDBStoreFileScanPOp>: {
+        auto tmp = fpdb_store::FPDBStoreFileScanPOp{};
         continuation(tmp);
         return true;
       }
-      case type_id_v<store::StoreSuperPOp>: {
-        auto tmp = store::StoreSuperPOp{};
+      case type_id_v<fpdb_store::FPDBStoreSuperPOp>: {
+        auto tmp = fpdb_store::FPDBStoreSuperPOp{};
         continuation(tmp);
         return true;
       }

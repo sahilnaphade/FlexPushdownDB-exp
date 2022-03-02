@@ -30,8 +30,8 @@ tl::expected<std::string, std::string> PhysicalPlanSerializer::serialize(bool pr
 
 tl::expected<json, std::string> PhysicalPlanSerializer::serializeDfs(const std::shared_ptr<PhysicalOp> &op) {
   switch (op->getType()) {
-    case POpType::STORE_FILE_SCAN:
-      return serializeStoreFileScanPOp(std::static_pointer_cast<store::StoreFileScanPOp>(op));
+    case POpType::FPDB_STORE_FILE_SCAN:
+      return serializeFPDBStoreFileScanPOp(std::static_pointer_cast<fpdb_store::FPDBStoreFileScanPOp>(op));
     case POpType::FILTER:
       return serializeFilterPOp(std::static_pointer_cast<filter::FilterPOp>(op));
     case POpType::AGGREGATE:
@@ -62,8 +62,8 @@ tl::expected<json, std::string> PhysicalPlanSerializer::serializeProducers(const
   return producerJArr;
 }
 
-tl::expected<::nlohmann::json, std::string>
-PhysicalPlanSerializer::serializeStoreFileScanPOp(const std::shared_ptr<store::StoreFileScanPOp> &storeFileScanPOp) {
+tl::expected<::nlohmann::json, std::string> PhysicalPlanSerializer::serializeFPDBStoreFileScanPOp(
+        const std::shared_ptr<fpdb_store::FPDBStoreFileScanPOp> &storeFileScanPOp) {
   json jObj;
   auto kernel = storeFileScanPOp->getKernel();
 

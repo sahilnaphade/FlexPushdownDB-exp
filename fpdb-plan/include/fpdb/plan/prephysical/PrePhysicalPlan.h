@@ -15,6 +15,7 @@ public:
                   const vector<string> &outputColumnNames);
 
   const shared_ptr<PrePhysicalOp> &getRootOp() const;
+  void setRootOp(const shared_ptr<PrePhysicalOp> &rootOp);
   const vector<string> &getOutputColumnNames() const;
 
   void populateAndTrimProjectColumns();

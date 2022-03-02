@@ -3,8 +3,8 @@
 //
 
 #include <fpdb/store/server/Server.hpp>
-#include <fpdb/executor/physical/store/StoreSuperPOp.h>
-#include <fpdb/executor/physical/store/StoreFileScanPOp.h>
+#include <fpdb/executor/physical/fpdb-store/FPDBStoreSuperPOp.h>
+#include <fpdb/executor/physical/fpdb-store/FPDBStoreFileScanPOp.h>
 #include <fpdb/executor/physical/filter/FilterPOp.h>
 #include <fpdb/executor/physical/aggregate/AggregatePOp.h>
 #include <fpdb/executor/physical/collate/CollatePOp.h>
@@ -24,16 +24,16 @@ using namespace fpdb::expression::gandiva;
 using namespace fpdb::tuple;
 
 // file scan: test.csv, columns: {a, b}
-std::shared_ptr<store::StoreFileScanPOp> makeStoreFileScanPOp() {
+std::shared_ptr<fpdb_store::FPDBStoreFileScanPOp> makeFPDBStoreFileScanPOp() {
   auto format = std::make_shared<csv::CSVFormat>(',');
   auto schema = util::FileReaderTestUtil::makeTestSchema();
-  return std::make_shared<store::StoreFileScanPOp>("StoreFileScan",
-                                                   std::vector<std::string>{"a", "b"},
-                                                   0,
-                                                   "test-resources",
-                                                   "simple_data/csv/test.csv",
-                                                   format,
-                                                   schema);
+  return std::make_shared<fpdb_store::FPDBStoreFileScanPOp>("StoreFileScan",
+                                                            std::vector<std::string>{"a", "b"},
+                                                            0,
+                                                            "test-resources",
+                                                            "simple_data/csv/test.csv",
+                                                            format,
+                                                            schema);
 }
 
 // filter: a <= 4
@@ -63,13 +63,13 @@ makeCollatePOp(const std::vector<std::string> &projectColumnNames) {
                                                                          0);
 }
 
-std::shared_ptr<store::StoreSuperPOp> makeStoreSuperPOp(const std::vector<std::shared_ptr<PhysicalOp>> &operators,
+std::shared_ptr<fpdb_store::FPDBStoreSuperPOp> makeStoreSuperPOp(const std::vector<std::shared_ptr<PhysicalOp>> &operators,
                                                         const std::vector<std::string> &projectColumnNames) {
   auto subPlan = std::make_shared<PhysicalPlan>(operators);
-  return std::make_shared<store::StoreSuperPOp>("StoreSuper",
-                                                projectColumnNames,
-                                                0,
-                                                subPlan);
+  return std::make_shared<fpdb_store::FPDBStoreSuperPOp>("StoreSuper",
+                                                         projectColumnNames,
+                                                         0,
+                                                         subPlan);
 }
 
 // connect
@@ -85,7 +85,7 @@ TEST_SUITE("fpdb-store-server/FlightSelectTest" * doctest::skip(false)) {
 TEST_CASE("fpdb-store-server/FlightSelectTest/scan-filter-aggregate" * doctest::skip(false)) {
 
   // create store super op
-  auto storeFileScanPOp = makeStoreFileScanPOp();
+  auto storeFileScanPOp = makeFPDBStoreFileScanPOp();
   auto filterPOp = makeFilterPOp();
   auto aggregatePOp = makeAggregatePOp();
   auto collatePOp = makeCollatePOp({"sum_b"});

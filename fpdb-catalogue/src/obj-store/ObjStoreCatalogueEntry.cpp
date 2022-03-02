@@ -58,4 +58,12 @@ string ObjStoreCatalogueEntry::getName() const {
   return fmt::format("{}://{}/{}", storeName, bucket_, getSchemaName());
 }
 
+string ObjStoreCatalogueEntry::getStoreTypeName() const {
+  switch (storeType_) {
+    case ObjStoreType::S3: return "S3";
+    case ObjStoreType::FPDB_STORE: return "FPDB-Store";
+    default: return "Unknown";
+  }
+}
+
 }

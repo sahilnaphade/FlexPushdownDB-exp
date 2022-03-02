@@ -6,7 +6,7 @@
 #define FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_SERIALIZATION_PHYSICALPLANSERIALIZER_H
 
 #include <fpdb/executor/physical/PhysicalPlan.h>
-#include <fpdb/executor/physical/store/StoreFileScanPOp.h>
+#include <fpdb/executor/physical/fpdb-store/FPDBStoreFileScanPOp.h>
 #include <fpdb/executor/physical/filter/FilterPOp.h>
 #include <fpdb/executor/physical/aggregate/AggregatePOp.h>
 #include <fpdb/executor/physical/collate/CollatePOp.h>
@@ -27,7 +27,7 @@ private:
   tl::expected<::nlohmann::json, std::string> serializeProducers(const std::shared_ptr<PhysicalOp> &op);
 
   tl::expected<::nlohmann::json, std::string>
-  serializeStoreFileScanPOp(const std::shared_ptr<store::StoreFileScanPOp> &storeFileScanPOp);
+  serializeFPDBStoreFileScanPOp(const std::shared_ptr<fpdb_store::FPDBStoreFileScanPOp> &storeFileScanPOp);
 
   tl::expected<::nlohmann::json, std::string>
   serializeFilterPOp(const std::shared_ptr<filter::FilterPOp> &filterPOp);

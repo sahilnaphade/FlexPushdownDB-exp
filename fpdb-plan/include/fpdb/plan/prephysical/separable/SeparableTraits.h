@@ -20,6 +20,10 @@ public:
 
   static std::shared_ptr<SeparableTraits> S3SeparableTraits();
   static std::shared_ptr<SeparableTraits> FPDBStoreSeparableTraits();
+  static std::shared_ptr<SeparableTraits> localFSSeparableTraits();
+  static std::shared_ptr<SeparableTraits> unknownStoreSeparableTraits();
+
+  const std::set<PrePOpType> getSeparablePrePOpTypes() const;
 
 private:
   std::set<PrePOpType> separablePrePOpTypes_;

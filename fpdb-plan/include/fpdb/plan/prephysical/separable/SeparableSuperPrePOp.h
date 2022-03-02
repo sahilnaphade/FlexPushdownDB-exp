@@ -17,6 +17,8 @@ class SeparableSuperPrePOp: public PrePhysicalOp {
 public:
   SeparableSuperPrePOp(uint id, const std::shared_ptr<PrePhysicalOp> &rootOp);
 
+  const std::shared_ptr<PrePhysicalOp> &getRootOp() const;
+
   string getTypeString() override;
 
   set<string> getUsedColumnNames() override;

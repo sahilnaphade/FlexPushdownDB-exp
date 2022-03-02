@@ -2,27 +2,27 @@
 // Created by Yifei Yang on 2/21/22.
 //
 
-#ifndef FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_STORE_STORESUPERPOP_H
-#define FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_STORE_STORESUPERPOP_H
+#ifndef FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_FPDB_STORE_FPDBSTORESUPERPOP_H
+#define FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_FPDB_STORE_FPDBSTORESUPERPOP_H
 
 #include <fpdb/executor/physical/PhysicalPlan.h>
 
-namespace fpdb::executor::physical::store {
+namespace fpdb::executor::physical::fpdb_store {
 
 /**
  * Denote a sub-plan to be pushed to store, consists a group of physical operators (e.g. scan->filter->aggregate)
  */
-class StoreSuperPOp : public PhysicalOp {
+class FPDBStoreSuperPOp : public PhysicalOp {
 
 public:
-  StoreSuperPOp(const std::string &name,
-                const std::vector<std::string> &projectColumnNames,
-                int nodeId,
-                const std::shared_ptr<PhysicalPlan> &subPlan);
-  StoreSuperPOp() = default;
-  StoreSuperPOp(const StoreSuperPOp&) = default;
-  StoreSuperPOp& operator=(const StoreSuperPOp&) = default;
-  ~StoreSuperPOp() = default;
+  FPDBStoreSuperPOp(const std::string &name,
+                    const std::vector<std::string> &projectColumnNames,
+                    int nodeId,
+                    const std::shared_ptr<PhysicalPlan> &subPlan);
+  FPDBStoreSuperPOp() = default;
+  FPDBStoreSuperPOp(const FPDBStoreSuperPOp&) = default;
+  FPDBStoreSuperPOp& operator=(const FPDBStoreSuperPOp&) = default;
+  ~FPDBStoreSuperPOp() = default;
 
   void onReceive(const Envelope &message) override;
   void clear() override;
@@ -36,7 +36,7 @@ private:
 // caf inspect
 public:
   template <class Inspector>
-  friend bool inspect(Inspector& f, StoreSuperPOp& op) {
+  friend bool inspect(Inspector& f, FPDBStoreSuperPOp& op) {
     return f.object(op).fields(f.field("name", op.name_),
                                f.field("type", op.type_),
                                f.field("projectColumnNames", op.projectColumnNames_),
@@ -53,4 +53,4 @@ public:
 }
 
 
-#endif //FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_STORE_STORESUPERPOP_H
+#endif //FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_FPDB_STORE_FPDBSTORESUPERPOP_H

@@ -31,6 +31,7 @@ public:
   const shared_ptr<ObjStoreTable> &getTable(const string& tableName) const;
   string getTypeName() const override;
   string getName() const override;
+  string getStoreTypeName() const;
 
   void addTable(const shared_ptr<ObjStoreTable> &objStoreTable);
 
