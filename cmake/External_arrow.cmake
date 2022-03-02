@@ -201,13 +201,13 @@ target_link_libraries(arrow_shared INTERFACE Threads::Threads)
 add_dependencies(arrow_shared ${ARROW_BASE})
 
 # Gandiva needs LLVM
-find_package(LLVM)
+#find_package(LLVM)
 
 add_library(gandiva_static STATIC IMPORTED)
 set_target_properties(gandiva_static PROPERTIES IMPORTED_LOCATION ${ARROW_GANDIVA_STATIC_LIB})
 target_include_directories(gandiva_static INTERFACE ${ARROW_INCLUDE_DIR})
 target_link_libraries(gandiva_static INTERFACE arrow_static)
-target_link_libraries(gandiva_static INTERFACE LLVM)
+target_link_libraries(gandiva_static INTERFACE LLVM::LLVM_INTERFACE)
 #target_link_libraries(gandiva_static INTERFACE arrow_static)
 #target_link_libraries(gandiva_static INTERFACE re2_static)
 add_dependencies(gandiva_static ${ARROW_BASE})

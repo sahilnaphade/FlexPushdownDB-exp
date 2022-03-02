@@ -7,6 +7,7 @@
 
 #include <fpdb/plan/prephysical/PrePOpType.h>
 #include <set>
+#include <memory>
 
 namespace fpdb::plan::prephysical::separable {
 
