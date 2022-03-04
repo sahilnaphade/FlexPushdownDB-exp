@@ -19,7 +19,7 @@ static const char AWS_ECS_CONTAINER_AUTHORIZATION_TOKEN[] = "AWS_CONTAINER_AUTHO
 static const char AWS_EC2_METADATA_DISABLED[] = "AWS_EC2_METADATA_DISABLED";
 static const char DefaultCredentialsProviderChainTag[] = "DefaultAWSCredentialsProviderChain";
 
-namespace normal::aws {
+namespace fpdb::aws {
 
     ProfileAWSCredentialsProviderChain::ProfileAWSCredentialsProviderChain(const char *profile,
                                                                            long refreshRateMs)

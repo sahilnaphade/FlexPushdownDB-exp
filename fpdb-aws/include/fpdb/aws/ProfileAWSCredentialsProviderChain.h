@@ -8,7 +8,7 @@
 #include <aws/core/auth/AWSCredentialsProviderChain.h>
 #include <aws/core/auth/AWSCredentialsProvider.h>
 
-namespace normal::aws {
+namespace fpdb::aws {
 
     using namespace Aws::Auth;
 

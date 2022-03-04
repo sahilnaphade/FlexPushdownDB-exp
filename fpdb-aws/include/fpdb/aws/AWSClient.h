@@ -13,6 +13,8 @@
 #include <aws/core/utils/threading/Executor.h>
 #include <aws/s3/S3Client.h>
 #include <memory>
+#include <optional>
+#include <arrow/flight/client.h>
 
 using namespace Aws::S3;
 using namespace std;
@@ -33,6 +35,7 @@ public:
 
   const shared_ptr<AWSConfig> &getAwsConfig() const;
   const shared_ptr<S3Client> &getS3Client() const;
+  [[nodiscard]] const std::optional<std::unique_ptr<::arrow::flight::FlightClient>>& getFlightClient() const;
 
 private:
   std::shared_ptr<S3Client> makeS3Client();
@@ -40,6 +43,8 @@ private:
   shared_ptr<AWSConfig> awsConfig_;
   Aws::SDKOptions options_;
   shared_ptr<S3Client> s3Client_;
+  std::optional<std::unique_ptr<::arrow::flight::FlightClient>> flight_client_;
+
 };
 
 }

@@ -50,3 +50,9 @@ target_link_libraries(fpdb-main-test PRIVATE fpdb-main)
 target_link_libraries(fpdb-main-test PRIVATE doctest::doctest)
 
 add_dependencies(fpdb-main-test resources)
+
+add_custom_command(
+        TARGET fpdb-main-test POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_SOURCE_DIR}/resources
+        ${CMAKE_CURRENT_BINARY_DIR}/resources)
