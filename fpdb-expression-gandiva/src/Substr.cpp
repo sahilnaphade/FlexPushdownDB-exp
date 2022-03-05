@@ -33,7 +33,7 @@ string Substr::alias() {
 }
 
 string Substr::getTypeString() const {
-  return "SubStr";
+  return "Substr";
 }
 
 set<string> Substr::involvedColumnNames() {

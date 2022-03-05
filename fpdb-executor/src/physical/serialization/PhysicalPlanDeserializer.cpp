@@ -5,9 +5,10 @@
 #include <fpdb/executor/physical/serialization/PhysicalPlanDeserializer.h>
 #include <fpdb/executor/physical/fpdb-store/FPDBStoreFileScanPOp.h>
 #include <fpdb/executor/physical/filter/FilterPOp.h>
+#include <fpdb/executor/physical/project/ProjectPOp.h>
 #include <fpdb/executor/physical/aggregate/AggregatePOp.h>
 #include <fpdb/executor/physical/collate/CollatePOp.h>
-#include <fpdb/executor/physical/Util.h>
+#include <fpdb/executor/physical/transform/PrePToPTransformerUtil.h>
 #include <fpdb/tuple/serialization/ArrowSerializer.h>
 
 using json = ::nlohmann::json;
@@ -49,6 +50,8 @@ tl::expected<std::shared_ptr<PhysicalOp>, std::string> PhysicalPlanDeserializer:
     return deserializeFPDBStoreFileScanPOp(jObj);
   } else if (type == "FilterPOp") {
     return deserializeFilterPOp(jObj);
+  } else if (type == "ProjectPOp") {
+    return deserializeProjectPOp(jObj);
   } else if (type == "AggregatePOp") {
     return deserializeAggregatePOp(jObj);
   } else if (type == "CollatePOp") {
@@ -145,7 +148,7 @@ PhysicalPlanDeserializer::deserializeFPDBStoreFileScanPOp(::nlohmann::json jObj)
   }
 
   // connect
-  Util::connectManyToOne(*expProducers, storeFileScanPOp);
+  PrePToPTransformerUtil::connectManyToOne(*expProducers, storeFileScanPOp);
 
   return storeFileScanPOp;
 }
@@ -185,9 +188,65 @@ PhysicalPlanDeserializer::deserializeFilterPOp(::nlohmann::json jObj) {
   }
 
   // connect
-  Util::connectManyToOne(*expProducers, filterPOp);
+  PrePToPTransformerUtil::connectManyToOne(*expProducers, filterPOp);
 
   return filterPOp;
+}
+
+tl::expected<std::shared_ptr<PhysicalOp>, std::string>
+PhysicalPlanDeserializer::deserializeProjectPOp(::nlohmann::json jObj) {
+  // deserialize self
+  if (!jObj.contains("name")) {
+    return tl::make_unexpected(fmt::format("Name not specified in ProjectPOp JSON '{}'", jObj));
+  }
+  auto name = jObj["name"].get<std::string>();
+
+  if (!jObj.contains("projectColumnNames")) {
+    return tl::make_unexpected(fmt::format("ProjectColumnNames not specified in ProjectPOp JSON '{}'", jObj));
+  }
+  auto projectColumnNames = jObj["projectColumnNames"].get<std::vector<std::string>>();
+
+  if (!jObj.contains("exprs")) {
+    return tl::make_unexpected(fmt::format("Exprs not specified in ProjectPOp JSON '{}'", jObj));
+  }
+  std::vector<std::shared_ptr<fpdb::expression::gandiva::Expression>> exprs;
+  auto exprsJArr = jObj["exprs"].get<std::vector<json>>();
+  for (const auto &exprJObj: exprsJArr) {
+    auto expExpr = fpdb::expression::gandiva::Expression::fromJson(exprJObj);
+    if (!expExpr.has_value()) {
+      return tl::make_unexpected(expExpr.error());
+    }
+    exprs.emplace_back(*expExpr);
+  }
+
+  if (!jObj.contains("exprNames")) {
+    return tl::make_unexpected(fmt::format("ExprNames not specified in ProjectPOp JSON '{}'", jObj));
+  }
+  auto exprNames = jObj["exprNames"].get<std::vector<std::string>>();
+
+  if (!jObj.contains("projectColumnNamePairs")) {
+    return tl::make_unexpected(fmt::format("ProjectColumnNamePairs not specified in ProjectPOp JSON '{}'", jObj));
+  }
+  auto projectColumnPairs = jObj["projectColumnNamePairs"].get<std::vector<std::pair<std::string, std::string>>>();
+
+  std::shared_ptr<PhysicalOp> projectPOp = std::make_shared<project::ProjectPOp>(name,
+                                                                                 projectColumnNames,
+                                                                                 0,
+                                                                                 exprs,
+                                                                                 exprNames,
+                                                                                 projectColumnPairs);
+  physicalOps_.emplace_back(projectPOp);
+
+  // deserialize producers
+  auto expProducers = deserializeProducers(jObj);
+  if (!expProducers.has_value()) {
+    return tl::make_unexpected(expProducers.error());
+  }
+
+  // connect
+  PrePToPTransformerUtil::connectManyToOne(*expProducers, projectPOp);
+
+  return projectPOp;
 }
 
 tl::expected<std::shared_ptr<PhysicalOp>, std::string>
@@ -229,7 +288,7 @@ PhysicalPlanDeserializer::deserializeAggregatePOp(::nlohmann::json jObj) {
   }
 
   // connect
-  Util::connectManyToOne(*expProducers, aggregatePOp);
+  PrePToPTransformerUtil::connectManyToOne(*expProducers, aggregatePOp);
 
   return aggregatePOp;
 }
@@ -260,7 +319,7 @@ PhysicalPlanDeserializer::deserializeCollatePOp(::nlohmann::json jObj) {
   }
 
   // connect
-  Util::connectManyToOne(*expProducers, collatePOp);
+  PrePToPTransformerUtil::connectManyToOne(*expProducers, collatePOp);
 
   return collatePOp;
 }

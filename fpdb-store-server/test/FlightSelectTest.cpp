@@ -9,6 +9,7 @@
 #include <fpdb/executor/physical/aggregate/AggregatePOp.h>
 #include <fpdb/executor/physical/collate/CollatePOp.h>
 #include <fpdb/executor/physical/aggregate/function/Sum.h>
+#include <fpdb/executor/physical/serialization/PhysicalPlanSerializer.h>
 #include <fpdb/expression/gandiva/LessThanOrEqualTo.h>
 #include <fpdb/expression/gandiva/Column.h>
 #include <fpdb/expression/gandiva/NumericLiteral.h>
@@ -63,15 +64,6 @@ makeCollatePOp(const std::vector<std::string> &projectColumnNames) {
                                                                          0);
 }
 
-std::shared_ptr<fpdb_store::FPDBStoreSuperPOp> makeStoreSuperPOp(const std::vector<std::shared_ptr<PhysicalOp>> &operators,
-                                                        const std::vector<std::string> &projectColumnNames) {
-  auto subPlan = std::make_shared<PhysicalPlan>(operators);
-  return std::make_shared<fpdb_store::FPDBStoreSuperPOp>("StoreSuper",
-                                                         projectColumnNames,
-                                                         0,
-                                                         subPlan);
-}
-
 // connect
 void connect(const std::vector<std::pair<std::shared_ptr<PhysicalOp>, std::shared_ptr<PhysicalOp>>> &opPairs) {
   for (const auto &opPair: opPairs) {
@@ -96,11 +88,9 @@ TEST_CASE("fpdb-store-server/FlightSelectTest/scan-filter-aggregate" * doctest::
           {aggregatePOp, collatePOp}
   });
 
-  auto storeSuperPOp = makeStoreSuperPOp({storeFileScanPOp, filterPOp, aggregatePOp, collatePOp}, {"sum_b"});
-
   // server
   ::arrow::Status st;
-  auto server = Server::make(ServerConfig{"1", 0, true, std::nullopt, 0, 0, "."}, std::nullopt, actor_manager);
+  auto server = Server::make(ServerConfig{"1", 0, true, std::nullopt, 0, 0, 50051, "."}, std::nullopt, actor_manager);
   auto init_result = server->init();
   REQUIRE(init_result.has_value());
   auto start_result = server->start();
@@ -117,8 +107,12 @@ TEST_CASE("fpdb-store-server/FlightSelectTest/scan-filter-aggregate" * doctest::
   REQUIRE(st.ok());
 
   // request
-  auto planString = storeSuperPOp->serialize(false);
-  auto ticketObj = SelectObjectContentTicket::make(planString);
+  auto subPlan = std::make_shared<PhysicalPlan>(std::vector<std::shared_ptr<PhysicalOp>>{
+    storeFileScanPOp, filterPOp, aggregatePOp, collatePOp});
+  PhysicalPlanSerializer planSerializer(subPlan);
+  auto expPlanString = planSerializer.serialize(false);
+  REQUIRE(expPlanString.has_value());
+  auto ticketObj = SelectObjectContentTicket::make(*expPlanString);
   auto expTicket = ticketObj->to_ticket(false);
   REQUIRE(expTicket.has_value());
 

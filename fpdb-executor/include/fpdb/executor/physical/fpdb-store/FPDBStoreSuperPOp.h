@@ -6,6 +6,7 @@
 #define FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_FPDB_STORE_FPDBSTORESUPERPOP_H
 
 #include <fpdb/executor/physical/PhysicalPlan.h>
+#include <tl/expected.hpp>
 
 namespace fpdb::executor::physical::fpdb_store {
 
@@ -18,20 +19,26 @@ public:
   FPDBStoreSuperPOp(const std::string &name,
                     const std::vector<std::string> &projectColumnNames,
                     int nodeId,
-                    const std::shared_ptr<PhysicalPlan> &subPlan);
+                    const std::shared_ptr<PhysicalPlan> &subPlan,
+                    const std::string &host,
+                    int port);
   FPDBStoreSuperPOp() = default;
   FPDBStoreSuperPOp(const FPDBStoreSuperPOp&) = default;
   FPDBStoreSuperPOp& operator=(const FPDBStoreSuperPOp&) = default;
   ~FPDBStoreSuperPOp() = default;
 
-  void onReceive(const Envelope &message) override;
+  void onReceive(const Envelope &envelope) override;
   void clear() override;
   std::string getTypeString() const override;
 
-  std::string serialize(bool pretty);
-
 private:
+  void onStart();
+  void processAtStore();
+  tl::expected<std::string, std::string> serialize(bool pretty);
+
   std::shared_ptr<PhysicalPlan> subPlan_;
+  std::string host_;
+  int port_;
 
 // caf inspect
 public:
@@ -45,7 +52,9 @@ public:
                                f.field("opContext", op.opContext_),
                                f.field("producers", op.producers_),
                                f.field("consumers", op.consumers_),
-                               f.field("subPlan", op.subPlan_));
+                               f.field("subPlan", op.subPlan_),
+                               f.field("host", op.host_),
+                               f.field("port", op.port_));
   }
 
 };

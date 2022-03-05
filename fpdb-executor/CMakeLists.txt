@@ -91,11 +91,11 @@ add_library(fpdb-executor STATIC
         src/physical/fpdb-store/FPDBStoreFileScanPOp.cpp include/fpdb/executor/physical/fpdb-store/FPDBStoreFileScanPOp.h
 #        physical plan
         src/physical/PhysicalPlan.cpp include/fpdb/executor/physical/PhysicalPlan.h
+        src/physical/prune/PartitionPruner.cpp include/fpdb/executor/physical/prune/PartitionPruner.h
         src/physical/transform/PrePToPTransformer.cpp include/fpdb/executor/physical/transform/PrePToPTransformer.h
         src/physical/transform/PrePToS3PTransformer.cpp include/fpdb/executor/physical/transform/PrePToS3PTransformer.h
-        src/physical/prune/PartitionPruner.cpp include/fpdb/executor/physical/prune/PartitionPruner.h
-#        util
-        src/physical/Util.cpp include/fpdb/executor/physical/Util.h
+        src/physical/transform/PrePToFPDBStorePTransformer.cpp include/fpdb/executor/physical/transform/PrePToFPDBStorePTransformer.h
+        src/physical/transform/PrePToPTransformerUtil.cpp include/fpdb/executor/physical/transform/PrePToPTransformerUtil.h
 #        CAF serialization
         include/fpdb/executor/caf-serialization/CAFMessageSerializer.h
         include/fpdb/executor/caf-serialization/CAFPOpSerializer.h
@@ -116,10 +116,11 @@ target_include_directories(fpdb-executor PUBLIC include)
 target_link_libraries(fpdb-executor PUBLIC fpdb-plan)
 target_link_libraries(fpdb-executor PUBLIC fpdb-cache)
 target_link_libraries(fpdb-executor PUBLIC fpdb-caf)
-target_link_libraries(fpdb-executor PRIVATE fpdb-store-server-file)
 target_link_libraries(fpdb-executor PUBLIC graphviz_gvc_shared)
 target_link_libraries(fpdb-executor PUBLIC graphviz_dot_layout_shared)
 target_link_libraries(fpdb-executor PUBLIC graphviz_neato_layout_shared)
+target_link_libraries(fpdb-executor PRIVATE fpdb-store-server-file)
+target_link_libraries(fpdb-executor PRIVATE fpdb-store-server-flight-api)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Diagnostics

@@ -8,6 +8,7 @@
 #include <fpdb/cache/policy/CachingPolicy.h>
 #include <fpdb/plan/Mode.h>
 #include <fpdb/catalogue/Catalogue.h>
+#include <fpdb/catalogue/obj-store/ObjStoreConnector.h>
 #include <fpdb/aws/AWSClient.h>
 #include <unordered_map>
 #include <string>
@@ -15,6 +16,7 @@
 using namespace fpdb::cache::policy;
 using namespace fpdb::plan;
 using namespace fpdb::catalogue;
+using namespace fpdb::catalogue::obj_store;
 using namespace fpdb::aws;
 
 namespace fpdb::main{
@@ -32,7 +34,7 @@ public:
              bool isDistributed);
 
   static shared_ptr<ExecConfig> parseExecConfig(const shared_ptr<Catalogue> &catalogue,
-                                                const shared_ptr<AWSClient> &awsClient);
+                                                const shared_ptr<ObjStoreConnector> &objStoreConnector);
   static int parseCAFServerPort();
 
   const shared_ptr<Mode> &getMode() const;

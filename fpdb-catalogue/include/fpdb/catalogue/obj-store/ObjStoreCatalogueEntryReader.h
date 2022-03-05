@@ -6,6 +6,7 @@
 #define FPDB_FPDB_CATALOGUE_INCLUDE_FPDB_CATALOGUE_OBJ_STORE_OBJSTORECATALOGUEENTRYREADER_H
 
 #include <fpdb/catalogue/obj-store/ObjStoreCatalogueEntry.h>
+#include <fpdb/catalogue/obj-store/ObjStoreConnector.h>
 #include <fpdb/catalogue/Catalogue.h>
 #include <fpdb/tuple/FileFormat.h>
 #include <fpdb/tuple/Scalar.h>
@@ -20,23 +21,18 @@ using json = nlohmann::json;
 namespace fpdb::catalogue::obj_store {
 
 class ObjStoreCatalogueEntryReader {
-public:
-  static shared_ptr<ObjStoreCatalogueEntry> readS3CatalogueEntry(const shared_ptr<Catalogue> &catalogue,
-                                                                 const string &bucket,
-                                                                 const string &schemaName,
-                                                                 const shared_ptr<S3Client> &s3Client);
 
-  static shared_ptr<ObjStoreCatalogueEntry> readFPDBStoreCatalogueEntry(const shared_ptr<Catalogue> &catalogue,
-                                                                        const string &bucket,
-                                                                        const string &schemaName,
-                                                                        const string &host,
-                                                                        int port);
+public:
+  static shared_ptr<ObjStoreCatalogueEntry> readCatalogueEntry(const shared_ptr<Catalogue> &catalogue,
+                                                               const string &bucket,
+                                                               const string &schemaName,
+                                                               const shared_ptr<ObjStoreConnector> &objStoreConnector);
 
 private:
-  static shared_ptr<ObjStoreCatalogueEntry> readCatalogueEntry(ObjStoreType storeType,
-                                                               const shared_ptr<Catalogue> &catalogue,
-                                                               const string &bucket,
-                                                               const string &schemaName);
+  static shared_ptr<ObjStoreCatalogueEntry> readCatalogueEntryNoPartitionSize(ObjStoreType storeType,
+                                                                              const shared_ptr<Catalogue> &catalogue,
+                                                                              const string &bucket,
+                                                                              const string &schemaName);
 
   static void readSchema(const json &schemaJObj,
                          const string &bucket,

@@ -14,8 +14,11 @@ ArrowRemoteFileInputStream::ArrowRemoteFileInputStream(const std::string &bucket
   bucket_(bucket),
   object_(object) {
 
-  channel_ = CreateChannel(fmt::format("{}:{}", host, port),
-                           ::grpc::InsecureChannelCredentials());
+  grpc::ChannelArguments chanArgs;
+  chanArgs.SetMaxReceiveMessageSize(INT_MAX);
+  channel_ = CreateCustomChannel(fmt::format("{}:{}", host, port),
+                           ::grpc::InsecureChannelCredentials(),
+                           chanArgs);
   stub_ = FileService::NewStub(channel_);
 }
 

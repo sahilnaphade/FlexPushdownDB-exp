@@ -84,7 +84,7 @@ TEST_SUITE("fpdb-store-server/FlightBasicTest" * doctest::skip(false)) {
     ::arrow::Status st;
 
     // Start the server
-    auto server = Server::make(ServerConfig{"1", 0, true, std::nullopt, 0, 0, "./single/data"}, std::nullopt,
+    auto server = Server::make(ServerConfig{"1", 0, true, std::nullopt, 0, 0, 50051, "./single/data"}, std::nullopt,
                                actor_manager);
     auto init_result = server->init();
     REQUIRE(init_result.has_value());
@@ -121,7 +121,7 @@ TEST_SUITE("fpdb-store-server/FlightBasicTest" * doctest::skip(false)) {
 
     ::arrow::Status st;
 
-    auto server = Server::make(ServerConfig{"1", 0, true, std::nullopt, 0, 0, "./single/data"}, std::nullopt,
+    auto server = Server::make(ServerConfig{"1", 0, true, std::nullopt, 0, 0, 50051, "./single/data"}, std::nullopt,
                                actor_manager);
     auto init_result = server->init();
     REQUIRE(init_result.has_value());

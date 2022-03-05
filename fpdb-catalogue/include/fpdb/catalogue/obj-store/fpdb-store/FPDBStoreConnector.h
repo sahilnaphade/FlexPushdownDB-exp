@@ -14,14 +14,17 @@ class FPDBStoreConnector: public ObjStoreConnector {
 
 public:
   FPDBStoreConnector(const std::string &host,
-                     int port);
+                     int fileServicePort,
+                     int flightPort);
 
   const std::string &getHost() const;
-  int getPort() const;
+  int getFileServicePort() const;
+  int getFlightPort() const;
 
 private:
   std::string host_;
-  int port_;
+  int fileServicePort_;
+  int flightPort_;
 
 };
 

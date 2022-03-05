@@ -2,8 +2,8 @@
 // Created by Yifei Yang on 11/21/21.
 //
 
-#ifndef FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_TRANSFORMER_PREPTOS3PTRANSFORMER_H
-#define FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_TRANSFORMER_PREPTOS3PTRANSFORMER_H
+#ifndef FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_TRANSFORM_PREPTOS3PTRANSFORMER_H
+#define FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_TRANSFORM_PREPTOS3PTRANSFORMER_H
 
 #include <fpdb/executor/physical/PhysicalOp.h>
 #include <fpdb/plan/prephysical/FilterableScanPrePOp.h>
@@ -22,11 +22,12 @@ using namespace fpdb::aws;
 namespace fpdb::executor::physical {
 
 class PrePToS3PTransformer {
+
 public:
   PrePToS3PTransformer(uint prePOpId,
-                       const shared_ptr<AWSClient> &awsClient,
                        const shared_ptr<Mode> &mode,
-                       int numNodes);
+                       int numNodes,
+                       const shared_ptr<AWSClient> &awsClient);
 
   /**
    * Transform separable super prephysical op to physical op
@@ -42,23 +43,19 @@ private:
 
   pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
   transformFilterableScanPullup(const shared_ptr<FilterableScanPrePOp> &filterableScanPrePOp,
-                                const unordered_map<shared_ptr<Partition>, shared_ptr<Expression>, PartitionPointerHash, PartitionPointerPredicate> &partitionPredicates,
-                                const vector<string> &projectColumnNames);
+                                const unordered_map<shared_ptr<Partition>, shared_ptr<Expression>, PartitionPointerHash, PartitionPointerPredicate> &partitionPredicates);
 
   pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
-  transformFilterableScanPushdown(const shared_ptr<FilterableScanPrePOp> &filterableScanPrePOp,
-                                  const unordered_map<shared_ptr<Partition>, shared_ptr<Expression>, PartitionPointerHash, PartitionPointerPredicate> &partitionPredicates,
-                                  const vector<string> &projectColumnNames);
+  transformFilterableScanPushdownOnly(const shared_ptr<FilterableScanPrePOp> &filterableScanPrePOp,
+                                      const unordered_map<shared_ptr<Partition>, shared_ptr<Expression>, PartitionPointerHash, PartitionPointerPredicate> &partitionPredicates);
 
   pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
   transformFilterableScanCachingOnly(const shared_ptr<FilterableScanPrePOp> &filterableScanPrePOp,
-                                     const unordered_map<shared_ptr<Partition>, shared_ptr<Expression>, PartitionPointerHash, PartitionPointerPredicate> &partitionPredicates,
-                                     const vector<string> &projectColumnNames);
+                                     const unordered_map<shared_ptr<Partition>, shared_ptr<Expression>, PartitionPointerHash, PartitionPointerPredicate> &partitionPredicates);
 
   pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
   transformFilterableScanHybrid(const shared_ptr<FilterableScanPrePOp> &filterableScanPrePOp,
-                                const unordered_map<shared_ptr<Partition>, shared_ptr<Expression>, PartitionPointerHash, PartitionPointerPredicate> &partitionPredicates,
-                                const vector<string> &projectColumnNames);
+                                const unordered_map<shared_ptr<Partition>, shared_ptr<Expression>, PartitionPointerHash, PartitionPointerPredicate> &partitionPredicates);
 
   /**
    * Generate s3 select where clause from filter predicate
@@ -68,11 +65,11 @@ private:
   string genFilterSql(const std::shared_ptr<Expression>& predicate);
 
   uint prePOpId_;
-  shared_ptr<AWSClient> awsClient_;
   shared_ptr<Mode> mode_;
   int numNodes_;
+  shared_ptr<AWSClient> awsClient_;
 };
 
 }
 
-#endif //FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_TRANSFORMER_PREPTOS3PTRANSFORMER_H
+#endif //FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_TRANSFORM_PREPTOS3PTRANSFORMER_H

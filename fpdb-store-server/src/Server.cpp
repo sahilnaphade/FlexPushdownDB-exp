@@ -7,6 +7,8 @@
 #include "fpdb/store/server/caf/ServerMeta.hpp"
 #include "fpdb/store/server/cluster/ClusterActor.hpp"
 #include "fpdb/store/server/cluster/NodeActor.hpp"
+#include <grpcpp/ext/proto_server_reflection_plugin.h>
+#include <grpcpp/health_check_service_interface.h>
 #include <caf/io/all.hpp>
 #include <future>
 #include <utility>
@@ -24,6 +26,7 @@ Server::Server(const ServerConfig& cfg, std::optional<ClusterActor> remote_coord
       coordinator_host_(cfg.coordinator_host),
       coordinator_port_(cfg.coordinator_port),
       flight_port_(cfg.flight_port),
+      file_service_port_(cfg.file_service_port),
       store_root_path_(cfg.store_root_path),
       actor_manager_(std::move(actor_manager)),
       cluster_actor_handle_(std::move(remote_coordinator_actor_handle)) {
@@ -118,6 +121,19 @@ tl::expected<void, std::string> Server::start() {
 
   flight_future_ = std::async(std::launch::async, [=]() { return flight_handler_->serve(); });
 
+  // Start the file service
+  file_service_ = std::make_unique<file::FileServiceHandler>(store_root_path_);
+
+  grpc::EnableDefaultHealthCheckService(true);
+  grpc::reflection::InitProtoReflectionServerBuilderPlugin();
+  grpc::ServerBuilder builder;
+
+  builder.AddListeningPort("0.0.0.0:" + std::to_string(file_service_port_), grpc::InsecureServerCredentials());
+  builder.RegisterService(&*file_service_);
+
+  file_service_server_ = builder.BuildAndStart();
+  file_service_future_ = std::async(std::launch::async, [=]() { return file_service_server_->Wait(); });
+
   // Bit of a hack to check if the flight server failed on "serve"
   if(flight_future_.wait_for(100ms) == std::future_status::ready) {
     return tl::make_unexpected(flight_future_.get().error());
@@ -145,6 +161,9 @@ void Server::stop() {
   flight_handler_->shutdown();
   flight_handler_->wait();
   flight_future_.wait();
+
+  file_service_server_->Shutdown();
+  file_service_future_.wait();
 
   signal_handler_->stop();
 

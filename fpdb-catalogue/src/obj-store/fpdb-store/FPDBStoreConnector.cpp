@@ -7,17 +7,23 @@
 namespace fpdb::catalogue::obj_store {
 
 FPDBStoreConnector::FPDBStoreConnector(const std::string &host,
-                                       int port):
+                                       int fileServicePort,
+                                       int flightPort):
   ObjStoreConnector(ObjStoreType::FPDB_STORE),
   host_(host),
-  port_(port) {}
+  fileServicePort_(fileServicePort),
+  flightPort_(flightPort) {}
 
 const std::string &FPDBStoreConnector::getHost() const {
   return host_;
 }
 
-int FPDBStoreConnector::getPort() const {
-  return port_;
+int FPDBStoreConnector::getFileServicePort() const {
+  return fileServicePort_;
+}
+
+int FPDBStoreConnector::getFlightPort() const {
+  return flightPort_;
 }
 
 }

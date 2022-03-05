@@ -23,7 +23,7 @@
 
 using namespace fpdb::executor::message;
 
-using MessagePtr = std::shared_ptr<Message>;
+using MessagePtr = std::shared_ptr<fpdb::executor::message::Message>;
 
 CAF_BEGIN_TYPE_ID_BLOCK(Message, fpdb::caf::CAFUtil::Message_first_custom_type_id)
 CAF_ADD_TYPE_ID(Message, (MessagePtr))

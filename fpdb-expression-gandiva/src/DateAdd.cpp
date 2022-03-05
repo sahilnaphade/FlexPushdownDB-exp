@@ -35,7 +35,7 @@ string DateAdd::alias() {
 }
 
 string DateAdd::getTypeString() const {
-  return "DateAdd-" + intervalTypeToString(intervalType_);
+  return "DateAdd";
 }
 
 ::nlohmann::json DateAdd::toJson() const {

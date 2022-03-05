@@ -20,6 +20,7 @@ public:
   std::optional<int> coordinator_port;
 
   int flight_port;
+  int file_service_port;
 
   std::string store_root_path;
 };

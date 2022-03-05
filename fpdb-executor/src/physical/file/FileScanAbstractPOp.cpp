@@ -70,10 +70,10 @@ void FileScanAbstractPOp::readAndSendTuples(const std::vector<std::string> &colu
     readTupleSet = TupleSet::makeWithEmptyTable();
   } else {
     auto expectedReadTupleSet = kernel_->scan(columnNames);
+    if (!expectedReadTupleSet.has_value()) {
+      ctx()->notifyError(expectedReadTupleSet.error());
+    }
     readTupleSet = expectedReadTupleSet.value();
-
-    // Store the read columns in the cache
-    requestStoreSegmentsInCache(readTupleSet);
   }
 
   std::shared_ptr<Message> message = std::make_shared<TupleMessage>(readTupleSet, this->name());
@@ -93,6 +93,7 @@ void FileScanAbstractPOp::requestStoreSegmentsInCache(const std::shared_ptr<Tupl
       auto typedKernel = std::static_pointer_cast<RemoteFileScanKernel>(kernel_);
       partition = std::make_shared<fpdb::catalogue::obj_store::ObjStorePartition>(typedKernel->getBucket(),
                                                                                   typedKernel->getObject());
+      break;
     }
     default: {
       ctx()->notifyError("Unknown catalogue entry type");

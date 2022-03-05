@@ -15,6 +15,7 @@ add_library(fpdb-main
 target_include_directories(fpdb-main PUBLIC include)
 
 target_link_libraries(fpdb-main PUBLIC fpdb-executor)
+target_link_libraries(fpdb-main PUBLIC fpdb-store-server-static)
 target_link_libraries(fpdb-main PUBLIC fpdb-util)
 
 
@@ -44,9 +45,16 @@ add_executable(fpdb-main-test
         test/MainTest.cpp
         test/SSBTest.cpp
         test/TPCHTest.cpp
-        test/TPCHDistTest.cpp)
+        test/TPCHDistTest.cpp
+        test/TPCHFPDBStoreTest.cpp)
 
 target_link_libraries(fpdb-main-test PRIVATE fpdb-main)
 target_link_libraries(fpdb-main-test PRIVATE doctest::doctest)
 
 add_dependencies(fpdb-main-test resources)
+
+add_custom_command(
+        TARGET fpdb-main-test POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_CURRENT_SOURCE_DIR}/test-resources
+        ${CMAKE_CURRENT_BINARY_DIR}/test-resources)

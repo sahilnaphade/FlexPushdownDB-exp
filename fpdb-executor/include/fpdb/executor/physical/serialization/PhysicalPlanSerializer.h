@@ -8,6 +8,7 @@
 #include <fpdb/executor/physical/PhysicalPlan.h>
 #include <fpdb/executor/physical/fpdb-store/FPDBStoreFileScanPOp.h>
 #include <fpdb/executor/physical/filter/FilterPOp.h>
+#include <fpdb/executor/physical/project/ProjectPOp.h>
 #include <fpdb/executor/physical/aggregate/AggregatePOp.h>
 #include <fpdb/executor/physical/collate/CollatePOp.h>
 #include <tl/expected.hpp>
@@ -31,6 +32,9 @@ private:
 
   tl::expected<::nlohmann::json, std::string>
   serializeFilterPOp(const std::shared_ptr<filter::FilterPOp> &filterPOp);
+
+  tl::expected<::nlohmann::json, std::string>
+  serializeProjectPOp(const std::shared_ptr<project::ProjectPOp> &projectPOp);
 
   tl::expected<::nlohmann::json, std::string>
   serializeAggregatePOp(const std::shared_ptr<aggregate::AggregatePOp> &aggregatePOp);

@@ -146,6 +146,18 @@ void ProjectPOp::sendTuples(std::shared_ptr<TupleSet> &projected) {
 	ctx()->tell(tupleMessage);
 }
 
+const std::vector<std::shared_ptr<fpdb::expression::gandiva::Expression>> &ProjectPOp::getExprs() const {
+  return exprs_;
+}
+
+const std::vector<std::string> &ProjectPOp::getExprNames() const {
+  return exprNames_;
+}
+
+const std::vector<std::pair<std::string, std::string>> &ProjectPOp::getProjectColumnNamePairs() const {
+  return projectColumnNamePairs_;
+}
+
 void ProjectPOp::clear() {
   tuples_.reset();
 }

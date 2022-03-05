@@ -11,6 +11,7 @@
 #include <fpdb/plan/prephysical/separable/SeparablePrePOpTransformer.h>
 #include <fpdb/catalogue/obj-store/ObjStoreCatalogueEntryReader.h>
 #include <fpdb/catalogue/obj-store/s3/S3Connector.h>
+#include <fpdb/catalogue/obj-store/fpdb-store/FPDBStoreConnector.h>
 #include <fpdb/aws/AWSConfig.h>
 #include <fpdb/util/Util.h>
 
@@ -25,17 +26,32 @@ namespace fpdb::main::test {
 TestUtil::TestUtil(const string &schemaName,
                    const vector<string> &queryFileNames,
                    int parallelDegree,
-                   bool isDistributed) :
+                   bool isDistributed,
+                   ObjStoreType objStoreType,
+                   const shared_ptr<Mode> &mode,
+                   const shared_ptr<CachingPolicy> &cachingPolicy) :
   schemaName_(schemaName),
   queryFileNames_(queryFileNames),
   parallelDegree_(parallelDegree),
-  isDistributed_(isDistributed) {}
+  isDistributed_(isDistributed),
+  objStoreType_(objStoreType),
+  mode_(mode),
+  cachingPolicy_(cachingPolicy) {}
 
 bool TestUtil::e2eNoStartCalciteServer(const string &schemaName,
                                        const vector<string> &queryFileNames,
                                        int parallelDegree,
-                                       bool isDistributed) {
-  TestUtil testUtil(schemaName, queryFileNames, parallelDegree, isDistributed);
+                                       bool isDistributed,
+                                       ObjStoreType objStoreType,
+                                       const shared_ptr<Mode> &mode,
+                                       const shared_ptr<CachingPolicy> &cachingPolicy) {
+  TestUtil testUtil(schemaName,
+                    queryFileNames,
+                    parallelDegree,
+                    isDistributed,
+                    objStoreType,
+                    mode,
+                    cachingPolicy);
   try {
     testUtil.runTest();
     return true;
@@ -48,18 +64,14 @@ bool TestUtil::e2eNoStartCalciteServer(const string &schemaName,
 void TestUtil::runTest() {
   spdlog::set_level(spdlog::level::info);
 
-  // AWS client
-  makeAWSClient();
+  // Object store connector
+  makeObjStoreConnector();
 
   // Catalogue entry
   makeCatalogueEntry();
 
   // Calcite client
   makeCalciteClient();
-
-  // mode and caching policy
-  mode_ = Mode::pullupMode();
-  cachingPolicy_ = nullptr;
 
   // create the executor
   makeExecutor();
@@ -72,10 +84,21 @@ void TestUtil::runTest() {
   stop();
 }
 
-void TestUtil::makeAWSClient() {
-  awsClient_ = make_shared<AWSClient>(
-          make_shared<AWSConfig>(fpdb::aws::S3, 0));
-  awsClient_->init();
+void TestUtil::makeObjStoreConnector() {
+  switch (objStoreType_) {
+    case ObjStoreType::S3: {
+      auto awsClient = make_shared<AWSClient>(make_shared<AWSConfig>(fpdb::aws::S3, 0));
+      awsClient->init();
+      objStoreConnector_ = make_shared<S3Connector>(awsClient);
+      return;
+    }
+    case ObjStoreType::FPDB_STORE: {
+      objStoreConnector_ = make_shared<FPDBStoreConnector>("localhost", TestUtil::FileServicePort, TestUtil::FlightPort);
+      return;
+    }
+    default:
+      throw runtime_error("Unknown object store type");
+  }
 }
 
 void TestUtil::makeCatalogueEntry() {
@@ -87,10 +110,10 @@ void TestUtil::makeCatalogueEntry() {
   catalogue_ = make_shared<Catalogue>("main", metadataPath);
 
   // read catalogue entry
-  catalogueEntry_ = ObjStoreCatalogueEntryReader::readS3CatalogueEntry(catalogue_,
-                                                                       s3Bucket,
-                                                                       schemaName_,
-                                                                       awsClient_->getS3Client());
+  catalogueEntry_ = ObjStoreCatalogueEntryReader::readCatalogueEntry(catalogue_,
+                                                                     s3Bucket,
+                                                                     schemaName_,
+                                                                     objStoreConnector_);
   catalogue_->putEntry(catalogueEntry_);
 }
 
@@ -160,10 +183,9 @@ void TestUtil::executeQueryFile(const string &queryFileName) {
 
   // transform prephysical plan to physical plan
   int numNodes = isDistributed_ ? (int) nodes_.size() : 1;
-  auto s3Connector = make_shared<obj_store::S3Connector>(awsClient_);
   auto prePToPTransformer = make_shared<PrePToPTransformer>(prePhysicalPlan,
                                                             catalogueEntry_,
-                                                            s3Connector,
+                                                            objStoreConnector_,
                                                             mode_,
                                                             parallelDegree_,
                                                             numNodes);
@@ -183,7 +205,10 @@ void TestUtil::executeQueryFile(const string &queryFileName) {
 
 void TestUtil::stop() {
   // need to shutdown awsClient first
-  awsClient_->shutdown();
+  if (objStoreType_ == ObjStoreType::S3) {
+    auto s3Connector = static_pointer_cast<S3Connector>(objStoreConnector_);
+    s3Connector->getAwsClient()->shutdown();
+  }
   executor_->stop();
 }
 

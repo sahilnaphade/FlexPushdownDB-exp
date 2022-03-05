@@ -46,7 +46,7 @@ TEST_SUITE ("fpdb-store-server/FileServiceTest/remoteCsvReader" * doctest::skip(
 
 TEST_CASE ("fpdb-store-server/FileServiceTest/remoteCsvReader-read-whole-test.csv" * doctest::skip(false || SKIP_SUITE)) {
   // server
-  int port = 4321;
+  int port = 50051;
   auto future = std::async(std::launch::async, [&]() { return startFileServer(port); });
   future.wait_for(100ms);
 

@@ -18,20 +18,20 @@ using namespace fpdb::util;
 namespace fpdb::executor::physical {
 
 PrePToS3PTransformer::PrePToS3PTransformer(uint prePOpId,
-                                           const shared_ptr<AWSClient> &awsClient,
                                            const shared_ptr<Mode> &mode,
-                                           int numNodes) :
+                                           int numNodes,
+                                           const shared_ptr<AWSClient> &awsClient) :
   prePOpId_(prePOpId),
-  awsClient_(awsClient),
   mode_(mode),
-  numNodes_(numNodes) {}
+  numNodes_(numNodes),
+  awsClient_(awsClient) {}
 
 pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
 PrePToS3PTransformer::transformSeparableSuper(const shared_ptr<SeparableSuperPrePOp> &separableSuperPrePOp) {
   // currently only support push filterable scan to S3
   auto rootOp = separableSuperPrePOp->getRootOp();
   if (rootOp->getType() != PrePOpType::FILTERABLE_SCAN) {
-    throw runtime_error(fmt::format("Unsupported prephysical operator type for S3 pushdown: {}", rootOp->getTypeString()));
+    throw runtime_error(fmt::format("Unsupported prephysical operator type for S3: {}", rootOp->getTypeString()));
   }
   auto filterableScanPrePOp = static_pointer_cast<FilterableScanPrePOp>(rootOp);
   return transformFilterableScan(filterableScanPrePOp);
@@ -39,32 +39,31 @@ PrePToS3PTransformer::transformSeparableSuper(const shared_ptr<SeparableSuperPre
 
 pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
 PrePToS3PTransformer::transformFilterableScan(const shared_ptr<FilterableScanPrePOp> &filterableScanPrePOp) {
-  const auto &s3Table = std::static_pointer_cast<ObjStoreTable>(filterableScanPrePOp->getTable());
-  const auto &partitions = (const vector<shared_ptr<Partition>> &) s3Table->getObjStorePartitions();
+  const auto &objStoreTable = std::static_pointer_cast<ObjStoreTable>(filterableScanPrePOp->getTable());
+  const auto &partitions = (const vector<shared_ptr<Partition>> &) objStoreTable->getObjStorePartitions();
   const auto &partitionPredicates = PartitionPruner::prune(partitions, filterableScanPrePOp->getPredicate());
-  vector<string> projectColumnNames{filterableScanPrePOp->getProjectColumnNames().begin(),
-                                    filterableScanPrePOp->getProjectColumnNames().end()};
 
   switch (mode_->id()) {
     case PULL_UP:
-      return transformFilterableScanPullup(filterableScanPrePOp, partitionPredicates, projectColumnNames);
+      return transformFilterableScanPullup(filterableScanPrePOp, partitionPredicates);
     case PUSHDOWN_ONLY:
-      return transformFilterableScanPushdown(filterableScanPrePOp, partitionPredicates, projectColumnNames);
+      return transformFilterableScanPushdownOnly(filterableScanPrePOp, partitionPredicates);
     case CACHING_ONLY:
-      return transformFilterableScanCachingOnly(filterableScanPrePOp, partitionPredicates, projectColumnNames);
+      return transformFilterableScanCachingOnly(filterableScanPrePOp, partitionPredicates);
     case HYBRID:
-      return transformFilterableScanHybrid(filterableScanPrePOp, partitionPredicates, projectColumnNames);
+      return transformFilterableScanHybrid(filterableScanPrePOp, partitionPredicates);
     default:
-      throw runtime_error(fmt::format("Unsupported mode: {}", mode_->toString()));
+      throw runtime_error(fmt::format("Unsupported mode for S3: {}", mode_->toString()));
   }
 }
 
 pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
 PrePToS3PTransformer::transformFilterableScanPullup(const shared_ptr<FilterableScanPrePOp> &filterableScanPrePOp,
-                                                    const unordered_map<shared_ptr<Partition>, shared_ptr<Expression>, PartitionPointerHash, PartitionPointerPredicate> &partitionPredicates,
-                                                    const vector<string> &projectColumnNames) {
+                                                    const unordered_map<shared_ptr<Partition>, shared_ptr<Expression>, PartitionPointerHash, PartitionPointerPredicate> &partitionPredicates) {
   vector<shared_ptr<PhysicalOp>> scanPOps, filterPOps;
   const auto &table = filterableScanPrePOp->getTable();
+  vector<string> projectColumnNames{filterableScanPrePOp->getProjectColumnNames().begin(),
+                                    filterableScanPrePOp->getProjectColumnNames().end()};
 
   /**
    * For each partition, construct:
@@ -126,11 +125,12 @@ PrePToS3PTransformer::transformFilterableScanPullup(const shared_ptr<FilterableS
 }
 
 pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
-PrePToS3PTransformer::transformFilterableScanPushdown(const shared_ptr<FilterableScanPrePOp> &filterableScanPrePOp,
-                                                      const unordered_map<shared_ptr<Partition>, shared_ptr<Expression>, PartitionPointerHash, PartitionPointerPredicate> &partitionPredicates,
-                                                      const vector<string> &projectColumnNames) {
+PrePToS3PTransformer::transformFilterableScanPushdownOnly(const shared_ptr<FilterableScanPrePOp> &filterableScanPrePOp,
+                                                          const unordered_map<shared_ptr<Partition>, shared_ptr<Expression>, PartitionPointerHash, PartitionPointerPredicate> &partitionPredicates) {
   vector<shared_ptr<PhysicalOp>> pOps;
   const auto &table = filterableScanPrePOp->getTable();
+  vector<string> projectColumnNames{filterableScanPrePOp->getProjectColumnNames().begin(),
+                                    filterableScanPrePOp->getProjectColumnNames().end()};
 
   /**
    * For each partition, construct:
@@ -167,10 +167,11 @@ PrePToS3PTransformer::transformFilterableScanPushdown(const shared_ptr<Filterabl
 
 pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
 PrePToS3PTransformer::transformFilterableScanCachingOnly(const shared_ptr<FilterableScanPrePOp> &filterableScanPrePOp,
-                                                         const unordered_map<shared_ptr<Partition>, shared_ptr<Expression>, PartitionPointerHash, PartitionPointerPredicate> &partitionPredicates,
-                                                         const vector<string> &projectColumnNames) {
+                                                         const unordered_map<shared_ptr<Partition>, shared_ptr<Expression>, PartitionPointerHash, PartitionPointerPredicate> &partitionPredicates) {
   vector<shared_ptr<PhysicalOp>> selfConnDownPOps, allPOps;
   const auto &table = filterableScanPrePOp->getTable();
+  vector<string> projectColumnNames{filterableScanPrePOp->getProjectColumnNames().begin(),
+                                    filterableScanPrePOp->getProjectColumnNames().end()};
 
   /**
    * For each partition, construct:
@@ -264,10 +265,11 @@ PrePToS3PTransformer::transformFilterableScanCachingOnly(const shared_ptr<Filter
 
 pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
 PrePToS3PTransformer::transformFilterableScanHybrid(const shared_ptr<FilterableScanPrePOp> &filterableScanPrePOp,
-                                                    const unordered_map<shared_ptr<Partition>, shared_ptr<Expression>, PartitionPointerHash, PartitionPointerPredicate> &partitionPredicates,
-                                                    const vector<string> &projectColumnNames) {
+                                                    const unordered_map<shared_ptr<Partition>, shared_ptr<Expression>, PartitionPointerHash, PartitionPointerPredicate> &partitionPredicates) {
   vector<shared_ptr<PhysicalOp>> selfConnDownPOps, allPOps;
   const auto &table = filterableScanPrePOp->getTable();
+  vector<string> projectColumnNames{filterableScanPrePOp->getProjectColumnNames().begin(),
+                                    filterableScanPrePOp->getProjectColumnNames().end()};
 
   /**
    * For each partition, construct:

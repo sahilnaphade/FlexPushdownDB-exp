@@ -4,14 +4,10 @@
 
 #include <fpdb/executor/physical/transform/PrePToPTransformer.h>
 #include <fpdb/executor/physical/transform/PrePToS3PTransformer.h>
+#include <fpdb/executor/physical/transform/PrePToFPDBStorePTransformer.h>
 #include <fpdb/executor/physical/sort/SortPOp.h>
 #include <fpdb/executor/physical/limitsort/LimitSortPOp.h>
 #include <fpdb/executor/physical/aggregate/AggregatePOp.h>
-#include <fpdb/executor/physical/aggregate/function/Sum.h>
-#include <fpdb/executor/physical/aggregate/function/Count.h>
-#include <fpdb/executor/physical/aggregate/function/MinMax.h>
-#include <fpdb/executor/physical/aggregate/function/Avg.h>
-#include <fpdb/executor/physical/aggregate/function/AvgReduce.h>
 #include <fpdb/executor/physical/group/GroupPOp.h>
 #include <fpdb/executor/physical/project/ProjectPOp.h>
 #include <fpdb/executor/physical/filter/FilterPOp.h>
@@ -22,10 +18,10 @@
 #include <fpdb/executor/physical/shuffle/ShufflePOp.h>
 #include <fpdb/executor/physical/split/SplitPOp.h>
 #include <fpdb/executor/physical/collate/CollatePOp.h>
-#include <fpdb/executor/physical/Util.h>
+#include <fpdb/executor/physical/transform/PrePToPTransformerUtil.h>
 #include <fpdb/catalogue/obj-store/ObjStoreCatalogueEntry.h>
 #include <fpdb/catalogue/obj-store/s3/S3Connector.h>
-#include <fpdb/expression/gandiva/Column.h>
+#include <fpdb/catalogue/obj-store/fpdb-store/FPDBStoreConnector.h>
 
 namespace fpdb::executor::physical {
 
@@ -54,7 +50,7 @@ shared_ptr<PhysicalPlan> PrePToPTransformer::transform() {
           ColumnName::canonicalize(prePhysicalPlan_->getOutputColumnNames()),
           0);
   allPOps.emplace_back(collatePOp);
-  Util::connectManyToOne(upConnPOps, collatePOp);
+  PrePToPTransformerUtil::connectManyToOne(upConnPOps, collatePOp);
 
   return make_shared<PhysicalPlan>(allPOps);
 }
@@ -144,7 +140,7 @@ PrePToPTransformer::transformSort(const shared_ptr<SortPrePOp> &sortPrePOp) {
   allPOps.emplace_back(sortPOp);
 
   // connect to upstream
-  Util::connectManyToOne(upConnPOps, sortPOp);
+  PrePToPTransformerUtil::connectManyToOne(upConnPOps, sortPOp);
 
   return make_pair(vector<shared_ptr<PhysicalOp>>{sortPOp}, allPOps);
 }
@@ -178,7 +174,7 @@ PrePToPTransformer::transformLimitSort(const shared_ptr<LimitSortPrePOp> &limitS
   allPOps.emplace_back(limitSortPOp);
 
   // connect to upstream
-  Util::connectManyToOne(upConnPOps, limitSortPOp);
+  PrePToPTransformerUtil::connectManyToOne(upConnPOps, limitSortPOp);
 
   return make_pair(vector<shared_ptr<PhysicalOp>>{limitSortPOp}, allPOps);
 }
@@ -226,9 +222,9 @@ PrePToPTransformer::transformAggregate(const shared_ptr<AggregatePrePOp> &aggreg
     for (size_t j = 0; j < aggregatePrePOp->getFunctions().size(); ++j) {
       const auto &prePFunction = aggregatePrePOp->getFunctions()[j];
       const auto &aggOutputColumnName = aggregatePrePOp->getAggOutputColumnNames()[j];
-      const auto &transAggFunctions = transformAggFunction(aggOutputColumnName,
-                                                           prePFunction,
-                                                           isParallel);
+      const auto &transAggFunctions = PrePToPTransformerUtil::transformAggFunction(aggOutputColumnName,
+                                                                                   prePFunction,
+                                                                                   isParallel);
       aggFunctions.insert(aggFunctions.end(), transAggFunctions.begin(), transAggFunctions.end());
     }
 
@@ -249,8 +245,8 @@ PrePToPTransformer::transformAggregate(const shared_ptr<AggregatePrePOp> &aggreg
     for (size_t j = 0; j < aggregatePrePOp->getFunctions().size(); ++j) {
       const auto &prePFunction = aggregatePrePOp->getFunctions()[j];
       const auto &aggOutputColumnName = aggregatePrePOp->getAggOutputColumnNames()[j];
-      aggReduceFunctions.emplace_back(transformAggReduceFunction(aggOutputColumnName,
-                                                                 prePFunction));
+      aggReduceFunctions.emplace_back(PrePToPTransformerUtil::transformAggReduceFunction(aggOutputColumnName,
+                                                                                         prePFunction));
     }
 
     shared_ptr<PhysicalOp> aggReducePOp = make_shared<aggregate::AggregatePOp>(
@@ -258,14 +254,14 @@ PrePToPTransformer::transformAggregate(const shared_ptr<AggregatePrePOp> &aggreg
             projectColumnNames,
             0,
             aggReduceFunctions);
-    Util::connectManyToOne(selfPOps, aggReducePOp);
+    PrePToPTransformerUtil::connectManyToOne(selfPOps, aggReducePOp);
     selfConnUpPOps = selfPOps;
     selfConnDownPOps.emplace_back(aggReducePOp);
     selfPOps.emplace_back(aggReducePOp);
   }
 
   // connect to upstream
-  Util::connectOneToOne(upConnPOps, selfConnUpPOps);
+  PrePToPTransformerUtil::connectOneToOne(upConnPOps, selfConnUpPOps);
 
   // collect all physical ops
   allPOps.insert(allPOps.end(), selfPOps.begin(), selfPOps.end());
@@ -299,9 +295,9 @@ PrePToPTransformer::transformGroup(const shared_ptr<GroupPrePOp> &groupPrePOp) {
     for (size_t j = 0; j < groupPrePOp->getFunctions().size(); ++j) {
       const auto &prePFunction = groupPrePOp->getFunctions()[j];
       const auto &aggOutputColumnName = groupPrePOp->getAggOutputColumnNames()[j];
-      const auto &transAggFunctions = transformAggFunction(aggOutputColumnName,
-                                                           prePFunction,
-                                                           false);
+      const auto &transAggFunctions = PrePToPTransformerUtil::transformAggFunction(aggOutputColumnName,
+                                                                                   prePFunction,
+                                                                                   false);
       aggFunctions.insert(aggFunctions.end(), transAggFunctions.begin(), transAggFunctions.end());
     }
 
@@ -316,7 +312,7 @@ PrePToPTransformer::transformGroup(const shared_ptr<GroupPrePOp> &groupPrePOp) {
   // if num > 1, then we add a shuffle stage ahead
   if (parallelDegree_ * numNodes_ == 1) {
     // connect to upstream
-    Util::connectManyToOne(producerTransRes.first, groupPOps[0]);
+    PrePToPTransformerUtil::connectManyToOne(producerTransRes.first, groupPOps[0]);
   } else {
     vector<shared_ptr<PhysicalOp>> shufflePOps;
     for (const auto &upConnPOp: producerTransRes.first) {
@@ -326,11 +322,11 @@ PrePToPTransformer::transformGroup(const shared_ptr<GroupPrePOp> &groupPrePOp) {
               upConnPOp->getNodeId(),
               groupPrePOp->getGroupColumnNames()));
     }
-    Util::connectManyToMany(shufflePOps, groupPOps);
+    PrePToPTransformerUtil::connectManyToMany(shufflePOps, groupPOps);
     allPOps.insert(allPOps.end(), shufflePOps.begin(), shufflePOps.end());
 
     // connect to upstream
-    Util::connectOneToOne(producerTransRes.first, shufflePOps);
+    PrePToPTransformerUtil::connectOneToOne(producerTransRes.first, shufflePOps);
   }
 
   return make_pair(groupPOps, allPOps);
@@ -366,7 +362,7 @@ PrePToPTransformer::transformProject(const shared_ptr<ProjectPrePOp> &projectPre
   }
 
   // connect to upstream
-  Util::connectOneToOne(upConnPOps, selfPOps);
+  PrePToPTransformerUtil::connectOneToOne(upConnPOps, selfPOps);
 
   // collect all physical ops
   allPOps.insert(allPOps.end(), selfPOps.begin(), selfPOps.end());
@@ -403,7 +399,7 @@ PrePToPTransformer::transformFilter(const shared_ptr<FilterPrePOp> &filterPrePOp
   }
 
   // connect to upstream
-  Util::connectOneToOne(upConnPOps, selfPOps);
+  PrePToPTransformerUtil::connectOneToOne(upConnPOps, selfPOps);
 
   // collect all physical ops
   allPOps.insert(allPOps.end(), selfPOps.begin(), selfPOps.end());
@@ -453,13 +449,13 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
   }
   allPOps.insert(allPOps.end(), hashJoinBuildPOps.begin(), hashJoinBuildPOps.end());
   allPOps.insert(allPOps.end(), hashJoinProbePOps.begin(), hashJoinProbePOps.end());
-  Util::connectOneToOne(hashJoinBuildPOps, hashJoinProbePOps);
+  PrePToPTransformerUtil::connectOneToOne(hashJoinBuildPOps, hashJoinProbePOps);
 
   // if num > 1, then we need shuffle operators
   if (parallelDegree_ * numNodes_ == 1) {
     // connect to upstream
-    Util::connectManyToOne(leftTransRes.first, hashJoinBuildPOps[0]);
-    Util::connectManyToOne(rightTransRes.first, hashJoinProbePOps[0]);
+    PrePToPTransformerUtil::connectManyToOne(leftTransRes.first, hashJoinBuildPOps[0]);
+    PrePToPTransformerUtil::connectManyToOne(rightTransRes.first, hashJoinProbePOps[0]);
   } else {
     vector<shared_ptr<PhysicalOp>> shuffleLeftPOps, shuffleRightPOps;
     for (const auto &upLeftConnPOp: leftTransRes.first) {
@@ -476,14 +472,14 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
               upRightConnPOp->getNodeId(),
               rightColumnNames));
     }
-    Util::connectManyToMany(shuffleLeftPOps, hashJoinBuildPOps);
-    Util::connectManyToMany(shuffleRightPOps, hashJoinProbePOps);
+    PrePToPTransformerUtil::connectManyToMany(shuffleLeftPOps, hashJoinBuildPOps);
+    PrePToPTransformerUtil::connectManyToMany(shuffleRightPOps, hashJoinProbePOps);
     allPOps.insert(allPOps.end(), shuffleLeftPOps.begin(), shuffleLeftPOps.end());
     allPOps.insert(allPOps.end(), shuffleRightPOps.begin(), shuffleRightPOps.end());
 
     // connect to upstream
-    Util::connectOneToOne(leftTransRes.first, shuffleLeftPOps);
-    Util::connectOneToOne(rightTransRes.first, shuffleRightPOps);
+    PrePToPTransformerUtil::connectOneToOne(leftTransRes.first, shuffleLeftPOps);
+    PrePToPTransformerUtil::connectOneToOne(rightTransRes.first, shuffleRightPOps);
   }
 
   return make_pair(hashJoinProbePOps, allPOps);
@@ -556,7 +552,7 @@ PrePToPTransformer::transformNestedLoopJoin(const shared_ptr<NestedLoopJoinPrePO
     allPOps.insert(allPOps.end(), splitPOps.begin(), splitPOps.end());
 
     // connect to upstream
-    Util::connectOneToOne(rightTransRes.first, splitPOps);
+    PrePToPTransformerUtil::connectOneToOne(rightTransRes.first, splitPOps);
   }
 
   return make_pair(nestedLoopJoinPOps, allPOps);
@@ -586,83 +582,34 @@ PrePToPTransformer::transformSeparableSuper(const shared_ptr<SeparableSuperPrePO
   }
   auto objStoreCatalogueEntry = std::static_pointer_cast<obj_store::ObjStoreCatalogueEntry>(catalogueEntry_);
 
-  if (objStoreCatalogueEntry->getStoreType() == obj_store::ObjStoreType::S3) {
-    if (objStoreConnector_->getStoreType() != obj_store::ObjStoreType::S3) {
-      throw runtime_error("object store type for catalogue entry and connector mismatch");
-    }
-    auto s3Connector = static_pointer_cast<obj_store::S3Connector>(objStoreConnector_);
-    auto s3PTransformer = make_shared<PrePToS3PTransformer>(separableSuperPrePOp->getId(),
-                                                            s3Connector->getAwsClient(),
-                                                            mode_,
-                                                            numNodes_);
-    return s3PTransformer->transformSeparableSuper(separableSuperPrePOp);
-  } else {
-    throw runtime_error(fmt::format("Unsupported object store type for separable super prephysical operator: {}",
-                                    objStoreCatalogueEntry->getStoreTypeName()));
-  }
-}
-
-vector<shared_ptr<aggregate::AggregateFunction>>
-PrePToPTransformer::transformAggFunction(const string &outputColumnName,
-                                         const shared_ptr<AggregatePrePFunction> &prePFunction,
-                                         bool hasReduceOp) {
-  switch (prePFunction->getType()) {
-    case plan::prephysical::SUM: {
-      return {make_shared<aggregate::Sum>(outputColumnName, prePFunction->getExpression())};
-    }
-    case plan::prephysical::COUNT: {
-      return {make_shared<aggregate::Count>(outputColumnName, prePFunction->getExpression())};
-    }
-    case plan::prephysical::MIN: {
-      return {make_shared<aggregate::MinMax>(true, outputColumnName, prePFunction->getExpression())};
-    }
-    case plan::prephysical::MAX: {
-      return {make_shared<aggregate::MinMax>(false, outputColumnName, prePFunction->getExpression())};
-    }
-    case plan::prephysical::AVG: {
-      if (hasReduceOp) {
-        auto sumFunc = make_shared<aggregate::Sum>(
-                AggregatePrePFunction::AVG_PARALLEL_SUM_COLUMN_PREFIX + outputColumnName,
-                prePFunction->getExpression());
-        auto countFunc = make_shared<aggregate::Count>(
-                AggregatePrePFunction::AVG_PARALLEL_COUNT_COLUMN_PREFIX + outputColumnName,
-                prePFunction->getExpression());
-        return {sumFunc, countFunc};
-      } else {
-        return {make_shared<aggregate::Avg>(outputColumnName, prePFunction->getExpression())};
+  switch (objStoreCatalogueEntry->getStoreType()) {
+    case ObjStoreType::S3: {
+      if (objStoreConnector_->getStoreType() != obj_store::ObjStoreType::S3) {
+        throw runtime_error("object store type for catalogue entry and connector mismatch, catalogue entry is 'S3'");
       }
+      auto s3Connector = static_pointer_cast<obj_store::S3Connector>(objStoreConnector_);
+      auto s3PTransformer = make_shared<PrePToS3PTransformer>(separableSuperPrePOp->getId(),
+                                                              mode_,
+                                                              numNodes_,
+                                                              s3Connector->getAwsClient());
+      return s3PTransformer->transformSeparableSuper(separableSuperPrePOp);
     }
-    default: {
-      throw runtime_error(fmt::format("Unsupported aggregate function type: {}", prePFunction->getTypeString()));
+    case ObjStoreType::FPDB_STORE: {
+      if (objStoreConnector_->getStoreType() != obj_store::ObjStoreType::FPDB_STORE) {
+        throw runtime_error("object store type for catalogue entry and connector mismatch, catalogue entry is 'FPDB-Store'");
+      }
+      auto fpdbStoreConnector = static_pointer_cast<obj_store::FPDBStoreConnector>(objStoreConnector_);
+      auto fpdbStorePTransformer = make_shared<PrePToFPDBStorePTransformer>(separableSuperPrePOp->getId(),
+                                                                            mode_,
+                                                                            numNodes_,
+                                                                            fpdbStoreConnector->getHost(),
+                                                                            fpdbStoreConnector->getFileServicePort(),
+                                                                            fpdbStoreConnector->getFlightPort());
+      return fpdbStorePTransformer->transformSeparableSuper(separableSuperPrePOp);
     }
-  }
-}
-
-shared_ptr<aggregate::AggregateFunction>
-PrePToPTransformer::transformAggReduceFunction(const string &outputColumnName,
-                                               const shared_ptr<AggregatePrePFunction> &prePFunction) {
-  switch (prePFunction->getType()) {
-    case plan::prephysical::SUM:
-    case plan::prephysical::COUNT: {
-      return make_shared<aggregate::Sum>(outputColumnName,
-                                         fpdb::expression::gandiva::col(outputColumnName));
-    }
-    case plan::prephysical::MIN: {
-      return make_shared<aggregate::MinMax>(true,
-                                            outputColumnName,
-                                            fpdb::expression::gandiva::col(outputColumnName));
-    }
-    case plan::prephysical::MAX: {
-      return make_shared<aggregate::MinMax>(false,
-                                            outputColumnName,
-                                            fpdb::expression::gandiva::col(outputColumnName));
-    }
-    case plan::prephysical::AVG: {
-      return make_shared<aggregate::AvgReduce>(outputColumnName,nullptr);
-    }
-    default: {
-      throw runtime_error(fmt::format("Unsupported aggregate function type for parallel execution: {}", prePFunction->getTypeString()));
-    }
+    default:
+      throw runtime_error(fmt::format("Unsupported object store type for separable super prephysical operator: {}",
+                                      objStoreCatalogueEntry->getStoreTypeName()));
   }
 }
 

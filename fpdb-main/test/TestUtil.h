@@ -9,6 +9,8 @@
 #include <fpdb/executor/Executor.h>
 #include <fpdb/catalogue/Catalogue.h>
 #include <fpdb/catalogue/CatalogueEntry.h>
+#include <fpdb/catalogue/obj-store/ObjStoreConnector.h>
+#include <fpdb/catalogue/obj-store/ObjStoreType.h>
 #include <fpdb/calcite/CalciteClient.h>
 #include <fpdb/aws/AWSClient.h>
 #include <memory>
@@ -20,6 +22,7 @@ using namespace fpdb::executor;
 using namespace fpdb::plan;
 using namespace fpdb::cache;
 using namespace fpdb::catalogue;
+using namespace fpdb::catalogue::obj_store;
 using namespace fpdb::calcite;
 using namespace fpdb::aws;
 using namespace std;
@@ -29,6 +32,9 @@ namespace fpdb::main::test {
 class TestUtil {
 
 public:
+  static constexpr int FileServicePort = 50051;
+  static constexpr int FlightPort = 32010;
+
   /**
    * Test with calcite server already started, using pullup by default
    * @param schemaName
@@ -41,16 +47,22 @@ public:
   static bool e2eNoStartCalciteServer(const string &schemaName,
                                       const vector<string> &queryFileNames,
                                       int parallelDegree,
-                                      bool isDistributed);
+                                      bool isDistributed,
+                                      ObjStoreType objStoreType,
+                                      const shared_ptr<Mode> &mode = Mode::pullupMode(),
+                                      const shared_ptr<CachingPolicy> &cachingPolicy = nullptr);
 
   TestUtil(const string &schemaName,
            const vector<string> &queryFileNames,
            int parallelDegree,
-           bool isDistributed);
+           bool isDistributed,
+           ObjStoreType objStoreType,
+           const shared_ptr<Mode> &mode,
+           const shared_ptr<CachingPolicy> &cachingPolicy);
 
 private:
   void runTest();
-  void makeAWSClient();
+  void makeObjStoreConnector();
   void makeCatalogueEntry();
   void makeCalciteClient();
   void connect();
@@ -63,9 +75,12 @@ private:
   vector<string> queryFileNames_;
   int parallelDegree_;
   bool isDistributed_;
+  ObjStoreType objStoreType_;
+  shared_ptr<Mode> mode_;
+  shared_ptr<CachingPolicy> cachingPolicy_;
 
   // internal parameters
-  shared_ptr<AWSClient> awsClient_;
+  shared_ptr<ObjStoreConnector> objStoreConnector_;
   shared_ptr<Catalogue> catalogue_;
   shared_ptr<CatalogueEntry> catalogueEntry_;
   shared_ptr<CalciteClient> calciteClient_;
@@ -73,8 +88,6 @@ private:
   shared_ptr<::caf::actor_system> actorSystem_;
   vector<::caf::node_id> nodes_;
   shared_ptr<Executor> executor_;
-  shared_ptr<Mode> mode_;
-  shared_ptr<CachingPolicy> cachingPolicy_;
 
 };
 

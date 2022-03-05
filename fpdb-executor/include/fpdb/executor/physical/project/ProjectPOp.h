@@ -48,6 +48,10 @@ public:
   void clear() override;
   std::string getTypeString() const override;
 
+  const std::vector<std::shared_ptr<fpdb::expression::gandiva::Expression>> &getExprs() const;
+  const std::vector<std::string> &getExprNames() const;
+  const std::vector<std::pair<std::string, std::string>> &getProjectColumnNamePairs() const;
+
 private:
   /**
    * Start message handler

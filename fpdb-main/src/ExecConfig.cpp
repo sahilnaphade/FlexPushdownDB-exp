@@ -14,7 +14,6 @@
 #include <string>
 #include <utility>
 
-using namespace fpdb::catalogue::obj_store;
 using namespace fpdb::util;
 
 namespace fpdb::main {
@@ -39,7 +38,7 @@ ExecConfig::ExecConfig(const shared_ptr<Mode> &mode,
   isDistributed_(isDistributed) {}
 
 shared_ptr<ExecConfig> ExecConfig::parseExecConfig(const shared_ptr<Catalogue> &catalogue,
-                                                   const shared_ptr<AWSClient> &awsClient) {
+                                                   const shared_ptr<ObjStoreConnector> &objStoreConnector) {
   // read config
   unordered_map<string, string> configMap = readConfig("exec.conf");
   string s3Bucket = configMap["S3_BUCKET"];
@@ -58,10 +57,10 @@ shared_ptr<ExecConfig> ExecConfig::parseExecConfig(const shared_ptr<Catalogue> &
   if (expCatalogueEntry.has_value()) {
     catalogueEntry = expCatalogueEntry.value();
   } else {
-    catalogueEntry = ObjStoreCatalogueEntryReader::readS3CatalogueEntry(catalogue,
-                                                                        s3Bucket,
-                                                                        schemaName,
-                                                                        awsClient->getS3Client());
+    catalogueEntry = ObjStoreCatalogueEntryReader::readCatalogueEntry(catalogue,
+                                                                      s3Bucket,
+                                                                      schemaName,
+                                                                      objStoreConnector);
     catalogue->putEntry(catalogueEntry);
   }
 

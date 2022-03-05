@@ -2,16 +2,14 @@
 // Created by Yifei Yang on 11/20/21.
 //
 
-#ifndef FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_PREPTOPTRANSFORMER_H
-#define FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_PREPTOPTRANSFORMER_H
+#ifndef FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_TRANSFORM_PREPTOPTRANSFORMER_H
+#define FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_TRANSFORM_PREPTOPTRANSFORMER_H
 
 #include <fpdb/executor/physical/PhysicalPlan.h>
-#include <fpdb/executor/physical/aggregate/function/AggregateFunction.h>
 #include <fpdb/plan/prephysical/PrePhysicalPlan.h>
 #include <fpdb/plan/prephysical/SortPrePOp.h>
 #include <fpdb/plan/prephysical/LimitSortPrePOp.h>
 #include <fpdb/plan/prephysical/AggregatePrePOp.h>
-#include <fpdb/plan/prephysical/AggregatePrePFunction.h>
 #include <fpdb/plan/prephysical/GroupPrePOp.h>
 #include <fpdb/plan/prephysical/ProjectPrePOp.h>
 #include <fpdb/plan/prephysical/FilterPrePOp.h>
@@ -84,20 +82,6 @@ private:
   pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
   transformSeparableSuper(const shared_ptr<SeparableSuperPrePOp> &separableSuperPrePOp);
 
-  /**
-   * Transform aggregate and aggregate reduce function
-   * @param outputColumnName
-   * @param prePFunction
-   * @param hasReduceOp whether there is a reduce op as the consumer for all parallel ops
-   * @return
-   */
-  vector<shared_ptr<aggregate::AggregateFunction>>
-  transformAggFunction(const string &outputColumnName,
-                       const shared_ptr<AggregatePrePFunction> &prePFunction,
-                       bool hasReduceOp);
-  shared_ptr<aggregate::AggregateFunction> transformAggReduceFunction(const string &outputColumnName,
-                                                                      const shared_ptr<AggregatePrePFunction> &prePFunction);
-
   shared_ptr<PrePhysicalPlan> prePhysicalPlan_;
   shared_ptr<CatalogueEntry> catalogueEntry_;
   shared_ptr<ObjStoreConnector> objStoreConnector_;
@@ -108,4 +92,4 @@ private:
 
 }
 
-#endif //FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_PREPTOPTRANSFORMER_H
+#endif //FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_TRANSFORM_PREPTOPTRANSFORMER_H

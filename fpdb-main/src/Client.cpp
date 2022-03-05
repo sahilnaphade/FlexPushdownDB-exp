@@ -43,7 +43,7 @@ string Client::start() {
   SPDLOG_INFO("Calcite client started");
 
   // execution config
-  execConfig_ = ExecConfig::parseExecConfig(catalogue_, awsClient_);
+  execConfig_ = ExecConfig::parseExecConfig(catalogue_, make_shared<S3Connector>(awsClient_));
 
   // actor system config and actor system
   const auto &remoteIps = readRemoteIps();
@@ -122,10 +122,10 @@ shared_ptr<CatalogueEntry> Client::getCatalogueEntry(const string &schemaName) {
   if (expCatalogueEntry.has_value()) {
     return expCatalogueEntry.value();
   } else {
-    catalogueEntry = ObjStoreCatalogueEntryReader::readS3CatalogueEntry(catalogue_,
-                                                                        execConfig_->getS3Bucket(),
-                                                                        schemaName,
-                                                                        awsClient_->getS3Client());
+    catalogueEntry = ObjStoreCatalogueEntryReader::readCatalogueEntry(catalogue_,
+                                                                      execConfig_->getS3Bucket(),
+                                                                      schemaName,
+                                                                      make_shared<S3Connector>(awsClient_));
     catalogue_->putEntry(catalogueEntry);
     return catalogueEntry;
   }

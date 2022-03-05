@@ -3,6 +3,8 @@
 //
 
 #include <fpdb/catalogue/obj-store/ObjStoreCatalogueEntryReader.h>
+#include <fpdb/catalogue/obj-store/s3/S3Connector.h>
+#include <fpdb/catalogue/obj-store/fpdb-store/FPDBStoreConnector.h>
 #include <fpdb/store/server/file/RemoteFileReaderBuilder.h>
 #include <fpdb/tuple/csv/CSVFormat.h>
 #include <fpdb/tuple/parquet/ParquetFormat.h>
@@ -19,39 +21,39 @@ using namespace fpdb::util;
 namespace fpdb::catalogue::obj_store {
 
 shared_ptr<ObjStoreCatalogueEntry>
-ObjStoreCatalogueEntryReader::readS3CatalogueEntry(const shared_ptr<Catalogue> &catalogue,
-                                                   const string &bucket,
-                                                   const string &schemaName,
-                                                   const shared_ptr<S3Client> &s3Client) {
-  // read catalogue entry
-  auto catalogueEntry = readCatalogueEntry(ObjStoreType::S3, catalogue, bucket, schemaName);
-
-  // read partition size from s3 listObject
-  readS3PartitionSize(catalogueEntry, s3Client);
-
-  return catalogueEntry;
-}
-
-shared_ptr<ObjStoreCatalogueEntry>
-ObjStoreCatalogueEntryReader::readFPDBStoreCatalogueEntry(const shared_ptr<Catalogue> &catalogue,
-                                                          const string &bucket,
-                                                          const string &schemaName,
-                                                          const string &host,
-                                                          int port) {
-  // read catalogue entry
-  auto catalogueEntry = readCatalogueEntry(ObjStoreType::FPDB_STORE, catalogue, bucket, schemaName);
-
-  // read partition size from store server
-  readFPDBStorePartitionSize(catalogueEntry, host, port);
-
-  return catalogueEntry;
-}
-
-shared_ptr<ObjStoreCatalogueEntry>
-ObjStoreCatalogueEntryReader::readCatalogueEntry(ObjStoreType storeType,
-                                                 const shared_ptr<Catalogue> &catalogue,
+ObjStoreCatalogueEntryReader::readCatalogueEntry(const shared_ptr<Catalogue> &catalogue,
                                                  const string &bucket,
-                                                 const string &schemaName) {
+                                                 const string &schemaName,
+                                                 const shared_ptr<ObjStoreConnector> &objStoreConnector) {
+  // read catalogue entry
+  auto objStoreType = objStoreConnector->getStoreType();
+  auto catalogueEntry = readCatalogueEntryNoPartitionSize(objStoreType, catalogue, bucket, schemaName);
+
+  // read partition size
+  switch (objStoreConnector->getStoreType()) {
+    case ObjStoreType::S3: {
+      auto s3Connector = static_pointer_cast<S3Connector>(objStoreConnector);
+      readS3PartitionSize(catalogueEntry, s3Connector->getAwsClient()->getS3Client());
+      break;
+    }
+    case ObjStoreType::FPDB_STORE: {
+      auto fpdbStoreConnector = static_pointer_cast<FPDBStoreConnector>(objStoreConnector);
+      readFPDBStorePartitionSize(catalogueEntry, fpdbStoreConnector->getHost(), fpdbStoreConnector->getFileServicePort());
+      break;
+    }
+    default: {
+      throw runtime_error("Unknown object store type");
+    }
+  }
+
+  return catalogueEntry;
+}
+
+shared_ptr<ObjStoreCatalogueEntry>
+ObjStoreCatalogueEntryReader::readCatalogueEntryNoPartitionSize(ObjStoreType storeType,
+                                                                const shared_ptr<Catalogue> &catalogue,
+                                                                const string &bucket,
+                                                                const string &schemaName) {
   // read metadata files
   filesystem::path metadataPath = catalogue->getMetadataPath().append(schemaName);
   if (!filesystem::exists(metadataPath)) {

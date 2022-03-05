@@ -23,7 +23,7 @@ const char* getCurrentTestName() { return doctest::detail::g_cs->currentTest->m_
  */
 int main(int argc, char **argv) {
 
-  spdlog::set_level(spdlog::level::info);
+  spdlog::set_level(spdlog::level::off);
   spdlog::set_pattern("[%H:%M:%S.%e] [thread %t] [%! (%s:%#)] [%l]  %v");
 
   doctest::Context context;

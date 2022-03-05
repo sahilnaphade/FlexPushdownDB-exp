@@ -28,7 +28,7 @@ string DateExtract::alias() {
 }
 
 string DateExtract::getTypeString() const {
-  return "DateExtract-" + intervalTypeToString(intervalType_);
+  return "DateExtract";
 }
 
 set<string> DateExtract::involvedColumnNames() {

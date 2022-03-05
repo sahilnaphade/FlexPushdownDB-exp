@@ -51,6 +51,22 @@ target_link_libraries(fpdb-store-server-file fmt::fmt)
 # fpdb-store-server Library
 #-----------------------------------------------------------------------------------------------------------------------
 
+add_library(fpdb-store-server-flight-api STATIC
+        src/flight/CmdType.cpp include/fpdb/store/server/flight/CmdType.hpp
+        src/flight/CmdObject.cpp include/fpdb/store/server/flight/CmdObject.hpp
+        src/flight/SelectObjectContentCmd.cpp include/fpdb/store/server/flight/SelectObjectContentCmd.hpp
+        src/flight/TicketType.cpp include/fpdb/store/server/flight/TicketType.hpp
+        src/flight/TicketObject.cpp include/fpdb/store/server/flight/TicketObject.hpp
+        src/flight/GetObjectTicket.cpp include/fpdb/store/server/flight/GetObjectTicket.hpp
+        src/flight/SelectObjectContentTicket.cpp include/fpdb/store/server/flight/SelectObjectContentTicket.hpp)
+
+target_include_directories(fpdb-store-server-flight-api PUBLIC include)
+
+target_link_libraries(fpdb-store-server-flight-api PUBLIC arrow_flight_static)
+target_link_libraries(fpdb-store-server-flight-api PRIVATE expected)
+target_link_libraries(fpdb-store-server-flight-api PRIVATE nlohmann_json)
+target_link_libraries(fpdb-store-server-flight-api PRIVATE fmt::fmt)
+
 add_library(fpdb-store-server-objlib OBJECT
         src/Module.cpp include/fpdb/store/server/Module.hpp
         include/fpdb/store/server/flight/Util.hpp

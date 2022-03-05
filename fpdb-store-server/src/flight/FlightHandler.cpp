@@ -10,7 +10,8 @@
 #include "fpdb/executor/caf/CAFInit.h"
 #include "fpdb/executor/Execution.h"
 #include "fpdb/tuple/serialization/ArrowSerializer.h"
-#include <fpdb/tuple/arrow/Arrays.h>
+#include "fpdb/tuple/arrow/Arrays.h"
+#include "fpdb/tuple/util/Util.h"
 
 using namespace fpdb::executor::physical;
 using namespace fpdb::tuple;
@@ -293,15 +294,28 @@ tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::
 
   auto table = execution->execute()->table();
 
-  // make record batch stream
+  // make record batch stream, need to specially handle when numRows = 0
   ::arrow::RecordBatchVector batches;
-  std::shared_ptr<arrow::RecordBatch> batch;
-  ::arrow::TableBatchReader tbl_reader(*table);
-  tbl_reader.set_chunksize(fpdb::tuple::DefaultChunkSize);
 
-  auto status = tbl_reader.ReadAll(&batches);
-  if (!status.ok()) {
-    return tl::make_unexpected(status);
+  if (table->num_rows() > 0) {
+    std::shared_ptr<arrow::RecordBatch> batch;
+    ::arrow::TableBatchReader tbl_reader(*table);
+    tbl_reader.set_chunksize(fpdb::tuple::DefaultChunkSize);
+
+    auto status = tbl_reader.ReadAll(&batches);
+    if (!status.ok()) {
+      return tl::make_unexpected(status);
+    }
+  } else {
+    ::arrow::ArrayVector arrayVec;
+    for (const auto &field: table->schema()->fields()) {
+      auto expArray = fpdb::tuple::util::Util::makeEmptyArray(field->type());
+      if (!expArray.has_value()) {
+        return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed, expArray.error()));
+      }
+      arrayVec.emplace_back(*expArray);
+    }
+    batches.emplace_back(::arrow::RecordBatch::Make(table->schema(), 0, arrayVec));
   }
 
   auto rb_reader = ::arrow::RecordBatchReader::Make(batches);
