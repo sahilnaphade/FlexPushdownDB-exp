@@ -27,8 +27,8 @@ public:
     actor_manager->actor_system_config_->set("caf.logger.console.verbosity", "info");
 
     auto processor_count = std::thread::hardware_concurrency();
-    actor_manager->actor_system_config_->set(
-      "caf.scheduler.max-threads", max_threads.value_or(std::max(1U, processor_count - DefaultReservedCores)));
+//    actor_manager->actor_system_config_->set(
+//      "caf.scheduler.max-threads", max_threads.value_or(std::max(1U, processor_count - DefaultReservedCores)));
 
     // Initialize global type information
     ::caf::init_global_meta_objects<T...>();

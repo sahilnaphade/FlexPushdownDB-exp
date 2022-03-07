@@ -4,12 +4,14 @@
 #-----------------------------------------------------------------------------------------------------------------------
 
 add_library(fpdb-store-client-objlib OBJECT
-        src/Module.cpp include/fpdb/store/client/Module.hpp)
+        src/Module.cpp include/fpdb/store/client/Module.hpp
+        src/FPDBStoreClientConfig.cpp include/fpdb/store/client/FPDBStoreClientConfig.h)
 
 set_target_properties(fpdb-store-client-objlib PROPERTIES POSITION_INDEPENDENT_CODE ON)
 set_target_properties(fpdb-store-client-objlib PROPERTIES OUTPUT_NAME fpdb-store-client)
 
 list(APPEND _PUBLIC_LINK_LIBRARIES expected)
+list(APPEND _PUBLIC_LINK_LIBRARIES fpdb-util)
 
 list(APPEND _PRIVATE_LINK_LIBRARIES fmt::fmt)
 

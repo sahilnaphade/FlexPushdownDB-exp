@@ -32,9 +32,6 @@ namespace fpdb::main::test {
 class TestUtil {
 
 public:
-  static constexpr int FileServicePort = 50051;
-  static constexpr int FlightPort = 32010;
-
   /**
    * Test with calcite server already started, using pullup by default
    * @param schemaName

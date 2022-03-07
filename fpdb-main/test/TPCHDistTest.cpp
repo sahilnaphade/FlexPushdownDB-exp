@@ -5,6 +5,10 @@
 #include <doctest/doctest.h>
 #include "TestUtil.h"
 
+/**
+ * Start Calcite server on the coordinator (locally) and CAF server on all executors (remote nodes) before running this
+ * (see README for more details)
+ */
 namespace fpdb::main::test {
 
 #define SKIP_SUITE false

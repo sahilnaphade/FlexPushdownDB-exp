@@ -264,7 +264,7 @@ void ObjStoreCatalogueEntryReader::readFPDBStorePartitionSize(const shared_ptr<O
                                                   port);
       auto expPartitionSize = reader->getFileSize();
       if (!expPartitionSize.has_value()) {
-        throw runtime_error(fmt::format("Error when reading FPDB store catalogue entry", expPartitionSize.error()));
+        throw runtime_error(fmt::format("Error when reading FPDB store catalogue entry: {}", expPartitionSize.error()));
       }
       partition->setNumBytes(*expPartitionSize);
     }

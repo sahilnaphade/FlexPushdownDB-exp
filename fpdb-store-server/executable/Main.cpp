@@ -5,15 +5,40 @@
 #include "Global.hpp"
 
 #include "fpdb/store/server/Server.hpp"
+#include "fpdb/store/server/FPDBStoreServerConfig.hpp"
+
+#include <csignal>
 
 using namespace fpdb::store::server;
 using namespace fpdb::store::server::flight;
 
+std::shared_ptr<fpdb::store::server::Server> server;
+std::shared_ptr<fpdb::store::server::caf::ActorManager> actorManager;
 
 int main(int /*argc*/, char** /*argv*/) {
+  auto fpdbStoreServerConfig = FPDBStoreServerConfig::parseFPDBStoreServerConfig();
+  actorManager = fpdb::store::server::caf::ActorManager::make<::caf::id_block::Server>().value();
+  server = fpdb::store::server::Server::make(ServerConfig{"node1",
+                                                          10000,
+                                                          true,
+                                                          std::nullopt,
+                                                          10001,
+                                                          fpdbStoreServerConfig->getFlightPort(),
+                                                          fpdbStoreServerConfig->getFileServicePort(),
+                                                          fpdbStoreServerConfig->getStoreRootPath()},
+                                             std::nullopt,
+                                             actorManager);
 
-  auto server = Server::make(ServerConfig{"node1", 10000, true, std::nullopt, 10001,  10002, "./data"}, std::nullopt,
-                             std::nullopt);
+  // Handle exit signals
+  auto exitAct = [](int) {
+    server->stop();
+    server.reset();
+    actorManager.reset();
+    exit(0);
+  };
+  signal(SIGTERM, exitAct);
+  signal(SIGINT, exitAct);
+  signal(SIGABRT, exitAct);
 
   // Start the server
   auto init_result = server->init();

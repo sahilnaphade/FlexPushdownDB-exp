@@ -46,7 +46,8 @@ add_executable(fpdb-main-test
         test/SSBTest.cpp
         test/TPCHTest.cpp
         test/TPCHDistTest.cpp
-        test/TPCHFPDBStoreTest.cpp)
+        test/TPCHFPDBStoreSameNodeTest.cpp
+        test/TPCHFPDBStoreDiffNodeTest.cpp)
 
 target_link_libraries(fpdb-main-test PRIVATE fpdb-main)
 target_link_libraries(fpdb-main-test PRIVATE doctest::doctest)

@@ -13,12 +13,14 @@
 #include <fpdb/catalogue/obj-store/s3/S3Connector.h>
 #include <fpdb/catalogue/obj-store/fpdb-store/FPDBStoreConnector.h>
 #include <fpdb/aws/AWSConfig.h>
+#include <fpdb/store/client/FPDBStoreClientConfig.h>
 #include <fpdb/util/Util.h>
 
 using namespace fpdb::executor::physical;
 using namespace fpdb::plan::calcite;
 using namespace fpdb::plan::prephysical::separable;
 using namespace fpdb::catalogue::obj_store;
+using namespace fpdb::store::client;
 using namespace fpdb::util;
 
 namespace fpdb::main::test {
@@ -93,7 +95,10 @@ void TestUtil::makeObjStoreConnector() {
       return;
     }
     case ObjStoreType::FPDB_STORE: {
-      objStoreConnector_ = make_shared<FPDBStoreConnector>("localhost", TestUtil::FileServicePort, TestUtil::FlightPort);
+      auto fpdbStoreClientConfig = FPDBStoreClientConfig::parseFPDBStoreClientConfig();
+      objStoreConnector_ = make_shared<FPDBStoreConnector>(fpdbStoreClientConfig->getHost(),
+                                                           fpdbStoreClientConfig->getFileServicePort(),
+                                                           fpdbStoreClientConfig->getFlightPort());
       return;
     }
     default:

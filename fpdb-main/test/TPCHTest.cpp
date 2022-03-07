@@ -5,6 +5,9 @@
 #include <doctest/doctest.h>
 #include "TestUtil.h"
 
+/**
+ * Start Calcite server before running this
+ */
 namespace fpdb::main::test {
 
 #define SKIP_SUITE false

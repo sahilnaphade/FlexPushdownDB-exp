@@ -86,7 +86,9 @@ add_library(fpdb-store-server-objlib OBJECT
         src/caf/ServerMeta.cpp include/fpdb/store/server/caf/ServerMeta.hpp
         src/cluster/ClusterActor.cpp include/fpdb/store/server/cluster/ClusterActor.hpp
         src/caf/AbstractActor.cpp include/fpdb/store/server/caf/AbstractActor.hpp
-        src/cluster/NodeActor.cpp include/fpdb/store/server/cluster/NodeActor.hpp src/ServerConfig.cpp include/fpdb/store/server/ServerConfig.hpp)
+        src/cluster/NodeActor.cpp include/fpdb/store/server/cluster/NodeActor.hpp
+        src/ServerConfig.cpp include/fpdb/store/server/ServerConfig.hpp
+        src/FPDBStoreServerConfig.cpp include/fpdb/store/server/FPDBStoreServerConfig.hpp)
 
 set_target_properties(fpdb-store-server-objlib PROPERTIES POSITION_INDEPENDENT_CODE ON)
 set_target_properties(fpdb-store-server-objlib PROPERTIES OUTPUT_NAME fpdb-store-server)

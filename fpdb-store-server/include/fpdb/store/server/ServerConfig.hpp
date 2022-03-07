@@ -10,6 +10,9 @@
 
 namespace fpdb::store::server {
 
+/**
+ * fpdb-store-server config used by server
+ */
 class ServerConfig {
 public:
   std::string name;
