@@ -291,6 +291,9 @@ std::shared_ptr<TupleSet> S3SelectPOp::s3Select(uint64_t startOffset, uint64_t e
     if (selectObjectContentOutcome.IsSuccess()) {
       break;
     }
+
+    // FIXME: This just keeps retrying even on an unrecoverable error?
+
     std::this_thread::sleep_for (std::chrono::milliseconds(retrySleepTimeMS));
   }
 
