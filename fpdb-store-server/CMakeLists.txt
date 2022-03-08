@@ -139,6 +139,8 @@ add_executable(fpdb-store-server-executable
 target_link_libraries(fpdb-store-server-executable Backward::Backward)
 target_link_libraries(fpdb-store-server-executable fpdb-store-server-static)
 
+add_dependencies(fpdb-store-server-executable resources)
+
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Tests
