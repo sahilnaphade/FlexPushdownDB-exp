@@ -6,6 +6,7 @@
 #define FPDB_FPDB_STORE_CLIENT_INCLUDE_FPDB_STORE_CLIENT_FPDBSTORECLIENTCONFIG_H
 
 #include <string>
+#include <memory>
 
 namespace fpdb::store::client {
 

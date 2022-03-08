@@ -6,6 +6,7 @@
 #define FPDB_FPDB_STORE_SERVER_INCLUDE_FPDB_STORE_SERVER_FPDBSTORESERVERCONFIG_HPP
 
 #include <string>
+#include <memory>
 
 namespace fpdb::store::server {
 
