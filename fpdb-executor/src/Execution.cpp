@@ -138,8 +138,13 @@ void Execution::boot() {
   // Don't run more S3Get requests in parallel than # cores, earlier testing showed this did not help as S3Get
   // already utilizes the full network bandwidth with #cores requests whereas S3Select does not when
   // selectivity is low.
-  auto actorTypeName = (op->getType() == POpType::S3_SELECT || op->getType() == POpType::S3_GET) ?
-          "POpActor-detached" : "POpActor";
+  bool useDetached = op->getType() == POpType::LOCAL_FILE_SCAN
+                     || op->getType() == POpType::REMOTE_FILE_SCAN
+                     || op->getType() == POpType::FPDB_STORE_FILE_SCAN
+                     || op->getType() == POpType::FPDB_STORE_SUPER
+                     || op->getType() == POpType::S3_GET
+                     || op->getType() == POpType::S3_SELECT;
+  auto actorTypeName = useDetached ? "POpActor-detached" : "POpActor";
 
   auto expectedActorHandle = actorSystem_->middleman().remote_spawn<::caf::actor>(nodes_[nodeId],
                                                                                   actorTypeName,
