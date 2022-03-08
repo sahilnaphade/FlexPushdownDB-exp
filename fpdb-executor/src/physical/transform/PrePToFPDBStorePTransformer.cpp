@@ -109,7 +109,7 @@ PrePToFPDBStorePTransformer::transformSeparableSuper(const shared_ptr<SeparableS
       if (!reducePOp.has_value()) {
         return make_pair(fpdbStoreSuperPOps, fpdbStoreSuperPOps);
       } else {
-        PrePToPTransformerUtil::connectManyToOne(connPOps, *reducePOp);
+        PrePToPTransformerUtil::connectManyToOne(fpdbStoreSuperPOps, *reducePOp);
         allPOps = fpdbStoreSuperPOps;
         allPOps.emplace_back(*reducePOp);
         return make_pair(vector<shared_ptr<PhysicalOp>>{*reducePOp}, allPOps);

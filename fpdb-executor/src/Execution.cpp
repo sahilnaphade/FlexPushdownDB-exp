@@ -168,11 +168,19 @@ void Execution::start() {
 
     vector<POpConnection> opConnections;
     for (const auto &producer: element.second.getDef()->producers()) {
-      auto producerHandle = opDirectory_.get(producer).value().getActorHandle();
+      auto expEntry = opDirectory_.get(producer);
+      if (!expEntry.has_value()) {
+        throw runtime_error(expEntry.error());
+      }
+      auto producerHandle = (*expEntry).getActorHandle();
       opConnections.emplace_back(producer, producerHandle, POpRelationshipType::Producer);
     }
     for (const auto &consumer: element.second.getDef()->consumers()) {
-      auto consumerHandle = opDirectory_.get(consumer).value().getActorHandle();
+      auto expEntry = opDirectory_.get(consumer);
+      if (!expEntry.has_value()) {
+        throw runtime_error(expEntry.error());
+      }
+      auto consumerHandle = (*expEntry).getActorHandle();
       opConnections.emplace_back(consumer, consumerHandle, POpRelationshipType::Consumer);
     }
 
