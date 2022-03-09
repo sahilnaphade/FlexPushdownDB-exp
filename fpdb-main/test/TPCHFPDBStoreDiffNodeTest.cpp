@@ -12,11 +12,11 @@ namespace fpdb::main::test {
 
 #define SKIP_SUITE false
 
-TEST_SUITE ("tpch-sf10-fpdb-store-diff-node-pullup" * doctest::skip(SKIP_SUITE)) {
+TEST_SUITE ("tpch-sf10-fpdb-store-diff-node-csv-pullup" * doctest::skip(SKIP_SUITE)) {
 
 int parallelDegreeFPDBStoreDiffNode = 23;
 
-TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pullup-01" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-csv-pullup-01" * doctest::skip(false || SKIP_SUITE)) {
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/csv/",
                                             {"tpch/original/01.sql"},
                                             parallelDegreeFPDBStoreDiffNode,
@@ -24,7 +24,7 @@ TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pullup-01" * doctest::skip(false || S
                                             ObjStoreType::FPDB_STORE));
 }
 
-TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pullup-02" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-csv-pullup-02" * doctest::skip(false || SKIP_SUITE)) {
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/csv/",
                                             {"tpch/original/02.sql"},
                                             parallelDegreeFPDBStoreDiffNode,
@@ -32,7 +32,7 @@ TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pullup-02" * doctest::skip(false || S
                                             ObjStoreType::FPDB_STORE));
 }
 
-TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pullup-03" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-csv-pullup-03" * doctest::skip(false || SKIP_SUITE)) {
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/csv/",
                                             {"tpch/original/03.sql"},
                                             parallelDegreeFPDBStoreDiffNode,
@@ -40,7 +40,7 @@ TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pullup-03" * doctest::skip(false || S
                                             ObjStoreType::FPDB_STORE));
 }
 
-TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pullup-04" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-csv-pullup-04" * doctest::skip(false || SKIP_SUITE)) {
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/csv/",
                                             {"tpch/original/04.sql"},
                                             parallelDegreeFPDBStoreDiffNode,
@@ -48,7 +48,7 @@ TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pullup-04" * doctest::skip(false || S
                                             ObjStoreType::FPDB_STORE));
 }
 
-TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pullup-05" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-csv-pullup-05" * doctest::skip(false || SKIP_SUITE)) {
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/csv/",
                                             {"tpch/original/05.sql"},
                                             parallelDegreeFPDBStoreDiffNode,
@@ -56,7 +56,7 @@ TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pullup-05" * doctest::skip(false || S
                                             ObjStoreType::FPDB_STORE));
 }
 
-TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pullup-06" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-csv-pullup-06" * doctest::skip(false || SKIP_SUITE)) {
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/csv/",
                                             {"tpch/original/06.sql"},
                                             parallelDegreeFPDBStoreDiffNode,
@@ -64,7 +64,7 @@ TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pullup-06" * doctest::skip(false || S
                                             ObjStoreType::FPDB_STORE));
 }
 
-TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pullup-07" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-csv-pullup-07" * doctest::skip(false || SKIP_SUITE)) {
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/csv/",
                                             {"tpch/original/07.sql"},
                                             parallelDegreeFPDBStoreDiffNode,
@@ -72,7 +72,7 @@ TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pullup-07" * doctest::skip(false || S
                                             ObjStoreType::FPDB_STORE));
 }
 
-TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pullup-08" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-csv-pullup-08" * doctest::skip(false || SKIP_SUITE)) {
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/csv/",
                                             {"tpch/original/08.sql"},
                                             parallelDegreeFPDBStoreDiffNode,
@@ -80,7 +80,7 @@ TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pullup-08" * doctest::skip(false || S
                                             ObjStoreType::FPDB_STORE));
 }
 
-TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pullup-09" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-csv-pullup-09" * doctest::skip(false || SKIP_SUITE)) {
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/csv/",
                                             {"tpch/original/09.sql"},
                                             parallelDegreeFPDBStoreDiffNode,
@@ -88,7 +88,7 @@ TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pullup-09" * doctest::skip(false || S
                                             ObjStoreType::FPDB_STORE));
 }
 
-TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pullup-10" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-csv-pullup-10" * doctest::skip(false || SKIP_SUITE)) {
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/csv/",
                                             {"tpch/original/10.sql"},
                                             parallelDegreeFPDBStoreDiffNode,
@@ -96,7 +96,7 @@ TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pullup-10" * doctest::skip(false || S
                                             ObjStoreType::FPDB_STORE));
 }
 
-TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pullup-11" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-csv-pullup-11" * doctest::skip(false || SKIP_SUITE)) {
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/csv/",
                                             {"tpch/original/11.sql"},
                                             parallelDegreeFPDBStoreDiffNode,
@@ -104,7 +104,7 @@ TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pullup-11" * doctest::skip(false || S
                                             ObjStoreType::FPDB_STORE));
 }
 
-TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pullup-12" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-csv-pullup-12" * doctest::skip(false || SKIP_SUITE)) {
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/csv/",
                                             {"tpch/original/12.sql"},
                                             parallelDegreeFPDBStoreDiffNode,
@@ -112,7 +112,7 @@ TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pullup-12" * doctest::skip(false || S
                                             ObjStoreType::FPDB_STORE));
 }
 
-TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pullup-13" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-csv-pullup-13" * doctest::skip(false || SKIP_SUITE)) {
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/csv/",
                                             {"tpch/original/13.sql"},
                                             parallelDegreeFPDBStoreDiffNode,
@@ -120,7 +120,7 @@ TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pullup-13" * doctest::skip(false || S
                                             ObjStoreType::FPDB_STORE));
 }
 
-TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pullup-14" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-csv-pullup-14" * doctest::skip(false || SKIP_SUITE)) {
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/csv/",
                                             {"tpch/original/14.sql"},
                                             parallelDegreeFPDBStoreDiffNode,
@@ -128,7 +128,7 @@ TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pullup-14" * doctest::skip(false || S
                                             ObjStoreType::FPDB_STORE));
 }
 
-TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pullup-15" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-csv-pullup-15" * doctest::skip(false || SKIP_SUITE)) {
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/csv/",
                                             {"tpch/original/15.sql"},
                                             parallelDegreeFPDBStoreDiffNode,
@@ -136,7 +136,7 @@ TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pullup-15" * doctest::skip(false || S
                                             ObjStoreType::FPDB_STORE));
 }
 
-TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pullup-16" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-csv-pullup-16" * doctest::skip(false || SKIP_SUITE)) {
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/csv/",
                                             {"tpch/original/16.sql"},
                                             parallelDegreeFPDBStoreDiffNode,
@@ -144,7 +144,7 @@ TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pullup-16" * doctest::skip(false || S
                                             ObjStoreType::FPDB_STORE));
 }
 
-TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pullup-17" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-csv-pullup-17" * doctest::skip(false || SKIP_SUITE)) {
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/csv/",
                                             {"tpch/original/17.sql"},
                                             parallelDegreeFPDBStoreDiffNode,
@@ -152,7 +152,7 @@ TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pullup-17" * doctest::skip(false || S
                                             ObjStoreType::FPDB_STORE));
 }
 
-TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pullup-18" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-csv-pullup-18" * doctest::skip(false || SKIP_SUITE)) {
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/csv/",
                                             {"tpch/original/18.sql"},
                                             parallelDegreeFPDBStoreDiffNode,
@@ -160,7 +160,7 @@ TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pullup-18" * doctest::skip(false || S
                                             ObjStoreType::FPDB_STORE));
 }
 
-TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pullup-19" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-csv-pullup-19" * doctest::skip(false || SKIP_SUITE)) {
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/csv/",
                                             {"tpch/original/19.sql"},
                                             parallelDegreeFPDBStoreDiffNode,
@@ -168,7 +168,7 @@ TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pullup-19" * doctest::skip(false || S
                                             ObjStoreType::FPDB_STORE));
 }
 
-TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pullup-20" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-csv-pullup-20" * doctest::skip(false || SKIP_SUITE)) {
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/csv/",
                                             {"tpch/original/20.sql"},
                                             parallelDegreeFPDBStoreDiffNode,
@@ -176,7 +176,7 @@ TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pullup-20" * doctest::skip(false || S
                                             ObjStoreType::FPDB_STORE));
 }
 
-TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pullup-21" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-csv-pullup-21" * doctest::skip(false || SKIP_SUITE)) {
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/csv/",
                                             {"tpch/original/21.sql"},
                                             parallelDegreeFPDBStoreDiffNode,
@@ -184,7 +184,7 @@ TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pullup-21" * doctest::skip(false || S
                                             ObjStoreType::FPDB_STORE));
 }
 
-TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pullup-22" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-csv-pullup-22" * doctest::skip(false || SKIP_SUITE)) {
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/csv/",
                                             {"tpch/original/22.sql"},
                                             parallelDegreeFPDBStoreDiffNode,
@@ -194,11 +194,11 @@ TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pullup-22" * doctest::skip(false || S
 
 }
 
-TEST_SUITE ("tpch-sf10-fpdb-store-diff-node-pushdown-only" * doctest::skip(SKIP_SUITE)) {
+TEST_SUITE ("tpch-sf10-fpdb-store-diff-node-csv-pushdown-only" * doctest::skip(SKIP_SUITE)) {
 
 int parallelDegreeFPDBStoreDiffNode = 23;
 
-TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pushdown-only-01" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-csv-pushdown-only-01" * doctest::skip(false || SKIP_SUITE)) {
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/csv/",
                                             {"tpch/original/01.sql"},
                                             parallelDegreeFPDBStoreDiffNode,
@@ -207,7 +207,7 @@ TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pushdown-only-01" * doctest::skip(fal
                                             Mode::pushdownOnlyMode()));
 }
 
-TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pushdown-only-02" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-csv-pushdown-only-02" * doctest::skip(false || SKIP_SUITE)) {
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/csv/",
                                             {"tpch/original/02.sql"},
                                             parallelDegreeFPDBStoreDiffNode,
@@ -216,7 +216,7 @@ TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pushdown-only-02" * doctest::skip(fal
                                             Mode::pushdownOnlyMode()));
 }
 
-TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pushdown-only-03" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-csv-pushdown-only-03" * doctest::skip(false || SKIP_SUITE)) {
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/csv/",
                                             {"tpch/original/03.sql"},
                                             parallelDegreeFPDBStoreDiffNode,
@@ -225,7 +225,7 @@ TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pushdown-only-03" * doctest::skip(fal
                                             Mode::pushdownOnlyMode()));
 }
 
-TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pushdown-only-04" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-csv-pushdown-only-04" * doctest::skip(false || SKIP_SUITE)) {
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/csv/",
                                             {"tpch/original/04.sql"},
                                             parallelDegreeFPDBStoreDiffNode,
@@ -234,7 +234,7 @@ TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pushdown-only-04" * doctest::skip(fal
                                             Mode::pushdownOnlyMode()));
 }
 
-TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pushdown-only-05" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-csv-pushdown-only-05" * doctest::skip(false || SKIP_SUITE)) {
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/csv/",
                                             {"tpch/original/05.sql"},
                                             parallelDegreeFPDBStoreDiffNode,
@@ -243,7 +243,7 @@ TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pushdown-only-05" * doctest::skip(fal
                                             Mode::pushdownOnlyMode()));
 }
 
-TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pushdown-only-06" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-csv-pushdown-only-06" * doctest::skip(false || SKIP_SUITE)) {
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/csv/",
                                             {"tpch/original/06.sql"},
                                             parallelDegreeFPDBStoreDiffNode,
@@ -252,7 +252,7 @@ TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pushdown-only-06" * doctest::skip(fal
                                             Mode::pushdownOnlyMode()));
 }
 
-TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pushdown-only-07" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-csv-pushdown-only-07" * doctest::skip(false || SKIP_SUITE)) {
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/csv/",
                                             {"tpch/original/07.sql"},
                                             parallelDegreeFPDBStoreDiffNode,
@@ -261,7 +261,7 @@ TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pushdown-only-07" * doctest::skip(fal
                                             Mode::pushdownOnlyMode()));
 }
 
-TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pushdown-only-08" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-csv-pushdown-only-08" * doctest::skip(false || SKIP_SUITE)) {
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/csv/",
                                             {"tpch/original/08.sql"},
                                             parallelDegreeFPDBStoreDiffNode,
@@ -270,7 +270,7 @@ TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pushdown-only-08" * doctest::skip(fal
                                             Mode::pushdownOnlyMode()));
 }
 
-TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pushdown-only-09" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-csv-pushdown-only-09" * doctest::skip(false || SKIP_SUITE)) {
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/csv/",
                                             {"tpch/original/09.sql"},
                                             parallelDegreeFPDBStoreDiffNode,
@@ -279,7 +279,7 @@ TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pushdown-only-09" * doctest::skip(fal
                                             Mode::pushdownOnlyMode()));
 }
 
-TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pushdown-only-10" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-csv-pushdown-only-10" * doctest::skip(false || SKIP_SUITE)) {
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/csv/",
                                             {"tpch/original/10.sql"},
                                             parallelDegreeFPDBStoreDiffNode,
@@ -288,7 +288,7 @@ TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pushdown-only-10" * doctest::skip(fal
                                             Mode::pushdownOnlyMode()));
 }
 
-TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pushdown-only-11" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-csv-pushdown-only-11" * doctest::skip(false || SKIP_SUITE)) {
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/csv/",
                                             {"tpch/original/11.sql"},
                                             parallelDegreeFPDBStoreDiffNode,
@@ -297,7 +297,7 @@ TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pushdown-only-11" * doctest::skip(fal
                                             Mode::pushdownOnlyMode()));
 }
 
-TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pushdown-only-12" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-csv-pushdown-only-12" * doctest::skip(false || SKIP_SUITE)) {
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/csv/",
                                             {"tpch/original/12.sql"},
                                             parallelDegreeFPDBStoreDiffNode,
@@ -306,7 +306,7 @@ TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pushdown-only-12" * doctest::skip(fal
                                             Mode::pushdownOnlyMode()));
 }
 
-TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pushdown-only-13" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-csv-pushdown-only-13" * doctest::skip(false || SKIP_SUITE)) {
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/csv/",
                                             {"tpch/original/13.sql"},
                                             parallelDegreeFPDBStoreDiffNode,
@@ -315,7 +315,7 @@ TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pushdown-only-13" * doctest::skip(fal
                                             Mode::pushdownOnlyMode()));
 }
 
-TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pushdown-only-14" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-csv-pushdown-only-14" * doctest::skip(false || SKIP_SUITE)) {
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/csv/",
                                             {"tpch/original/14.sql"},
                                             parallelDegreeFPDBStoreDiffNode,
@@ -324,7 +324,7 @@ TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pushdown-only-14" * doctest::skip(fal
                                             Mode::pushdownOnlyMode()));
 }
 
-TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pushdown-only-15" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-csv-pushdown-only-15" * doctest::skip(false || SKIP_SUITE)) {
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/csv/",
                                             {"tpch/original/15.sql"},
                                             parallelDegreeFPDBStoreDiffNode,
@@ -333,7 +333,7 @@ TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pushdown-only-15" * doctest::skip(fal
                                             Mode::pushdownOnlyMode()));
 }
 
-TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pushdown-only-16" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-csv-pushdown-only-16" * doctest::skip(false || SKIP_SUITE)) {
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/csv/",
                                             {"tpch/original/16.sql"},
                                             parallelDegreeFPDBStoreDiffNode,
@@ -342,7 +342,7 @@ TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pushdown-only-16" * doctest::skip(fal
                                             Mode::pushdownOnlyMode()));
 }
 
-TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pushdown-only-17" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-csv-pushdown-only-17" * doctest::skip(false || SKIP_SUITE)) {
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/csv/",
                                             {"tpch/original/17.sql"},
                                             parallelDegreeFPDBStoreDiffNode,
@@ -351,7 +351,7 @@ TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pushdown-only-17" * doctest::skip(fal
                                             Mode::pushdownOnlyMode()));
 }
 
-TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pushdown-only-18" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-csv-pushdown-only-18" * doctest::skip(false || SKIP_SUITE)) {
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/csv/",
                                             {"tpch/original/18.sql"},
                                             parallelDegreeFPDBStoreDiffNode,
@@ -360,7 +360,7 @@ TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pushdown-only-18" * doctest::skip(fal
                                             Mode::pushdownOnlyMode()));
 }
 
-TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pushdown-only-19" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-csv-pushdown-only-19" * doctest::skip(false || SKIP_SUITE)) {
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/csv/",
                                             {"tpch/original/19.sql"},
                                             parallelDegreeFPDBStoreDiffNode,
@@ -369,7 +369,7 @@ TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pushdown-only-19" * doctest::skip(fal
                                             Mode::pushdownOnlyMode()));
 }
 
-TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pushdown-only-20" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-csv-pushdown-only-20" * doctest::skip(false || SKIP_SUITE)) {
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/csv/",
                                             {"tpch/original/20.sql"},
                                             parallelDegreeFPDBStoreDiffNode,
@@ -378,7 +378,7 @@ TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pushdown-only-20" * doctest::skip(fal
                                             Mode::pushdownOnlyMode()));
 }
 
-TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pushdown-only-21" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-csv-pushdown-only-21" * doctest::skip(false || SKIP_SUITE)) {
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/csv/",
                                             {"tpch/original/21.sql"},
                                             parallelDegreeFPDBStoreDiffNode,
@@ -387,7 +387,7 @@ TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pushdown-only-21" * doctest::skip(fal
                                             Mode::pushdownOnlyMode()));
 }
 
-TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pushdown-only-22" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-csv-pushdown-only-22" * doctest::skip(false || SKIP_SUITE)) {
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/csv/",
                                             {"tpch/original/22.sql"},
                                             parallelDegreeFPDBStoreDiffNode,
@@ -397,5 +397,392 @@ TEST_CASE ("tpch-sf10-fpdb-store-diff-node-pushdown-only-22" * doctest::skip(fal
 }
 
 }
+
+TEST_SUITE ("tpch-sf10-fpdb-store-diff-node-parquet-pullup" * doctest::skip(SKIP_SUITE)) {
+
+int parallelDegreeFPDBStoreDiffNode = 23;
+
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-parquet-pullup-01" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/01.sql"},
+                                            parallelDegreeFPDBStoreDiffNode,
+                                            false,
+                                            ObjStoreType::FPDB_STORE));
+}
+
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-parquet-pullup-02" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/02.sql"},
+                                            parallelDegreeFPDBStoreDiffNode,
+                                            false,
+                                            ObjStoreType::FPDB_STORE));
+}
+
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-parquet-pullup-03" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/03.sql"},
+                                            parallelDegreeFPDBStoreDiffNode,
+                                            false,
+                                            ObjStoreType::FPDB_STORE));
+}
+
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-parquet-pullup-04" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/04.sql"},
+                                            parallelDegreeFPDBStoreDiffNode,
+                                            false,
+                                            ObjStoreType::FPDB_STORE));
+}
+
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-parquet-pullup-05" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/05.sql"},
+                                            parallelDegreeFPDBStoreDiffNode,
+                                            false,
+                                            ObjStoreType::FPDB_STORE));
+}
+
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-parquet-pullup-06" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/06.sql"},
+                                            parallelDegreeFPDBStoreDiffNode,
+                                            false,
+                                            ObjStoreType::FPDB_STORE));
+}
+
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-parquet-pullup-07" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/07.sql"},
+                                            parallelDegreeFPDBStoreDiffNode,
+                                            false,
+                                            ObjStoreType::FPDB_STORE));
+}
+
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-parquet-pullup-08" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/08.sql"},
+                                            parallelDegreeFPDBStoreDiffNode,
+                                            false,
+                                            ObjStoreType::FPDB_STORE));
+}
+
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-parquet-pullup-09" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/09.sql"},
+                                            parallelDegreeFPDBStoreDiffNode,
+                                            false,
+                                            ObjStoreType::FPDB_STORE));
+}
+
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-parquet-pullup-10" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/10.sql"},
+                                            parallelDegreeFPDBStoreDiffNode,
+                                            false,
+                                            ObjStoreType::FPDB_STORE));
+}
+
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-parquet-pullup-11" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/11.sql"},
+                                            parallelDegreeFPDBStoreDiffNode,
+                                            false,
+                                            ObjStoreType::FPDB_STORE));
+}
+
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-parquet-pullup-12" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/12.sql"},
+                                            parallelDegreeFPDBStoreDiffNode,
+                                            false,
+                                            ObjStoreType::FPDB_STORE));
+}
+
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-parquet-pullup-13" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/13.sql"},
+                                            parallelDegreeFPDBStoreDiffNode,
+                                            false,
+                                            ObjStoreType::FPDB_STORE));
+}
+
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-parquet-pullup-14" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/14.sql"},
+                                            parallelDegreeFPDBStoreDiffNode,
+                                            false,
+                                            ObjStoreType::FPDB_STORE));
+}
+
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-parquet-pullup-15" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/15.sql"},
+                                            parallelDegreeFPDBStoreDiffNode,
+                                            false,
+                                            ObjStoreType::FPDB_STORE));
+}
+
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-parquet-pullup-16" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/16.sql"},
+                                            parallelDegreeFPDBStoreDiffNode,
+                                            false,
+                                            ObjStoreType::FPDB_STORE));
+}
+
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-parquet-pullup-17" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/17.sql"},
+                                            parallelDegreeFPDBStoreDiffNode,
+                                            false,
+                                            ObjStoreType::FPDB_STORE));
+}
+
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-parquet-pullup-18" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/18.sql"},
+                                            parallelDegreeFPDBStoreDiffNode,
+                                            false,
+                                            ObjStoreType::FPDB_STORE));
+}
+
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-parquet-pullup-19" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/19.sql"},
+                                            parallelDegreeFPDBStoreDiffNode,
+                                            false,
+                                            ObjStoreType::FPDB_STORE));
+}
+
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-parquet-pullup-20" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/20.sql"},
+                                            parallelDegreeFPDBStoreDiffNode,
+                                            false,
+                                            ObjStoreType::FPDB_STORE));
+}
+
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-parquet-pullup-21" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/21.sql"},
+                                            parallelDegreeFPDBStoreDiffNode,
+                                            false,
+                                            ObjStoreType::FPDB_STORE));
+}
+
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-parquet-pullup-22" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/22.sql"},
+                                            parallelDegreeFPDBStoreDiffNode,
+                                            false,
+                                            ObjStoreType::FPDB_STORE));
+}
+
+}
+
+TEST_SUITE ("tpch-sf10-fpdb-store-diff-node-parquet-pushdown-only" * doctest::skip(SKIP_SUITE)) {
+
+int parallelDegreeFPDBStoreDiffNode = 23;
+
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-parquet-pushdown-only-01" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/01.sql"},
+                                            parallelDegreeFPDBStoreDiffNode,
+                                            false,
+                                            ObjStoreType::FPDB_STORE,
+                                            Mode::pushdownOnlyMode()));
+}
+
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-parquet-pushdown-only-02" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/02.sql"},
+                                            parallelDegreeFPDBStoreDiffNode,
+                                            false,
+                                            ObjStoreType::FPDB_STORE,
+                                            Mode::pushdownOnlyMode()));
+}
+
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-parquet-pushdown-only-03" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/03.sql"},
+                                            parallelDegreeFPDBStoreDiffNode,
+                                            false,
+                                            ObjStoreType::FPDB_STORE,
+                                            Mode::pushdownOnlyMode()));
+}
+
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-parquet-pushdown-only-04" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/04.sql"},
+                                            parallelDegreeFPDBStoreDiffNode,
+                                            false,
+                                            ObjStoreType::FPDB_STORE,
+                                            Mode::pushdownOnlyMode()));
+}
+
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-parquet-pushdown-only-05" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/05.sql"},
+                                            parallelDegreeFPDBStoreDiffNode,
+                                            false,
+                                            ObjStoreType::FPDB_STORE,
+                                            Mode::pushdownOnlyMode()));
+}
+
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-parquet-pushdown-only-06" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/06.sql"},
+                                            parallelDegreeFPDBStoreDiffNode,
+                                            false,
+                                            ObjStoreType::FPDB_STORE,
+                                            Mode::pushdownOnlyMode()));
+}
+
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-parquet-pushdown-only-07" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/07.sql"},
+                                            parallelDegreeFPDBStoreDiffNode,
+                                            false,
+                                            ObjStoreType::FPDB_STORE,
+                                            Mode::pushdownOnlyMode()));
+}
+
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-parquet-pushdown-only-08" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/08.sql"},
+                                            parallelDegreeFPDBStoreDiffNode,
+                                            false,
+                                            ObjStoreType::FPDB_STORE,
+                                            Mode::pushdownOnlyMode()));
+}
+
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-parquet-pushdown-only-09" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/09.sql"},
+                                            parallelDegreeFPDBStoreDiffNode,
+                                            false,
+                                            ObjStoreType::FPDB_STORE,
+                                            Mode::pushdownOnlyMode()));
+}
+
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-parquet-pushdown-only-10" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/10.sql"},
+                                            parallelDegreeFPDBStoreDiffNode,
+                                            false,
+                                            ObjStoreType::FPDB_STORE,
+                                            Mode::pushdownOnlyMode()));
+}
+
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-parquet-pushdown-only-11" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/11.sql"},
+                                            parallelDegreeFPDBStoreDiffNode,
+                                            false,
+                                            ObjStoreType::FPDB_STORE,
+                                            Mode::pushdownOnlyMode()));
+}
+
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-parquet-pushdown-only-12" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/12.sql"},
+                                            parallelDegreeFPDBStoreDiffNode,
+                                            false,
+                                            ObjStoreType::FPDB_STORE,
+                                            Mode::pushdownOnlyMode()));
+}
+
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-parquet-pushdown-only-13" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/13.sql"},
+                                            parallelDegreeFPDBStoreDiffNode,
+                                            false,
+                                            ObjStoreType::FPDB_STORE,
+                                            Mode::pushdownOnlyMode()));
+}
+
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-parquet-pushdown-only-14" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/14.sql"},
+                                            parallelDegreeFPDBStoreDiffNode,
+                                            false,
+                                            ObjStoreType::FPDB_STORE,
+                                            Mode::pushdownOnlyMode()));
+}
+
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-parquet-pushdown-only-15" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/15.sql"},
+                                            parallelDegreeFPDBStoreDiffNode,
+                                            false,
+                                            ObjStoreType::FPDB_STORE,
+                                            Mode::pushdownOnlyMode()));
+}
+
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-parquet-pushdown-only-16" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/16.sql"},
+                                            parallelDegreeFPDBStoreDiffNode,
+                                            false,
+                                            ObjStoreType::FPDB_STORE,
+                                            Mode::pushdownOnlyMode()));
+}
+
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-parquet-pushdown-only-17" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/17.sql"},
+                                            parallelDegreeFPDBStoreDiffNode,
+                                            false,
+                                            ObjStoreType::FPDB_STORE,
+                                            Mode::pushdownOnlyMode()));
+}
+
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-parquet-pushdown-only-18" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/18.sql"},
+                                            parallelDegreeFPDBStoreDiffNode,
+                                            false,
+                                            ObjStoreType::FPDB_STORE,
+                                            Mode::pushdownOnlyMode()));
+}
+
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-parquet-pushdown-only-19" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/19.sql"},
+                                            parallelDegreeFPDBStoreDiffNode,
+                                            false,
+                                            ObjStoreType::FPDB_STORE,
+                                            Mode::pushdownOnlyMode()));
+}
+
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-parquet-pushdown-only-20" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/20.sql"},
+                                            parallelDegreeFPDBStoreDiffNode,
+                                            false,
+                                            ObjStoreType::FPDB_STORE,
+                                            Mode::pushdownOnlyMode()));
+}
+
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-parquet-pushdown-only-21" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/21.sql"},
+                                            parallelDegreeFPDBStoreDiffNode,
+                                            false,
+                                            ObjStoreType::FPDB_STORE,
+                                            Mode::pushdownOnlyMode()));
+}
+
+TEST_CASE ("tpch-sf10-fpdb-store-diff-node-parquet-pushdown-only-22" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/22.sql"},
+                                            parallelDegreeFPDBStoreDiffNode,
+                                            false,
+                                            ObjStoreType::FPDB_STORE,
+                                            Mode::pushdownOnlyMode()));
+}
+
+}
+
 
 }

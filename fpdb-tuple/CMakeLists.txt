@@ -59,11 +59,9 @@ target_link_libraries(fpdb-tuple PUBLIC fpdb-util)
 target_link_libraries(fpdb-tuple PUBLIC fpdb-caf)
 target_link_libraries(fpdb-tuple PUBLIC spdlog::spdlog)
 target_link_libraries(fpdb-tuple PUBLIC fmt::fmt)
-#target_link_libraries(fpdb-tuple PUBLIC LLVM-filesystem)
 target_link_libraries(fpdb-tuple PUBLIC expected)
 target_link_libraries(fpdb-tuple PUBLIC arrow_static)
 target_link_libraries(fpdb-tuple PUBLIC parquet_static)
-#target_link_libraries(fpdb-tuple PUBLIC deflate)
 target_link_libraries(fpdb-tuple PUBLIC zlibstatic)
 target_link_libraries(fpdb-tuple PUBLIC nlohmann_json)
 
@@ -117,6 +115,19 @@ target_link_libraries(fpdb-tuple-benchmark nanobench::nanobench)
 target_link_libraries(fpdb-tuple-benchmark fmt::fmt)
 target_link_libraries(fpdb-tuple-benchmark fpdb-tuple)
 target_link_libraries(fpdb-tuple-benchmark Backward::Backward)
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+# Executable
+#-----------------------------------------------------------------------------------------------------------------------
+
+add_executable(fpdb-tuple-converter-exec
+        executable/ConverterMain.cpp)
+
+target_include_directories(fpdb-tuple-converter-exec PRIVATE include)
+
+target_link_libraries(fpdb-tuple-converter-exec fpdb-tuple)
+
 
 
 #-----------------------------------------------------------------------------------------------------------------------

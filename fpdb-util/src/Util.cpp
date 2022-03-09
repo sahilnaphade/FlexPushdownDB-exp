@@ -8,8 +8,6 @@
 #include <fstream>
 #include <sstream>
 
-using namespace fpdb::util;
-
 string fpdb::util::readFile(const string& filePath) {
   ifstream inFile(filePath);
   if (!inFile.good()) {

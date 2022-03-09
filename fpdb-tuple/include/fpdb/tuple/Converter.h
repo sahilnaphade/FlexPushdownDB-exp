@@ -17,12 +17,13 @@ namespace fpdb::tuple {
 class Converter {
 
 public:
-  static tl::expected<void, std::string> csvToParquet(const std::string &inFile,
-                                                      const std::string &outFile,
-                                                      const std::shared_ptr<csv::CSVFormat> &csvFormat,
-                                                      const std::shared_ptr<::arrow::Schema> &schema,
-                                                      int rowGroupSize,
-                                                      ::parquet::Compression::type compressionType);
+  static tl::expected<void, std::string> csvToParquet(
+          const std::string &inFile,
+          const std::string &outFile,
+          const std::shared_ptr<csv::CSVFormat> &csvFormat,
+          const std::shared_ptr<::arrow::Schema> &schema,
+          int rowGroupSize,
+          ::parquet::Compression::type compressionType = ::parquet::Compression::type::UNCOMPRESSED);
 };
 
 }
