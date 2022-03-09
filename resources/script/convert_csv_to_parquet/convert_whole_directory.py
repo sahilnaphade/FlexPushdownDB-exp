@@ -1,7 +1,7 @@
 # Build 'fpdb-tuple-converted-exec' before running this
 # Example usage: 'python convert_whole_directory.py
-# ~/Desktop/FlexPushdownDB-Dev/fpdb-main/test-resources/flexpushdowndb/tpch-sf0.01/csv/
-# parquet tpch/schema_format/ ~/Desktop/FlexPushdownDB-Dev/cmake-build-debug/'
+# ~/Desktop/FlexPushdownDB-Dev/fpdb-main/test-resources/flexpushdowndb/tpch-sf0.01/csv
+# parquet tpch/schema_format ~/Desktop/FlexPushdownDB-Dev/cmake-build-debug'
 
 import sys
 import os
@@ -28,7 +28,7 @@ converter_exec_path = fpdb_build_path + "/fpdb-tuple/fpdb-tuple-converter-exec"
 root_files = os.listdir(csv_path)
 
 os.system("rm -rf " + parquet_path)
-os.system("mkdir " + parquet_path)
+os.system("mkdir -p " + parquet_path)
 
 threads = []
 
