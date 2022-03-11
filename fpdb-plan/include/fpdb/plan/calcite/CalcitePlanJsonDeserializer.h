@@ -46,6 +46,8 @@ private:
   shared_ptr<fpdb::expression::gandiva::Expression> deserializeExtractOperation(const json &jObj);
   shared_ptr<fpdb::expression::gandiva::Expression> deserializeNullOperation(const string &opName, const json &jObj);
   shared_ptr<fpdb::expression::gandiva::Expression> deserializeSubstrOperation(const json &jObj);
+  shared_ptr<fpdb::expression::gandiva::Expression> deserializeCastOperation(const json &jObj);
+  shared_ptr<::arrow::DataType> deserializeDataType(const json &jObj);
   shared_ptr<fpdb::expression::gandiva::Expression> deserializeExpression(const json &jObj);
 
   unordered_map<string, string> deserializeColumnRenames(const vector<json> &jArr);

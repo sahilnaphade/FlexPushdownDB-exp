@@ -3,7 +3,9 @@ package com.flexpushdowndb.calcite.serializer;
 import com.google.common.collect.BoundType;
 import com.google.common.collect.Range;
 import com.sun.org.apache.xpath.internal.operations.Bool;
+import org.apache.calcite.avatica.SqlType;
 import org.apache.calcite.avatica.util.TimeUnitRange;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.*;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
@@ -103,6 +105,15 @@ public class RexJsonSerializer {
           }
           case OTHER_FUNCTION: {
             return visitOtherFunction(call, fieldNames);
+          }
+          case CAST: {
+            RexNode operand = call.getOperands().get(0);
+            RelDataType type = call.getType();
+            JSONObject jo = new JSONObject();
+            jo.put("op", call.op.getName());
+            jo.put("operand", serialize(operand, fieldNames, rexBuilder));
+            jo.put("type", type.getSqlTypeName());
+            return jo;
           }
           default: {
             throw new UnsupportedOperationException("Serialize unsupported RexCall: " + call.getKind());

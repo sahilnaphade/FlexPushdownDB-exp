@@ -8,6 +8,7 @@
 #include <fpdb/tuple/csv/CSVFormat.h>
 #include <fpdb/cache/SegmentKey.h>
 #include <fpdb/tuple/TupleSet.h>
+#include <arrow/flight/api.h>
 
 #include <arrow/csv/reader.h>                               // for TableReader
 #include <arrow/io/buffered.h>                              // for BufferedI...
@@ -138,6 +139,59 @@ bool S3SelectPOp::scanRangeSupported() {
     return false;
   }
   return true;
+}
+
+std::shared_ptr<TupleSet> S3SelectPOp::flight_select(){
+
+  ::arrow::Status st;
+
+  auto& flight_client = *this->awsClient_->getFlightClient().value();
+
+  std::string sql;
+  for (size_t colIndex = 0; colIndex < getProjectColumnNames().size(); colIndex++) {
+    if (colIndex == 0) {
+      sql += getProjectColumnNames()[colIndex];
+    } else {
+      sql += ", " + getProjectColumnNames()[colIndex];
+    }
+  }
+  sql = "select " + sql + " from s3Object" + filterSql_;
+
+  nlohmann::json document = {
+    {"bucket", this->s3Bucket_},
+    {"object", this->s3Object_},
+    {"select-object-content-request",
+      {
+        {"expression", sql},
+        {"input-serialization",
+          {
+            {"csv",
+           {
+                    {"file-header-info", "USE"}
+                  }
+            }
+          }
+        }
+      }
+    }
+  };
+  auto ticket_str = document.dump();
+
+  ::arrow::flight::Ticket ticket{ticket_str};
+
+  std::unique_ptr<::arrow::flight::FlightStreamReader> reader;
+  st = flight_client.DoGet(ticket, &reader);
+  if(!st.ok()){
+    throw std::runtime_error(st.message());
+  }
+
+  std::shared_ptr<::arrow::Table> table;
+  st = reader->ReadAll(&table);
+  if(!st.ok()){
+    throw std::runtime_error(st.message());
+  }
+
+  return TupleSet::make(table);
 }
 
 std::shared_ptr<TupleSet> S3SelectPOp::s3Select(uint64_t startOffset, uint64_t endOffset) {
@@ -291,8 +345,9 @@ std::shared_ptr<TupleSet> S3SelectPOp::s3Select(uint64_t startOffset, uint64_t e
     if (selectObjectContentOutcome.IsSuccess()) {
       break;
     }
-
-    // FIXME: This just keeps retrying even on an unrecoverable error?
+    else{
+      // FIXME: This just keeps retrying even on an unrecoverable error?
+    }
 
     std::this_thread::sleep_for (std::chrono::milliseconds(retrySleepTimeMS));
   }
@@ -403,10 +458,15 @@ std::shared_ptr<TupleSet> S3SelectPOp::readTuples() {
     SPDLOG_DEBUG("Reading From S3: {}", name());
 
     // Read columns from s3
-    if (awsClient_->getAwsConfig()->getS3ClientType() == S3ClientType::S3 && scanRangeSupported()
-        && (finishOffset_ - startOffset_ > DefaultS3RangeSize)) {
-      readTupleSet = s3SelectParallelReqs();
-    } else {
+    // TODO: We don't use scan ranges anymore I think? This should go if that is case?
+//    if (awsClient_->getAwsConfig()->getS3ClientType() == S3ClientType::S3 && scanRangeSupported()
+//        && (finishOffset_ - startOffset_ > DefaultS3RangeSize)) {
+//      readTupleSet = s3SelectParallelReqs();
+//    }
+    if(awsClient_->getFlightClient().has_value()) {
+      readTupleSet = flight_select();
+    }
+    else {
       readTupleSet = s3Select(startOffset_, finishOffset_);
     }
 

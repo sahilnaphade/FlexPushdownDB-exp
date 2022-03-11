@@ -53,6 +53,7 @@ private:
   bool scanRangeSupported();
   Aws::S3::Model::InputSerialization getInputSerialization();
   std::shared_ptr<TupleSet> s3Select(uint64_t startOffset, uint64_t endOffset);
+  std::shared_ptr<TupleSet> flight_select();
   std::shared_ptr<TupleSet> s3SelectParallelReqs();
   // Wrapper function to encapsulate a thread spawned when making parallel requests
   void s3SelectIndividualReq(int reqNum, uint64_t startOffset, uint64_t endOffset);

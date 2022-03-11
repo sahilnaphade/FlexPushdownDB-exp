@@ -30,6 +30,7 @@
 #include <fpdb/expression/gandiva/DateExtract.h>
 #include <fpdb/expression/gandiva/IsNull.h>
 #include <fpdb/expression/gandiva/Substr.h>
+#include <fpdb/expression/gandiva/Cast.h>
 #include <fpdb/tuple/ColumnName.h>
 
 #include <fmt/format.h>
@@ -306,6 +307,29 @@ shared_ptr<fpdb::expression::gandiva::Expression> CalcitePlanJsonDeserializer::d
   return substr(expr, fromLit, forLit);
 }
 
+shared_ptr<fpdb::expression::gandiva::Expression> CalcitePlanJsonDeserializer::deserializeCastOperation(const json &jObj) {
+  const auto &operand = jObj["operand"].get<json>();
+  const auto &expr = deserializeExpression(operand);
+  const auto &type = deserializeDataType(jObj);
+
+  return cast(expr, type);
+}
+
+shared_ptr<::arrow::DataType> CalcitePlanJsonDeserializer::deserializeDataType(const json &jObj) {
+  const auto &type = jObj["type"].get<std::string>();
+
+  if(type == "INTEGER"){
+    return ::arrow::int64();
+  }
+  // TODO: Add more types
+//  else if(type == "INTEGER"){
+//    return ::arrow::int64();
+//  }
+  else{
+    throw runtime_error(fmt::format("Unrecognized data type, {}, from: {}", type, to_string(jObj)));
+  }
+}
+
 shared_ptr<fpdb::expression::gandiva::Expression> CalcitePlanJsonDeserializer::deserializeOperation(const json &jObj) {
   const string &opName = jObj["op"].get<string>();
   // and, or
@@ -336,6 +360,9 @@ shared_ptr<fpdb::expression::gandiva::Expression> CalcitePlanJsonDeserializer::d
   }
   else if (opName == "SUBSTRING") {
     return deserializeSubstrOperation(jObj);
+  }
+  else if (opName == "CAST") {
+    return deserializeCastOperation(jObj);
   }
   // invalid
   else {

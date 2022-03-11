@@ -157,7 +157,10 @@ void AggregateFunction::buildAndCacheProjector() {
   if (!projector_.has_value()) {
     auto expressionsVec = {this->expression_};
     projector_ = std::make_shared<expression::gandiva::Projector>(expressionsVec);
-    projector_.value()->compile(inputSchema_.value());
+    auto res = projector_.value()->compile(inputSchema_.value());
+    if(!res.has_value()){
+      throw std::runtime_error(res.error());
+    }
     aggColumnDataType_ = expression_->getReturnType();
   }
 }

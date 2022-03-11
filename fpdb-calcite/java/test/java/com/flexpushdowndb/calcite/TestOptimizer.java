@@ -39,6 +39,11 @@ public class TestOptimizer {
   }
 
   @Test
+  public void testSSB1_1() throws Exception {
+    testSingle("ssb-sf1-sortlineorder/csv", "ssb/typed/1.1.sql", true);
+  }
+
+  @Test
   public void testSSB2_1() throws Exception {
     testSingle("ssb-sf1-sortlineorder/csv", "ssb/original/2.1.sql", true);
   }
