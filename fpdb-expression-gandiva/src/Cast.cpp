@@ -62,6 +62,7 @@ Cast::castDate32ToDate64(const std::shared_ptr<TupleSet> &tupleSet) {
     return tl::make_unexpected(expConvertedSubTupleSet.error());
   }
   auto convertedSubTupleSet = *expConvertedSubTupleSet;
+  convertedSubTupleSet->renameColumns(subTupleSetToConvert->schema()->field_names());
 
   // make result tupleSet
   int convertedColumnId = 0;
