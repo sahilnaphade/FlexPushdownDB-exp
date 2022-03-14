@@ -7,6 +7,7 @@
 
 #include <fpdb/expression/gandiva/Expression.h>
 #include <fpdb/tuple/serialization/ArrowSerializer.h>
+#include <fpdb/tuple/TupleSet.h>
 #include <arrow/api.h>
 #include <gandiva/node.h>
 #include <string>
@@ -17,6 +18,10 @@ namespace fpdb::expression::gandiva {
 class Cast : public Expression {
 
 public:
+  // Convert date32 to date64 for parquet
+  static tl::expected<std::shared_ptr<fpdb::tuple::TupleSet>, std::string>
+  castDate32ToDate64(const std::shared_ptr<fpdb::tuple::TupleSet> &tupleSet);
+
   Cast(std::shared_ptr<Expression> expr, std::shared_ptr<arrow::DataType> dataType);
   Cast() = default;
   Cast(const Cast&) = default;

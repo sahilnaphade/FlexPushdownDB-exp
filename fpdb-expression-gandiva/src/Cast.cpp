@@ -3,17 +3,80 @@
 //
 
 #include "fpdb/expression/gandiva/Cast.h"
+#include "fpdb/expression/gandiva/Column.h"
+#include "fpdb/expression/gandiva/Projector.h"
 #include <fpdb/tuple/serialization/ArrowSerializer.h>
+#include <fpdb/tuple/Column.h>
 #include <fmt/format.h>
 #include <utility>
 
 #include <gandiva/tree_expr_builder.h>
 
 using namespace fpdb::expression::gandiva;
+using namespace fpdb::tuple;
 
 Cast::Cast(std::shared_ptr<Expression> expr, std::shared_ptr<arrow::DataType> dataType) :
   Expression(CAST),
 	expr_(std::move(expr)), dataType_(std::move(dataType)) {}
+
+tl::expected<std::shared_ptr<TupleSet>, std::string>
+Cast::castDate32ToDate64(const std::shared_ptr<TupleSet> &tupleSet) {
+  std::vector<std::shared_ptr<fpdb::tuple::Column>> resultColumns, columnsToConvert;
+
+  // separate date32 columns out
+  for (int c = 0; c < tupleSet->numColumns(); ++c) {
+    auto expColumn = tupleSet->getColumnByIndex(c);
+    if (!expColumn.has_value()) {
+      return tl::make_unexpected(expColumn.error());
+    }
+    auto column = *expColumn;
+
+    if (column->type()->id() == ::arrow::date32()->id()) {
+      columnsToConvert.emplace_back(column);
+      resultColumns.emplace_back(nullptr);
+    } else {
+      resultColumns.emplace_back(column);
+    }
+  }
+
+  // no date32 columns
+  if (columnsToConvert.empty()) {
+    return tupleSet;
+  }
+
+  // convert
+  std::vector<std::shared_ptr<Expression>> exprs;
+  for (const auto &column: columnsToConvert) {
+    exprs.emplace_back(cast(col(column->getName()), ::arrow::date64()));
+  }
+  auto subTupleSetToConvert = TupleSet::make(columnsToConvert);
+
+  auto projector = std::make_shared<Projector>(exprs);
+  auto result = projector->compile(subTupleSetToConvert->schema());
+  if (!result.has_value()) {
+    return tl::make_unexpected(result.error());
+  }
+
+  auto expConvertedSubTupleSet = projector->evaluate(*subTupleSetToConvert);
+  if (!expConvertedSubTupleSet.has_value()) {
+    return tl::make_unexpected(expConvertedSubTupleSet.error());
+  }
+  auto convertedSubTupleSet = *expConvertedSubTupleSet;
+
+  // make result tupleSet
+  int convertedColumnId = 0;
+  for (uint c = 0; c < resultColumns.size(); ++c) {
+    if (!resultColumns[c]) {
+      auto expConvertedColumn = convertedSubTupleSet->getColumnByIndex(convertedColumnId++);
+      if (!expConvertedColumn.has_value()) {
+        return tl::make_unexpected(expConvertedSubTupleSet.error());
+      }
+      resultColumns[c] = *expConvertedColumn;
+    }
+  }
+
+  return TupleSet::make(resultColumns);
+}
 
 ::gandiva::NodePtr Cast::buildGandivaExpression() {
 
@@ -24,67 +87,69 @@ Cast::Cast(std::shared_ptr<Expression> expr, std::shared_ptr<arrow::DataType> da
    * NOTE: Some cast operations are not supported by Gandiva so we set up some special cases here
    */
   if (fromArrowType->id() == arrow::utf8()->id() && dataType_->id() == arrow::float64()->id()) {
-	// Not supported directly by Gandiva, need to cast string to decimal and then that to float64
+    // Not supported directly by Gandiva, need to cast string to decimal and then that to float64
 
-	auto castDecimalFunctionName = "castDECIMAL";
-	auto castDecimalReturnType = arrow::decimal(30, 8); // FIXME: Need to check if this is sufficient to cast to double
-	auto castToDecimalFunction = ::gandiva::TreeExprBuilder::MakeFunction(castDecimalFunctionName,
-																		  {paramGandivaExpression},
-																		  castDecimalReturnType);
+    auto castDecimalFunctionName = "castDECIMAL";
+    auto castDecimalReturnType = arrow::decimal(30, 8); // FIXME: Need to check if this is sufficient to cast to double
+    auto castToDecimalFunction = ::gandiva::TreeExprBuilder::MakeFunction(castDecimalFunctionName,
+                                        {paramGandivaExpression},
+                                        castDecimalReturnType);
 
-	auto castFunctionName = "castFloat8";
+    auto castFunctionName = "castFloat8";
 
-	auto castFunction = ::gandiva::TreeExprBuilder::MakeFunction(castFunctionName,
-																 {castToDecimalFunction},
-                                 dataType_);
+    auto castFunction = ::gandiva::TreeExprBuilder::MakeFunction(castFunctionName,
+                                   {castToDecimalFunction},
+                                   dataType_);
 
-	return castFunction;
-  } else if (fromArrowType->id() == arrow::utf8()->id() && dataType_->id() == arrow::int64()->id()) {
-	// Not supported directly by Gandiva, need to cast string to decimal and then that to int64
-
-	auto castDecimalFunctionName = "castDECIMAL";
-	auto castDecimalReturnType = arrow::decimal(38, 0); // FIXME: Need to check if this is sufficient to cast to double
-	auto castToDecimalFunction = ::gandiva::TreeExprBuilder::MakeFunction(castDecimalFunctionName,
-																		  {paramGandivaExpression},
-																		  castDecimalReturnType);
-
-	auto castFunctionName = "castBIGINT";
-
-	auto castFunction = ::gandiva::TreeExprBuilder::MakeFunction(castFunctionName,
-																 {castToDecimalFunction},
-                                 dataType_);
-
-	return castFunction;
+    return castFunction;
   }
+
+  else if (fromArrowType->id() == arrow::utf8()->id() && dataType_->id() == arrow::int64()->id()) {
+    // Not supported directly by Gandiva, need to cast string to decimal and then that to int64
+
+    auto castDecimalFunctionName = "castDECIMAL";
+    auto castDecimalReturnType = arrow::decimal(38, 0); // FIXME: Need to check if this is sufficient to cast to double
+    auto castToDecimalFunction = ::gandiva::TreeExprBuilder::MakeFunction(castDecimalFunctionName,
+                                        {paramGandivaExpression},
+                                        castDecimalReturnType);
+
+    auto castFunctionName = "castBIGINT";
+
+    auto castFunction = ::gandiva::TreeExprBuilder::MakeFunction(castFunctionName,
+                                   {castToDecimalFunction},
+                                   dataType_);
+
+    return castFunction;
+  }
+
   else if (fromArrowType->id() == arrow::utf8()->id() && dataType_->id() == arrow::int32()->id()) {
-	// Not supported directly by Gandiva, need to cast string to decimal to int64 and then that to int32
+    // Not supported directly by Gandiva, need to cast string to decimal to int64 and then that to int32
 
-	auto castDecimalFunctionName = "castDECIMAL";
-	auto castDecimalReturnType = arrow::decimal(38, 0); // FIXME: Need to check if this is sufficient to cast to double
-	auto castToDecimalFunction = ::gandiva::TreeExprBuilder::MakeFunction(castDecimalFunctionName,
-																		  {paramGandivaExpression},
-																		  castDecimalReturnType);
+    auto castDecimalFunctionName = "castDECIMAL";
+    auto castDecimalReturnType = arrow::decimal(38, 0); // FIXME: Need to check if this is sufficient to cast to double
+    auto castToDecimalFunction = ::gandiva::TreeExprBuilder::MakeFunction(castDecimalFunctionName,
+                                        {paramGandivaExpression},
+                                        castDecimalReturnType);
 
-	auto castToInt64Function = ::gandiva::TreeExprBuilder::MakeFunction("castBIGINT",
-																		  {castToDecimalFunction},
-																		  ::arrow::int64());
+    auto castToInt64Function = ::gandiva::TreeExprBuilder::MakeFunction("castBIGINT",
+                                        {castToDecimalFunction},
+                                        ::arrow::int64());
 
-	auto castFunctionName = "castINT";
+    auto castFunctionName = "castINT";
 
-	auto castFunction = ::gandiva::TreeExprBuilder::MakeFunction(castFunctionName,
-																 {castToInt64Function},
-                                 dataType_);
+    auto castFunction = ::gandiva::TreeExprBuilder::MakeFunction(castFunctionName,
+                                   {castToInt64Function},
+                                   dataType_);
 
-	return castFunction;
-  } else {
+    return castFunction;
+  }
 
-	auto function = "castDECIMAL";
+  else if (fromArrowType->id() == arrow::date32()->id() && dataType_->id() == arrow::date64()->id()) {
+    return ::gandiva::TreeExprBuilder::MakeFunction("castDATE", {paramGandivaExpression}, dataType_);
+  }
 
-	auto expressionNode = ::gandiva::TreeExprBuilder::MakeFunction(function,
-                                                                 {paramGandivaExpression},
-                                                                 dataType_);
-
-	return expressionNode;
+  else {
+    throw std::runtime_error(fmt::format("Unsupported cast from '{}' to '{}'", fromArrowType->name(), dataType_->name()));
   }
 }
 

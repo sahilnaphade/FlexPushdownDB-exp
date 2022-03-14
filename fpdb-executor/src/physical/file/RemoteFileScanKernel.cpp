@@ -4,8 +4,10 @@
 
 #include <fpdb/executor/physical/file/RemoteFileScanKernel.h>
 #include <fpdb/store/server/file/RemoteFileReaderBuilder.h>
+#include <fpdb/expression/gandiva/Cast.h>
 
 using namespace fpdb::store::server::file;
+using namespace fpdb::expression::gandiva;
 
 namespace fpdb::executor::physical::file {
 
@@ -43,20 +45,46 @@ const std::string &RemoteFileScanKernel::getObject() const {
 
 tl::expected<std::shared_ptr<TupleSet>, std::string> RemoteFileScanKernel::scan() {
   auto reader = RemoteFileReaderBuilder::make(format_, schema_, bucket_, object_, host_, port_);
+
+  // scan
+  tl::expected<std::shared_ptr<TupleSet>, std::string> expTupleSet;
   if (byteRange_.has_value()) {
-    return reader->readRange(byteRange_->first, byteRange_->second);
+    expTupleSet = reader->readRange(byteRange_->first, byteRange_->second);
   } else {
-    return reader->read();
+    expTupleSet = reader->read();
+  }
+  if (!expTupleSet.has_value()) {
+    return expTupleSet;
+  }
+
+  // convert date32 to date64 for parquet
+  if (format_->getType() == FileFormatType::PARQUET) {
+    return Cast::castDate32ToDate64(*expTupleSet);
+  } else {
+    return expTupleSet;
   }
 }
 
 tl::expected<std::shared_ptr<TupleSet>, std::string>
 RemoteFileScanKernel::scan(const std::vector<std::string> &columnNames) {
   auto reader = RemoteFileReaderBuilder::make(format_, schema_, bucket_, object_, host_, port_);
+
+  // scan
+  tl::expected<std::shared_ptr<TupleSet>, std::string> expTupleSet;
   if (byteRange_.has_value()) {
-    return reader->readRange(columnNames, byteRange_->first, byteRange_->second);
+    expTupleSet = reader->readRange(columnNames, byteRange_->first, byteRange_->second);
   } else {
-    return reader->read(columnNames);
+    expTupleSet = reader->read(columnNames);
+  }
+  if (!expTupleSet.has_value()) {
+    return expTupleSet;
+  }
+
+  // convert date32 to date64 for parquet
+  if (format_->getType() == FileFormatType::PARQUET) {
+    return Cast::castDate32ToDate64(*expTupleSet);
+  } else {
+    return expTupleSet;
   }
 }
 

@@ -3,7 +3,10 @@
 //
 
 #include <fpdb/executor/physical/file/LocalFileScanKernel.h>
+#include <fpdb/expression/gandiva/Cast.h>
 #include <fpdb/tuple/LocalFileReaderBuilder.h>
+
+using namespace fpdb::expression::gandiva;
 
 namespace fpdb::executor::physical::file {
 
@@ -32,20 +35,46 @@ void LocalFileScanKernel::setPath(const std::string &path) {
 
 tl::expected<std::shared_ptr<TupleSet>, std::string> LocalFileScanKernel::scan() {
   auto reader = LocalFileReaderBuilder::make(format_, schema_, path_);
+
+  // scan
+  tl::expected<std::shared_ptr<TupleSet>, std::string> expTupleSet;
   if (byteRange_.has_value()) {
-    return reader->readRange(byteRange_->first, byteRange_->second);
+    expTupleSet = reader->readRange(byteRange_->first, byteRange_->second);
   } else {
-    return reader->read();
+    expTupleSet = reader->read();
+  }
+  if (!expTupleSet.has_value()) {
+    return expTupleSet;
+  }
+
+  // convert date32 to date64 for parquet
+  if (format_->getType() == FileFormatType::PARQUET) {
+    return Cast::castDate32ToDate64(*expTupleSet);
+  } else {
+    return expTupleSet;
   }
 }
 
 tl::expected<std::shared_ptr<TupleSet>, std::string>
 LocalFileScanKernel::scan(const std::vector<std::string> &columnNames) {
   auto reader = LocalFileReaderBuilder::make(format_, schema_, path_);
+
+  // scan
+  tl::expected<std::shared_ptr<TupleSet>, std::string> expTupleSet;
   if (byteRange_.has_value()) {
-    return reader->readRange(columnNames, byteRange_->first, byteRange_->second);
+    expTupleSet = reader->readRange(columnNames, byteRange_->first, byteRange_->second);
   } else {
-    return reader->read(columnNames);
+    expTupleSet = reader->read(columnNames);
+  }
+  if (!expTupleSet.has_value()) {
+    return expTupleSet;
+  }
+
+  // convert date32 to date64 for parquet
+  if (format_->getType() == FileFormatType::PARQUET) {
+    return Cast::castDate32ToDate64(*expTupleSet);
+  } else {
+    return expTupleSet;
   }
 }
 
