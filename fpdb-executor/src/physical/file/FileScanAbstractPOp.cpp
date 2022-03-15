@@ -6,9 +6,12 @@
 #include <fpdb/executor/physical/file/LocalFileScanKernel.h>
 #include <fpdb/executor/physical/file/RemoteFileScanKernel.h>
 #include <fpdb/executor/physical/cache/CacheHelper.h>
+#include <fpdb/executor/message/DebugMetricsMessage.h>
+#include <fpdb/executor/metrics/Globals.h>
 #include <fpdb/catalogue/local-fs/LocalFSPartition.h>
 #include <fpdb/catalogue/obj-store/ObjStorePartition.h>
 
+using namespace fpdb::executor::message;
 using namespace fpdb::catalogue;
 
 namespace fpdb::executor::physical::file {
@@ -43,8 +46,19 @@ void FileScanAbstractPOp::onReceive(const Envelope &message) {
 
 void FileScanAbstractPOp::onStart() {
   SPDLOG_DEBUG("Starting operator  |  name: '{}'", this->name());
-  if(scanOnStart_){
+
+  if(scanOnStart_) {
+    // scan
     readAndSendTuples(getProjectColumnNames());
+
+    // metrics
+#if SHOW_DEBUG_METRICS == true
+    std::shared_ptr<Message> execMetricsMsg =
+            std::make_shared<DebugMetricsMessage>(kernel_->getBytesReadRemote(), this->name());
+    ctx()->notifyRoot(execMetricsMsg);
+#endif
+
+    // complete
     ctx()->notifyComplete();
   }
 }

@@ -85,6 +85,7 @@ tl::expected<int64_t, std::string> ArrowRemoteFileInputStream::read(int64_t nbyt
     offset += sizeRead;
   }
 
+  bytesRead_ += nbytes;
   return offset;
 }
 
@@ -122,6 +123,10 @@ tl::expected<int64_t, std::string> ArrowRemoteFileInputStream::read(int64_t nbyt
 
 bool ArrowRemoteFileInputStream::closed() const {
   return false;
+}
+
+int64_t ArrowRemoteFileInputStream::getBytesRead() const {
+  return bytesRead_;
 }
 
 }

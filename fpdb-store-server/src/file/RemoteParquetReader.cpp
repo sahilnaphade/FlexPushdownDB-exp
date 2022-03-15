@@ -32,6 +32,9 @@ RemoteParquetReader::read(const std::vector<std::string> &columnNames) {
 
   // read
   auto expTupleSet = ParquetReader::readImpl(columnNames, inputStream);
+  bytesReadRemote_ += inputStream->getBytesRead();
+
+  // close
   close(inputStream);
   return expTupleSet;
 }
@@ -43,6 +46,9 @@ RemoteParquetReader::readRange(const std::vector<std::string> &columnNames, int6
 
   // read
   auto expTupleSet = ParquetReader::readRangeImpl(columnNames, startPos, finishPos, inputStream);
+  bytesReadRemote_ += inputStream->getBytesRead();
+
+  // close
   close(inputStream);
   return expTupleSet;
 }

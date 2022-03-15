@@ -34,6 +34,16 @@ vector<string> fpdb::util::readFileByLine(const string &filePath) {
   return lines;
 }
 
+void fpdb::util::writeFile(const string& filePath, const string& content) {
+  ofstream outFile(filePath);
+  if (!outFile.good()) {
+    throw runtime_error(fmt::format("Error when writing file: {}", filePath));
+  }
+  outFile << content;
+  outFile.flush();
+  outFile.close();
+}
+
 int64_t fpdb::util::getFileSize(const string& filePath) {
   std::filesystem::path fsPath(filePath);
   return std::filesystem::file_size(fsPath);

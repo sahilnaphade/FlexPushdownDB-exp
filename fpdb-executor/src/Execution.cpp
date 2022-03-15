@@ -9,6 +9,7 @@
 #include <fpdb/executor/physical/POpRelationshipType.h>
 #include <fpdb/executor/physical/filter/FilterPOp.h>
 #include <fpdb/executor/caf-serialization/CAFPOpSerializer.h>
+#include <fpdb/executor/message/DebugMetricsMessage.h>
 #include <caf/io/all.hpp>
 #include <graphviz/gvc.h>
 
@@ -223,6 +224,15 @@ void Execution::join() {
                 allComplete = this->opDirectory_.allComplete();
                 break;
               }
+
+#if SHOW_DEBUG_METRICS == true
+              case MessageType::DEBUG_METRICS: {
+                auto debugMetricsMsg = ((DebugMetricsMessage &) msg);
+                debugMetrics_.addBytesFromStore(debugMetricsMsg.getBytesFromStore());
+                break;
+              }
+#endif
+
               case MessageType::ERROR: {
                 errAct(fmt::format("ERROR: {}, from {}", ((ErrorMessage &) msg).getContent(), msg.sender()));
               }
@@ -474,7 +484,6 @@ string Execution::showMetrics(bool showOpTimes, bool showScanMetrics) {
     ss << left << setw(40) << formattedProcessingTime.str();
     ss << left << setw(20) << "100.0";
     ss << endl;
-    ss << endl;
   }
 
   if (showScanMetrics) {
@@ -506,6 +515,7 @@ string Execution::showMetrics(bool showOpTimes, bool showScanMetrics) {
     } else {
       formattedStorageFormatToArrowSizeX << "NA";
     }
+    ss << endl;
     ss << left << setw(60) << "Processed Bytes";
     ss << left << setw(60) << formattedProcessedBytes.str();
     ss << endl;
@@ -622,10 +632,27 @@ string Execution::showMetrics(bool showOpTimes, bool showScanMetrics) {
     ss << left << setw(60) << "Local filter selectivity (bytes)";
     ss << left << setw(60) << formattedLocalFilterSelectivity.str();
     ss << endl;
-    ss << endl;
   }
 
   return ss.str();
 }
+
+#if SHOW_DEBUG_METRICS == true
+string Execution::showDebugMetrics() const{
+  stringstream ss;
+  ss << endl;
+  ss << "Debug Metrics |" << endl << endl;
+
+  stringstream formattedBytesFromStore;
+  formattedBytesFromStore << debugMetrics_.getBytesFromStore() << " B" << " ("
+                          << ((double) debugMetrics_.getBytesFromStore() / 1024.0 / 1024.0 / 1024.0) << " GB)";
+
+  ss << left << setw(60) << "Bytes transferred from store";
+  ss << left << setw(60) << formattedBytesFromStore.str();
+  ss << endl;
+
+  return ss.str();
+}
+#endif
 
 }

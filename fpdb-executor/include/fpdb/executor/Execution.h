@@ -11,6 +11,7 @@
 #include <fpdb/executor/physical/collate/CollatePOp.h>
 #include <fpdb/executor/physical/collate/CollatePOp2.h>
 #include <fpdb/executor/physical/s3/S3SelectScanAbstractPOp.h>
+#include <fpdb/executor/metrics/DebugMetrics.h>
 #include <fpdb/tuple/TupleSet.h>
 #include <caf/all.hpp>
 #include <memory>
@@ -48,6 +49,10 @@ public:
 
   void write_graph(const string &file);
 
+#if SHOW_DEBUG_METRICS == true
+  string showDebugMetrics() const;
+#endif
+
 private:
   void boot();
   void start();
@@ -72,6 +77,11 @@ private:
   // for execution time
   chrono::steady_clock::time_point startTime_;
   chrono::steady_clock::time_point stopTime_;
+
+  // metrics
+#if SHOW_DEBUG_METRICS == true
+  metrics::DebugMetrics debugMetrics_;
+#endif
 
 };
 

@@ -13,6 +13,7 @@ enum MessageType {
   CONNECT,
   COMPLETE,
   ERROR,
+  DEBUG_METRICS,
   SCAN,
   TUPLE,
   TUPLESET_INDEX,

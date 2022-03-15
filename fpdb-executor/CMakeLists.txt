@@ -13,6 +13,7 @@ add_library(fpdb-executor STATIC
         src/message/TupleMessage.cpp include/fpdb/executor/message/TupleMessage.h
         src/message/ScanMessage.cpp include/fpdb/executor/message/ScanMessage.h
         src/message/TupleSetIndexMessage.cpp include/fpdb/executor/message/TupleSetIndexMessage.h
+        src/message/DebugMetricsMessage.cpp include/fpdb/executor/message/DebugMetricsMessage.h
         src/message/ErrorMessage.cpp include/fpdb/executor/message/ErrorMessage.h
         src/message/cache/CacheMetricsMessage.cpp include/fpdb/executor/message/cache/CacheMetricsMessage.h
         src/message/cache/LoadRequestMessage.cpp include/fpdb/executor/message/cache/LoadRequestMessage.h
@@ -107,6 +108,9 @@ add_library(fpdb-executor STATIC
         src/physical/serialization/PhysicalPlanDeserializer.cpp include/fpdb/executor/physical/serialization/PhysicalPlanDeserializer.h
 #        CAF Initialization
         src/caf/CAFInit.cpp include/fpdb/executor/caf/CAFInit.h
+#        metrics
+        include/fpdb/executor/metrics/Globals.h
+        src/metrics/DebugMetrics.cpp include/fpdb/executor/metrics/DebugMetrics.h
 #        executor
         src/Executor.cpp include/fpdb/executor/Executor.h
         src/Execution.cpp include/fpdb/executor/Execution.h)

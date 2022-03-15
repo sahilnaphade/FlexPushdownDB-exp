@@ -57,6 +57,10 @@ tl::expected<std::shared_ptr<TupleSet>, std::string> RemoteFileScanKernel::scan(
     return expTupleSet;
   }
 
+#if SHOW_DEBUG_METRICS == true
+  bytesReadRemote_ += reader->getBytesReadRemote();
+#endif
+
   // convert date32 to date64 for parquet
   if (format_->getType() == FileFormatType::PARQUET) {
     return Cast::castDate32ToDate64(*expTupleSet);
@@ -79,6 +83,10 @@ RemoteFileScanKernel::scan(const std::vector<std::string> &columnNames) {
   if (!expTupleSet.has_value()) {
     return expTupleSet;
   }
+
+#if SHOW_DEBUG_METRICS == true
+  bytesReadRemote_ += reader->getBytesReadRemote();
+#endif
 
   // convert date32 to date64 for parquet
   if (format_->getType() == FileFormatType::PARQUET) {

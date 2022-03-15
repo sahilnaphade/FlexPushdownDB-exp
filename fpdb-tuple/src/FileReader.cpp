@@ -17,6 +17,10 @@ const std::shared_ptr<FileFormat> &FileReader::getFormat() const {
   return format_;
 }
 
+int64_t FileReader::getBytesReadRemote() const {
+  return bytesReadRemote_;
+}
+
 tl::expected<std::shared_ptr<TupleSet>, std::string> FileReader::read() {
   return read(schema_->field_names());
 }

@@ -106,6 +106,15 @@ void POpContext::notifyError(const std::string &content) {
   operatorActor_->on_exit();
 }
 
+/**
+ * Send msg to the root actor
+ * @param msg
+ */
+void POpContext::notifyRoot(const std::shared_ptr<message::Message> &msg) {
+  message::Envelope e(msg);
+  operatorActor_->anon_send(rootActor_, e);
+}
+
 POpContext::POpContext(::caf::actor rootActor, ::caf::actor segmentCacheActor):
     operatorActor_(nullptr),
     rootActor_(std::move(rootActor)),

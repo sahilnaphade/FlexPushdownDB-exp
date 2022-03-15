@@ -67,9 +67,15 @@ pair<shared_ptr<TupleSet>, long> Executor::execute(const shared_ptr<PhysicalPlan
                                                  isDistributed);
   const auto &result = execution->execute();
   long elapsedTime = execution->getElapsedTime();
+
+  // metrics, FIXME: better organize all metrics
   if (showOpTimes_ || showScanMetrics_) {
     cout << execution->showMetrics(showOpTimes_, showScanMetrics_) << endl;
   }
+#if SHOW_DEBUG_METRICS == true
+  cout << execution->showDebugMetrics() << endl;
+#endif
+
   return make_pair(result, elapsedTime);
 }
 

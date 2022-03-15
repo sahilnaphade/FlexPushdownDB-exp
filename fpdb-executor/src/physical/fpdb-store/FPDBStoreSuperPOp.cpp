@@ -4,6 +4,8 @@
 
 #include <fpdb/executor/physical/fpdb-store/FPDBStoreSuperPOp.h>
 #include <fpdb/executor/physical/serialization/PhysicalPlanSerializer.h>
+#include <fpdb/executor/message/DebugMetricsMessage.h>
+#include <fpdb/executor/metrics/Globals.h>
 #include <fpdb/store/server/flight/SelectObjectContentTicket.hpp>
 #include <arrow/flight/api.h>
 
@@ -93,6 +95,14 @@ void FPDBStoreSuperPOp::processAtStore() {
   }
   std::shared_ptr<Message> tupleMessage = std::make_shared<TupleMessage>(tupleSet, name_);
   ctx()->tell(tupleMessage);
+
+  // metrics
+#if SHOW_DEBUG_METRICS == true
+  std::shared_ptr<Message> execMetricsMsg =
+          std::make_shared<DebugMetricsMessage>(tupleSet->size(), this->name());
+  ctx()->notifyRoot(execMetricsMsg);
+#endif
+
   ctx()->notifyComplete();
 }
 

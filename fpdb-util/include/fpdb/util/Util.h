@@ -20,6 +20,7 @@ namespace fpdb::util {
    */
   string readFile(const string& filePath);
   vector<string> readFileByLine(const string& filePath);
+  void writeFile(const string& filePath, const string& content);
   int64_t getFileSize(const string& filePath);
 
   /**
