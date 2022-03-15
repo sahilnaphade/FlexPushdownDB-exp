@@ -3,6 +3,7 @@
 //
 
 #include <ios>
+#include <iomanip>
 
 #include <fpdb/executor/Executor.h>
 #include <fpdb/executor/Execution.h>
