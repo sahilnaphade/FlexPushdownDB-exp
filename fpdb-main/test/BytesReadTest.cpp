@@ -27,8 +27,8 @@ void writeQueryToFile(const std::string queryFileName, double l_discount) {
   std::string query = fmt::format("select\n"
                                   "    l_returnflag,\n"
                                   "    l_linestatus,\n"
-                                  "    sum(l_quantity) as sum_qty,\n"
-                                  "    sum(l_extendedprice) as sum_base_price\n"
+                                  "    l_quantity,\n"
+                                  "    l_extendedprice\n"
                                   "from\n"
                                   "\tlineitem\n"
                                   "where\n"
@@ -39,7 +39,7 @@ void writeQueryToFile(const std::string queryFileName, double l_discount) {
                                   "order by\n"
                                   "    l_returnflag,\n"
                                   "    l_linestatus\n"
-                                  "limit 1",
+                                  "limit 10",
                                   l_discount);
   std::string queryFilePath = std::filesystem::current_path()
           .parent_path()
