@@ -4,7 +4,7 @@
 
 #include <fpdb/executor/physical/project/ProjectPOp.h>
 #include <fpdb/executor/physical/Globals.h>
-#include <fpdb/executor/message/TupleMessage.h>
+#include <fpdb/executor/message/TupleSetMessage.h>
 #include <fpdb/executor/message/CompleteMessage.h>
 #include <fpdb/expression/gandiva/Projector.h>
 #include <fpdb/expression/gandiva/Expression.h>
@@ -34,9 +34,9 @@ void ProjectPOp::onStart() {
 void ProjectPOp::onReceive(const Envelope &message) {
   if (message.message().type() == MessageType::START) {
     this->onStart();
-  } else if (message.message().type() == MessageType::TUPLE) {
-    auto tupleMessage = dynamic_cast<const TupleMessage &>(message.message());
-    this->onTuple(tupleMessage);
+  } else if (message.message().type() == MessageType::TUPLESET) {
+    auto tupleSetMessage = dynamic_cast<const TupleSetMessage &>(message.message());
+    this->onTupleSet(tupleSetMessage);
   } else if (message.message().type() == MessageType::COMPLETE) {
     auto completeMessage = dynamic_cast<const CompleteMessage &>(message.message());
     this->onComplete(completeMessage);
@@ -45,7 +45,7 @@ void ProjectPOp::onReceive(const Envelope &message) {
   }
 }
 
-void ProjectPOp::onTuple(const TupleMessage &message) {
+void ProjectPOp::onTupleSet(const TupleSetMessage &message) {
   // Build the project if not built
   buildProjector(message);
 
@@ -66,7 +66,7 @@ void ProjectPOp::onComplete(const CompleteMessage &) {
   }
 }
 
-void ProjectPOp::buildProjector(const TupleMessage &message) {
+void ProjectPOp::buildProjector(const TupleSetMessage &message) {
   if(!projector_.has_value() && !exprs_.empty()){
     const auto &inputSchema = message.tuples()->table()->schema();
     projector_ = std::make_shared<fpdb::expression::gandiva::Projector>(exprs_);
@@ -74,7 +74,7 @@ void ProjectPOp::buildProjector(const TupleMessage &message) {
   }
 }
 
-void ProjectPOp::bufferTuples(const TupleMessage &message) {
+void ProjectPOp::bufferTuples(const TupleSetMessage &message) {
   if (!tuples_) {
     // Initialise tuples buffer with message contents
     tuples_ = message.tuples();
@@ -142,8 +142,8 @@ void ProjectPOp::projectAndSendTuples() {
 }
 
 void ProjectPOp::sendTuples(std::shared_ptr<TupleSet> &projected) {
-	std::shared_ptr<Message> tupleMessage = std::make_shared<TupleMessage>(projected, name());
-	ctx()->tell(tupleMessage);
+	std::shared_ptr<Message> tupleSetMessage = std::make_shared<TupleSetMessage>(projected, name());
+	ctx()->tell(tupleSetMessage);
 }
 
 const std::vector<std::shared_ptr<fpdb::expression::gandiva::Expression>> &ProjectPOp::getExprs() const {

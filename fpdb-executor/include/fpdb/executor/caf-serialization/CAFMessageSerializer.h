@@ -12,8 +12,10 @@
 #include <fpdb/executor/message/ErrorMessage.h>
 #include <fpdb/executor/message/DebugMetricsMessage.h>
 #include <fpdb/executor/message/ScanMessage.h>
-#include <fpdb/executor/message/TupleMessage.h>
+#include <fpdb/executor/message/TupleSetMessage.h>
 #include <fpdb/executor/message/TupleSetIndexMessage.h>
+#include <fpdb/executor/message/TupleSetSizeMessage.h>
+#include <fpdb/executor/message/BloomFilterMessage.h>
 #include <fpdb/executor/message/cache/LoadRequestMessage.h>
 #include <fpdb/executor/message/cache/LoadResponseMessage.h>
 #include <fpdb/executor/message/cache/StoreRequestMessage.h>
@@ -34,8 +36,10 @@ CAF_ADD_TYPE_ID(Message, (CompleteMessage))
 CAF_ADD_TYPE_ID(Message, (ErrorMessage))
 CAF_ADD_TYPE_ID(Message, (DebugMetricsMessage))
 CAF_ADD_TYPE_ID(Message, (ScanMessage))
-CAF_ADD_TYPE_ID(Message, (TupleMessage))
+CAF_ADD_TYPE_ID(Message, (TupleSetMessage))
 CAF_ADD_TYPE_ID(Message, (TupleSetIndexMessage))
+CAF_ADD_TYPE_ID(Message, (TupleSetSizeMessage))
+CAF_ADD_TYPE_ID(Message, (BloomFilterMessage))
 // For the following cache messages, we have to implement `inspect` for concrete derived shared_ptr type one by one,
 // because SegmentCacheActor directly uses the concrete derived types rather than base type Message used by other actors
 CAF_ADD_TYPE_ID(Message, (LoadRequestMessage))
@@ -66,8 +70,10 @@ struct variant_inspector_traits<MessagePtr> {
           type_id_v<ErrorMessage>,
           type_id_v<DebugMetricsMessage>,
           type_id_v<ScanMessage>,
-          type_id_v<TupleMessage>,
-          type_id_v<TupleSetIndexMessage>
+          type_id_v<TupleSetMessage>,
+          type_id_v<TupleSetIndexMessage>,
+          type_id_v<TupleSetSizeMessage>,
+          type_id_v<BloomFilterMessage>
   };
 
   // Returns which type in allowed_types corresponds to x.
@@ -86,10 +92,14 @@ struct variant_inspector_traits<MessagePtr> {
       return 5;
     else if (x->type() == MessageType::SCAN)
       return 6;
-    else if (x->type() == MessageType::TUPLE)
+    else if (x->type() == MessageType::TUPLESET)
       return 7;
     else if (x->type() == MessageType::TUPLESET_INDEX)
       return 8;
+    else if (x->type() == MessageType::TUPLESET_SIZE)
+      return 9;
+    else if (x->type() == MessageType::BLOOM_FILTER)
+      return 10;
     else
       return -1;
   }
@@ -111,9 +121,13 @@ struct variant_inspector_traits<MessagePtr> {
       case 6:
         return f(dynamic_cast<ScanMessage &>(*x));
       case 7:
-        return f(dynamic_cast<TupleMessage &>(*x));
+        return f(dynamic_cast<TupleSetMessage &>(*x));
       case 8:
         return f(dynamic_cast<TupleSetIndexMessage &>(*x));
+      case 9:
+        return f(dynamic_cast<TupleSetSizeMessage &>(*x));
+      case 10:
+        return f(dynamic_cast<BloomFilterMessage &>(*x));
       default: {
         none_t dummy;
         return f(dummy);
@@ -172,13 +186,23 @@ struct variant_inspector_traits<MessagePtr> {
         continuation(tmp);
         return true;
       }
-      case type_id_v<TupleMessage>: {
-        auto tmp = TupleMessage{};
+      case type_id_v<TupleSetMessage>: {
+        auto tmp = TupleSetMessage{};
         continuation(tmp);
         return true;
       }
       case type_id_v<TupleSetIndexMessage>: {
         auto tmp = TupleSetIndexMessage{};
+        continuation(tmp);
+        return true;
+      }
+      case type_id_v<TupleSetSizeMessage>: {
+        auto tmp = TupleSetSizeMessage{};
+        continuation(tmp);
+        return true;
+      }
+      case type_id_v<BloomFilterMessage>: {
+        auto tmp = BloomFilterMessage{};
         continuation(tmp);
         return true;
       }

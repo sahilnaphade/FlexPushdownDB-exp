@@ -17,8 +17,13 @@
 #include <fpdb/executor/physical/join/nestedloopjoin/NestedLoopJoinPOp.h>
 #include <fpdb/executor/physical/shuffle/ShufflePOp.h>
 #include <fpdb/executor/physical/split/SplitPOp.h>
+#include <fpdb/executor/physical/bloomfilter/BloomFilterCreatePOp.h>
+#include <fpdb/executor/physical/bloomfilter/BloomFilterCreatePreparePOp.h>
+#include <fpdb/executor/physical/bloomfilter/BloomFilterCreateMergePOp.h>
+#include <fpdb/executor/physical/bloomfilter/BloomFilterUsePOp.h>
 #include <fpdb/executor/physical/collate/CollatePOp.h>
 #include <fpdb/executor/physical/transform/PrePToPTransformerUtil.h>
+#include <fpdb/executor/physical/Globals.h>
 #include <fpdb/catalogue/obj-store/ObjStoreCatalogueEntry.h>
 #include <fpdb/catalogue/obj-store/s3/S3Connector.h>
 #include <fpdb/catalogue/obj-store/fpdb-store/FPDBStoreConnector.h>
@@ -135,7 +140,7 @@ PrePToPTransformer::transformSort(const shared_ptr<SortPrePOp> &sortPrePOp) {
 
   shared_ptr<PhysicalOp> sortPOp = make_shared<sort::SortPOp>(fmt::format("Sort[{}]", prePOpId),
                                                               projectColumnNames,
-                                                              0,
+                                                              rand() % numNodes_,
                                                               sortPrePOp->getSortKeys());
   allPOps.emplace_back(sortPOp);
 
@@ -168,7 +173,7 @@ PrePToPTransformer::transformLimitSort(const shared_ptr<LimitSortPrePOp> &limitS
   shared_ptr<PhysicalOp> limitSortPOp = make_shared<limitsort::LimitSortPOp>(
           fmt::format("LimitSort[{}]", prePOpId),
           projectColumnNames,
-          0,
+          rand() % numNodes_,
           limitSortPrePOp->getK(),
           limitSortPrePOp->getSortKeys());
   allPOps.emplace_back(limitSortPOp);
@@ -252,7 +257,7 @@ PrePToPTransformer::transformAggregate(const shared_ptr<AggregatePrePOp> &aggreg
     shared_ptr<PhysicalOp> aggReducePOp = make_shared<aggregate::AggregatePOp>(
             fmt::format("Aggregate[{}]-Reduce", prePOpId),
             projectColumnNames,
-            0,
+            rand() % numNodes_,
             aggReduceFunctions);
     PrePToPTransformerUtil::connectManyToOne(selfPOps, aggReducePOp);
     selfConnUpPOps = selfPOps;
@@ -451,11 +456,70 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
   allPOps.insert(allPOps.end(), hashJoinProbePOps.begin(), hashJoinProbePOps.end());
   PrePToPTransformerUtil::connectOneToOne(hashJoinBuildPOps, hashJoinProbePOps);
 
+  vector<shared_ptr<PhysicalOp>> rightUpConnPOps;
+
+  // if using bloom filter
+  if (USE_BLOOM_FILTER) {
+    // BloomFilterCreatePreparePOp
+    shared_ptr<PhysicalOp> bloomFilterCreatePreparePOp = make_shared<bloomfilter::BloomFilterCreatePreparePOp>(
+            fmt::format("BloomFilterCreatePrepare[{}]-{}", prePOpId, hashJoinPredicateStr),
+            std::vector<std::string>{},         // not needed
+            rand() % numNodes_);
+    allPOps.emplace_back(bloomFilterCreatePreparePOp);
+
+    // Connect to upstream as a special type of op
+    for (const auto &leftUpConnPOp: leftTransRes.first) {
+      leftUpConnPOp->setBloomFilterCreatePrepareConsumer(bloomFilterCreatePreparePOp);
+      bloomFilterCreatePreparePOp->consume(leftUpConnPOp);
+    }
+
+    // BloomFilterCreatePOp
+    vector<shared_ptr<PhysicalOp>> bloomFilterCreatePOps;
+    for (uint i = 0; i < leftTransRes.first.size(); ++i) {
+      bloomFilterCreatePOps.emplace_back(make_shared<bloomfilter::BloomFilterCreatePOp>(
+              fmt::format("BloomFilterCreate[{}]-{}-{}", prePOpId, hashJoinPredicateStr, i),
+              std::vector<std::string>{},
+              leftTransRes.first[i]->getNodeId(),         // not needed
+              leftColumnNames));
+    }
+    allPOps.insert(allPOps.end(), bloomFilterCreatePOps.begin(), bloomFilterCreatePOps.end());
+    PrePToPTransformerUtil::connectOneToOne(leftTransRes.first, bloomFilterCreatePOps);
+    PrePToPTransformerUtil::connectOneToMany(bloomFilterCreatePreparePOp, bloomFilterCreatePOps);
+
+    // BloomFilterCreateMergePOp
+    shared_ptr<PhysicalOp> bloomFilterCreateMergePOp;
+    if (bloomFilterCreatePOps.size() > 1) {
+      bloomFilterCreateMergePOp = make_shared<bloomfilter::BloomFilterCreateMergePOp>(
+              fmt::format("BloomFilterCreateMerge[{}]-{}", prePOpId, hashJoinPredicateStr),
+              std::vector<std::string>{},         // not needed
+              rand() % numNodes_);
+    } else {
+      bloomFilterCreateMergePOp = bloomFilterCreatePOps[0];
+    }
+
+    // BloomFilterUsePOp
+    vector<shared_ptr<PhysicalOp>> bloomFilterUsePOps;
+    for (uint i = 0; i < rightTransRes.first.size(); ++i) {
+      bloomFilterUsePOps.emplace_back(make_shared<bloomfilter::BloomFilterUsePOp>(
+              fmt::format("BloomFilter[{}]-{}-{}", prePOpId, hashJoinPredicateStr, i),
+              rightTransRes.first[i]->getProjectColumnNames(),
+              rightTransRes.first[i]->getNodeId(),
+              rightColumnNames));
+    }
+    allPOps.insert(allPOps.end(), bloomFilterUsePOps.begin(), bloomFilterUsePOps.end());
+    PrePToPTransformerUtil::connectOneToOne(rightTransRes.first, bloomFilterUsePOps);
+    rightUpConnPOps = bloomFilterUsePOps;
+
+    // connect bloomFilterCreateMergePOp and bloomFilterPOps
+    PrePToPTransformerUtil::connectOneToMany(bloomFilterCreateMergePOp, bloomFilterUsePOps);
+  } else {
+    rightUpConnPOps = rightTransRes.first;
+  }
+
   // if num > 1, then we need shuffle operators
   if (parallelDegree_ * numNodes_ == 1) {
-    // connect to upstream
     PrePToPTransformerUtil::connectManyToOne(leftTransRes.first, hashJoinBuildPOps[0]);
-    PrePToPTransformerUtil::connectManyToOne(rightTransRes.first, hashJoinProbePOps[0]);
+    PrePToPTransformerUtil::connectManyToOne(rightUpConnPOps, hashJoinProbePOps[0]);
   } else {
     vector<shared_ptr<PhysicalOp>> shuffleLeftPOps, shuffleRightPOps;
     for (const auto &upLeftConnPOp: leftTransRes.first) {
@@ -479,7 +543,7 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
 
     // connect to upstream
     PrePToPTransformerUtil::connectOneToOne(leftTransRes.first, shuffleLeftPOps);
-    PrePToPTransformerUtil::connectOneToOne(rightTransRes.first, shuffleRightPOps);
+    PrePToPTransformerUtil::connectOneToOne(rightUpConnPOps, shuffleRightPOps);
   }
 
   return make_pair(hashJoinProbePOps, allPOps);

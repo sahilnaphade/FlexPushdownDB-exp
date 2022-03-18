@@ -37,8 +37,6 @@ public:
   tl::expected<vector<shared_ptr<TupleSet>>, string> toTupleSets();
 
 private:
-  size_t hash(const vector<shared_ptr<ArrayHasher>> &hashers, int64_t row);
-
   vector<int> shuffleColumnIndices_;
   size_t numSlots_;
   shared_ptr<::arrow::Schema> schema_;

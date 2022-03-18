@@ -7,7 +7,7 @@
 
 #include <fpdb/executor/physical/PhysicalOp.h>
 #include <fpdb/executor/physical/POpContext.h>
-#include <fpdb/executor/message/TupleMessage.h>
+#include <fpdb/executor/message/TupleSetMessage.h>
 #include <fpdb/executor/message/CompleteMessage.h>
 #include <fpdb/tuple/TupleSet.h>
 #include <arrow/api.h>
@@ -42,7 +42,7 @@ private:
 
   void onStart();
   void onComplete(const fpdb::executor::message::CompleteMessage &message);
-  void onTuple(const fpdb::executor::message::TupleMessage& message);
+  void onTupleSet(const fpdb::executor::message::TupleSetMessage& message);
 
   std::shared_ptr<TupleSet> tuples_;
   std::vector<std::shared_ptr<arrow::Table>> tables_;

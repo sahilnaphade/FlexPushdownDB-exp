@@ -9,7 +9,7 @@
 #include <fpdb/executor/physical/file/FileScanAbstractPOp.h>
 #include <fpdb/executor/physical/POpActor2.h>
 #include <fpdb/executor/cache/SegmentCacheActor.h>
-#include <fpdb/executor/message/TupleMessage.h>
+#include <fpdb/executor/message/TupleSetMessage.h>
 #include <fpdb/executor/message/cache/StoreRequestMessage.h>
 #include <fpdb/executor/caf-serialization/CAFMessageSerializer.h>
 #include <fpdb/catalogue/local-fs/LocalFSPartition.h>

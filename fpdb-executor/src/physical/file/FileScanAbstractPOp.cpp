@@ -90,7 +90,7 @@ void FileScanAbstractPOp::readAndSendTuples(const std::vector<std::string> &colu
     readTupleSet = expectedReadTupleSet.value();
   }
 
-  std::shared_ptr<Message> message = std::make_shared<TupleMessage>(readTupleSet, this->name());
+  std::shared_ptr<Message> message = std::make_shared<TupleSetMessage>(readTupleSet, this->name());
   ctx()->tell(message);
 }
 

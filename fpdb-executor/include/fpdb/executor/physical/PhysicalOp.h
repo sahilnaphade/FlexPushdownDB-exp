@@ -41,6 +41,7 @@ public:
   long getQueryId() const;
   std::set<std::string> producers();
   std::set<std::string> consumers();
+  const std::optional<std::string> getBloomFilterCreatePrepareConsumer() const;
   std::shared_ptr<POpContext> ctx();
 
   // setters
@@ -49,6 +50,7 @@ public:
   void setQueryId(long queryId);
   virtual void produce(const std::shared_ptr<PhysicalOp> &op);
   virtual void consume(const std::shared_ptr<PhysicalOp> &op);
+  void setBloomFilterCreatePrepareConsumer(const std::shared_ptr<PhysicalOp> &op);
   void create(const std::shared_ptr<POpContext>& ctx);
 
   virtual void onReceive(const fpdb::executor::message::Envelope &msg) = 0;
@@ -64,6 +66,9 @@ protected:
   std::shared_ptr<POpContext> opContext_;
   std::set<std::string> producers_;
   std::set<std::string> consumers_;
+
+  // for bloom filter
+  std::optional<std::string> bloomFilterCreatePrepareConsumer_;
 
 };
 

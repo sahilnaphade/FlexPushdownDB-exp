@@ -2,8 +2,8 @@
 // Created by matt on 11/12/19.
 //
 
-#ifndef FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_MESSAGE_TUPLEMESSAGE_H
-#define FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_MESSAGE_TUPLEMESSAGE_H
+#ifndef FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_MESSAGE_TUPLESETMESSAGE_H
+#define FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_MESSAGE_TUPLESETMESSAGE_H
 
 #include <fpdb/executor/message/Message.h>
 #include <fpdb/tuple/TupleSet.h>
@@ -16,14 +16,14 @@ namespace fpdb::executor::message {
 /**
  * Message containing a list of tuples
  */
-class TupleMessage : public Message {
+class TupleSetMessage : public Message {
 
 public:
-  explicit TupleMessage(std::shared_ptr<TupleSet> tuples, std::string sender);
-  TupleMessage() = default;
-  TupleMessage(const TupleMessage&) = default;
-  TupleMessage& operator=(const TupleMessage&) = default;
-  ~TupleMessage() override = default;
+  explicit TupleSetMessage(std::shared_ptr<TupleSet> tuples, std::string sender);
+  TupleSetMessage() = default;
+  TupleSetMessage(const TupleSetMessage&) = default;
+  TupleSetMessage& operator=(const TupleSetMessage&) = default;
+  ~TupleSetMessage() override = default;
 
   std::string getTypeString() const override;
 
@@ -35,7 +35,7 @@ private:
 // caf inspect
 public:
   template <class Inspector>
-  friend bool inspect(Inspector& f, TupleMessage& msg) {
+  friend bool inspect(Inspector& f, TupleSetMessage& msg) {
     return f.object(msg).fields(f.field("type", msg.type_),
                                 f.field("sender", msg.sender_),
                                 f.field("tuples", msg.tuples_));
@@ -44,4 +44,4 @@ public:
 
 }
 
-#endif //FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_MESSAGE_TUPLEMESSAGE_H
+#endif //FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_MESSAGE_TUPLESETMESSAGE_H

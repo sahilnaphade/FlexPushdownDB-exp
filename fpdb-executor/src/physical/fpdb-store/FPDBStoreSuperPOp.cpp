@@ -93,7 +93,7 @@ void FPDBStoreSuperPOp::processAtStore() {
   } else {
     tupleSet = TupleSet::make(table->schema());
   }
-  std::shared_ptr<Message> tupleMessage = std::make_shared<TupleMessage>(tupleSet, name_);
+  std::shared_ptr<Message> tupleMessage = std::make_shared<TupleSetMessage>(tupleSet, name_);
   ctx()->tell(tupleMessage);
 
   // metrics

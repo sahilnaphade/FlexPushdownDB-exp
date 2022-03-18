@@ -7,7 +7,7 @@
 
 #include <fpdb/executor/physical/PhysicalOp.h>
 #include <fpdb/executor/message/CompleteMessage.h>
-#include <fpdb/executor/message/TupleMessage.h>
+#include <fpdb/executor/message/TupleSetMessage.h>
 #include <fpdb/tuple/TupleSet.h>
 #include <queue>
 
@@ -35,7 +35,7 @@ public:
 private:
   void onStart();
   void onComplete(const CompleteMessage &);
-  void onTuple(const TupleMessage &message);
+  void onTupleSet(const TupleSetMessage &message);
 
   void merge();
 

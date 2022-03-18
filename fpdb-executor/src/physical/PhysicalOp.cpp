@@ -42,12 +42,21 @@ void PhysicalOp::consume(const std::shared_ptr<PhysicalOp> &op) {
   producers_.emplace(op->name());
 }
 
+void PhysicalOp::setBloomFilterCreatePrepareConsumer(const std::shared_ptr<PhysicalOp> &op) {
+  bloomFilterCreatePrepareConsumer_ = op->name();
+  consumers_.emplace(op->name());
+}
+
 std::set<std::string>PhysicalOp::consumers() {
   return consumers_;
 }
 
 std::set<std::string> PhysicalOp::producers() {
   return producers_;
+}
+
+const std::optional<std::string> PhysicalOp::getBloomFilterCreatePrepareConsumer() const {
+  return bloomFilterCreatePrepareConsumer_;
 }
 
 std::shared_ptr<POpContext> PhysicalOp::ctx() {

@@ -54,9 +54,9 @@ std::string HashJoinProbePOp::getTypeString() const {
 void HashJoinProbePOp::onReceive(const Envelope &msg) {
   if (msg.message().type() == MessageType::START) {
 	  this->onStart();
-  } else if (msg.message().type() == MessageType::TUPLE) {
-    auto tupleMessage = dynamic_cast<const TupleMessage &>(msg.message());
-    this->onTuple(tupleMessage);
+  } else if (msg.message().type() == MessageType::TUPLESET) {
+    auto tupleSetMessage = dynamic_cast<const TupleSetMessage &>(msg.message());
+    this->onTupleSet(tupleSetMessage);
   } else if (msg.message().type() == MessageType::TUPLESET_INDEX) {
     auto hashTableMessage = dynamic_cast<const TupleSetIndexMessage &>(msg.message());
     this->onHashTable(hashTableMessage);
@@ -72,7 +72,7 @@ void HashJoinProbePOp::onStart() {
   SPDLOG_DEBUG("Starting operator  |  name: '{}'", this->name());
 }
 
-void HashJoinProbePOp::onTuple(const TupleMessage &msg) {
+void HashJoinProbePOp::onTupleSet(const TupleSetMessage &msg) {
   // Incremental join immediately
   const auto& tupleSet = msg.tuples();
   auto result = kernel_->joinProbeTupleSet(tupleSet);
@@ -121,8 +121,8 @@ void HashJoinProbePOp::send(bool force) {
     if (numRows >= DefaultBufferSize || (force && numRows > 0)) {
       // Here no need to project buffer using projectColumnNames as it won't have redundant columns
       auto tupleSet = TupleSet::make(buffer.value()->table());
-      shared_ptr<Message> tupleMessage = make_shared<TupleMessage>(tupleSet, name());
-      ctx()->tell(tupleMessage);
+      shared_ptr<Message> tupleSetMessage = make_shared<TupleSetMessage>(tupleSet, name());
+      ctx()->tell(tupleSetMessage);
       sentResult = true;
       kernel_->clearBuffer();
     }
@@ -135,8 +135,8 @@ void HashJoinProbePOp::sendEmpty() {
     ctx()->notifyError("OutputSchema not set yet");
   }
   auto tupleSet = TupleSet::make(outputSchema.value());
-  shared_ptr<Message> tupleMessage = make_shared<TupleMessage>(tupleSet, name());
-  ctx()->tell(tupleMessage);
+  shared_ptr<Message> tupleSetMessage = make_shared<TupleSetMessage>(tupleSet, name());
+  ctx()->tell(tupleSetMessage);
 }
 
 void HashJoinProbePOp::clear() {

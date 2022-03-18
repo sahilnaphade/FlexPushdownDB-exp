@@ -8,7 +8,7 @@
 #include <fpdb/executor/physical/PhysicalOp.h>
 #include <fpdb/executor/physical/join/hashjoin/HashJoinProbeAbstractKernel.h>
 #include <fpdb/executor/physical/join/hashjoin/HashJoinPredicate.h>
-#include <fpdb/executor/message/TupleMessage.h>
+#include <fpdb/executor/message/TupleSetMessage.h>
 #include <fpdb/executor/message/CompleteMessage.h>
 #include <fpdb/executor/message/TupleSetIndexMessage.h>
 #include <fpdb/plan/prephysical/JoinType.h>
@@ -44,7 +44,7 @@ public:
 
 private:
   void onStart();
-  void onTuple(const TupleMessage &msg);
+  void onTupleSet(const TupleSetMessage &msg);
   void onHashTable(const TupleSetIndexMessage &msg);
   void onComplete(const CompleteMessage &msg);
 

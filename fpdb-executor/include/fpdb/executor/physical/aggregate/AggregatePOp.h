@@ -8,7 +8,7 @@
 #include <fpdb/executor/physical/aggregate/function/AggregateFunction.h>
 #include <fpdb/executor/physical/aggregate/AggregateResult.h>
 #include <fpdb/executor/physical/PhysicalOp.h>
-#include <fpdb/executor/message/TupleMessage.h>
+#include <fpdb/executor/message/TupleSetMessage.h>
 #include <fpdb/executor/message/CompleteMessage.h>
 #include <memory>
 #include <string>
@@ -38,7 +38,7 @@ public:
 
 private:
   void onStart();
-  void onTuple(const TupleMessage &message);
+  void onTupleSet(const TupleSetMessage &message);
   void onComplete(const CompleteMessage &message);
 
   void compute(const shared_ptr<TupleSet> &tupleSet);

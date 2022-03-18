@@ -4,7 +4,7 @@
 
 #include <fpdb/executor/physical/filter/FilterPOp.h>
 #include <fpdb/executor/physical/Globals.h>
-#include <fpdb/executor/message/TupleMessage.h>
+#include <fpdb/executor/message/TupleSetMessage.h>
 #include <fpdb/executor/message/CompleteMessage.h>
 #include <fpdb/executor/message/cache/WeightRequestMessage.h>
 #include <fpdb/expression/gandiva/Filter.h>
@@ -42,9 +42,9 @@ void FilterPOp::onReceive(const Envelope &Envelope) {
 
   if (message.type() == MessageType::START) {
 	  this->onStart();
-  } else if (message.type() == MessageType::TUPLE) {
-    auto tupleMessage = dynamic_cast<const TupleMessage &>(message);
-    this->onTuple(tupleMessage);
+  } else if (message.type() == MessageType::TUPLESET) {
+    auto tupleMessage = dynamic_cast<const TupleSetMessage &>(message);
+    this->onTupleSet(tupleMessage);
   } else if (message.type() == MessageType::COMPLETE) {
     if (*applicable_) {
       auto completeMessage = dynamic_cast<const CompleteMessage &>(message);
@@ -61,7 +61,7 @@ void FilterPOp::onStart() {
   SPDLOG_DEBUG("Starting operator  |  name: '{}'", this->name());
 }
 
-void FilterPOp::onTuple(const TupleMessage &Message) {
+void FilterPOp::onTupleSet(const TupleSetMessage &Message) {
   SPDLOG_DEBUG("onTuple  |  Message tupleSet - numRows: {}", Message.tuples()->numRows());
   /**
    * Check if this filter is applicable, if not, just send an empty table and complete
@@ -82,8 +82,8 @@ void FilterPOp::onTuple(const TupleMessage &Message) {
   } else {
     // empty table
     auto emptyTupleSet = fpdb::tuple::TupleSet::makeWithEmptyTable();
-    std::shared_ptr<fpdb::executor::message::Message> tupleMessage = std::make_shared<TupleMessage>(emptyTupleSet,
-                                                                                                      name());
+    std::shared_ptr<fpdb::executor::message::Message> tupleMessage = std::make_shared<TupleSetMessage>(emptyTupleSet,
+                                                                                                       name());
     ctx()->tell(tupleMessage);
     ctx()->notifyComplete();
   }
@@ -180,7 +180,7 @@ void FilterPOp::sendTuples() {
     ctx()->notifyError(expProjectTupleSet.error());
   }
 
-  std::shared_ptr<Message> tupleMessage = std::make_shared<TupleMessage>(expProjectTupleSet.value(),name());
+  std::shared_ptr<Message> tupleMessage = std::make_shared<TupleSetMessage>(expProjectTupleSet.value(),name());
   ctx()->tell(tupleMessage);
   filtered_->clear();
   assert(filtered_->validate());

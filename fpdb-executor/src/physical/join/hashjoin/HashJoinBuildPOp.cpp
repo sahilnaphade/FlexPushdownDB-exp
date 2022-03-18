@@ -26,9 +26,9 @@ std::string HashJoinBuildPOp::getTypeString() const {
 void HashJoinBuildPOp::onReceive(const Envelope &msg) {
   if (msg.message().type() == MessageType::START) {
 	  this->onStart();
-  } else if (msg.message().type() == MessageType::TUPLE) {
-    auto tupleMessage = dynamic_cast<const TupleMessage &>(msg.message());
-    this->onTuple(tupleMessage);
+  } else if (msg.message().type() == MessageType::TUPLESET) {
+    auto tupleSetMessage = dynamic_cast<const TupleSetMessage &>(msg.message());
+    this->onTupleSet(tupleSetMessage);
   } else if (msg.message().type() == MessageType::COMPLETE) {
     auto completeMessage = dynamic_cast<const CompleteMessage &>(msg.message());
     this->onComplete(completeMessage);
@@ -41,7 +41,7 @@ void HashJoinBuildPOp::onStart() {
   SPDLOG_DEBUG("Starting operator  |  name: '{}'", this->name());
 }
 
-void HashJoinBuildPOp::onTuple(const TupleMessage &msg) {
+void HashJoinBuildPOp::onTupleSet(const TupleSetMessage &msg) {
   const auto& tupleSet = msg.tuples();
 
   SPDLOG_DEBUG("Adding tuple set to hash table  |  operator: '{}', tupleSet:\n{}", this->name(), tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented, 1000)));

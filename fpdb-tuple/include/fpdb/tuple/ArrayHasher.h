@@ -20,6 +20,8 @@ namespace fpdb::tuple {
 class ArrayHasher {
 
 public:
+  static size_t hash(const std::vector<std::shared_ptr<ArrayHasher>> &hashers, int64_t row);
+
   virtual ~ArrayHasher() = default;
 
   static tl::expected<std::shared_ptr<ArrayHasher>, std::string>

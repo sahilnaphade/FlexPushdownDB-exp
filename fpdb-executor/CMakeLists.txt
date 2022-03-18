@@ -10,11 +10,13 @@ add_library(fpdb-executor STATIC
         src/message/StartMessage.cpp include/fpdb/executor/message/StartMessage.h
         src/message/ConnectMessage.cpp include/fpdb/executor/message/ConnectMessage.h
         src/message/CompleteMessage.cpp include/fpdb/executor/message/CompleteMessage.h
-        src/message/TupleMessage.cpp include/fpdb/executor/message/TupleMessage.h
         src/message/ScanMessage.cpp include/fpdb/executor/message/ScanMessage.h
+        src/message/TupleSetMessage.cpp include/fpdb/executor/message/TupleSetMessage.h
         src/message/TupleSetIndexMessage.cpp include/fpdb/executor/message/TupleSetIndexMessage.h
+        src/message/TupleSetSizeMessage.cpp include/fpdb/executor/message/TupleSetSizeMessage.h
         src/message/DebugMetricsMessage.cpp include/fpdb/executor/message/DebugMetricsMessage.h
         src/message/ErrorMessage.cpp include/fpdb/executor/message/ErrorMessage.h
+        src/message/BloomFilterMessage.cpp include/fpdb/executor/message/BloomFilterMessage.h
         src/message/cache/CacheMetricsMessage.cpp include/fpdb/executor/message/cache/CacheMetricsMessage.h
         src/message/cache/LoadRequestMessage.cpp include/fpdb/executor/message/cache/LoadRequestMessage.h
         src/message/cache/LoadResponseMessage.cpp include/fpdb/executor/message/cache/LoadResponseMessage.h
@@ -48,6 +50,14 @@ add_library(fpdb-executor STATIC
         src/physical/aggregate/function/AvgBase.cpp include/fpdb/executor/physical/aggregate/function/AvgBase.h
         src/physical/aggregate/function/Avg.cpp include/fpdb/executor/physical/aggregate/function/Avg.h
         src/physical/aggregate/function/AvgReduce.cpp include/fpdb/executor/physical/aggregate/function/AvgReduce.h
+        src/physical/bloomfilter/BloomFilterCreatePOp.cpp include/fpdb/executor/physical/bloomfilter/BloomFilterCreatePOp.h
+        src/physical/bloomfilter/BloomFilterCreateKernel.cpp include/fpdb/executor/physical/bloomfilter/BloomFilterCreateKernel.h
+        src/physical/bloomfilter/BloomFilterCreatePreparePOp.cpp include/fpdb/executor/physical/bloomfilter/BloomFilterCreatePreparePOp.h
+        src/physical/bloomfilter/BloomFilterCreateMergePOp.cpp include/fpdb/executor/physical/bloomfilter/BloomFilterCreateMergePOp.h
+        src/physical/bloomfilter/BloomFilterUsePOp.cpp include/fpdb/executor/physical/bloomfilter/BloomFilterUsePOp.h
+        src/physical/bloomfilter/BloomFilterUseKernel.cpp include/fpdb/executor/physical/bloomfilter/BloomFilterUseKernel.h
+        src/physical/bloomfilter/BloomFilter.cpp include/fpdb/executor/physical/bloomfilter/BloomFilter.h
+        src/physical/bloomfilter/UniversalHashFunction.cpp include/fpdb/executor/physical/bloomfilter/UniversalHashFunction.h
         src/physical/cache/CacheLoadPOp.cpp include/fpdb/executor/physical/cache/CacheLoadPOp.h
         src/physical/cache/CacheHelper.cpp include/fpdb/executor/physical/cache/CacheHelper.h
         src/physical/collate/CollatePOp.cpp include/fpdb/executor/physical/collate/CollatePOp.h
@@ -123,6 +133,7 @@ target_link_libraries(fpdb-executor PUBLIC fpdb-caf)
 target_link_libraries(fpdb-executor PUBLIC graphviz_gvc_shared)
 target_link_libraries(fpdb-executor PUBLIC graphviz_dot_layout_shared)
 target_link_libraries(fpdb-executor PUBLIC graphviz_neato_layout_shared)
+target_link_libraries(fpdb-executor PUBLIC primesieve_static)
 target_link_libraries(fpdb-executor PRIVATE fpdb-store-server-file)
 target_link_libraries(fpdb-executor PRIVATE fpdb-store-server-flight-api)
 

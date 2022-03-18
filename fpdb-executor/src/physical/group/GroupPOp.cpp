@@ -24,9 +24,9 @@ std::string GroupPOp::getTypeString() const {
 void GroupPOp::onReceive(const Envelope &msg) {
   if (msg.message().type() == MessageType::START) {
 	  this->onStart();
-  } else if (msg.message().type() == MessageType::TUPLE) {
-    auto tupleMessage = dynamic_cast<const TupleMessage &>(msg.message());
-    this->onTuple(tupleMessage);
+  } else if (msg.message().type() == MessageType::TUPLESET) {
+    auto tupleSetMessage = dynamic_cast<const TupleSetMessage &>(msg.message());
+    this->onTupleSet(tupleSetMessage);
   } else if (msg.message().type() == MessageType::COMPLETE) {
     auto completeMessage = dynamic_cast<const CompleteMessage &>(msg.message());
     this->onComplete(completeMessage);
@@ -39,7 +39,7 @@ void GroupPOp::onStart() {
   SPDLOG_DEBUG("Starting operator  |  name: '{}'", this->name());
 }
 
-void GroupPOp::onTuple(const TupleMessage &message) {
+void GroupPOp::onTupleSet(const TupleSetMessage &message) {
   const auto &tupleSet = message.tuples();
   auto expectedGroupResult = kernel_.group(*tupleSet);
   if(!expectedGroupResult)
@@ -59,8 +59,8 @@ void GroupPOp::onComplete(const CompleteMessage &) {
       ctx()->notifyError(expProjectTupleSet.error());
     }
 
-    shared_ptr<Message> tupleMessage = make_shared<TupleMessage>(expProjectTupleSet.value(), this->name());
-    ctx()->tell(tupleMessage);
+    shared_ptr<Message> tupleSetMessage = make_shared<TupleSetMessage>(expProjectTupleSet.value(), this->name());
+    ctx()->tell(tupleSetMessage);
 
     ctx()->notifyComplete();
   }

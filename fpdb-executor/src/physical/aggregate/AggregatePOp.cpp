@@ -6,7 +6,7 @@
 #include <fpdb/executor/physical/aggregate/AggregateResult.h>
 #include <fpdb/executor/physical/PhysicalOp.h>
 #include <fpdb/executor/message/CompleteMessage.h>
-#include <fpdb/executor/message/TupleMessage.h>
+#include <fpdb/executor/message/TupleSetMessage.h>
 #include <fpdb/executor/message/Message.h>
 #include <arrow/scalar.h>
 #include <string>
@@ -43,9 +43,9 @@ void AggregatePOp::onStart() {
 void AggregatePOp::onReceive(const Envelope &message) {
   if (message.message().type() == MessageType::START) {
     this->onStart();
-  } else if (message.message().type() == MessageType::TUPLE) {
-    auto tupleMessage = dynamic_cast<const TupleMessage &>(message.message());
-    this->onTuple(tupleMessage);
+  } else if (message.message().type() == MessageType::TUPLESET) {
+    auto tupleSetMessage = dynamic_cast<const TupleSetMessage &>(message.message());
+    this->onTupleSet(tupleSetMessage);
   } else if (message.message().type() == MessageType::COMPLETE) {
     auto completeMessage = dynamic_cast<const CompleteMessage &>(message.message());
     this->onComplete(completeMessage);
@@ -54,7 +54,7 @@ void AggregatePOp::onReceive(const Envelope &message) {
   }
 }
 
-void AggregatePOp::onTuple(const TupleMessage &message) {
+void AggregatePOp::onTupleSet(const TupleSetMessage &message) {
   compute(message.tuples());
 }
 
@@ -70,8 +70,8 @@ void AggregatePOp::onComplete(const CompleteMessage &) {
       tupleSet = finalizeEmpty();
     }
 
-    shared_ptr<Message> tupleMessage = make_shared<TupleMessage>(tupleSet, this->name());
-    ctx()->tell(tupleMessage);
+    shared_ptr<Message> tupleSetMessage = make_shared<TupleSetMessage>(tupleSet, this->name());
+    ctx()->tell(tupleSetMessage);
     ctx()->notifyComplete();
   }
 }

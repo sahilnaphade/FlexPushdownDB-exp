@@ -7,7 +7,7 @@
 
 #include <fpdb/executor/physical/PhysicalOp.h>
 #include <fpdb/executor/physical/join/nestedloopjoin/NestedLoopJoinKernel.h>
-#include <fpdb/executor/message/TupleMessage.h>
+#include <fpdb/executor/message/TupleSetMessage.h>
 #include <fpdb/executor/message/CompleteMessage.h>
 #include <fpdb/executor/message/TupleSetIndexMessage.h>
 #include <fpdb/plan/prephysical/JoinType.h>
@@ -40,7 +40,7 @@ public:
 private:
   void onStart();
   void onComplete(const CompleteMessage &);
-  void onTuple(const TupleMessage &message);
+  void onTupleSet(const TupleSetMessage &message);
 
   NestedLoopJoinKernel makeKernel(const std::optional<shared_ptr<expression::gandiva::Expression>> &predicate,
                                   JoinType joinType);

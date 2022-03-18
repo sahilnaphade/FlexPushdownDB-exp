@@ -25,10 +25,14 @@ public:
    */
   static void connectOneToOne(vector<shared_ptr<PhysicalOp>> &producers,
                               vector<shared_ptr<PhysicalOp>> &consumers);
-  static void connectManyToMany(vector<shared_ptr<PhysicalOp>> &producers,
-                                vector<shared_ptr<PhysicalOp>> &consumers);
+  static void connectOneToOne(shared_ptr<PhysicalOp> &producer,
+                              shared_ptr<PhysicalOp> &consumer);
   static void connectManyToOne(vector<shared_ptr<PhysicalOp>> &producers,
                                shared_ptr<PhysicalOp> &consumer);
+  static void connectOneToMany(shared_ptr<PhysicalOp> &producer,
+                               vector<shared_ptr<PhysicalOp>> &consumers);
+  static void connectManyToMany(vector<shared_ptr<PhysicalOp>> &producers,
+                                vector<shared_ptr<PhysicalOp>> &consumers);
 
   /**
    * Transform aggregate and aggregate reduce function

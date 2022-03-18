@@ -24,6 +24,8 @@
 #include <fpdb/executor/physical/shuffle/ShufflePOp.h>
 #include <fpdb/executor/physical/sort/SortPOp.h>
 #include <fpdb/executor/physical/split/SplitPOp.h>
+#include <fpdb/executor/physical/bloomfilter/BloomFilterCreatePOp.h>
+#include <fpdb/executor/physical/bloomfilter/BloomFilterUsePOp.h>
 #include <fpdb/executor/physical/fpdb-store/FPDBStoreFileScanPOp.h>
 #include <fpdb/executor/physical/fpdb-store/FPDBStoreSuperPOp.h>
 #include <fpdb/tuple/serialization/ArrowSerializer.h>
@@ -53,6 +55,8 @@ CAF_ADD_TYPE_ID(POp, (fpdb::executor::physical::s3::S3SelectPOp))
 CAF_ADD_TYPE_ID(POp, (shuffle::ShufflePOp))
 CAF_ADD_TYPE_ID(POp, (sort::SortPOp))
 CAF_ADD_TYPE_ID(POp, (split::SplitPOp))
+CAF_ADD_TYPE_ID(POp, (bloomfilter::BloomFilterCreatePOp))
+CAF_ADD_TYPE_ID(POp, (bloomfilter::BloomFilterUsePOp))
 CAF_ADD_TYPE_ID(POp, (fpdb_store::FPDBStoreFileScanPOp))
 CAF_ADD_TYPE_ID(POp, (fpdb_store::FPDBStoreSuperPOp))
 CAF_ADD_TYPE_ID(POp, (caf::spawn_options))
@@ -86,6 +90,8 @@ struct variant_inspector_traits<POpPtr> {
           type_id_v<shuffle::ShufflePOp>,
           type_id_v<sort::SortPOp>,
           type_id_v<split::SplitPOp>,
+          type_id_v<bloomfilter::BloomFilterCreatePOp>,
+          type_id_v<bloomfilter::BloomFilterUsePOp>,
           type_id_v<fpdb_store::FPDBStoreFileScanPOp>,
           type_id_v<fpdb_store::FPDBStoreSuperPOp>
   };
@@ -130,10 +136,14 @@ struct variant_inspector_traits<POpPtr> {
       return 17;
     else if (x->getType() == POpType::SPLIT)
       return 18;
-    else if (x->getType() == POpType::FPDB_STORE_FILE_SCAN)
+    else if (x->getType() == POpType::BLOOM_FILTER_CREATE)
       return 19;
-    else if (x->getType() == POpType::FPDB_STORE_SUPER)
+    else if (x->getType() == POpType::BLOOM_FILTER_USE)
       return 20;
+    else if (x->getType() == POpType::FPDB_STORE_FILE_SCAN)
+      return 21;
+    else if (x->getType() == POpType::FPDB_STORE_SUPER)
+      return 22;
     else
       return -1;
   }
@@ -179,8 +189,12 @@ struct variant_inspector_traits<POpPtr> {
       case 18:
         return f(dynamic_cast<split::SplitPOp &>(*x));
       case 19:
-        return f(dynamic_cast<fpdb_store::FPDBStoreFileScanPOp &>(*x));
+        return f(dynamic_cast<bloomfilter::BloomFilterCreatePOp &>(*x));
       case 20:
+        return f(dynamic_cast<bloomfilter::BloomFilterUsePOp &>(*x));
+      case 21:
+        return f(dynamic_cast<fpdb_store::FPDBStoreFileScanPOp &>(*x));
+      case 22:
         return f(dynamic_cast<fpdb_store::FPDBStoreSuperPOp &>(*x));
       default: {
         none_t dummy;
@@ -297,6 +311,16 @@ struct variant_inspector_traits<POpPtr> {
       }
       case type_id_v<split::SplitPOp>: {
         auto tmp = split::SplitPOp{};
+        continuation(tmp);
+        return true;
+      }
+      case type_id_v<bloomfilter::BloomFilterCreatePOp>: {
+        auto tmp = bloomfilter::BloomFilterCreatePOp{};
+        continuation(tmp);
+        return true;
+      }
+      case type_id_v<bloomfilter::BloomFilterUsePOp>: {
+        auto tmp = bloomfilter::BloomFilterUsePOp{};
         continuation(tmp);
         return true;
       }

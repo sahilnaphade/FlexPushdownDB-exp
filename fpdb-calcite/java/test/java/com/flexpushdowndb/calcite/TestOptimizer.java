@@ -152,7 +152,7 @@ public class TestOptimizer {
 
   @Test
   public void testTPCH_Q19() throws Exception {
-    testSingle("tpch-sf0.01/csv", "tpch/original/19.sql", true);
+    testSingle("tpch-sf0.01/csv", "tpch/original/19_1.sql", true);
   }
 
   @Test
