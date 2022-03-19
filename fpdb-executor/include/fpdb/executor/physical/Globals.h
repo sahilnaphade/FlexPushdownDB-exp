@@ -40,7 +40,7 @@ inline constexpr int variableSleepRetryTimeMS = 15;
 /**
  * Parameters used in transformer
  */
-inline constexpr bool USE_BLOOM_FILTER = false;
+inline constexpr bool USE_BLOOM_FILTER = true;
 
 }
 

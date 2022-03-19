@@ -43,13 +43,13 @@ private:
   int64_t numBits_;
 
   std::vector<std::shared_ptr<UniversalHashFunction>> hashFunctions_;
-  std::vector<bool> bitArray_;
+  std::vector<int64_t> bitArray_;
 
   int64_t calculateNumHashFunctions() const;
   int64_t calculateNumBits() const;
 
-  std::vector<std::shared_ptr<UniversalHashFunction>> makeHashFunctions() const;
-  std::vector<bool> makeBitArray() const;
+  std::vector<std::shared_ptr<UniversalHashFunction>> makeHashFunctions();
+  std::vector<int64_t> makeBitArray() const;
 
   std::vector<int64_t> hashes(int64_t key);
 

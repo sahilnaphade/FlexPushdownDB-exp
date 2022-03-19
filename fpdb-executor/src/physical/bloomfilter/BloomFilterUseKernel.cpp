@@ -11,6 +11,11 @@ tl::expected<std::shared_ptr<TupleSet>, std::string>
 BloomFilterUseKernel::filter(const std::shared_ptr<TupleSet> &tupleSet,
                              const std::shared_ptr<BloomFilter> &bloomFilter,
                              const std::vector<std::string> &columnNames) {
+  // Check empty
+  if (tupleSet->numRows() == 0) {
+    return tupleSet;
+  }
+
   // Make column indices
   std::vector<int> columnIndices;
   auto schema = tupleSet->schema();
@@ -104,7 +109,11 @@ BloomFilterUseKernel::filterRecordBatch(const ::arrow::RecordBatch &recordBatch,
   }
   selectionVector->SetNumSlots(slotId);
 
-  return fpdb::expression::gandiva::Filter::evaluateBySelectionVectorStatic(recordBatch, selectionVector);
+  if (slotId == recordBatch.num_rows()) {
+    return recordBatch.columns();
+  } else {
+    return fpdb::expression::gandiva::Filter::evaluateBySelectionVectorStatic(recordBatch, selectionVector);
+  }
 }
 
 }

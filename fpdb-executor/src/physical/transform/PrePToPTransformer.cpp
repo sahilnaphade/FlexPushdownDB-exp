@@ -458,8 +458,9 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
 
   vector<shared_ptr<PhysicalOp>> rightUpConnPOps;
 
-  // if using bloom filter
-  if (USE_BLOOM_FILTER) {
+  // if using bloom filter, and bloom filter cannot be used before right join
+  if (USE_BLOOM_FILTER &&
+    (joinType == JoinType::INNER || joinType == JoinType::LEFT || joinType == JoinType::SEMI)) {
     // BloomFilterCreatePreparePOp
     shared_ptr<PhysicalOp> bloomFilterCreatePreparePOp = make_shared<bloomfilter::BloomFilterCreatePreparePOp>(
             fmt::format("BloomFilterCreatePrepare[{}]-{}", prePOpId, hashJoinPredicateStr),
@@ -486,22 +487,24 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
     PrePToPTransformerUtil::connectOneToOne(leftTransRes.first, bloomFilterCreatePOps);
     PrePToPTransformerUtil::connectOneToMany(bloomFilterCreatePreparePOp, bloomFilterCreatePOps);
 
-    // BloomFilterCreateMergePOp
-    shared_ptr<PhysicalOp> bloomFilterCreateMergePOp;
+    // BloomFilterCreateMergePOp if more than one BloomFilterCreatePOp
+    shared_ptr<PhysicalOp> finalOpForBloomFilterCreate;
     if (bloomFilterCreatePOps.size() > 1) {
-      bloomFilterCreateMergePOp = make_shared<bloomfilter::BloomFilterCreateMergePOp>(
+      finalOpForBloomFilterCreate = make_shared<bloomfilter::BloomFilterCreateMergePOp>(
               fmt::format("BloomFilterCreateMerge[{}]-{}", prePOpId, hashJoinPredicateStr),
               std::vector<std::string>{},         // not needed
               rand() % numNodes_);
+      allPOps.emplace_back(finalOpForBloomFilterCreate);
+      PrePToPTransformerUtil::connectManyToOne(bloomFilterCreatePOps, finalOpForBloomFilterCreate);
     } else {
-      bloomFilterCreateMergePOp = bloomFilterCreatePOps[0];
+      finalOpForBloomFilterCreate = bloomFilterCreatePOps[0];
     }
 
     // BloomFilterUsePOp
     vector<shared_ptr<PhysicalOp>> bloomFilterUsePOps;
     for (uint i = 0; i < rightTransRes.first.size(); ++i) {
       bloomFilterUsePOps.emplace_back(make_shared<bloomfilter::BloomFilterUsePOp>(
-              fmt::format("BloomFilter[{}]-{}-{}", prePOpId, hashJoinPredicateStr, i),
+              fmt::format("BloomFilterUse[{}]-{}-{}", prePOpId, hashJoinPredicateStr, i),
               rightTransRes.first[i]->getProjectColumnNames(),
               rightTransRes.first[i]->getNodeId(),
               rightColumnNames));
@@ -510,8 +513,8 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
     PrePToPTransformerUtil::connectOneToOne(rightTransRes.first, bloomFilterUsePOps);
     rightUpConnPOps = bloomFilterUsePOps;
 
-    // connect bloomFilterCreateMergePOp and bloomFilterPOps
-    PrePToPTransformerUtil::connectOneToMany(bloomFilterCreateMergePOp, bloomFilterUsePOps);
+    // connect finalOpForBloomFilterCreate and bloomFilterPOps
+    PrePToPTransformerUtil::connectOneToMany(finalOpForBloomFilterCreate, bloomFilterUsePOps);
   } else {
     rightUpConnPOps = rightTransRes.first;
   }

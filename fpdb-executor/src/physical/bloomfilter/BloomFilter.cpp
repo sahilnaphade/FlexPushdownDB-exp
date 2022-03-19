@@ -31,13 +31,12 @@ void BloomFilter::add(int64_t key) {
   assert(capacity_ > 0);
 
   auto hs = hashes(key);
-  bool foundAllBits = true;
 
   for (auto h: hs) {
-    if (foundAllBits && not bitArray_[h]) {
-      foundAllBits = false;
-    }
-    bitArray_[h] = true;
+    // set h-th bit
+    int64_t valueId = h / 64;
+    int valueOffset = h % 64;
+    bitArray_[valueId] ^= (-1 ^ bitArray_[valueId]) & (1UL << valueOffset);
   }
 }
 
@@ -48,7 +47,10 @@ bool BloomFilter::contains(int64_t key) {
   auto hs = hashes(key);
 
   for (auto h: hs) {
-    if (!bitArray_[h]) {
+    // check h-th bit
+    int64_t valueId = h / 64;
+    int valueOffset = h % 64;
+    if (!((bitArray_[valueId] >> valueOffset) & 1UL)) {
       return false;
     }
   }
@@ -68,9 +70,11 @@ tl::expected<void, std::string> BloomFilter::merge(const std::shared_ptr<BloomFi
   }
 
   // update bit arrays
-  std::vector<bool> mergedBitArray;
-  std::transform(bitArray_.begin(), bitArray_.end(),
-                 other->bitArray_.begin(), mergedBitArray.begin(), std::logical_or<bool>());
+  std::vector<int64_t> mergedBitArray;
+  mergedBitArray.reserve(bitArray_.size());
+  for (uint64_t i = 0; i < bitArray_.size(); ++i) {
+    mergedBitArray.emplace_back(bitArray_[i] | other->bitArray_[i]);
+  }
   bitArray_ = mergedBitArray;
 
   return {};
@@ -84,8 +88,15 @@ int64_t BloomFilter::calculateNumBits() const {
   return m_from_np(capacity_, falsePositiveRate_);
 }
 
-std::vector<std::shared_ptr<UniversalHashFunction>> BloomFilter::makeHashFunctions() const {
+std::vector<std::shared_ptr<UniversalHashFunction>> BloomFilter::makeHashFunctions() {
   std::vector<std::shared_ptr<UniversalHashFunction>> hashFunctions;
+
+  // check capacity
+  if (capacity_ == 0) {
+    numHashFunctions_ = 0;
+    return hashFunctions;
+  }
+
   hashFunctions.reserve(numHashFunctions_);
   for (int64_t s = 0; s < numHashFunctions_; ++s) {
     hashFunctions.emplace_back(UniversalHashFunction::make(numBits_));
@@ -93,8 +104,9 @@ std::vector<std::shared_ptr<UniversalHashFunction>> BloomFilter::makeHashFunctio
   return hashFunctions;
 }
 
-std::vector<bool> BloomFilter::makeBitArray() const {
-  return std::vector<bool>(numBits_, false);
+std::vector<int64_t> BloomFilter::makeBitArray() const {
+  int64_t len = numBits_ / 64 + 1;
+  return std::vector<int64_t>(len, 0);
 }
 
 std::vector<int64_t> BloomFilter::hashes(int64_t key) {

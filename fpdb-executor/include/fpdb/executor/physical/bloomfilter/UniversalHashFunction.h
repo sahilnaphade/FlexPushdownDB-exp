@@ -15,14 +15,12 @@ namespace fpdb::executor::physical::bloomfilter {
  * h(x) = ((ax + b) mod p) mod m
  *
  * All variables are stored as longs to avoid integer overflow when calculating the hash.
- *
- * TODO: May need to template this to allow hashing variable width integers?
  */
 class UniversalHashFunction {
 
 public:
   /**
-   * Creates a hash function hashing keys (x) into the given number of bins (m)
+   * Creates a hash function hashing keys (x) into the given number of bits (m)
    * @param m
    */
   explicit UniversalHashFunction(int64_t m);
@@ -33,7 +31,7 @@ public:
    * @param x
    * @return
    */
-   int64_t hash(int64_t x) const;
+  int64_t hash(int64_t x) const;
 
 private:
   int64_t a_;

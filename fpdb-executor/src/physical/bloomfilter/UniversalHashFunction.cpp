@@ -38,7 +38,10 @@ std::shared_ptr<UniversalHashFunction> UniversalHashFunction::make(int64_t m) {
 }
 
 int64_t UniversalHashFunction::hash(int64_t x) const {
-  int64_t h = ((a_ * x + b_) % p_) % m_;
+  // to prevent overflow
+  __int128 mul = ((__int128) a_) * ((__int128) x);
+  int64_t h = ((mul + b_) % p_) % m_;;
+
   assert(h >= 0 && h <= m_);
   return h;
 }
