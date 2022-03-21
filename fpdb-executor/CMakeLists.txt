@@ -113,7 +113,8 @@ add_library(fpdb-executor STATIC
         src/metrics/DebugMetrics.cpp include/fpdb/executor/metrics/DebugMetrics.h
 #        executor
         src/Executor.cpp include/fpdb/executor/Executor.h
-        src/Execution.cpp include/fpdb/executor/Execution.h)
+        src/Execution.cpp include/fpdb/executor/Execution.h
+        include/fpdb/executor/physical/s3/SelectPOp.cpp include/fpdb/executor/physical/s3/SelectPOp.hpp)
 
 target_include_directories(fpdb-executor PUBLIC include)
 

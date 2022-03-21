@@ -5,7 +5,8 @@
 #include <fpdb/executor/physical/transform/PrePToS3PTransformer.h>
 #include <fpdb/executor/physical/prune/PartitionPruner.h>
 #include <fpdb/executor/physical/s3/S3GetPOp.h>
-#include <fpdb/executor/physical/s3/S3SelectPOp.h>
+//#include <fpdb/executor/physical/s3/S3SelectPOp.h>
+#include <fpdb/executor/physical/s3/SelectPOp.hpp>
 #include <fpdb/executor/physical/filter/FilterPOp.h>
 #include <fpdb/executor/physical/cache/CacheLoadPOp.h>
 #include <fpdb/executor/physical/merge/MergePOp.h>
@@ -146,7 +147,7 @@ PrePToS3PTransformer::transformFilterableScanPushdownOnly(const shared_ptr<Filte
     pair<long, long> scanRange{0, s3Partition->getNumBytes()};
 
     // s3 select
-    pOps.emplace_back(make_shared<s3::S3SelectPOp>(fmt::format("S3Select[{}]-{}/{}", prePOpId_, s3Bucket, s3Object),
+    pOps.emplace_back(make_shared<s3::SelectPOp>(fmt::format("Select[{}]-{}/{}", prePOpId_, s3Bucket, s3Object),
                                                    projectColumnNames,
                                                    partitionId % numNodes_,
                                                    s3Bucket,
@@ -314,7 +315,7 @@ PrePToS3PTransformer::transformFilterableScanHybrid(const shared_ptr<FilterableS
     allPOps.emplace_back(cacheLoadPOp);
 
     // s3 select (cache)
-    const auto &scanPOp = make_shared<s3::S3SelectPOp>(fmt::format("S3Select(cache)[{}]-{}/{}", prePOpId_, s3Bucket, s3Object),
+    const auto &scanPOp = make_shared<s3::SelectPOp>(fmt::format("Select(cache)[{}]-{}/{}", prePOpId_, s3Bucket, s3Object),
                                                        projPredColumnNames,
                                                        partitionId % numNodes_,
                                                        s3Bucket,
@@ -360,7 +361,7 @@ PrePToS3PTransformer::transformFilterableScanHybrid(const shared_ptr<FilterableS
     }
 
     // s3 select (pushdown)
-    const auto &selectPOp = make_shared<s3::S3SelectPOp>(fmt::format("S3Select(pushdown)[{}]-{}/{}", prePOpId_, s3Bucket, s3Object),
+    const auto &selectPOp = make_shared<s3::SelectPOp>(fmt::format("Select(pushdown)[{}]-{}/{}", prePOpId_, s3Bucket, s3Object),
                                                          projectColumnNames,
                                                          partitionId % numNodes_,
                                                          s3Bucket,

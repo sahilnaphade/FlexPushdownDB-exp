@@ -28,6 +28,9 @@ def cp(src_bucket,
        dst_object,
        src_s3_client,
        dst_s3_client):
+
+    print(f"Copying file '{src_bucket}/{src_object}' to '{dst_bucket}/{dst_object}'")
+
     # tmp_root_dir = tempfile.mkdtemp()
     tmp_root_dir = f"{tempfile.gettempdir()}/fpdb/cp"
     tmp_file = pathlib.Path(tmp_root_dir) / src_bucket / src_object
@@ -37,10 +40,10 @@ def cp(src_bucket,
     do_download = True
     if use_cache:
         if not tmp_file.exists():
-            print("File not yet downloaded to cache")
+            print(f"File not yet downloaded to cache")
             do_download = True
         else:
-            now_ms = time.time_ns() // 1000000
+            now_ms = math.floor(time.time() * 1000)
             mtime_ms = math.floor(tmp_file.stat().st_mtime * 1000)
             if now_ms - mtime_ms > 15 * 60 * 1000:
                 print("File downloaded to cache more than 15 minutes ago")
@@ -56,13 +59,15 @@ def cp(src_bucket,
         src_s3_client.download_file(src_bucket, src_object, str(tmp_file), Callback=on_downloaded)
         print("Done")
 
-    print("Uploading file...", end=None)
+    print("Uploading file...")
     try:
         dst_s3_client.head_bucket(Bucket=dst_bucket)
-        dst_s3_client.create_bucket(Bucket=dst_bucket)
     except botocore.exceptions.ClientError as e:
         if e.response['Error']['Code'] != '404':
             raise e
+        else:
+            print(f"Creating bucket '{dst_bucket}'...")
+            dst_s3_client.create_bucket(Bucket=dst_bucket)
 
     dst_s3_client.upload_file(str(tmp_file), dst_bucket, dst_object, Callback=on_uploaded,
                               Config=TransferConfig(multipart_threshold=5 * 1024 * 1024 * 1024, use_threads=False))

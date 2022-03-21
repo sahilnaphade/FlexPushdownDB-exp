@@ -20,7 +20,8 @@
 #include <fpdb/executor/physical/merge/MergePOp.h>
 #include <fpdb/executor/physical/project/ProjectPOp.h>
 #include <fpdb/executor/physical/s3/S3GetPOp.h>
-#include <fpdb/executor/physical/s3/S3SelectPOp.h>
+//#include <fpdb/executor/physical/s3/S3SelectPOp.h>
+#include <fpdb/executor/physical/s3/SelectPOp.hpp>
 #include <fpdb/executor/physical/shuffle/ShufflePOp.h>
 #include <fpdb/executor/physical/sort/SortPOp.h>
 #include <fpdb/executor/physical/split/SplitPOp.h>
@@ -49,7 +50,8 @@ CAF_ADD_TYPE_ID(POp, (limitsort::LimitSortPOp))
 CAF_ADD_TYPE_ID(POp, (merge::MergePOp))
 CAF_ADD_TYPE_ID(POp, (project::ProjectPOp))
 CAF_ADD_TYPE_ID(POp, (fpdb::executor::physical::s3::S3GetPOp))
-CAF_ADD_TYPE_ID(POp, (fpdb::executor::physical::s3::S3SelectPOp))
+//CAF_ADD_TYPE_ID(POp, (fpdb::executor::physical::s3::S3SelectPOp))
+CAF_ADD_TYPE_ID(POp, (fpdb::executor::physical::s3::SelectPOp))
 CAF_ADD_TYPE_ID(POp, (shuffle::ShufflePOp))
 CAF_ADD_TYPE_ID(POp, (sort::SortPOp))
 CAF_ADD_TYPE_ID(POp, (split::SplitPOp))
@@ -82,7 +84,8 @@ struct variant_inspector_traits<POpPtr> {
           type_id_v<merge::MergePOp>,
           type_id_v<project::ProjectPOp>,
           type_id_v<fpdb::executor::physical::s3::S3GetPOp>,
-          type_id_v<fpdb::executor::physical::s3::S3SelectPOp>,
+//          type_id_v<fpdb::executor::physical::s3::S3SelectPOp>,
+          type_id_v<fpdb::executor::physical::s3::SelectPOp>,
           type_id_v<shuffle::ShufflePOp>,
           type_id_v<sort::SortPOp>,
           type_id_v<split::SplitPOp>,
@@ -170,8 +173,10 @@ struct variant_inspector_traits<POpPtr> {
         return f(dynamic_cast<project::ProjectPOp &>(*x));
       case 14:
         return f(dynamic_cast<fpdb::executor::physical::s3::S3GetPOp &>(*x));
+//      case 15:
+//        return f(dynamic_cast<fpdb::executor::physical::s3::S3SelectPOp &>(*x));
       case 15:
-        return f(dynamic_cast<fpdb::executor::physical::s3::S3SelectPOp &>(*x));
+        return f(dynamic_cast<fpdb::executor::physical::s3::SelectPOp &>(*x));
       case 16:
         return f(dynamic_cast<shuffle::ShufflePOp &>(*x));
       case 17:
@@ -280,8 +285,13 @@ struct variant_inspector_traits<POpPtr> {
         continuation(tmp);
         return true;
       }
-      case type_id_v<fpdb::executor::physical::s3::S3SelectPOp>: {
-        auto tmp = fpdb::executor::physical::s3::S3SelectPOp{};
+//      case type_id_v<fpdb::executor::physical::s3::S3SelectPOp>: {
+//        auto tmp = fpdb::executor::physical::s3::S3SelectPOp{};
+//        continuation(tmp);
+//        return true;
+//      }
+      case type_id_v<fpdb::executor::physical::s3::SelectPOp>: {
+        auto tmp = fpdb::executor::physical::s3::SelectPOp{};
         continuation(tmp);
         return true;
       }
