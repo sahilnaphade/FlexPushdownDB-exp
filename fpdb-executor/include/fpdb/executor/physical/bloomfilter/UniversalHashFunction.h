@@ -5,6 +5,8 @@
 #ifndef FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_BLOOMFILTER_UNIVERSALHASHFUNCTION_H
 #define FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_BLOOMFILTER_UNIVERSALHASHFUNCTION_H
 
+#include <tl/expected.hpp>
+#include <nlohmann/json.hpp>
 #include <memory>
 
 namespace fpdb::executor::physical::bloomfilter {
@@ -27,11 +29,20 @@ public:
   static std::shared_ptr<UniversalHashFunction> make(int64_t m);
 
   /**
+   * Used when reconstructing at store during pushdown
+   */
+  explicit UniversalHashFunction(int64_t a, int64_t b, int64_t m, int64_t p);
+  static std::shared_ptr<UniversalHashFunction> make(int64_t a, int64_t b, int64_t m, int64_t p);
+
+  /**
    * Hashes the given key (x)
    * @param x
    * @return
    */
   int64_t hash(int64_t x) const;
+
+  ::nlohmann::json toJson() const;
+  static tl::expected<std::shared_ptr<UniversalHashFunction>, std::string> fromJson(const nlohmann::json &jObj);
 
 private:
   int64_t a_;

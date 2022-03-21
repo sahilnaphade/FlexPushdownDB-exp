@@ -4,6 +4,7 @@
 
 #include <fpdb/executor/physical/transform/PrePToFPDBStorePTransformer.h>
 #include <fpdb/executor/physical/transform/PrePToPTransformerUtil.h>
+#include <fpdb/executor/physical/transform/StoreTransformTraits.h>
 #include <fpdb/executor/physical/prune/PartitionPruner.h>
 #include <fpdb/executor/physical/file/RemoteFileScanPOp.h>
 #include <fpdb/executor/physical/fpdb-store/FPDBStoreFileScanPOp.h>
@@ -118,7 +119,39 @@ PrePToFPDBStorePTransformer::transformSeparableSuper(const shared_ptr<SeparableS
     default:
       throw runtime_error(fmt::format("Unsupported mode for FPDB Store: {}", mode_->toString()));
   }
+}
 
+pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
+PrePToFPDBStorePTransformer::addBloomFilterUse(vector<shared_ptr<PhysicalOp>> &producers,
+                                               vector<shared_ptr<PhysicalOp>> &bloomFilterUsePOps,
+                                               const shared_ptr<Mode> &mode) {
+  if (!StoreTransformTraits::FPDBStoreStoreTransformTraits()->isSeparable(POpType::BLOOM_FILTER_USE)
+    || mode->id() == ModeId::PULL_UP) {
+    PrePToPTransformerUtil::connectOneToOne(producers, bloomFilterUsePOps);
+    return {bloomFilterUsePOps, bloomFilterUsePOps};
+  }
+
+  if (mode->id() == ModeId::PUSHDOWN_ONLY) {
+    vector<shared_ptr<PhysicalOp>> connPOps, addiPOps;
+
+    for (uint i = 0; i < producers.size(); ++i) {
+      auto producer = producers[i];
+      auto bloomFilterUsePOp = bloomFilterUsePOps[i];
+      if (producer->getType() == POpType::FPDB_STORE_SUPER) {
+        auto fpdbStoreSuperPOp = static_pointer_cast<fpdb_store::FPDBStoreSuperPOp>(producer);
+        fpdbStoreSuperPOp->addAsLastOp(bloomFilterUsePOp);
+        connPOps.emplace_back(fpdbStoreSuperPOp);
+      } else {
+        PrePToPTransformerUtil::connectOneToOne(producer, bloomFilterUsePOp);
+        connPOps.emplace_back(bloomFilterUsePOp);
+        addiPOps.emplace_back(bloomFilterUsePOp);
+      }
+    }
+
+    return {connPOps, addiPOps};
+  } else {
+    throw runtime_error(fmt::format("Unsupported mode for FPDB Store: {}", mode->toString()));
+  }
 }
 
 pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>

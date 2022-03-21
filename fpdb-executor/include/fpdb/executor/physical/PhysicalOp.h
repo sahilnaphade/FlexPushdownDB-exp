@@ -50,6 +50,8 @@ public:
   void setQueryId(long queryId);
   virtual void produce(const std::shared_ptr<PhysicalOp> &op);
   virtual void consume(const std::shared_ptr<PhysicalOp> &op);
+  virtual void unProduce(const std::shared_ptr<PhysicalOp> &op);
+  virtual void unConsume(const std::shared_ptr<PhysicalOp> &op);
   void setBloomFilterCreatePrepareConsumer(const std::shared_ptr<PhysicalOp> &op);
   void create(const std::shared_ptr<POpContext>& ctx);
 

@@ -37,6 +37,18 @@ public:
   pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
   transformSeparableSuper(const shared_ptr<SeparableSuperPrePOp> &separableSuperPrePOp);
 
+  /**
+   * Add BloomFilterUsePOp to S3SelectPOp
+   * if producers are S3SelectPOp and bloom filter pushdown is enabled
+   * @param producers
+   * @param bloomFilterUsePOps
+   * @return a pair of connect physical ops (to producer) and additional physical ops to add to plan
+   */
+  static pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
+  addBloomFilterUse(vector<shared_ptr<PhysicalOp>> &producers,
+                    vector<shared_ptr<PhysicalOp>> &bloomFilterUsePOps,
+                    const shared_ptr<Mode> &mode);
+
 private:
   pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
   transformFilterableScan(const shared_ptr<FilterableScanPrePOp> &filterableScanPrePOp);

@@ -18,12 +18,28 @@ public:
   inline static constexpr double DefaultDesiredFalsePositiveRate = 0.01;
 
   BloomFilter(int64_t capacity, double falsePositiveRate);
+  static std::shared_ptr<BloomFilter> make(int64_t capacity, double falsePositiveRate);
+
+  /**
+   * Used when reconstructing at store during pushdown
+   */
+  BloomFilter(int64_t capacity,
+              double falsePositiveRate,
+              int64_t numHashFunctions,
+              int64_t numBits,
+              const std::vector<std::shared_ptr<UniversalHashFunction>> &hashFunctions,
+              const std::vector<int64_t> &bitArray);
+  static std::shared_ptr<BloomFilter> make(int64_t capacity,
+                                           double falsePositiveRate,
+                                           int64_t numHashFunctions,
+                                           int64_t numBits,
+                                           const std::vector<std::shared_ptr<UniversalHashFunction>> &hashFunctions,
+                                           const std::vector<int64_t> &bitArray);
+
   BloomFilter() = default;
   BloomFilter(const BloomFilter&) = default;
   BloomFilter& operator=(const BloomFilter&) = default;
   virtual ~BloomFilter() = default;
-  
-  static std::shared_ptr<BloomFilter> make(int64_t capacity, double falsePositiveRate);
 
   void init();
   void add(int64_t key);
@@ -34,6 +50,9 @@ public:
    * @param other
    */
   tl::expected<void, std::string> merge(const std::shared_ptr<BloomFilter> &other);
+
+  ::nlohmann::json toJson() const;
+  static tl::expected<std::shared_ptr<BloomFilter>, std::string> fromJson(const nlohmann::json &jObj);
 
 private:
   int64_t capacity_;

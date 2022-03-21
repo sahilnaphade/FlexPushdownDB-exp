@@ -23,6 +23,7 @@
 #include <fpdb/executor/physical/bloomfilter/BloomFilterUsePOp.h>
 #include <fpdb/executor/physical/collate/CollatePOp.h>
 #include <fpdb/executor/physical/transform/PrePToPTransformerUtil.h>
+#include <fpdb/executor/physical/transform/StoreTransformTraits.h>
 #include <fpdb/executor/physical/Globals.h>
 #include <fpdb/catalogue/obj-store/ObjStoreCatalogueEntry.h>
 #include <fpdb/catalogue/obj-store/s3/S3Connector.h>
@@ -509,12 +510,52 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
               rightTransRes.first[i]->getNodeId(),
               rightColumnNames));
     }
-    allPOps.insert(allPOps.end(), bloomFilterUsePOps.begin(), bloomFilterUsePOps.end());
-    PrePToPTransformerUtil::connectOneToOne(rightTransRes.first, bloomFilterUsePOps);
-    rightUpConnPOps = bloomFilterUsePOps;
 
-    // connect finalOpForBloomFilterCreate and bloomFilterPOps
-    PrePToPTransformerUtil::connectOneToMany(finalOpForBloomFilterCreate, bloomFilterUsePOps);
+    // Check if we need to push BloomFilterUsePOp to store
+    switch (catalogueEntry_->getType()) {
+      case CatalogueEntryType::OBJ_STORE: {
+        auto objCatalogueEntry = std::static_pointer_cast<obj_store::ObjStoreCatalogueEntry>(catalogueEntry_);
+        pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>> bloomFilterAddRes;
+
+        switch (objCatalogueEntry->getStoreType()) {
+          case obj_store::ObjStoreType::FPDB_STORE: {
+            bloomFilterAddRes = PrePToFPDBStorePTransformer::addBloomFilterUse(rightTransRes.first,
+                                                                               bloomFilterUsePOps,
+                                                                               mode_);
+            break;
+          }
+          case obj_store::ObjStoreType::S3: {
+            bloomFilterAddRes = PrePToS3PTransformer::addBloomFilterUse(rightTransRes.first,
+                                                                        bloomFilterUsePOps,
+                                                                        mode_);
+            break;
+          }
+          default: {
+            throw std::runtime_error(fmt::format("Unsupported object store type: '{}'", objCatalogueEntry->getStoreTypeName()));
+          }
+        }
+
+        // opsForBloomFilterUse can be either store op (FPDBStoreSuper/S3Select) containing BloomFilterUse or just BloomFilterUse
+        auto opsForBloomFilterUse = bloomFilterAddRes.first;
+        auto addiPOps = bloomFilterAddRes.second;
+
+        allPOps.insert(allPOps.end(), addiPOps.begin(), addiPOps.end());
+        PrePToPTransformerUtil::connectOneToMany(finalOpForBloomFilterCreate, opsForBloomFilterUse);
+        rightUpConnPOps = bloomFilterAddRes.first;
+        break;
+      }
+      case CatalogueEntryType::LOCAL_FS: {
+        // no bloom filter pushdown
+        allPOps.insert(allPOps.end(), bloomFilterUsePOps.begin(), bloomFilterUsePOps.end());
+        PrePToPTransformerUtil::connectOneToOne(rightTransRes.first, bloomFilterUsePOps);
+        PrePToPTransformerUtil::connectOneToMany(finalOpForBloomFilterCreate, bloomFilterUsePOps);
+        rightUpConnPOps = bloomFilterUsePOps;
+        break;
+      }
+      default: {
+        throw std::runtime_error(fmt::format("Unsupported catalogue entry type: '{}'", catalogueEntry_->getTypeName()));
+      }
+    }
   } else {
     rightUpConnPOps = rightTransRes.first;
   }

@@ -42,6 +42,14 @@ void PhysicalOp::consume(const std::shared_ptr<PhysicalOp> &op) {
   producers_.emplace(op->name());
 }
 
+void PhysicalOp::unProduce(const std::shared_ptr<PhysicalOp> &op) {
+  consumers_.erase(op->name());
+}
+
+void PhysicalOp::unConsume(const std::shared_ptr<PhysicalOp> &op) {
+  producers_.erase(op->name());
+}
+
 void PhysicalOp::setBloomFilterCreatePrepareConsumer(const std::shared_ptr<PhysicalOp> &op) {
   bloomFilterCreatePrepareConsumer_ = op->name();
   consumers_.emplace(op->name());

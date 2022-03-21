@@ -31,8 +31,18 @@ public:
   void clear() override;
   std::string getTypeString() const override;
 
+  /**
+   * Add op as the last op (except collate) in the subPlan
+   * @param lastOp
+   */
+  void addAsLastOp(std::shared_ptr<PhysicalOp> &lastOp);
+
 private:
   void onStart();
+  void onBloomFilter(const BloomFilterMessage &msg);
+  void onComplete(const CompleteMessage &);
+
+  bool readyToProcess();
   void processAtStore();
   tl::expected<std::string, std::string> serialize(bool pretty);
 

@@ -32,8 +32,8 @@ std::shared_ptr<SeparableTraits> SeparableTraits::unknownStoreSeparableTraits() 
   return std::make_shared<SeparableTraits>(std::set<PrePOpType>{});
 }
 
-const std::set<PrePOpType> SeparableTraits::getSeparablePrePOpTypes() const {
-  return separablePrePOpTypes_;
+bool SeparableTraits::isSeparable(PrePOpType prePOpType) const {
+  return separablePrePOpTypes_.find(prePOpType) != separablePrePOpTypes_.end();
 }
 
 }

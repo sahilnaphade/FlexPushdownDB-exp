@@ -8,11 +8,20 @@
 namespace fpdb::executor::physical::bloomfilter {
 
 BloomFilterUsePOp::BloomFilterUsePOp(const std::string &name,
-                               const std::vector<std::string> &projectColumnNames,
-                               int nodeId,
-                               const std::vector<std::string> &bloomFilterColumnNames):
+                                     const std::vector<std::string> &projectColumnNames,
+                                     int nodeId,
+                                     const std::vector<std::string> &bloomFilterColumnNames):
   PhysicalOp(name, BLOOM_FILTER_USE, projectColumnNames, nodeId),
   bloomFilterColumnNames_(bloomFilterColumnNames) {}
+
+BloomFilterUsePOp::BloomFilterUsePOp(const std::string &name,
+                                     const std::vector<std::string> &projectColumnNames,
+                                     int nodeId,
+                                     const std::vector<std::string> &bloomFilterColumnNames,
+                                     const std::shared_ptr<BloomFilter> &bloomFilter):
+  PhysicalOp(name, BLOOM_FILTER_USE, projectColumnNames, nodeId),
+  bloomFilterColumnNames_(bloomFilterColumnNames),
+  bloomFilter_(bloomFilter) {}
 
 std::string BloomFilterUsePOp::getTypeString() const {
   return "BloomFilterUsePOp";
@@ -35,6 +44,22 @@ void BloomFilterUsePOp::onReceive(const Envelope &envelope) {
   } else {
     ctx()->notifyError("Unrecognized message type " + msg.getTypeString());
   }
+}
+
+const std::vector<std::string> &BloomFilterUsePOp::getBloomFilterColumnNames() const {
+  return bloomFilterColumnNames_;
+}
+
+const std::optional<std::shared_ptr<BloomFilter>> &BloomFilterUsePOp::getBloomFilter() const {
+  return bloomFilter_;
+}
+
+void BloomFilterUsePOp::setBloomFilter(const std::shared_ptr<BloomFilter> &bloomFilter) {
+  bloomFilter_ = bloomFilter;
+}
+
+bool BloomFilterUsePOp::receivedBloomFilter() const {
+  return bloomFilter_.has_value();
 }
 
 void BloomFilterUsePOp::onStart() {

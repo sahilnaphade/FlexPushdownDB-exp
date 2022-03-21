@@ -3,6 +3,7 @@
 //
 
 #include <fpdb/executor/physical/bloomfilter/UniversalHashFunction.h>
+#include <fmt/format.h>
 #include <primesieve.hpp>
 #include <random>
 #include <cassert>
@@ -37,6 +38,16 @@ std::shared_ptr<UniversalHashFunction> UniversalHashFunction::make(int64_t m) {
   return std::make_shared<UniversalHashFunction>(m);
 }
 
+UniversalHashFunction::UniversalHashFunction(int64_t a, int64_t b, int64_t m, int64_t p):
+  a_(a),
+  b_(b),
+  m_(m),
+  p_(p) {}
+
+std::shared_ptr<UniversalHashFunction> UniversalHashFunction::make(int64_t a, int64_t b, int64_t m, int64_t p) {
+  return std::make_shared<UniversalHashFunction>(a, b, m, p);
+}
+
 int64_t UniversalHashFunction::hash(int64_t x) const {
   // to prevent overflow
   __int128 mul = ((__int128) a_) * ((__int128) x);
@@ -44,6 +55,40 @@ int64_t UniversalHashFunction::hash(int64_t x) const {
 
   assert(h >= 0 && h <= m_);
   return h;
+}
+
+::nlohmann::json UniversalHashFunction::toJson() const {
+  ::nlohmann::json jObj;
+  jObj.emplace("a", a_);
+  jObj.emplace("b", b_);
+  jObj.emplace("m", m_);
+  jObj.emplace("p", p_);
+  return jObj;
+}
+
+tl::expected<std::shared_ptr<UniversalHashFunction>, std::string>
+UniversalHashFunction::fromJson(const nlohmann::json &jObj) {
+  if (!jObj.contains("a")) {
+    return tl::make_unexpected(fmt::format("A not specified in universal hash function JSON '{}'", jObj));
+  }
+  int64_t a = jObj["a"].get<int64_t>();
+
+  if (!jObj.contains("b")) {
+    return tl::make_unexpected(fmt::format("B not specified in universal hash function JSON '{}'", jObj));
+  }
+  int64_t b = jObj["b"].get<int64_t>();
+
+  if (!jObj.contains("m")) {
+    return tl::make_unexpected(fmt::format("M not specified in universal hash function JSON '{}'", jObj));
+  }
+  int64_t m = jObj["m"].get<int64_t>();
+
+  if (!jObj.contains("p")) {
+    return tl::make_unexpected(fmt::format("P not specified in universal hash function JSON '{}'", jObj));
+  }
+  int64_t p = jObj["p"].get<int64_t>();
+
+  return make(a, b, m, p);
 }
 
 }

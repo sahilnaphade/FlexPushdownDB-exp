@@ -31,6 +31,8 @@ private:
 
   tl::expected<std::shared_ptr<PhysicalOp>, std::string> deserializeAggregatePOp(::nlohmann::json jObj);
 
+  tl::expected<std::shared_ptr<PhysicalOp>, std::string> deserializeBloomFilterUsePOp(::nlohmann::json jObj);
+
   tl::expected<std::shared_ptr<PhysicalOp>, std::string> deserializeCollatePOp(::nlohmann::json jObj);
 
   std::string planString_;

@@ -39,6 +39,18 @@ public:
   pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
   transformSeparableSuper(const shared_ptr<SeparableSuperPrePOp> &separableSuperPrePOp);
 
+  /**
+   * Add BloomFilterUsePOp to FPDBStoreSuperPOp
+   * if producers are FPDBStoreSuperPOp and bloom filter pushdown is enabled
+   * @param producers
+   * @param bloomFilterUsePOps
+   * @return a pair of connect physical ops (to producer) and additional physical ops to add to plan
+   */
+  static pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
+  addBloomFilterUse(vector<shared_ptr<PhysicalOp>> &producers,
+                    vector<shared_ptr<PhysicalOp>> &bloomFilterUsePOps,
+                    const shared_ptr<Mode> &mode);
+
 private:
   /**
    * Transform prephysical op to physical op in dfs style

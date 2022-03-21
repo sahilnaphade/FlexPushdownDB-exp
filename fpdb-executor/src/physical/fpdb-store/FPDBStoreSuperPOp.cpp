@@ -3,11 +3,14 @@
 //
 
 #include <fpdb/executor/physical/fpdb-store/FPDBStoreSuperPOp.h>
+#include <fpdb/executor/physical/bloomfilter/BloomFilterUsePOp.h>
 #include <fpdb/executor/physical/serialization/PhysicalPlanSerializer.h>
+#include <fpdb/executor/physical/transform/PrePToPTransformerUtil.h>
 #include <fpdb/executor/message/DebugMetricsMessage.h>
 #include <fpdb/executor/metrics/Globals.h>
 #include <fpdb/store/server/flight/SelectObjectContentTicket.hpp>
 #include <arrow/flight/api.h>
+#include <unordered_map>
 
 using namespace fpdb::store::server::flight;
 
@@ -29,23 +32,86 @@ void FPDBStoreSuperPOp::onReceive(const Envelope &envelope) {
 
   if (message.type() == MessageType::START) {
     this->onStart();
+  } else if (message.type() == MessageType::BLOOM_FILTER) {
+    auto bloomFilterMessage = dynamic_cast<const BloomFilterMessage &>(message);
+    this->onBloomFilter(bloomFilterMessage);
+  } else if (message.type() == MessageType::COMPLETE) {
+    // noop
   } else {
     ctx()->notifyError("Unrecognized message type " + message.getTypeString());
   }
-}
-
-void FPDBStoreSuperPOp::clear() {
-  subPlan_.reset();
 }
 
 std::string FPDBStoreSuperPOp::getTypeString() const {
   return "FPDBStoreSuperPOp";
 }
 
+void FPDBStoreSuperPOp::addAsLastOp(std::shared_ptr<PhysicalOp> &lastOp) {
+  // find collate
+  std::optional<std::shared_ptr<PhysicalOp>> collatePOp;
+  std::unordered_map<std::string, std::shared_ptr<PhysicalOp>> opMap;
+  for (const auto &op: subPlan_->getPhysicalOps()) {
+    opMap.emplace(op->name(), op);
+    if (op->getType() == POpType::COLLATE) {
+      collatePOp = op;
+    }
+  }
+
+  // add before collate
+  std::vector<std::shared_ptr<PhysicalOp>> collateProducers;
+  for (const auto &producerName: (*collatePOp)->producers()) {
+    auto producer = opMap.find(producerName)->second;
+    collateProducers.emplace_back(producer);
+    producer->unProduce(*collatePOp);
+    (*collatePOp)->unConsume(producer);
+  }
+  PrePToPTransformerUtil::connectManyToOne(collateProducers, lastOp);
+  PrePToPTransformerUtil::connectOneToOne(lastOp, *collatePOp);
+  subPlan_->addPOp(lastOp);
+}
+
 void FPDBStoreSuperPOp::onStart() {
   SPDLOG_DEBUG("Starting operator  |  name: '{}'", this->name());
 
-  processAtStore();
+  // try to process
+  if (readyToProcess()) {
+    processAtStore();
+  }
+}
+
+void FPDBStoreSuperPOp::onBloomFilter(const BloomFilterMessage &msg) {
+  std::optional<std::shared_ptr<bloomfilter::BloomFilterUsePOp>> bloomFilterUsePOp;
+
+  for (const auto &op: subPlan_->getPhysicalOps()) {
+    if (op->getType() == POpType::BLOOM_FILTER_USE) {
+      bloomFilterUsePOp = std::static_pointer_cast<bloomfilter::BloomFilterUsePOp>(op);
+      break;
+    }
+  }
+
+  if (!bloomFilterUsePOp.has_value()) {
+    // no BloomFilterUsePOp found
+    ctx()->notifyError("No BloomFilterUsePOp found");
+  }
+
+  // try to process
+  (*bloomFilterUsePOp)->setBloomFilter(msg.getBloomFilter());
+  if (readyToProcess()) {
+    processAtStore();
+  }
+}
+
+bool FPDBStoreSuperPOp::readyToProcess() {
+  for (const auto &op: subPlan_->getPhysicalOps()) {
+    if (op->getType() == POpType::BLOOM_FILTER_USE) {
+      auto typedOp = std::static_pointer_cast<bloomfilter::BloomFilterUsePOp>(op);
+      if (!typedOp->receivedBloomFilter()) {
+        return false;
+      }
+    }
+  }
+
+  return true;
 }
 
 void FPDBStoreSuperPOp::processAtStore() {
@@ -86,7 +152,7 @@ void FPDBStoreSuperPOp::processAtStore() {
     ctx()->notifyError(status.message());
   }
 
-  // send output tupleSet and complete
+  // send output tupleSet
   std::shared_ptr<TupleSet> tupleSet;
   if (table->num_rows() > 0) {
     tupleSet = TupleSet::make(table);
@@ -103,12 +169,17 @@ void FPDBStoreSuperPOp::processAtStore() {
   ctx()->notifyRoot(execMetricsMsg);
 #endif
 
+  // complete
   ctx()->notifyComplete();
 }
 
 tl::expected<std::string, std::string> FPDBStoreSuperPOp::serialize(bool pretty) {
   PhysicalPlanSerializer serializer(subPlan_);
   return serializer.serialize(pretty);
+}
+
+void FPDBStoreSuperPOp::clear() {
+  subPlan_.reset();
 }
 
 }

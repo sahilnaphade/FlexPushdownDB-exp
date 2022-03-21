@@ -10,6 +10,7 @@
 #include <fpdb/executor/physical/filter/FilterPOp.h>
 #include <fpdb/executor/physical/project/ProjectPOp.h>
 #include <fpdb/executor/physical/aggregate/AggregatePOp.h>
+#include <fpdb/executor/physical/bloomfilter/BloomFilterUsePOp.h>
 #include <fpdb/executor/physical/collate/CollatePOp.h>
 #include <tl/expected.hpp>
 #include <nlohmann/json.hpp>
@@ -38,6 +39,9 @@ private:
 
   tl::expected<::nlohmann::json, std::string>
   serializeAggregatePOp(const std::shared_ptr<aggregate::AggregatePOp> &aggregatePOp);
+
+  tl::expected<::nlohmann::json, std::string>
+  serializeBloomFilterUsePOp(const std::shared_ptr<bloomfilter::BloomFilterUsePOp> &bloomFilterUsePOp);
 
   tl::expected<::nlohmann::json, std::string>
   serializeCollatePOp(const std::shared_ptr<collate::CollatePOp> &collatePOp);

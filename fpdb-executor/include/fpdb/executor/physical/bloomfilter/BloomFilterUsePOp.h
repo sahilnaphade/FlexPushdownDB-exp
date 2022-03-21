@@ -14,9 +14,19 @@ class BloomFilterUsePOp: public PhysicalOp {
   
 public:
   explicit BloomFilterUsePOp(const std::string &name,
-                          const std::vector<std::string> &projectColumnNames,
-                          int nodeId,
-                          const std::vector<std::string> &bloomFilterColumnNames);
+                             const std::vector<std::string> &projectColumnNames,
+                             int nodeId,
+                             const std::vector<std::string> &bloomFilterColumnNames);
+
+  /**
+   * Used when reconstructing at store during pushdown
+   */
+  explicit BloomFilterUsePOp(const std::string &name,
+                             const std::vector<std::string> &projectColumnNames,
+                             int nodeId,
+                             const std::vector<std::string> &bloomFilterColumnNames,
+                             const std::shared_ptr<BloomFilter> &bloomFilter);
+
   BloomFilterUsePOp() = default;
   BloomFilterUsePOp(const BloomFilterUsePOp&) = default;
   BloomFilterUsePOp& operator=(const BloomFilterUsePOp&) = default;
@@ -25,6 +35,16 @@ public:
   void onReceive(const Envelope &envelope) override;
   void clear() override;
   std::string getTypeString() const override;
+
+  const std::vector<std::string> &getBloomFilterColumnNames() const;
+  const std::optional<std::shared_ptr<BloomFilter>> &getBloomFilter() const;
+
+  /**
+   * This is used when pushing bloom filter to store, we need to set bloom filter without using actors
+   * @param bloomFilter
+   */
+  void setBloomFilter(const std::shared_ptr<BloomFilter> &bloomFilter);
+  bool receivedBloomFilter() const;
 
 private:
   void onStart();

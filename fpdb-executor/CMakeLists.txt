@@ -107,6 +107,7 @@ add_library(fpdb-executor STATIC
         src/physical/transform/PrePToS3PTransformer.cpp include/fpdb/executor/physical/transform/PrePToS3PTransformer.h
         src/physical/transform/PrePToFPDBStorePTransformer.cpp include/fpdb/executor/physical/transform/PrePToFPDBStorePTransformer.h
         src/physical/transform/PrePToPTransformerUtil.cpp include/fpdb/executor/physical/transform/PrePToPTransformerUtil.h
+        src/physical/transform/StoreTransformTraits.cpp include/fpdb/executor/physical/transform/StoreTransformTraits.h
 #        CAF serialization
         include/fpdb/executor/caf-serialization/CAFMessageSerializer.h
         include/fpdb/executor/caf-serialization/CAFPOpSerializer.h

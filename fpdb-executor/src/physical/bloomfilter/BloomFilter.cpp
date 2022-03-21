@@ -16,8 +16,33 @@ BloomFilter::BloomFilter(int64_t capacity, double falsePositiveRate) :
   assert(falsePositiveRate >= 0.0 && falsePositiveRate <= 1.0);
 }
 
+BloomFilter::BloomFilter(int64_t capacity,
+                         double falsePositiveRate,
+                         int64_t numHashFunctions,
+                         int64_t numBits,
+                         const std::vector<std::shared_ptr<UniversalHashFunction>> &hashFunctions,
+                         const std::vector<int64_t> &bitArray) :
+  capacity_(capacity),
+  falsePositiveRate_(falsePositiveRate),
+  numHashFunctions_(numHashFunctions),
+  numBits_(numBits),
+  hashFunctions_(hashFunctions),
+  bitArray_(bitArray) {
+
+  assert(falsePositiveRate >= 0.0 && falsePositiveRate <= 1.0);
+}
+
 std::shared_ptr<BloomFilter> BloomFilter::make(int64_t capacity, double falsePositiveRate) {
   return std::make_shared<BloomFilter>(capacity, falsePositiveRate);
+}
+
+std::shared_ptr<BloomFilter> BloomFilter::make(int64_t capacity,
+                                               double falsePositiveRate,
+                                               int64_t numHashFunctions,
+                                               int64_t numBits,
+                                               const std::vector<std::shared_ptr<UniversalHashFunction>> &hashFunctions,
+                                               const std::vector<int64_t> &bitArray) {
+  return std::make_shared<BloomFilter>(capacity, falsePositiveRate, numHashFunctions, numBits, hashFunctions, bitArray);
 }
 
 void BloomFilter::init() {
@@ -78,6 +103,66 @@ tl::expected<void, std::string> BloomFilter::merge(const std::shared_ptr<BloomFi
   bitArray_ = mergedBitArray;
 
   return {};
+}
+
+::nlohmann::json BloomFilter::toJson() const {
+  ::nlohmann::json jObj;
+  jObj.emplace("capacity", capacity_);
+  jObj.emplace("falsePositiveRate", falsePositiveRate_);
+  jObj.emplace("numHashFunctions", numHashFunctions_);
+  jObj.emplace("numBits", numBits_);
+
+  std::vector<nlohmann::json> hashFunctionsJArr;
+  for (const auto &function: hashFunctions_) {
+    hashFunctionsJArr.emplace_back(function->toJson());
+  }
+  jObj.emplace("hashFunctions", hashFunctionsJArr);
+
+  jObj.emplace("bitArray", bitArray_);
+
+  return jObj;
+}
+
+tl::expected<std::shared_ptr<BloomFilter>, std::string> BloomFilter::fromJson(const nlohmann::json &jObj) {
+  if (!jObj.contains("capacity")) {
+    return tl::make_unexpected(fmt::format("Capacity not specified in bloom filter JSON '{}'", jObj));
+  }
+  int64_t capacity = jObj["capacity"].get<int64_t>();
+
+  if (!jObj.contains("falsePositiveRate")) {
+    return tl::make_unexpected(fmt::format("FalsePositiveRate not specified in bloom filter JSON '{}'", jObj));
+  }
+  double falsePositiveRate = jObj["falsePositiveRate"].get<double>();
+
+  if (!jObj.contains("numHashFunctions")) {
+    return tl::make_unexpected(fmt::format("NumHashFunctions not specified in bloom filter JSON '{}'", jObj));
+  }
+  int64_t numHashFunctions = jObj["numHashFunctions"].get<int64_t>();
+
+  if (!jObj.contains("numBits")) {
+    return tl::make_unexpected(fmt::format("NumBits not specified in bloom filter JSON '{}'", jObj));
+  }
+  int64_t numBits = jObj["numBits"].get<int64_t>();
+
+  if (!jObj.contains("hashFunctions")) {
+    return tl::make_unexpected(fmt::format("HashFunctions not specified in bloom filter JSON '{}'", jObj));
+  }
+  std::vector<std::shared_ptr<UniversalHashFunction>> hashFunctions;
+  auto hashFunctionsJArr = jObj["hashFunctions"].get<std::vector<nlohmann::json>>();
+  for (const auto &hashFunctionJObj: hashFunctionsJArr) {
+    auto expHashFunction = UniversalHashFunction::fromJson(hashFunctionJObj);
+    if (!expHashFunction.has_value()) {
+      return tl::make_unexpected(expHashFunction.error());
+    }
+    hashFunctions.emplace_back(*expHashFunction);
+  }
+
+  if (!jObj.contains("bitArray")) {
+    return tl::make_unexpected(fmt::format("BitArray not specified in bloom filter JSON '{}'", jObj));
+  }
+  std::vector<int64_t> bitArray = jObj["bitArray"].get<std::vector<int64_t>>();
+
+  return make(capacity, falsePositiveRate, numHashFunctions, numBits, hashFunctions, bitArray);
 }
 
 int64_t BloomFilter::calculateNumHashFunctions() const {
