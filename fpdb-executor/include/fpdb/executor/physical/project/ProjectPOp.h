@@ -6,7 +6,7 @@
 #define FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_PROJECT_PROJECTPOP_H
 
 #include <fpdb/executor/physical/PhysicalOp.h>
-#include <fpdb/executor/message/TupleMessage.h>
+#include <fpdb/executor/message/TupleSetMessage.h>
 #include <fpdb/executor/message/CompleteMessage.h>
 #include <fpdb/expression/gandiva/Expression.h>
 #include <fpdb/expression/Expression.h>
@@ -67,19 +67,19 @@ private:
    * Tuples message handler
    * @param message
    */
-  void onTuple(const TupleMessage &message);
+  void onTupleSet(const TupleSetMessage &message);
 
   /**
    * Build the projector from the input schema
    * @param inputSchema
    */
-  void buildProjector(const TupleMessage &message);
+  void buildProjector(const TupleSetMessage &message);
 
   /**
    * Adds the tuples in the tuple message to the internal buffer
    * @param message
    */
-  void bufferTuples(const TupleMessage &message);
+  void bufferTuples(const TupleSetMessage &message);
 
   /**
    * Sends the given projected tuples to consumers

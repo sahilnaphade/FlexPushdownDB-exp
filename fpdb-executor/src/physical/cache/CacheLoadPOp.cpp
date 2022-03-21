@@ -5,7 +5,7 @@
 #include <fpdb/executor/physical/cache/CacheLoadPOp.h>
 #include <fpdb/executor/physical/cache/CacheHelper.h>
 #include <fpdb/executor/message/ScanMessage.h>
-#include <fpdb/executor/message/TupleMessage.h>
+#include <fpdb/executor/message/TupleSetMessage.h>
 #include <fpdb/executor/message/cache/CacheMetricsMessage.h>
 #include <utility>
 
@@ -162,7 +162,7 @@ void CacheLoadPOp::onCacheLoadResponse(const LoadResponseMessage &Message) {
   } else {
     hitTupleSet = TupleSet::makeWithEmptyTable();
   }
-  auto hitMessage = std::make_shared<TupleMessage>(hitTupleSet, this->name());
+  auto hitMessage = std::make_shared<TupleSetMessage>(hitTupleSet, this->name());
   ctx()->send(hitMessage, *hitOperatorName_);
 
   if (missOperatorToPushdownName_.has_value()) {

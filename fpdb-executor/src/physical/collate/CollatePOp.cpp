@@ -3,7 +3,7 @@
 //
 
 #include <fpdb/executor/physical/collate/CollatePOp.h>
-#include <fpdb/executor/message/TupleMessage.h>
+#include <fpdb/executor/message/TupleSetMessage.h>
 #include <fpdb/executor/message/CompleteMessage.h>
 #include <arrow/table.h>               // for ConcatenateTables, Table (ptr ...
 #include <arrow/pretty_print.h>
@@ -24,9 +24,9 @@ std::string CollatePOp::getTypeString() const {
 void CollatePOp::onReceive(const fpdb::executor::message::Envelope &message) {
   if (message.message().type() == MessageType::START) {
     this->onStart();
-  } else if (message.message().type() == MessageType::TUPLE) {
-    auto tupleMessage = dynamic_cast<const fpdb::executor::message::TupleMessage &>(message.message());
-    this->onTuple(tupleMessage);
+  } else if (message.message().type() == MessageType::TUPLESET) {
+    auto tupleMessage = dynamic_cast<const fpdb::executor::message::TupleSetMessage &>(message.message());
+    this->onTupleSet(tupleMessage);
   } else if (message.message().type() == MessageType::COMPLETE) {
     auto completeMessage = dynamic_cast<const fpdb::executor::message::CompleteMessage &>(message.message());
     this->onComplete(completeMessage);
@@ -66,7 +66,7 @@ void CollatePOp::onComplete(const fpdb::executor::message::CompleteMessage &) {
   }
 }
 
-void CollatePOp::onTuple(const fpdb::executor::message::TupleMessage &message) {
+void CollatePOp::onTupleSet(const fpdb::executor::message::TupleSetMessage &message) {
   if (!tuples_) {
     assert(message.tuples());
     tuples_ = message.tuples();

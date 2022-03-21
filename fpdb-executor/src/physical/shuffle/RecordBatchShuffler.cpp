@@ -18,10 +18,7 @@ RecordBatchShuffler::RecordBatchShuffler(vector<int> shuffleColumnIndices,
   shuffleColumnIndices_(move(shuffleColumnIndices)),
   numSlots_(numSlots),
   schema_(move(schema)),
-  shuffledAppendersVector_(move(shuffledAppendersVector)) {
-//  shuffledAppendersVector_{numSlots} {
-
-}
+  shuffledAppendersVector_(move(shuffledAppendersVector)) {}
 
 tl::expected<shared_ptr<RecordBatchShuffler>, string>
 RecordBatchShuffler::make(const vector<string> &columnNames,
@@ -57,7 +54,7 @@ RecordBatchShuffler::make(const vector<string> &columnNames,
 
 tl::expected<void, string> RecordBatchShuffler::shuffle(const shared_ptr<::arrow::RecordBatch> &recordBatch) {
 
-  // Get an reference to the arrays to shuffle on, and get numRows, numColumns
+  // Get reference to the arrays to shuffle on, and get numRows, numColumns
   vector<shared_ptr<arrow::Array>> shuffleColumns;
   for (const auto &shuffleColumnIndex: shuffleColumnIndices_) {
     const auto &shuffleColumn = recordBatch->column(shuffleColumnIndex);
@@ -85,7 +82,7 @@ tl::expected<void, string> RecordBatchShuffler::shuffle(const shared_ptr<::arrow
     partitionIndexes.emplace_back(vector<int64_t>());
   }
   for (int64_t r = 0; r < numRows; ++r) {
-    size_t partitionId = hash(shuffleColumnHashers, r) % numSlots_;
+    size_t partitionId = ArrayHasher::hash(shuffleColumnHashers, r) % numSlots_;
     partitionIndexes[partitionId].emplace_back(r);
   }
 
@@ -128,13 +125,4 @@ tl::expected<vector<shared_ptr<TupleSet>>, string> RecordBatchShuffler::toTupleS
   }
 
   return shuffledTupleSetVector;
-}
-
-size_t RecordBatchShuffler::hash(const vector<shared_ptr<ArrayHasher>> &hashers, int64_t row) {
-  vector<size_t> hashes;
-  hashes.reserve(hashers.size());
-  for (const auto &hasher: hashers) {
-    hashes.emplace_back(hasher->hash(row));
-  }
-  return hashCombine(hashes);
 }

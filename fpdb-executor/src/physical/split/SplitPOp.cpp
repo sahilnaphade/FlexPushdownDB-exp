@@ -19,9 +19,9 @@ std::string SplitPOp::getTypeString() const {
 void SplitPOp::onReceive(const Envelope &msg) {
   if (msg.message().type() == MessageType::START) {
     this->onStart();
-  } else if (msg.message().type() == MessageType::TUPLE) {
-    auto tupleMessage = dynamic_cast<const TupleMessage &>(msg.message());
-    this->onTuple(tupleMessage);
+  } else if (msg.message().type() == MessageType::TUPLESET) {
+    auto tupleSetMessage = dynamic_cast<const TupleSetMessage &>(msg.message());
+    this->onTupleSet(tupleSetMessage);
   } else if (msg.message().type() == MessageType::COMPLETE) {
     auto completeMessage = dynamic_cast<const CompleteMessage &>(msg.message());
     this->onComplete(completeMessage);
@@ -34,7 +34,7 @@ void SplitPOp::onStart() {
   SPDLOG_DEBUG("Starting '{}'  |  numConsumers: {}", name(), consumerVec_.size());
 }
 
-void SplitPOp::onTuple(const TupleMessage &message) {
+void SplitPOp::onTupleSet(const TupleSetMessage &message) {
   // get tupleSet
   const auto &tupleSet = message.tuples();
   if (tupleSet->numRows() == 0) {
@@ -140,8 +140,8 @@ void SplitPOp::send(const vector<shared_ptr<TupleSet>> &tupleSets) {
   for (uint i = 0; i < consumerVec_.size(); ++i) {
     const auto &consumer = consumerVec_[i];
     const auto &tupleSet = tupleSets[i];
-    shared_ptr<Message> tupleMessage = make_shared<TupleMessage>(tupleSet, name());
-    ctx()->send(tupleMessage, consumer);
+    shared_ptr<Message> tupleSetMessage = make_shared<TupleSetMessage>(tupleSet, name());
+    ctx()->send(tupleSetMessage, consumer);
   }
 }
 

@@ -49,6 +49,7 @@ void CAFInit::initCAFGlobalMetaObjects() {
   ::caf::init_global_meta_objects<::caf::id_block::AggregateResult>();
   ::caf::init_global_meta_objects<::caf::id_block::FileScanKernel>();
   ::caf::init_global_meta_objects<::caf::id_block::PhysicalPlan>();
+  ::caf::init_global_meta_objects<::caf::id_block::BloomFilter>();
 
   ::caf::core::init_global_meta_objects();
   ::caf::io::middleman::init_global_meta_objects();

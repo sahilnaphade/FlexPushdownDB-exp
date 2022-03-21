@@ -13,4 +13,8 @@ const vector<shared_ptr<PhysicalOp>> &PhysicalPlan::getPhysicalOps() const {
   return physicalOps_;
 }
 
+void PhysicalPlan::addPOp(const shared_ptr<PhysicalOp> &op) {
+  physicalOps_.emplace_back(op);
+}
+
 }

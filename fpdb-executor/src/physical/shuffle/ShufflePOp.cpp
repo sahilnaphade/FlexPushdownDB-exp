@@ -26,9 +26,9 @@ std::string ShufflePOp::getTypeString() const {
 void ShufflePOp::onReceive(const Envelope &msg) {
   if (msg.message().type() == MessageType::START) {
 	  this->onStart();
-  } else if (msg.message().type() == MessageType::TUPLE) {
-    auto tupleMessage = dynamic_cast<const TupleMessage &>(msg.message());
-    this->onTuple(tupleMessage);
+  } else if (msg.message().type() == MessageType::TUPLESET) {
+    auto tupleSetMessage = dynamic_cast<const TupleSetMessage &>(msg.message());
+    this->onTupleSet(tupleSetMessage);
   } else if (msg.message().type() == MessageType::COMPLETE) {
     auto completeMessage = dynamic_cast<const CompleteMessage &>(msg.message());
     this->onComplete(completeMessage);
@@ -84,16 +84,16 @@ tl::expected<void, string> ShufflePOp::buffer(const shared_ptr<TupleSet> &tupleS
 tl::expected<void, string> ShufflePOp::send(int partitionIndex, bool force) {
   // If the tupleset is big enough, send it, then clear the buffer
   if (buffers_[partitionIndex].has_value() && (force || buffers_[partitionIndex].value()->numRows() >= DefaultBufferSize)) {
-	shared_ptr<Message> tupleMessage = make_shared<TupleMessage>(
+	shared_ptr<Message> tupleSetMessage = make_shared<TupleSetMessage>(
 	        TupleSet::make(buffers_[partitionIndex].value()->table()), name());
-	ctx()->send(tupleMessage, consumerVec_[partitionIndex]);
+	ctx()->send(tupleSetMessage, consumerVec_[partitionIndex]);
 	buffers_[partitionIndex] = nullopt;
   }
 
   return {};
 }
 
-void ShufflePOp::onTuple(const TupleMessage &message) {
+void ShufflePOp::onTupleSet(const TupleSetMessage &message) {
   // Get the tuple set
   const auto &tupleSet = message.tuples();
   vector<shared_ptr<TupleSet>> shuffledTupleSets;

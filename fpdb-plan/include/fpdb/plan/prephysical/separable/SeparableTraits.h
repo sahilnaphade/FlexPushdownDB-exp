@@ -24,7 +24,7 @@ public:
   static std::shared_ptr<SeparableTraits> localFSSeparableTraits();
   static std::shared_ptr<SeparableTraits> unknownStoreSeparableTraits();
 
-  const std::set<PrePOpType> getSeparablePrePOpTypes() const;
+  bool isSeparable(PrePOpType prePOpType) const;
 
 private:
   std::set<PrePOpType> separablePrePOpTypes_;

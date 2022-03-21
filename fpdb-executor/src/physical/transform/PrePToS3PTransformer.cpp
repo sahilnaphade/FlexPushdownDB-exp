@@ -3,6 +3,7 @@
 //
 
 #include <fpdb/executor/physical/transform/PrePToS3PTransformer.h>
+#include <fpdb/executor/physical/transform/PrePToPTransformerUtil.h>
 #include <fpdb/executor/physical/prune/PartitionPruner.h>
 #include <fpdb/executor/physical/s3/S3GetPOp.h>
 //#include <fpdb/executor/physical/s3/S3SelectPOp.h>
@@ -36,6 +37,15 @@ PrePToS3PTransformer::transformSeparableSuper(const shared_ptr<SeparableSuperPre
   }
   auto filterableScanPrePOp = static_pointer_cast<FilterableScanPrePOp>(rootOp);
   return transformFilterableScan(filterableScanPrePOp);
+}
+
+pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
+PrePToS3PTransformer::addBloomFilterUse(vector<shared_ptr<PhysicalOp>> &producers,
+                                        vector<shared_ptr<PhysicalOp>> &bloomFilterUsePOps,
+                                        const shared_ptr<Mode> &) {
+  // currently bloom filter pushdown for S3 is not supported
+  PrePToPTransformerUtil::connectOneToOne(producers, bloomFilterUsePOps);
+  return {bloomFilterUsePOps, bloomFilterUsePOps};
 }
 
 pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>

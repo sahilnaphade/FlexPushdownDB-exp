@@ -17,8 +17,14 @@
 #include <fpdb/executor/physical/join/nestedloopjoin/NestedLoopJoinPOp.h>
 #include <fpdb/executor/physical/shuffle/ShufflePOp.h>
 #include <fpdb/executor/physical/split/SplitPOp.h>
+#include <fpdb/executor/physical/bloomfilter/BloomFilterCreatePOp.h>
+#include <fpdb/executor/physical/bloomfilter/BloomFilterCreatePreparePOp.h>
+#include <fpdb/executor/physical/bloomfilter/BloomFilterCreateMergePOp.h>
+#include <fpdb/executor/physical/bloomfilter/BloomFilterUsePOp.h>
 #include <fpdb/executor/physical/collate/CollatePOp.h>
 #include <fpdb/executor/physical/transform/PrePToPTransformerUtil.h>
+#include <fpdb/executor/physical/transform/StoreTransformTraits.h>
+#include <fpdb/executor/physical/Globals.h>
 #include <fpdb/catalogue/obj-store/ObjStoreCatalogueEntry.h>
 #include <fpdb/catalogue/obj-store/s3/S3Connector.h>
 #include <fpdb/catalogue/obj-store/fpdb-store/FPDBStoreConnector.h>
@@ -135,7 +141,7 @@ PrePToPTransformer::transformSort(const shared_ptr<SortPrePOp> &sortPrePOp) {
 
   shared_ptr<PhysicalOp> sortPOp = make_shared<sort::SortPOp>(fmt::format("Sort[{}]", prePOpId),
                                                               projectColumnNames,
-                                                              0,
+                                                              rand() % numNodes_,
                                                               sortPrePOp->getSortKeys());
   allPOps.emplace_back(sortPOp);
 
@@ -168,7 +174,7 @@ PrePToPTransformer::transformLimitSort(const shared_ptr<LimitSortPrePOp> &limitS
   shared_ptr<PhysicalOp> limitSortPOp = make_shared<limitsort::LimitSortPOp>(
           fmt::format("LimitSort[{}]", prePOpId),
           projectColumnNames,
-          0,
+          rand() % numNodes_,
           limitSortPrePOp->getK(),
           limitSortPrePOp->getSortKeys());
   allPOps.emplace_back(limitSortPOp);
@@ -252,7 +258,7 @@ PrePToPTransformer::transformAggregate(const shared_ptr<AggregatePrePOp> &aggreg
     shared_ptr<PhysicalOp> aggReducePOp = make_shared<aggregate::AggregatePOp>(
             fmt::format("Aggregate[{}]-Reduce", prePOpId),
             projectColumnNames,
-            0,
+            rand() % numNodes_,
             aggReduceFunctions);
     PrePToPTransformerUtil::connectManyToOne(selfPOps, aggReducePOp);
     selfConnUpPOps = selfPOps;
@@ -451,11 +457,113 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
   allPOps.insert(allPOps.end(), hashJoinProbePOps.begin(), hashJoinProbePOps.end());
   PrePToPTransformerUtil::connectOneToOne(hashJoinBuildPOps, hashJoinProbePOps);
 
+  vector<shared_ptr<PhysicalOp>> rightUpConnPOps;
+
+  // if using bloom filter, and bloom filter cannot be used before right join
+  if (USE_BLOOM_FILTER &&
+    (joinType == JoinType::INNER || joinType == JoinType::LEFT || joinType == JoinType::SEMI)) {
+    // BloomFilterCreatePreparePOp
+    shared_ptr<PhysicalOp> bloomFilterCreatePreparePOp = make_shared<bloomfilter::BloomFilterCreatePreparePOp>(
+            fmt::format("BloomFilterCreatePrepare[{}]-{}", prePOpId, hashJoinPredicateStr),
+            std::vector<std::string>{},         // not needed
+            rand() % numNodes_);
+    allPOps.emplace_back(bloomFilterCreatePreparePOp);
+
+    // Connect to upstream as a special type of op
+    for (const auto &leftUpConnPOp: leftTransRes.first) {
+      leftUpConnPOp->setBloomFilterCreatePrepareConsumer(bloomFilterCreatePreparePOp);
+      bloomFilterCreatePreparePOp->consume(leftUpConnPOp);
+    }
+
+    // BloomFilterCreatePOp
+    vector<shared_ptr<PhysicalOp>> bloomFilterCreatePOps;
+    for (uint i = 0; i < leftTransRes.first.size(); ++i) {
+      bloomFilterCreatePOps.emplace_back(make_shared<bloomfilter::BloomFilterCreatePOp>(
+              fmt::format("BloomFilterCreate[{}]-{}-{}", prePOpId, hashJoinPredicateStr, i),
+              std::vector<std::string>{},
+              leftTransRes.first[i]->getNodeId(),         // not needed
+              leftColumnNames));
+    }
+    allPOps.insert(allPOps.end(), bloomFilterCreatePOps.begin(), bloomFilterCreatePOps.end());
+    PrePToPTransformerUtil::connectOneToOne(leftTransRes.first, bloomFilterCreatePOps);
+    PrePToPTransformerUtil::connectOneToMany(bloomFilterCreatePreparePOp, bloomFilterCreatePOps);
+
+    // BloomFilterCreateMergePOp if more than one BloomFilterCreatePOp
+    shared_ptr<PhysicalOp> finalOpForBloomFilterCreate;
+    if (bloomFilterCreatePOps.size() > 1) {
+      finalOpForBloomFilterCreate = make_shared<bloomfilter::BloomFilterCreateMergePOp>(
+              fmt::format("BloomFilterCreateMerge[{}]-{}", prePOpId, hashJoinPredicateStr),
+              std::vector<std::string>{},         // not needed
+              rand() % numNodes_);
+      allPOps.emplace_back(finalOpForBloomFilterCreate);
+      PrePToPTransformerUtil::connectManyToOne(bloomFilterCreatePOps, finalOpForBloomFilterCreate);
+    } else {
+      finalOpForBloomFilterCreate = bloomFilterCreatePOps[0];
+    }
+
+    // BloomFilterUsePOp
+    vector<shared_ptr<PhysicalOp>> bloomFilterUsePOps;
+    for (uint i = 0; i < rightTransRes.first.size(); ++i) {
+      bloomFilterUsePOps.emplace_back(make_shared<bloomfilter::BloomFilterUsePOp>(
+              fmt::format("BloomFilterUse[{}]-{}-{}", prePOpId, hashJoinPredicateStr, i),
+              rightTransRes.first[i]->getProjectColumnNames(),
+              rightTransRes.first[i]->getNodeId(),
+              rightColumnNames));
+    }
+
+    // Check if we need to push BloomFilterUsePOp to store
+    switch (catalogueEntry_->getType()) {
+      case CatalogueEntryType::OBJ_STORE: {
+        auto objCatalogueEntry = std::static_pointer_cast<obj_store::ObjStoreCatalogueEntry>(catalogueEntry_);
+        pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>> bloomFilterAddRes;
+
+        switch (objCatalogueEntry->getStoreType()) {
+          case obj_store::ObjStoreType::FPDB_STORE: {
+            bloomFilterAddRes = PrePToFPDBStorePTransformer::addBloomFilterUse(rightTransRes.first,
+                                                                               bloomFilterUsePOps,
+                                                                               mode_);
+            break;
+          }
+          case obj_store::ObjStoreType::S3: {
+            bloomFilterAddRes = PrePToS3PTransformer::addBloomFilterUse(rightTransRes.first,
+                                                                        bloomFilterUsePOps,
+                                                                        mode_);
+            break;
+          }
+          default: {
+            throw std::runtime_error(fmt::format("Unsupported object store type: '{}'", objCatalogueEntry->getStoreTypeName()));
+          }
+        }
+
+        // opsForBloomFilterUse can be either store op (FPDBStoreSuper/S3Select) containing BloomFilterUse or just BloomFilterUse
+        auto opsForBloomFilterUse = bloomFilterAddRes.first;
+        auto addiPOps = bloomFilterAddRes.second;
+
+        allPOps.insert(allPOps.end(), addiPOps.begin(), addiPOps.end());
+        PrePToPTransformerUtil::connectOneToMany(finalOpForBloomFilterCreate, opsForBloomFilterUse);
+        rightUpConnPOps = bloomFilterAddRes.first;
+        break;
+      }
+      case CatalogueEntryType::LOCAL_FS: {
+        // no bloom filter pushdown
+        allPOps.insert(allPOps.end(), bloomFilterUsePOps.begin(), bloomFilterUsePOps.end());
+        PrePToPTransformerUtil::connectOneToOne(rightTransRes.first, bloomFilterUsePOps);
+        PrePToPTransformerUtil::connectOneToMany(finalOpForBloomFilterCreate, bloomFilterUsePOps);
+        rightUpConnPOps = bloomFilterUsePOps;
+        break;
+      }
+      default: {
+        throw std::runtime_error(fmt::format("Unsupported catalogue entry type: '{}'", catalogueEntry_->getTypeName()));
+      }
+    }
+  } else {
+    rightUpConnPOps = rightTransRes.first;
+  }
+
   // if num > 1, then we need shuffle operators
   if (parallelDegree_ * numNodes_ == 1) {
-    // connect to upstream
     PrePToPTransformerUtil::connectManyToOne(leftTransRes.first, hashJoinBuildPOps[0]);
-    PrePToPTransformerUtil::connectManyToOne(rightTransRes.first, hashJoinProbePOps[0]);
+    PrePToPTransformerUtil::connectManyToOne(rightUpConnPOps, hashJoinProbePOps[0]);
   } else {
     vector<shared_ptr<PhysicalOp>> shuffleLeftPOps, shuffleRightPOps;
     for (const auto &upLeftConnPOp: leftTransRes.first) {
@@ -479,7 +587,7 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
 
     // connect to upstream
     PrePToPTransformerUtil::connectOneToOne(leftTransRes.first, shuffleLeftPOps);
-    PrePToPTransformerUtil::connectOneToOne(rightTransRes.first, shuffleRightPOps);
+    PrePToPTransformerUtil::connectOneToOne(rightUpConnPOps, shuffleRightPOps);
   }
 
   return make_pair(hashJoinProbePOps, allPOps);

@@ -54,8 +54,6 @@ void SeparablePrePOpTransformer::setSeparableTraits(const std::shared_ptr<Catalo
 
 std::optional<std::shared_ptr<SeparableSuperPrePOp>>
 SeparablePrePOpTransformer::transformDfs(const std::shared_ptr<PrePhysicalOp> &op) {
-  auto separablePrePOpTypes = separableTraits_->getSeparablePrePOpTypes();
-
   // transform recursively
   std::vector<std::shared_ptr<PrePhysicalOp>> newProducers;
   std::vector<std::shared_ptr<SeparableSuperPrePOp>> producerSeparablePrePOps;
@@ -69,8 +67,7 @@ SeparablePrePOpTransformer::transformDfs(const std::shared_ptr<PrePhysicalOp> &o
     }
   }
 
-  if (separablePrePOpTypes.find(op->getType()) != separablePrePOpTypes.end()
-    && producerSeparablePrePOps.size() == newProducers.size()) {
+  if (separableTraits_->isSeparable(op->getType()) && producerSeparablePrePOps.size() == newProducers.size()) {
     // if separable and each producer forms a SeparableSuperPrePOp, then combine them as a larger one
     newProducers.clear();
     for (const auto &producerSeparablePrePOp: producerSeparablePrePOps) {

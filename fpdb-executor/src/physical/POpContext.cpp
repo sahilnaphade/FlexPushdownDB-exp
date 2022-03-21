@@ -6,6 +6,8 @@
 #include <fpdb/executor/cache/SegmentCacheActor.h>
 #include <fpdb/executor/message/Message.h>
 #include <fpdb/executor/message/CompleteMessage.h>
+#include <fpdb/executor/message/TupleSetMessage.h>
+#include <fpdb/executor/message/TupleSetSizeMessage.h>
 #include <fpdb/executor/message/cache/LoadRequestMessage.h>
 #include <fpdb/executor/message/cache/CacheMetricsMessage.h>
 #include <spdlog/spdlog.h>
@@ -25,9 +27,26 @@ void POpContext::tell(std::shared_ptr<Message> &msg) {
   message::Envelope e(msg);
 
   // Send message to consumers
-  for(const auto& consumer: this->operatorActor()->operator_()->consumers()){
+  auto bloomFilterCreatePrepareConsumer = this->operatorActor()->operator_()->getBloomFilterCreatePrepareConsumer();
+
+  for (const auto& consumer: this->operatorActor()->operator_()->consumers()) {
+    // Skip bloomFilterCreatePrepareConsumer
+    if (bloomFilterCreatePrepareConsumer.has_value() && *bloomFilterCreatePrepareConsumer == consumer) {
+      continue;
+    }
+
     ::caf::actor actorHandle = operatorMap_.get(consumer).value().getActor();
     operatorActor_->anon_send(actorHandle, e);
+  }
+
+  // Send tupleSet size to bloomFilterCreatePrepareConsumer if it's a tupleSet
+  if (msg->type() == MessageType::TUPLESET && bloomFilterCreatePrepareConsumer.has_value()) {
+    int64_t numRows = std::static_pointer_cast<TupleSetMessage>(msg)->tuples()->numRows();
+    std::shared_ptr<Message> tupleSetSizeMessage = std::make_shared<TupleSetSizeMessage>(numRows, msg->sender());
+    message::Envelope tupleSetSizeEnv(tupleSetSizeMessage);
+
+    ::caf::actor actorHandle = operatorMap_.get(*bloomFilterCreatePrepareConsumer).value().getActor();
+    operatorActor_->anon_send(actorHandle, tupleSetSizeEnv);
   }
 }
 

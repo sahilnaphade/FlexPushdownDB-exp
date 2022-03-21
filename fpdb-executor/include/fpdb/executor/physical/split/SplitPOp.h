@@ -7,7 +7,7 @@
 
 #include <fpdb/executor/physical/PhysicalOp.h>
 #include <fpdb/executor/message/CompleteMessage.h>
-#include <fpdb/executor/message/TupleMessage.h>
+#include <fpdb/executor/message/TupleSetMessage.h>
 #include <fpdb/tuple/TupleSet.h>
 
 using namespace fpdb::executor::message;
@@ -34,7 +34,7 @@ public:
 private:
   void onStart();
   void onComplete(const CompleteMessage &);
-  void onTuple(const TupleMessage &message);
+  void onTupleSet(const TupleSetMessage &message);
 
   tl::expected<void, string> splitAndSend();
   tl::expected<void, string> bufferInput(const shared_ptr<TupleSet>& tupleSet);

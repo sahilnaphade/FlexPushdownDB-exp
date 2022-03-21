@@ -6,7 +6,7 @@
 #define FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_FILTER_FILTERPOP_H
 
 #include <fpdb/executor/physical/PhysicalOp.h>
-#include <fpdb/executor/message/TupleMessage.h>
+#include <fpdb/executor/message/TupleSetMessage.h>
 #include <fpdb/executor/message/CompleteMessage.h>
 #include <fpdb/cache/SegmentKey.h>
 #include <fpdb/catalogue/Table.h>
@@ -59,7 +59,7 @@ private:
   std::shared_ptr<fpdb::tuple::TupleSet> filtered_;
 
   void onStart();
-  void onTuple(const TupleMessage& Message);
+  void onTupleSet(const TupleSetMessage& Message);
   void onComplete(const CompleteMessage& Message);
 
   void bufferTuples(const std::shared_ptr<fpdb::tuple::TupleSet>& tupleSet);

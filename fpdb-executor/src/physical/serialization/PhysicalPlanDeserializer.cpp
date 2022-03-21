@@ -7,6 +7,7 @@
 #include <fpdb/executor/physical/filter/FilterPOp.h>
 #include <fpdb/executor/physical/project/ProjectPOp.h>
 #include <fpdb/executor/physical/aggregate/AggregatePOp.h>
+#include <fpdb/executor/physical/bloomfilter/BloomFilterUsePOp.h>
 #include <fpdb/executor/physical/collate/CollatePOp.h>
 #include <fpdb/executor/physical/transform/PrePToPTransformerUtil.h>
 #include <fpdb/tuple/serialization/ArrowSerializer.h>
@@ -54,6 +55,8 @@ tl::expected<std::shared_ptr<PhysicalOp>, std::string> PhysicalPlanDeserializer:
     return deserializeProjectPOp(jObj);
   } else if (type == "AggregatePOp") {
     return deserializeAggregatePOp(jObj);
+  } else if (type == "BloomFilterUsePOp") {
+    return deserializeBloomFilterUsePOp(jObj);
   } else if (type == "CollatePOp") {
     return deserializeCollatePOp(jObj);
   } else {
@@ -291,6 +294,52 @@ PhysicalPlanDeserializer::deserializeAggregatePOp(::nlohmann::json jObj) {
   PrePToPTransformerUtil::connectManyToOne(*expProducers, aggregatePOp);
 
   return aggregatePOp;
+}
+
+tl::expected<std::shared_ptr<PhysicalOp>, std::string>
+PhysicalPlanDeserializer::deserializeBloomFilterUsePOp(::nlohmann::json jObj) {
+  // deserialize self
+  if (!jObj.contains("name")) {
+    return tl::make_unexpected(fmt::format("Name not specified in BloomFilterUsePOp JSON '{}'", jObj));
+  }
+  auto name = jObj["name"].get<std::string>();
+
+  if (!jObj.contains("projectColumnNames")) {
+    return tl::make_unexpected(fmt::format("ProjectColumnNames not specified in BloomFilterUsePOp JSON '{}'", jObj));
+  }
+  auto projectColumnNames = jObj["projectColumnNames"].get<std::vector<std::string>>();
+
+  if (!jObj.contains("bloomFilterColumnNames")) {
+    return tl::make_unexpected(fmt::format("BloomFilterColumnNames not specified in BloomFilterUsePOp JSON '{}'", jObj));
+  }
+  auto bloomFilterColumnNames = jObj["bloomFilterColumnNames"].get<std::vector<std::string>>();
+
+  if (!jObj.contains("bloomFilter")) {
+    return tl::make_unexpected(fmt::format("BloomFilter not specified in BloomFilterUsePOp JSON '{}'", jObj));
+  }
+  auto expBloomFilter = BloomFilter::fromJson(jObj["bloomFilter"]);
+  if (!expBloomFilter.has_value()) {
+    return tl::make_unexpected(expBloomFilter.error());
+  }
+  auto bloomFilter = *expBloomFilter;
+
+  std::shared_ptr<PhysicalOp> bloomFilterUsePOp = std::make_shared<bloomfilter::BloomFilterUsePOp>(name,
+                                                                                                   projectColumnNames,
+                                                                                                   0,
+                                                                                                   bloomFilterColumnNames,
+                                                                                                   bloomFilter);
+  physicalOps_.emplace_back(bloomFilterUsePOp);
+
+  // deserialize producers
+  auto expProducers = deserializeProducers(jObj);
+  if (!expProducers.has_value()) {
+    return tl::make_unexpected(expProducers.error());
+  }
+
+  // connect
+  PrePToPTransformerUtil::connectManyToOne(*expProducers, bloomFilterUsePOp);
+
+  return bloomFilterUsePOp;
 }
 
 tl::expected<std::shared_ptr<PhysicalOp>, std::string>

@@ -7,7 +7,7 @@
 
 #include <fpdb/executor/physical/PhysicalOp.h>
 #include <fpdb/executor/message/CompleteMessage.h>
-#include <fpdb/executor/message/TupleMessage.h>
+#include <fpdb/executor/message/TupleSetMessage.h>
 #include <fpdb/tuple/TupleSet.h>
 
 using namespace fpdb::executor::message;
@@ -59,7 +59,7 @@ private:
    * Tuples message handler
    * @param message
    */
-  void onTuple(const TupleMessage &message);
+  void onTupleSet(const TupleSetMessage &message);
 
   /**
    * Adds the tuple set to the outbound buffer for the given slot

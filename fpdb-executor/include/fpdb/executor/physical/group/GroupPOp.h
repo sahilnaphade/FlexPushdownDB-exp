@@ -9,7 +9,7 @@
 #include <fpdb/executor/physical/PhysicalOp.h>
 #include <fpdb/executor/physical/aggregate/function/AggregateFunction.h>
 #include <fpdb/executor/message/CompleteMessage.h>
-#include <fpdb/executor/message/TupleMessage.h>
+#include <fpdb/executor/message/TupleSetMessage.h>
 #include <string>
 #include <vector>
 #include <memory>
@@ -48,7 +48,7 @@ public:
 
 private:
   void onStart();
-  void onTuple(const TupleMessage &msg);
+  void onTupleSet(const TupleSetMessage &msg);
   void onComplete(const CompleteMessage &msg);
 
   GroupKernel kernel_;

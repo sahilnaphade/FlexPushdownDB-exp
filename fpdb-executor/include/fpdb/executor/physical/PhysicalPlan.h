@@ -22,6 +22,7 @@ public:
   ~PhysicalPlan() = default;
 
   const vector<shared_ptr<PhysicalOp>> &getPhysicalOps() const;
+  void addPOp(const shared_ptr<PhysicalOp> &op);
 
 private:
   vector<shared_ptr<PhysicalOp>> physicalOps_;

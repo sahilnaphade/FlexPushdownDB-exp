@@ -20,9 +20,9 @@ std::string MergePOp::getTypeString() const {
 void MergePOp::onReceive(const Envelope &msg) {
   if (msg.message().type() == MessageType::START) {
 	  this->onStart();
-  } else if (msg.message().type() == MessageType::TUPLE) {
-    auto tupleMessage = dynamic_cast<const TupleMessage &>(msg.message());
-    this->onTuple(tupleMessage);
+  } else if (msg.message().type() == MessageType::TUPLESET) {
+    auto tupleSetMessage = dynamic_cast<const TupleSetMessage &>(msg.message());
+    this->onTupleSet(tupleSetMessage);
   } else if (msg.message().type() == MessageType::COMPLETE) {
     auto completeMessage = dynamic_cast<const CompleteMessage &>(msg.message());
     this->onComplete(completeMessage);
@@ -62,8 +62,8 @@ void MergePOp::merge() {
         ctx()->notifyError(expProjectTupleSet.error());
       }
 
-      std::shared_ptr<Message> tupleMessage = std::make_shared<TupleMessage>(expProjectTupleSet.value(), name());
-      ctx()->tell(tupleMessage);
+      std::shared_ptr<Message> tupleSetMessage = std::make_shared<TupleSetMessage>(expProjectTupleSet.value(), name());
+      ctx()->tell(tupleSetMessage);
     }
 
     // Pop the processed tuple sets from the queues
@@ -78,7 +78,7 @@ void MergePOp::onComplete(const CompleteMessage &) {
   }
 }
 
-void MergePOp::onTuple(const TupleMessage &message) {
+void MergePOp::onTupleSet(const TupleSetMessage &message) {
   // Get the tuple set
   const auto &tupleSet = message.tuples();
 

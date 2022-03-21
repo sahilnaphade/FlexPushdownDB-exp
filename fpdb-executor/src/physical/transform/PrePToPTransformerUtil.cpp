@@ -25,6 +25,28 @@ void PrePToPTransformerUtil::connectOneToOne(vector<shared_ptr<PhysicalOp>> &pro
   }
 }
 
+void PrePToPTransformerUtil::connectOneToOne(shared_ptr<PhysicalOp> &producer,
+                                             shared_ptr<PhysicalOp> &consumer) {
+  producer->produce(consumer);
+  consumer->consume(producer);
+}
+
+void PrePToPTransformerUtil::connectManyToOne(vector<shared_ptr<PhysicalOp>> &producers,
+                                              shared_ptr<PhysicalOp> &consumer) {
+  for (const auto &producer: producers) {
+    producer->produce(consumer);
+    consumer->consume(producer);
+  }
+}
+
+void PrePToPTransformerUtil::connectOneToMany(shared_ptr<PhysicalOp> &producer,
+                                              vector<shared_ptr<PhysicalOp>> &consumers) {
+  for (const auto &consumer: consumers) {
+    producer->produce(consumer);
+    consumer->consume(producer);
+  }
+}
+
 void PrePToPTransformerUtil::connectManyToMany(vector<shared_ptr<PhysicalOp>> &producers,
                              vector<shared_ptr<PhysicalOp>> &consumers) {
   for (const auto &producer: producers) {
@@ -32,14 +54,6 @@ void PrePToPTransformerUtil::connectManyToMany(vector<shared_ptr<PhysicalOp>> &p
       producer->produce(consumer);
       consumer->consume(producer);
     }
-  }
-}
-
-void PrePToPTransformerUtil::connectManyToOne(vector<shared_ptr<PhysicalOp>> &producers,
-                            shared_ptr<PhysicalOp> &consumer) {
-  for (const auto &producer: producers) {
-    producer->produce(consumer);
-    consumer->consume(producer);
   }
 }
 

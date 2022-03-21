@@ -37,6 +37,11 @@ inline constexpr int maxConcurrentArrowConversions = 36; // Set to ~#cores
 inline constexpr int minimumSleepRetryTimeMS = 5;
 inline constexpr int variableSleepRetryTimeMS = 15;
 
+/**
+ * Parameters used in transformer
+ */
+inline constexpr bool USE_BLOOM_FILTER = true;
+
 }
 
 #endif //FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_GLOBALS_H

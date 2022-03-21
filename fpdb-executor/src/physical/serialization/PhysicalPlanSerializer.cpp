@@ -50,6 +50,8 @@ tl::expected<json, std::string> PhysicalPlanSerializer::serializeDfs(const std::
       return serializeProjectPOp(std::static_pointer_cast<project::ProjectPOp>(op));
     case POpType::AGGREGATE:
       return serializeAggregatePOp(std::static_pointer_cast<aggregate::AggregatePOp>(op));
+    case POpType::BLOOM_FILTER_USE:
+      return serializeBloomFilterUsePOp(std::static_pointer_cast<bloomfilter::BloomFilterUsePOp>(op));
     case POpType::COLLATE:
       return serializeCollatePOp(std::static_pointer_cast<collate::CollatePOp>(op));
     default:
@@ -181,13 +183,41 @@ PhysicalPlanSerializer::serializeAggregatePOp(const std::shared_ptr<aggregate::A
 }
 
 tl::expected<::nlohmann::json, std::string>
+PhysicalPlanSerializer::serializeBloomFilterUsePOp(const std::shared_ptr<bloomfilter::BloomFilterUsePOp> &bloomFilterUsePOp) {
+  json jObj;
+
+  // serialize self
+  jObj.emplace("type", bloomFilterUsePOp->getTypeString());
+  jObj.emplace("name", bloomFilterUsePOp->name());
+  jObj.emplace("projectColumnNames", bloomFilterUsePOp->getProjectColumnNames());
+  jObj.emplace("bloomFilterColumnNames", bloomFilterUsePOp->getBloomFilterColumnNames());
+
+  auto bloomFilter = bloomFilterUsePOp->getBloomFilter();
+  if (!bloomFilter.has_value()) {
+    return tl::make_unexpected("Bloom filter not set in BloomFilterUsePOp");
+  }
+  jObj.emplace("bloomFilter", (*bloomFilter)->toJson());
+
+  // serialize producers
+  auto expProducersJObj = serializeProducers(bloomFilterUsePOp);
+  if (!expProducersJObj.has_value()) {
+    return tl::make_unexpected(expProducersJObj.error());
+  }
+  jObj.emplace("inputs", *expProducersJObj);
+
+  return jObj;
+}
+
+tl::expected<::nlohmann::json, std::string>
 PhysicalPlanSerializer::serializeCollatePOp(const std::shared_ptr<collate::CollatePOp> &collatePOp) {
   json jObj;
 
-  // serialize producers
+  // serialize self
   jObj.emplace("type", collatePOp->getTypeString());
   jObj.emplace("name", collatePOp->name());
   jObj.emplace("projectColumnNames", collatePOp->getProjectColumnNames());
+
+  // serialize producers
   auto expProducersJObj = serializeProducers(collatePOp);
   if (!expProducersJObj.has_value()) {
     return tl::make_unexpected(expProducersJObj.error());
