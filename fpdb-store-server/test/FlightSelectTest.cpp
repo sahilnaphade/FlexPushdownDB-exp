@@ -27,7 +27,7 @@ using namespace fpdb::tuple;
 // file scan: test.csv, columns: {a, b}
 std::shared_ptr<fpdb_store::FPDBStoreFileScanPOp> makeFPDBStoreFileScanPOp() {
   auto format = std::make_shared<csv::CSVFormat>(',');
-  auto schema = util::FileReaderTestUtil::makeTestSchema();
+  auto schema = fpdb::tuple::util::FileReaderTestUtil::makeTestSchema();
   return std::make_shared<fpdb_store::FPDBStoreFileScanPOp>("StoreFileScan",
                                                             std::vector<std::string>{"a", "b"},
                                                             0,
@@ -90,7 +90,7 @@ TEST_CASE("fpdb-store-server/FlightSelectTest/scan-filter-aggregate" * doctest::
 
   // server
   ::arrow::Status st;
-  auto server = Server::make(ServerConfig{"1", 0, true, std::nullopt, 0, 0, 50051, "."}, std::nullopt, actor_manager);
+  auto server = fpdb::store::server::Server::make(ServerConfig{"1", 0, true, std::nullopt, 0, 0, 50051, "."}, std::nullopt, actor_manager);
   auto init_result = server->init();
   REQUIRE(init_result.has_value());
   auto start_result = server->start();
