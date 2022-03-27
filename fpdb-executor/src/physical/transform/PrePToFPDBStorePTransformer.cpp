@@ -128,18 +128,22 @@ pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
 PrePToFPDBStorePTransformer::addBloomFilterUse(vector<shared_ptr<PhysicalOp>> &producers,
                                                vector<shared_ptr<PhysicalOp>> &bloomFilterUsePOps,
                                                const shared_ptr<Mode> &mode) {
+  // if not in a mode with pushdown, or fpdb-store does not enable bloom filter pushdown
   if (!StoreTransformTraits::FPDBStoreStoreTransformTraits()->isSeparable(POpType::BLOOM_FILTER_USE)
-    || mode->id() == ModeId::PULL_UP) {
+    || mode->id() == ModeId::PULL_UP || mode->id() == ModeId::CACHING_ONLY) {
     PrePToPTransformerUtil::connectOneToOne(producers, bloomFilterUsePOps);
     return {bloomFilterUsePOps, bloomFilterUsePOps};
   }
 
+  // bloom filter can be pushed
   if (mode->id() == ModeId::PUSHDOWN_ONLY) {
     vector<shared_ptr<PhysicalOp>> connPOps, addiPOps;
 
     for (uint i = 0; i < producers.size(); ++i) {
       auto producer = producers[i];
       auto bloomFilterUsePOp = bloomFilterUsePOps[i];
+
+      // only pushable when the producer is FPDBStoreSuperPOp
       if (producer->getType() == POpType::FPDB_STORE_SUPER) {
         auto fpdbStoreSuperPOp = static_pointer_cast<fpdb_store::FPDBStoreSuperPOp>(producer);
         fpdbStoreSuperPOp->addAsLastOp(bloomFilterUsePOp);
