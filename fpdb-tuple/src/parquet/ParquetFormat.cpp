@@ -11,6 +11,10 @@ namespace fpdb::tuple::parquet {
 ParquetFormat::ParquetFormat() :
   FileFormat(FileFormatType::PARQUET) {}
 
+bool ParquetFormat::isColumnar() const {
+  return true;
+}
+
 json ParquetFormat::toJson() const {
   json jObj;
   jObj.emplace("type", "Parquet");

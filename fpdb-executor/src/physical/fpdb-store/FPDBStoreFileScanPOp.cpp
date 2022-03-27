@@ -20,7 +20,8 @@ FPDBStoreFileScanPOp::FPDBStoreFileScanPOp(const std::string &name,
                       columnNames,
                       nodeId,
                       file::LocalFileScanKernel::make(format, schema, byteRange, ""),
-                      true),
+                      true,
+                      false),
   bucket_(bucket),
   object_(object) {}
 
@@ -39,7 +40,8 @@ FPDBStoreFileScanPOp::FPDBStoreFileScanPOp(const std::string &name,
                       nodeId,
                       file::LocalFileScanKernel::make(format, schema, byteRange,
                                                       fmt::format("{}/{}/{}", storeRootPath, bucket, object)),
-                      true),
+                      true,
+                      false),
   bucket_(bucket),
   object_(object) {}
 

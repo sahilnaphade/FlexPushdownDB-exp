@@ -17,6 +17,8 @@ public:
   ParquetFormat& operator=(const ParquetFormat&) = default;
   ~ParquetFormat() = default;
 
+  bool isColumnar() const override;
+
   ::nlohmann::json toJson() const override;
   static tl::expected<std::shared_ptr<ParquetFormat>, std::string> fromJson(const nlohmann::json &jObj);
 

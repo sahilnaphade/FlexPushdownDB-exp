@@ -48,7 +48,8 @@ add_executable(fpdb-main-test
         test/TPCHDistTest.cpp
         test/TPCHFPDBStoreSameNodeTest.cpp
         test/TPCHFPDBStoreDiffNodeTest.cpp
-        test/BytesReadTest.cpp)
+        test/BytesReadTest.cpp
+        test/CachingOnlyTest.cpp)
 
 target_link_libraries(fpdb-main-test PRIVATE fpdb-main)
 target_link_libraries(fpdb-main-test PRIVATE doctest::doctest)

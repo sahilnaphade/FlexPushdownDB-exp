@@ -13,6 +13,8 @@
 #include <fpdb/executor/physical/filter/FilterPOp.h>
 #include <fpdb/executor/physical/aggregate/AggregatePOp.h>
 #include <fpdb/executor/physical/collate/CollatePOp.h>
+#include <fpdb/executor/physical/cache/CacheLoadPOp.h>
+#include <fpdb/executor/physical/merge/MergePOp.h>
 #include <fpdb/catalogue/obj-store/ObjStoreTable.h>
 
 using namespace fpdb::catalogue::obj_store;
@@ -67,7 +69,8 @@ PrePToFPDBStorePTransformer::transformSeparableSuper(const shared_ptr<SeparableS
 
   // according to the mode
   switch (mode_->id()) {
-    case PULL_UP: {
+    case PULL_UP:
+    case CACHING_ONLY: {
       // connect operators as usual, check whether has reduce op
       if (!reducePOp.has_value()) {
         return transformRes;
@@ -199,6 +202,8 @@ PrePToFPDBStorePTransformer::transformFilterableScan(const shared_ptr<Filterable
       return transformFilterableScanPullup(filterableScanPrePOp, partitionPredicates);
     case PUSHDOWN_ONLY:
       return transformFilterableScanPushdownOnly(filterableScanPrePOp, partitionPredicates);
+    case CACHING_ONLY:
+      return transformFilterableScanCachingOnly(filterableScanPrePOp, partitionPredicates);
     default:
       throw runtime_error(fmt::format("Unsupported mode for FPDB Store: {}", mode_->toString()));
   }
@@ -330,6 +335,105 @@ PrePToFPDBStorePTransformer::transformFilterableScanPushdownOnly(const shared_pt
     allPOps.insert(allPOps.end(), filterPOps.begin(), filterPOps.end());
     return make_pair(filterPOps, allPOps);
   }
+}
+
+pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
+PrePToFPDBStorePTransformer::transformFilterableScanCachingOnly(const shared_ptr<FilterableScanPrePOp> &filterableScanPrePOp,
+                                      const unordered_map<shared_ptr<Partition>, shared_ptr<Expression>, PartitionPointerHash, PartitionPointerPredicate> &partitionPredicates) {
+  vector<shared_ptr<PhysicalOp>> allPOps, selfConnDownPOps;
+  const auto &table = filterableScanPrePOp->getTable();
+  vector<string> projectColumnNames{filterableScanPrePOp->getProjectColumnNames().begin(),
+                                    filterableScanPrePOp->getProjectColumnNames().end()};
+
+  /**
+   * For each partition, construct:
+   * a CacheLoad, a RemoteFileScan, a Merge, a Filter if needed
+   */
+  uint partitionId = 0;
+  for (const auto &partitionPredicateIt: partitionPredicates) {
+    const auto &partition = static_pointer_cast<ObjStorePartition>(partitionPredicateIt.first);
+    const auto &predicate = partitionPredicateIt.second;
+    const auto &bucket = partition->getBucket();
+    const auto &object = partition->getObject();
+    pair<long, long> scanRange{0, partition->getNumBytes()};
+
+    // project column names and its union with project column names
+    vector<string> predicateColumnNames;
+    if (predicate) {
+      const auto predicateColumnNameSet = predicate->involvedColumnNames();
+      predicateColumnNames.assign(predicateColumnNameSet.begin(), predicateColumnNameSet.end());
+    }
+    const auto &projPredColumnNames = union_(projectColumnNames, predicateColumnNames);
+
+    // weighted segment keys
+    vector<shared_ptr<SegmentKey>> weightedSegmentKeys;
+    weightedSegmentKeys.reserve(projPredColumnNames.size());
+    for (const auto &weightedColumnName: projPredColumnNames) {
+      weightedSegmentKeys.emplace_back(
+              SegmentKey::make(partition, weightedColumnName, SegmentRange::make(scanRange.first, scanRange.second)));
+    }
+
+    // cache load
+    const auto cacheLoadPOp = make_shared<cache::CacheLoadPOp>(fmt::format("CacheLoad[{}]-{}/{}", prePOpId_, bucket, object),
+                                                               projectColumnNames,
+                                                               partitionId % numNodes_,
+                                                               predicateColumnNames,
+                                                               projPredColumnNames,
+                                                               partition,
+                                                               scanRange.first,
+                                                               scanRange.second,
+                                                               table->getFormat()->isColumnar());
+    allPOps.emplace_back(cacheLoadPOp);
+
+    // remote file scan
+    const auto &scanPOp = make_shared<file::RemoteFileScanPOp>(fmt::format("RemoteFileScan[{}]-{}/{}", prePOpId_, bucket, object),
+                                                               projPredColumnNames,
+                                                               partitionId % numNodes_,
+                                                               bucket,
+                                                               object,
+                                                               table->getFormat(),
+                                                               table->getSchema(),
+                                                               host_,
+                                                               fileServicePort_,
+                                                               nullopt,
+                                                               false,
+                                                               true);
+    allPOps.emplace_back(scanPOp);
+
+    // merge
+    const auto &mergePOp = make_shared<merge::MergePOp>(fmt::format("Merge[{}]-{}/{}", prePOpId_, bucket, object),
+                                                        projPredColumnNames,
+                                                        partitionId % numNodes_);
+    allPOps.emplace_back(mergePOp);
+
+    // connect
+    cacheLoadPOp->setHitOperator(mergePOp);
+    cacheLoadPOp->setMissOperatorToCache(scanPOp);
+    scanPOp->produce(mergePOp);
+    scanPOp->consume(cacheLoadPOp);
+    mergePOp->setLeftProducer(cacheLoadPOp);
+    mergePOp->setRightProducer(scanPOp);
+
+    // filter
+    if (predicate) {
+      const auto &filterPOp = make_shared<filter::FilterPOp>(fmt::format("Filter[{}]-{}/{}", prePOpId_, bucket, object),
+                                                             projectColumnNames,
+                                                             partitionId % numNodes_,
+                                                             predicate,
+                                                             table,
+                                                             weightedSegmentKeys);
+      allPOps.emplace_back(filterPOp);
+      mergePOp->produce(filterPOp);
+      filterPOp->consume(mergePOp);
+      selfConnDownPOps.emplace_back(filterPOp);
+    } else {
+      selfConnDownPOps.emplace_back(mergePOp);
+    }
+
+    ++partitionId;
+  }
+
+  return make_pair(selfConnDownPOps, allPOps);
 }
 
 pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>

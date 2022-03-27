@@ -22,7 +22,8 @@ public:
                    const std::shared_ptr<FileFormat> &format,
                    const std::shared_ptr<::arrow::Schema> &schema,
                    const std::optional<std::pair<int64_t, int64_t>> &byteRange = std::nullopt,
-                   bool scanOnStart = true);
+                   bool scanOnStart = true,
+                   bool toCache = false);
   LocalFileScanPOp() = default;
   LocalFileScanPOp(const LocalFileScanPOp&) = default;
   LocalFileScanPOp& operator=(const LocalFileScanPOp&) = default;

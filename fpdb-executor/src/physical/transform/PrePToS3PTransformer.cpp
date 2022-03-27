@@ -221,6 +221,7 @@ PrePToS3PTransformer::transformFilterableScanCachingOnly(const shared_ptr<Filter
                                                                s3Partition,
                                                                scanRange.first,
                                                                scanRange.second,
+                                                               table->getFormat()->isColumnar(),
                                                                awsClient_->getAwsConfig()->getS3ClientType());
     allPOps.emplace_back(cacheLoadPOp);
 
@@ -321,6 +322,7 @@ PrePToS3PTransformer::transformFilterableScanHybrid(const shared_ptr<FilterableS
                                                                s3Partition,
                                                                scanRange.first,
                                                                scanRange.second,
+                                                               table->getFormat()->isColumnar(),
                                                                awsClient_->getAwsConfig()->getS3ClientType());
     allPOps.emplace_back(cacheLoadPOp);
 

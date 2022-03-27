@@ -25,7 +25,8 @@ public:
                     const std::string &host,
                     int port,
                     const std::optional<std::pair<int64_t, int64_t>> &byteRange = std::nullopt,
-                    bool scanOnStart = true);
+                    bool scanOnStart = true,
+                    bool toCache = false);
   RemoteFileScanPOp() = default;
   RemoteFileScanPOp(const RemoteFileScanPOp&) = default;
   RemoteFileScanPOp& operator=(const RemoteFileScanPOp&) = default;

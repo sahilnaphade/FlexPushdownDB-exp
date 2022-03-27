@@ -6,6 +6,10 @@
 #include <fpdb/main/ExecConfig.h>
 #include <fpdb/executor/caf/CAFInit.h>
 #include <fpdb/executor/physical/transform/PrePToPTransformer.h>
+#include <fpdb/cache/policy/LRUCachingPolicy.h>
+#include <fpdb/cache/policy/LFUCachingPolicy.h>
+#include <fpdb/cache/policy/LFUSCachingPolicy.h>
+#include <fpdb/cache/policy/WLFUCachingPolicy.h>
 #include <fpdb/calcite/CalciteConfig.h>
 #include <fpdb/plan/calcite/CalcitePlanJsonDeserializer.h>
 #include <fpdb/plan/prephysical/separable/SeparablePrePOpTransformer.h>
@@ -17,6 +21,7 @@
 #include <fpdb/util/Util.h>
 
 using namespace fpdb::executor::physical;
+using namespace fpdb::cache;
 using namespace fpdb::plan::calcite;
 using namespace fpdb::plan::prephysical::separable;
 using namespace fpdb::catalogue::obj_store;
@@ -31,14 +36,16 @@ TestUtil::TestUtil(const string &schemaName,
                    bool isDistributed,
                    ObjStoreType objStoreType,
                    const shared_ptr<Mode> &mode,
-                   const shared_ptr<CachingPolicy> &cachingPolicy) :
+                   CachingPolicyType cachingPolicyType,
+                   size_t cacheSize) :
   schemaName_(schemaName),
   queryFileNames_(queryFileNames),
   parallelDegree_(parallelDegree),
   isDistributed_(isDistributed),
   objStoreType_(objStoreType),
   mode_(mode),
-  cachingPolicy_(cachingPolicy) {}
+  cachingPolicyType_(cachingPolicyType),
+  cacheSize_(cacheSize) {}
 
 bool TestUtil::e2eNoStartCalciteServer(const string &schemaName,
                                        const vector<string> &queryFileNames,
@@ -46,14 +53,16 @@ bool TestUtil::e2eNoStartCalciteServer(const string &schemaName,
                                        bool isDistributed,
                                        ObjStoreType objStoreType,
                                        const shared_ptr<Mode> &mode,
-                                       const shared_ptr<CachingPolicy> &cachingPolicy) {
+                                       CachingPolicyType cachingPolicyType,
+                                       size_t cacheSize) {
   TestUtil testUtil(schemaName,
                     queryFileNames,
                     parallelDegree,
                     isDistributed,
                     objStoreType,
                     mode,
-                    cachingPolicy);
+                    cachingPolicyType,
+                    cacheSize);
   try {
     testUtil.runTest();
     return true;
@@ -61,6 +70,28 @@ bool TestUtil::e2eNoStartCalciteServer(const string &schemaName,
     cout << err.what() << endl;
     return false;
   }
+}
+
+void TestUtil::writeQueryToFile(const std::string queryFileName, const std::string query) {
+  std::string queryFilePath = std::filesystem::current_path()
+          .parent_path()
+          .append("resources/query")
+          .append(queryFileName)
+          .string();
+  writeFile(queryFilePath, query);
+}
+
+void TestUtil::removeQueryFile(const std::string queryFileName) {
+  std::string queryFilePath = std::filesystem::current_path()
+          .parent_path()
+          .append("resources/query")
+          .append(queryFileName)
+          .string();
+  std::remove(queryFilePath.c_str());
+}
+
+double TestUtil::getCrtQueryHitRatio() const {
+  return crtQueryHitRatio_;
 }
 
 void TestUtil::runTest() {
@@ -71,6 +102,9 @@ void TestUtil::runTest() {
 
   // Catalogue entry
   makeCatalogueEntry();
+
+  // Caching policy
+  makeCachingPolicy();
 
   // Calcite client
   makeCalciteClient();
@@ -120,6 +154,33 @@ void TestUtil::makeCatalogueEntry() {
                                                                      schemaName_,
                                                                      objStoreConnector_);
   catalogue_->putEntry(catalogueEntry_);
+}
+
+void TestUtil::makeCachingPolicy() {
+  switch (cachingPolicyType_) {
+    case CachingPolicyType::LFU: {
+      cachingPolicy_ = make_shared<LFUCachingPolicy>(cacheSize_, catalogueEntry_);
+      return;
+    }
+    case CachingPolicyType::LFUS: {
+      cachingPolicy_ = make_shared<LFUSCachingPolicy>(cacheSize_, catalogueEntry_);
+      return;
+    }
+    case CachingPolicyType::LRU: {
+      cachingPolicy_ = make_shared<LRUCachingPolicy>(cacheSize_, catalogueEntry_);
+      return;
+    }
+    case CachingPolicyType::WLFU: {
+      cachingPolicy_ = make_shared<WLFUCachingPolicy>(cacheSize_, catalogueEntry_);
+      return;
+    }
+    case CachingPolicyType::NONE: {
+      cachingPolicy_ = nullptr;
+      return;
+    }
+    default:
+      throw runtime_error(fmt::format("Unknown caching policy: {}", cachingPolicyType_));
+  }
 }
 
 void TestUtil::makeCalciteClient() {
@@ -206,6 +267,9 @@ void TestUtil::executeQueryFile(const string &queryFileName) {
   ss << fmt::format("\nTime: {} secs\n\n", (double) (execRes.second) / 1000000000.0);
   ss << endl;
   cout << ss.str() << endl;
+
+  // metrics used for checking in some unit tests
+  crtQueryHitRatio_ = executor_->getCrtQueryHitRatio();
 }
 
 void TestUtil::stop() {

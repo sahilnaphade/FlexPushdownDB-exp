@@ -21,9 +21,9 @@ namespace fpdb::main::test {
 
 TEST_SUITE ("bytes-read" * doctest::skip(SKIP_SUITE)) {
 
-constexpr std::string_view queryFileNameBase = "bytes_read_test_{}.sql";
+constexpr std::string_view bytesReadTestQueryFileNameBase = "bytes_read_test_{}.sql";
 
-void writeQueryToFile(const std::string queryFileName, double l_discount) {
+void writeQueryToFileBytesReadTest(const std::string queryFileName, double l_discount) {
   std::string query = fmt::format("select\n"
                                   "    l_returnflag,\n"
                                   "    l_linestatus,\n"
@@ -38,21 +38,7 @@ void writeQueryToFile(const std::string queryFileName, double l_discount) {
                                   "    l_linestatus\n"
                                   "limit 10",
                                   l_discount);
-  std::string queryFilePath = std::filesystem::current_path()
-          .parent_path()
-          .append("resources/query")
-          .append(queryFileName)
-          .string();
-  writeFile(queryFilePath, query);
-}
-
-void removeQueryFile(const std::string queryFileName) {
-  std::string queryFilePath = std::filesystem::current_path()
-          .parent_path()
-          .append("resources/query")
-          .append(queryFileName)
-          .string();
-  std::remove(queryFilePath.c_str());
+  TestUtil::writeQueryToFile(queryFileName, query);
 }
 
 TEST_CASE ("bytes-read-tpch-sf10-fpdb-store-diff-node" * doctest::skip(false || SKIP_SUITE)) {
@@ -62,15 +48,15 @@ TEST_CASE ("bytes-read-tpch-sf10-fpdb-store-diff-node" * doctest::skip(false || 
     for (double l_discount = 0.00; l_discount <= 0.1; l_discount += 0.01) {
       std::stringstream ss;
       ss << std::fixed << std::setprecision(2) << l_discount;
-      std::string queryFileName = fmt::format(queryFileNameBase, ss.str());
-      writeQueryToFile(queryFileName, l_discount);
+      std::string queryFileName = fmt::format(bytesReadTestQueryFileNameBase, ss.str());
+      writeQueryToFileBytesReadTest(queryFileName, l_discount);
       REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
                                                 {std::string(queryFileName)},
                                                 PARALLEL_TPCH_FPDB_STORE_DIFF_NODE,
                                                 false,
                                                 ObjStoreType::FPDB_STORE,
                                                 mode));
-      removeQueryFile(queryFileName);
+      TestUtil::removeQueryFile(queryFileName);
     }
   }
 }

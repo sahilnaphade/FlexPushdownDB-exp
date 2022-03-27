@@ -23,6 +23,10 @@ int CSVFormat::getSkipRows() const {
   return skipRows_;
 }
 
+bool CSVFormat::isColumnar() const {
+  return false;
+}
+
 json CSVFormat::toJson() const {
   json jObj;
   jObj.emplace("type", "CSV");

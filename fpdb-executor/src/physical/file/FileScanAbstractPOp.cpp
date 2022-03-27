@@ -21,10 +21,12 @@ FileScanAbstractPOp::FileScanAbstractPOp(const std::string &name,
                                          const std::vector<std::string> &columnNames,
                                          int nodeId,
                                          const std::shared_ptr<FileScanKernel> &kernel,
-                                         bool scanOnStart) :
+                                         bool scanOnStart,
+                                         bool toCache) :
 	PhysicalOp(name, type, columnNames, nodeId),
 	kernel_(kernel),
-  scanOnStart_(scanOnStart) {}
+  scanOnStart_(scanOnStart),
+  toCache_(toCache) {}
 
 const std::shared_ptr<FileScanKernel> &FileScanAbstractPOp::getKernel() const {
   return kernel_;
@@ -48,17 +50,8 @@ void FileScanAbstractPOp::onStart() {
   SPDLOG_DEBUG("Starting operator  |  name: '{}'", this->name());
 
   if(scanOnStart_) {
-    // scan
+    // scan and complete
     readAndSendTuples(getProjectColumnNames());
-
-    // metrics
-#if SHOW_DEBUG_METRICS == true
-    std::shared_ptr<Message> execMetricsMsg =
-            std::make_shared<DebugMetricsMessage>(kernel_->getBytesReadRemote(), this->name());
-    ctx()->notifyRoot(execMetricsMsg);
-#endif
-
-    // complete
     ctx()->notifyComplete();
   }
 }
@@ -69,11 +62,28 @@ void FileScanAbstractPOp::onComplete(const CompleteMessage &) {
   }
 }
 
-void FileScanAbstractPOp::onCacheLoadResponse(const ScanMessage &Message) {
-  readAndSendTuples(Message.getColumnNames());
+void FileScanAbstractPOp::onCacheLoadResponse(const ScanMessage &message) {
+  if (message.isResultNeeded()) {
+    readAndSendTuples(message.getColumnNames());
+  } else {
+    // send empty tupleSet and complete first
+    auto emptyTupleSet = TupleSet::makeWithEmptyTable();
+    std::shared_ptr<Message> tupleSetMessage = std::make_shared<TupleSetMessage>(emptyTupleSet, this->name());
+    ctx()->tell(tupleSetMessage);
+    ctx()->notifyComplete();
+
+    // just to cache
+    readTuples(message.getColumnNames());
+  }
 }
 
 void FileScanAbstractPOp::readAndSendTuples(const std::vector<std::string> &columnNames){
+  auto readTupleSet = readTuples(columnNames);
+  std::shared_ptr<Message> message = std::make_shared<TupleSetMessage>(readTupleSet, this->name());
+  ctx()->tell(message);
+}
+
+std::shared_ptr<TupleSet> FileScanAbstractPOp::readTuples(const std::vector<std::string> &columnNames) {
   // Read the columns not present in the cache
   /*
    * TODO: support reading the file in pieces
@@ -90,8 +100,19 @@ void FileScanAbstractPOp::readAndSendTuples(const std::vector<std::string> &colu
     readTupleSet = expectedReadTupleSet.value();
   }
 
-  std::shared_ptr<Message> message = std::make_shared<TupleSetMessage>(readTupleSet, this->name());
-  ctx()->tell(message);
+  // metrics
+#if SHOW_DEBUG_METRICS == true
+  std::shared_ptr<Message> execMetricsMsg =
+          std::make_shared<DebugMetricsMessage>(kernel_->getBytesReadRemote(), this->name());
+  ctx()->notifyRoot(execMetricsMsg);
+  kernel_->clearBytesReadRemote();
+#endif
+
+  if (toCache_) {
+    requestStoreSegmentsInCache(readTupleSet);
+  }
+
+  return readTupleSet;
 }
 
 void FileScanAbstractPOp::requestStoreSegmentsInCache(const std::shared_ptr<TupleSet> &tupleSet) {

@@ -47,7 +47,11 @@ public:
                                       bool isDistributed,
                                       ObjStoreType objStoreType,
                                       const shared_ptr<Mode> &mode = Mode::pullupMode(),
-                                      const shared_ptr<CachingPolicy> &cachingPolicy = nullptr);
+                                      CachingPolicyType cachingPolicyType = CachingPolicyType::NONE,
+                                      size_t cacheSize = 1L * 1024 * 1024 * 1024);
+
+  static void writeQueryToFile(const std::string queryFileName, const std::string query);
+  static void removeQueryFile(const std::string queryFileName);
 
   TestUtil(const string &schemaName,
            const vector<string> &queryFileNames,
@@ -55,12 +59,17 @@ public:
            bool isDistributed,
            ObjStoreType objStoreType,
            const shared_ptr<Mode> &mode,
-           const shared_ptr<CachingPolicy> &cachingPolicy);
+           CachingPolicyType cachingPolicyType,
+           size_t cacheSize);
+
+  double getCrtQueryHitRatio() const;
+
+  void runTest();
 
 private:
-  void runTest();
   void makeObjStoreConnector();
   void makeCatalogueEntry();
+  void makeCachingPolicy();
   void makeCalciteClient();
   void connect();
   void makeExecutor();
@@ -74,9 +83,11 @@ private:
   bool isDistributed_;
   ObjStoreType objStoreType_;
   shared_ptr<Mode> mode_;
-  shared_ptr<CachingPolicy> cachingPolicy_;
+  CachingPolicyType cachingPolicyType_;
+  size_t cacheSize_;
 
   // internal parameters
+  shared_ptr<CachingPolicy> cachingPolicy_;
   shared_ptr<ObjStoreConnector> objStoreConnector_;
   shared_ptr<Catalogue> catalogue_;
   shared_ptr<CatalogueEntry> catalogueEntry_;
@@ -85,6 +96,9 @@ private:
   shared_ptr<::caf::actor_system> actorSystem_;
   vector<::caf::node_id> nodes_;
   shared_ptr<Executor> executor_;
+
+  // metrics used for checking in some unit tests
+  double crtQueryHitRatio_;
 
 };
 

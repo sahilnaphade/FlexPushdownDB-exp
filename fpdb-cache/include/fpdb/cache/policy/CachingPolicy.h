@@ -22,7 +22,8 @@ enum CachingPolicyType {
   LFU,
   LFUS,
   WLFU,
-  BELADY
+  BELADY,
+  NONE
 };
 
 class CachingPolicy {

@@ -22,6 +22,8 @@ public:
   char getFieldDelimiter() const;
   int getSkipRows() const;
 
+  bool isColumnar() const override;
+
   ::nlohmann::json toJson() const override;
   static tl::expected<std::shared_ptr<CSVFormat>, std::string> fromJson(const nlohmann::json &jObj);
 

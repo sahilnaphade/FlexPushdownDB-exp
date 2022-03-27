@@ -17,13 +17,15 @@ RemoteFileScanPOp::RemoteFileScanPOp(const std::string &name,
                                      const std::string &host,
                                      int port,
                                      const std::optional<std::pair<int64_t, int64_t>> &byteRange,
-                                     bool scanOnStart):
+                                     bool scanOnStart,
+                                     bool toCache):
   FileScanAbstractPOp(name,
                       REMOTE_FILE_SCAN,
                       columnNames,
                       nodeId,
                       RemoteFileScanKernel::make(format, schema, byteRange, bucket, object, host, port),
-                      scanOnStart) {}
+                      scanOnStart,
+                      toCache) {}
 
 std::string RemoteFileScanPOp::getTypeString() const {
   return "RemoteFileScanPOp";

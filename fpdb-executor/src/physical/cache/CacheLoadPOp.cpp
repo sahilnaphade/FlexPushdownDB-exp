@@ -19,6 +19,7 @@ CacheLoadPOp::CacheLoadPOp(std::string name,
 					 std::shared_ptr<Partition> Partition,
 					 int64_t StartOffset,
 					 int64_t FinishOffset,
+           bool isStoreColumnar,
            S3ClientType s3ClientType) :
   PhysicalOp(std::move(name), CACHE_LOAD, std::move(projectColumnNames), nodeId),
   predicateColumnNames_(std::move(predicateColumnNames)),
@@ -26,6 +27,7 @@ CacheLoadPOp::CacheLoadPOp(std::string name,
   partition_(std::move(Partition)),
   startOffset_(StartOffset),
   finishOffset_(FinishOffset),
+  isStoreColumnar_(isStoreColumnar),
   s3ClientType_(s3ClientType) {}
 
 std::string CacheLoadPOp::getTypeString() const {
@@ -189,8 +191,7 @@ void CacheLoadPOp::onCacheLoadResponse(const LoadResponseMessage &Message) {
    */
   size_t hitNum, missNum;
   size_t shardHitNum, shardMissNum;
-  // if not every segment is a hit then we have to either pull up or scan this shard in s3, so it is a shard miss
-  // otherwise it is a shard hit
+  // If every segment is a hit, then we call it a shard hit, otherwise a shard miss
   if (hitSegments.size() == columnNames_.size()) {
     shardHitNum = 1;
     shardMissNum = 0;
@@ -198,6 +199,7 @@ void CacheLoadPOp::onCacheLoadResponse(const LoadResponseMessage &Message) {
     shardHitNum = 0;
     shardMissNum = 1;
   }
+
   // Hybrid
   if (missOperatorToPushdownName_.has_value()) {
     if (cachingResultNeeded) {
@@ -210,12 +212,19 @@ void CacheLoadPOp::onCacheLoadResponse(const LoadResponseMessage &Message) {
   }
   // Caching only
   else {
-    if (hitSegments.size() == columnNames_.size()) {
+    if (isStoreColumnar_) {
+      // If the underlying store format is columnar, then we count hit and miss regularly
       hitNum = hitSegments.size();
-      missNum = 0;
+      missNum = columnNames_.size() - hitNum;
     } else {
-      hitNum = 0;
-      missNum = columnNames_.size();
+      // Otherwise (e.g. CSV), even for a single segment miss, we need to scan the whole shard
+      if (hitSegments.size() == columnNames_.size()) {
+        hitNum = hitSegments.size();
+        missNum = 0;
+      } else {
+        hitNum = 0;
+        missNum = columnNames_.size();
+      }
     }
   }
   ctx()->send(CacheMetricsMessage::make(hitNum, missNum, shardHitNum, shardMissNum, this->name()), "SegmentCache");

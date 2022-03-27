@@ -35,6 +35,10 @@ const std::optional<std::pair<int64_t, int64_t>> &FileScanKernel::getByteRange()
 int64_t FileScanKernel::getBytesReadRemote() const {
   return bytesReadRemote_;
 }
+
+void FileScanKernel::clearBytesReadRemote() {
+  bytesReadRemote_ = 0;
+}
 #endif
 
 }

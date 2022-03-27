@@ -37,7 +37,7 @@ Executor::~Executor() {
 void Executor::start() {
   rootActor_ = make_unique<::caf::scoped_actor>(*actorSystem_);
   if ((mode_->id() == CACHING_ONLY || mode_->id() == HYBRID) && !cachingPolicy_) {
-    throw runtime_error(fmt::format("Failed to start, missing caching policy for mode: {}", mode_->toString()));
+    throw runtime_error(fmt::format("Failed to start executor, missing caching policy for mode: {}", mode_->toString()));
   }
   if (cachingPolicy_) {
     segmentCacheActor_ = actorSystem_->spawn(SegmentCacheActor::makeBehaviour, cachingPolicy_, mode_);

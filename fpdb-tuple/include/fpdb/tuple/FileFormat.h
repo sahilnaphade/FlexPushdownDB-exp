@@ -22,6 +22,8 @@ public:
 
   FileFormatType getType() const;
 
+  virtual bool isColumnar() const = 0;
+
   virtual ::nlohmann::json toJson() const = 0;
   static tl::expected<std::shared_ptr<FileFormat>, std::string> fromJson(const nlohmann::json &jObj);
 

@@ -28,7 +28,8 @@ public:
 					 std::shared_ptr<Partition> partition,
 					 int64_t startOffset,
 					 int64_t finishOffset,
-					 S3ClientType s3ClientType);
+           bool isStoreColumnar,
+					 S3ClientType s3ClientType = S3ClientType::S3);
   CacheLoadPOp() = default;
   CacheLoadPOp(const CacheLoadPOp&) = default;
   CacheLoadPOp& operator=(const CacheLoadPOp&) = default;
@@ -61,6 +62,7 @@ private:
   std::optional<std::string> missOperatorToCacheName_;
   std::optional<std::string> missOperatorToPushdownName_;
 
+  bool isStoreColumnar_;
   S3ClientType s3ClientType_;
 
 // caf inspect

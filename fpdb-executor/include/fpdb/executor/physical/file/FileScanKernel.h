@@ -39,6 +39,7 @@ public:
 
 #if SHOW_DEBUG_METRICS == true
   int64_t getBytesReadRemote() const;
+  void clearBytesReadRemote();
 #endif
 
   virtual tl::expected<std::shared_ptr<TupleSet>, std::string> scan() = 0;
