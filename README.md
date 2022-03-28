@@ -106,8 +106,4 @@ Compiler needed:
 - Optimize Group Operator
   1) optimize internally
   2) add back the change of moving shuffle before to after parallel group
-
-### Features
-- Update the stale Parquet reader for scan operators.
-- Update the stale FileScan operator to support querying local files.
-- Update the stale BloomJoin and incorporate it into the physical query plan.
+  
