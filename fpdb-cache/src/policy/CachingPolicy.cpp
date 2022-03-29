@@ -62,4 +62,12 @@ CachingPolicy::getSegmentSizeMap() const {
   return segmentSizeMap_;
 }
 
+void CachingPolicy::onClear() {
+  freeSize_ = maxSize_;
+  segmentSizeMap_.clear();
+  onLoadTime = 0;
+  onStoreTime = 0;
+  onToCacheTime = 0;
+}
+
 }

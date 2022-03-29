@@ -10,6 +10,9 @@ S3Connector::S3Connector(const shared_ptr<AWSClient> &awsClient):
   ObjStoreConnector(ObjStoreType::S3),
   awsClient_(awsClient) {}
 
+S3Connector::S3Connector():
+  awsClient_(fpdb::aws::AWSClient::daemonClient_) {}
+
 const shared_ptr<AWSClient> &S3Connector::getAwsClient() const {
   return awsClient_;
 }

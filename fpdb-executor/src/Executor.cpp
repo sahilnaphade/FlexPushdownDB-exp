@@ -36,10 +36,10 @@ Executor::~Executor() {
 
 void Executor::start() {
   rootActor_ = make_unique<::caf::scoped_actor>(*actorSystem_);
-  if ((mode_->id() == CACHING_ONLY || mode_->id() == HYBRID) && !cachingPolicy_) {
+  if ((mode_->id() == CACHING_ONLY || mode_->id() == HYBRID) && !isCacheUsed()) {
     throw runtime_error(fmt::format("Failed to start executor, missing caching policy for mode: {}", mode_->toString()));
   }
-  if (cachingPolicy_) {
+  if (isCacheUsed()) {
     segmentCacheActor_ = actorSystem_->spawn(SegmentCacheActor::makeBehaviour, cachingPolicy_, mode_);
   } else {
     segmentCacheActor_ = nullptr;
@@ -50,6 +50,7 @@ void Executor::start() {
 void Executor::stop() {
   // Stop the cache actor if cache is used
   if (isCacheUsed()) {
+    (*rootActor_)->anon_send(segmentCacheActor_, ClearAtom_v);
     (*rootActor_)->send_exit(::caf::actor_cast<::caf::actor>(segmentCacheActor_), ::caf::exit_reason::user_shutdown);
   }
 

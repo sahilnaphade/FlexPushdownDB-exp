@@ -43,6 +43,7 @@ public:
 
   std::string toString() override;
   void onNewQuery() override;
+  void onClear() override;
 
 private:
   std::unordered_set<std::shared_ptr<SegmentKey>, SegmentKeyPointerHash, SegmentKeyPointerPredicate> keysInCache_;

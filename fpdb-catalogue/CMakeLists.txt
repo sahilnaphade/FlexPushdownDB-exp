@@ -24,7 +24,8 @@ add_library(fpdb-catalogue STATIC
         src/obj-store/s3/S3Connector.cpp include/fpdb/catalogue/obj-store/s3/S3Connector.h
         src/obj-store/fpdb-store/FPDBStoreConnector.cpp include/fpdb/catalogue/obj-store/fpdb-store/FPDBStoreConnector.h
         include/fpdb/catalogue/caf-serialization/CAFPartitionSerializer.h
-        include/fpdb/catalogue/caf-serialization/CAFTableSerializer.h)
+        include/fpdb/catalogue/caf-serialization/CAFTableSerializer.h
+        include/fpdb/catalogue/caf-serialization/CAFObjStoreConnectorSerializer.h)
 
 target_include_directories(fpdb-catalogue PUBLIC include)
 

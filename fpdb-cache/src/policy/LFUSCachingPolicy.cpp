@@ -235,3 +235,11 @@ void LFUSCachingPolicy::onNewQuery() {
   freeSizeOTC_ = freeSize_;
   keysInCacheOTC_.assign(keysInCache_.begin(), keysInCache_.end());
 }
+
+void LFUSCachingPolicy::onClear() {
+  keysInCache_.clear();
+  keySetInCache_.clear();
+  keySet_.clear();
+  freeSizeOTC_ = 0;
+  keysInCacheOTC_.clear();
+}

@@ -109,6 +109,9 @@ void SegmentCacheActor::metrics(const CacheMetricsMessage &msg, stateful_actor<S
     [=](NewQueryAtom) {
     self->state.cache->newQuery();
 	  },
+    [=](ClearAtom) {
+    self->state.cache->clear();
+    },
 	  [=](GetNumHitsAtom) {
 		return self->state.cache->hitNum();
 	  },

@@ -72,6 +72,12 @@ void SegmentCache::newQuery() {
   clearCrtQueryMetrics();
 }
 
+void SegmentCache::clear() {
+  map_.clear();
+  cachingPolicy_->onClear();
+  clearMetrics();
+}
+
 size_t SegmentCache::hitNum() const {
   return hitNum_;
 }

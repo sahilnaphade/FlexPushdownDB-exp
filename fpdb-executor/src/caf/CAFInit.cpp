@@ -16,6 +16,7 @@
 #include <fpdb/executor/caf-serialization/CAFHashJoinProbeAbstractKernelSerializer.h>
 #include <fpdb/executor/caf-serialization/CAFFileScanKernelSerializer.h>
 #include <fpdb/catalogue/caf-serialization/CAFTableSerializer.h>
+#include <fpdb/catalogue/caf-serialization/CAFObjStoreConnectorSerializer.h>
 #include <fpdb/expression/gandiva/caf-serialization/CAFExpressionSerializer.h>
 #include <fpdb/tuple/caf-serialization/CAFFileFormatSerializer.h>
 
@@ -50,6 +51,7 @@ void CAFInit::initCAFGlobalMetaObjects() {
   ::caf::init_global_meta_objects<::caf::id_block::FileScanKernel>();
   ::caf::init_global_meta_objects<::caf::id_block::PhysicalPlan>();
   ::caf::init_global_meta_objects<::caf::id_block::BloomFilter>();
+  ::caf::init_global_meta_objects<::caf::id_block::ObjStoreConnector>();
 
   ::caf::core::init_global_meta_objects();
   ::caf::io::middleman::init_global_meta_objects();

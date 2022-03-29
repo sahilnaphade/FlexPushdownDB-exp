@@ -367,3 +367,10 @@ std::string BeladyCachingPolicy::toString() {
 void BeladyCachingPolicy::onNewQuery() {
 
 }
+
+void BeladyCachingPolicy::onClear() {
+  keysInCache_.clear();
+  queryNumToKeysInCache_.clear();
+  numQueries_ = 0;
+  helper_.reset();
+}

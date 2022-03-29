@@ -16,12 +16,22 @@ class S3Connector: public ObjStoreConnector {
 
 public:
   S3Connector(const shared_ptr<AWSClient> &awsClient);
+  S3Connector();
+  S3Connector(const S3Connector&) = default;
+  S3Connector& operator=(const S3Connector&) = default;
+  ~S3Connector() = default;
 
   const shared_ptr<AWSClient> &getAwsClient() const;
 
 private:
   shared_ptr<AWSClient> awsClient_;
 
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, S3Connector& conn) {
+    return f.object(conn).fields(f.field("storeType", conn.storeType_));
+  }
 };
 
 }

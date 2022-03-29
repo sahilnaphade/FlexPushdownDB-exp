@@ -32,6 +32,7 @@ public:
   std::shared_ptr<std::unordered_set<std::shared_ptr<SegmentKey>, SegmentKeyPointerHash, SegmentKeyPointerPredicate>> getKeysetInCachePolicy() override;
   std::string toString() override;
   void onNewQuery() override;
+  void onClear() override;
 
 private:
   std::unordered_map<int, std::list<std::shared_ptr<SegmentKey>>> freqMap_;

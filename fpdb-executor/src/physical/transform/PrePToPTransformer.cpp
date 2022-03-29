@@ -699,7 +699,7 @@ PrePToPTransformer::transformSeparableSuper(const shared_ptr<SeparableSuperPrePO
       auto s3PTransformer = make_shared<PrePToS3PTransformer>(separableSuperPrePOp->getId(),
                                                               mode_,
                                                               numNodes_,
-                                                              s3Connector->getAwsClient());
+                                                              s3Connector);
       return s3PTransformer->transformSeparableSuper(separableSuperPrePOp);
     }
     case ObjStoreType::FPDB_STORE: {
@@ -710,9 +710,7 @@ PrePToPTransformer::transformSeparableSuper(const shared_ptr<SeparableSuperPrePO
       auto fpdbStorePTransformer = make_shared<PrePToFPDBStorePTransformer>(separableSuperPrePOp->getId(),
                                                                             mode_,
                                                                             numNodes_,
-                                                                            fpdbStoreConnector->getHost(),
-                                                                            fpdbStoreConnector->getFileServicePort(),
-                                                                            fpdbStoreConnector->getFlightPort());
+                                                                            fpdbStoreConnector);
       return fpdbStorePTransformer->transformSeparableSuper(separableSuperPrePOp);
     }
     default:

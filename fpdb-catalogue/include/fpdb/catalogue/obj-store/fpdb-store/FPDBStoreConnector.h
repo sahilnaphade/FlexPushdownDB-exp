@@ -16,6 +16,10 @@ public:
   FPDBStoreConnector(const std::string &host,
                      int fileServicePort,
                      int flightPort);
+  FPDBStoreConnector() = default;
+  FPDBStoreConnector(const FPDBStoreConnector&) = default;
+  FPDBStoreConnector& operator=(const FPDBStoreConnector&) = default;
+  ~FPDBStoreConnector() = default;
 
   const std::string &getHost() const;
   int getFileServicePort() const;
@@ -26,6 +30,15 @@ private:
   int fileServicePort_;
   int flightPort_;
 
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, FPDBStoreConnector& conn) {
+    return f.object(conn).fields(f.field("storeType", conn.storeType_),
+                                 f.field("host", conn.host_),
+                                 f.field("fileServicePort", conn.fileServicePort_),
+                                 f.field("flightPort", conn.flightPort_));
+  }
 };
 
 }

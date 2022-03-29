@@ -10,14 +10,14 @@
 #include <fpdb/plan/prephysical/separable/SeparableSuperPrePOp.h>
 #include <fpdb/plan/Mode.h>
 #include <fpdb/catalogue/Partition.h>
-#include <fpdb/aws/AWSClient.h>
+#include <fpdb/catalogue/obj-store/s3/S3Connector.h>
 
 using namespace fpdb::plan;
 using namespace fpdb::plan::prephysical;
 using namespace fpdb::plan::prephysical::separable;
 using namespace fpdb::expression::gandiva;
 using namespace fpdb::catalogue;
-using namespace fpdb::aws;
+using namespace fpdb::catalogue::obj_store;
 
 namespace fpdb::executor::physical {
 
@@ -27,7 +27,7 @@ public:
   PrePToS3PTransformer(uint prePOpId,
                        const shared_ptr<Mode> &mode,
                        int numNodes,
-                       const shared_ptr<AWSClient> &awsClient);
+                       const shared_ptr<S3Connector> &s3Connector);
 
   /**
    * Transform separable super prephysical op to physical op
@@ -79,7 +79,7 @@ private:
   uint prePOpId_;
   shared_ptr<Mode> mode_;
   int numNodes_;
-  shared_ptr<AWSClient> awsClient_;
+  shared_ptr<S3Connector> s3Connector_;
 };
 
 }

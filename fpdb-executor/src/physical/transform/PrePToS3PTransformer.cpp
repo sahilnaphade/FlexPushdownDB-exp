@@ -22,11 +22,11 @@ namespace fpdb::executor::physical {
 PrePToS3PTransformer::PrePToS3PTransformer(uint prePOpId,
                                            const shared_ptr<Mode> &mode,
                                            int numNodes,
-                                           const shared_ptr<AWSClient> &awsClient) :
+                                           const shared_ptr<S3Connector> &s3Connector) :
   prePOpId_(prePOpId),
   mode_(mode),
   numNodes_(numNodes),
-  awsClient_(awsClient) {}
+  s3Connector_(s3Connector) {}
 
 pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
 PrePToS3PTransformer::transformSeparableSuper(const shared_ptr<SeparableSuperPrePOp> &separableSuperPrePOp) {
@@ -105,7 +105,7 @@ PrePToS3PTransformer::transformFilterableScanPullup(const shared_ptr<FilterableS
                                                    scanRange.first,
                                                    scanRange.second,
                                                    table,
-                                                   awsClient_,
+                                                   s3Connector_->getAwsClient(),
                                                    true,
                                                    false);
     scanPOps.emplace_back(scanPOp);
@@ -166,7 +166,7 @@ PrePToS3PTransformer::transformFilterableScanPushdownOnly(const shared_ptr<Filte
                                                    scanRange.first,
                                                    scanRange.second,
                                                    table,
-                                                   awsClient_,
+                                                   s3Connector_->getAwsClient(),
                                                    true,
                                                    false));
 
@@ -213,16 +213,18 @@ PrePToS3PTransformer::transformFilterableScanCachingOnly(const shared_ptr<Filter
     }
 
     // cache load
+    // TODO: projectColumnGroups
     const auto cacheLoadPOp = make_shared<cache::CacheLoadPOp>(fmt::format("CacheLoad[{}]-{}/{}", prePOpId_, s3Bucket, s3Object),
                                                                projectColumnNames,
                                                                partitionId % numNodes_,
                                                                predicateColumnNames,
+                                                               std::vector<std::set<std::string>>{},
                                                                projPredColumnNames,
                                                                s3Partition,
                                                                scanRange.first,
                                                                scanRange.second,
                                                                table->getFormat()->isColumnar(),
-                                                               awsClient_->getAwsConfig()->getS3ClientType());
+                                                               s3Connector_);
     allPOps.emplace_back(cacheLoadPOp);
 
     // s3 get
@@ -234,7 +236,7 @@ PrePToS3PTransformer::transformFilterableScanCachingOnly(const shared_ptr<Filter
                                                     scanRange.first,
                                                     scanRange.second,
                                                     table,
-                                                    awsClient_,
+                                                    s3Connector_->getAwsClient(),
                                                     false,
                                                     true);
     allPOps.emplace_back(scanPOp);
@@ -314,16 +316,18 @@ PrePToS3PTransformer::transformFilterableScanHybrid(const shared_ptr<FilterableS
     }
 
     // cache load
+    // TODO: projectColumnGroups
     const auto cacheLoadPOp = make_shared<cache::CacheLoadPOp>(fmt::format("CacheLoad[{}]-{}/{}", prePOpId_, s3Bucket, s3Object),
                                                                projectColumnNames,
                                                                partitionId % numNodes_,
                                                                predicateColumnNames,
+                                                               std::vector<std::set<std::string>>{},
                                                                projPredColumnNames,
                                                                s3Partition,
                                                                scanRange.first,
                                                                scanRange.second,
                                                                table->getFormat()->isColumnar(),
-                                                               awsClient_->getAwsConfig()->getS3ClientType());
+                                                               s3Connector_);
     allPOps.emplace_back(cacheLoadPOp);
 
     // s3 select (cache)
@@ -336,7 +340,7 @@ PrePToS3PTransformer::transformFilterableScanHybrid(const shared_ptr<FilterableS
                                                        scanRange.first,
                                                        scanRange.second,
                                                        table,
-                                                       awsClient_,
+                                                       s3Connector_->getAwsClient(),
                                                        false,
                                                        true);
     allPOps.emplace_back(scanPOp);
@@ -382,7 +386,7 @@ PrePToS3PTransformer::transformFilterableScanHybrid(const shared_ptr<FilterableS
                                                          scanRange.first,
                                                          scanRange.second,
                                                          table,
-                                                         awsClient_,
+                                                         s3Connector_->getAwsClient(),
                                                          false,
                                                          false,
                                                          weightedSegmentKeys);

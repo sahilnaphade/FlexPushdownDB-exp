@@ -12,11 +12,13 @@
 #include <fpdb/plan/prephysical/ProjectPrePOp.h>
 #include <fpdb/plan/prephysical/AggregatePrePOp.h>
 #include <fpdb/plan/Mode.h>
+#include <fpdb/catalogue/obj-store/fpdb-store/FPDBStoreConnector.h>
 #include <fpdb/expression/gandiva/Expression.h>
 
 using namespace fpdb::plan;
 using namespace fpdb::plan::prephysical;
 using namespace fpdb::plan::prephysical::separable;
+using namespace fpdb::catalogue::obj_store;
 using namespace fpdb::expression::gandiva;
 
 namespace fpdb::executor::physical {
@@ -27,9 +29,7 @@ public:
   PrePToFPDBStorePTransformer(uint prePOpId,
                               const shared_ptr<Mode> &mode,
                               int numNodes,
-                              const std::string &host,
-                              int fileServicePort,
-                              int flightPort);
+                              const shared_ptr<FPDBStoreConnector> &fpdbStoreConnector);
 
   /**
    * Transform separable super prephysical op to physical op
@@ -90,9 +90,7 @@ private:
   uint prePOpId_;
   std::shared_ptr<Mode> mode_;
   int numNodes_;
-  std::string host_;
-  int fileServicePort_;
-  int flightPort_;
+  std::shared_ptr<FPDBStoreConnector> fpdbStoreConnector_;
 
 };
 

@@ -31,6 +31,7 @@ public:
   std::shared_ptr<std::unordered_set<std::shared_ptr<SegmentKey>, SegmentKeyPointerHash, SegmentKeyPointerPredicate>> getKeysetInCachePolicy() override;
   std::string toString() override;
   void onNewQuery() override;
+  void onClear() override;
 
 private:
   std::vector<std::shared_ptr<SegmentKey>> keysInCache_;

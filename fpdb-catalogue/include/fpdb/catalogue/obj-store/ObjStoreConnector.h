@@ -13,10 +13,14 @@ class ObjStoreConnector {
 
 public:
   ObjStoreConnector(ObjStoreType type);
+  ObjStoreConnector() = default;
+  ObjStoreConnector(const ObjStoreConnector&) = default;
+  ObjStoreConnector& operator=(const ObjStoreConnector&) = default;
+  virtual ~ObjStoreConnector() = default;
 
   ObjStoreType getStoreType() const;
 
-private:
+protected:
   ObjStoreType storeType_;
   
 };

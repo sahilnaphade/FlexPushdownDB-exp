@@ -91,6 +91,11 @@ public:
    */
   virtual void onNewQuery() = 0;
 
+  /**
+   * Clear
+   */
+  virtual void onClear();
+
   size_t getFreeSize() const;
   CachingPolicyType getType() const;
 

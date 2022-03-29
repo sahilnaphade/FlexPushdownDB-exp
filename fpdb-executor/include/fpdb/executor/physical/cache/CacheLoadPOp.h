@@ -9,27 +9,28 @@
 #include <fpdb/executor/message/Envelope.h>
 #include <fpdb/executor/message/cache/LoadResponseMessage.h>
 #include <fpdb/catalogue/Partition.h>
-#include <fpdb/aws/S3ClientType.h>
+#include <fpdb/catalogue/obj-store/ObjStoreConnector.h>
 
 using namespace fpdb::executor::physical;
 using namespace fpdb::executor::message;
-using namespace fpdb::aws;
+using namespace fpdb::catalogue::obj_store;
 
 namespace fpdb::executor::physical::cache {
 
 class CacheLoadPOp : public PhysicalOp {
 
 public:
-  explicit CacheLoadPOp(std::string name,
-					 std::vector<std::string> projectColumnNames,
-           int nodeId,
-					 std::vector<std::string> predicateColumnNames,
-           std::vector<std::string> columnNames,
-					 std::shared_ptr<Partition> partition,
-					 int64_t startOffset,
-					 int64_t finishOffset,
-           bool isStoreColumnar,
-					 S3ClientType s3ClientType = S3ClientType::S3);
+  explicit CacheLoadPOp(const std::string &name,
+                        const std::vector<std::string> &projectColumnNames,
+                        int nodeId,
+                        const std::vector<std::string> &predicateColumnNames,
+                        const std::vector<std::set<std::string>> &projectColumnGroups,
+                        const std::vector<std::string> &allColumnNames,
+                        const std::shared_ptr<Partition> &partition,
+                        int64_t startOffset,
+                        int64_t finishOffset,
+                        bool isStoreColumnar,
+                        const std::optional<std::shared_ptr<ObjStoreConnector>> &objStoreConnector);
   CacheLoadPOp() = default;
   CacheLoadPOp(const CacheLoadPOp&) = default;
   CacheLoadPOp& operator=(const CacheLoadPOp&) = default;
@@ -46,13 +47,17 @@ public:
 private:
   void requestLoadSegmentsFromCache();
   void onStart();
-  void onCacheLoadResponse(const LoadResponseMessage &Message);
+  void onCacheLoadResponse(const LoadResponseMessage &message);
 
   /**
-   * columnNames = projectColumnNames + predicateColumnNames
+   * allColumnNames = projectColumnNames + predicateColumnNames
+   * projectColumnGroups are used only for hybrid execution, e.g. for aggregate operator with sum(A * B) and sum(C * D),
+   * (A, B) and (C, D) are two groups, which are processed separately, e.g. one is executed using cache,
+   * the other by pushdown
    */
   std::vector<std::string> predicateColumnNames_;
-  std::vector<std::string> columnNames_;
+  std::vector<std::set<std::string>> projectColumnGroups_;
+  std::vector<std::string> allColumnNames_;
 
   std::shared_ptr<Partition> partition_;
   int64_t startOffset_;
@@ -63,7 +68,7 @@ private:
   std::optional<std::string> missOperatorToPushdownName_;
 
   bool isStoreColumnar_;
-  S3ClientType s3ClientType_;
+  std::optional<std::shared_ptr<ObjStoreConnector>> objStoreConnector_;
 
 // caf inspect
 public:
@@ -78,14 +83,16 @@ public:
                                f.field("producers", op.producers_),
                                f.field("consumers", op.consumers_),
                                f.field("predicateColumnNames", op.predicateColumnNames_),
-                               f.field("columnNames", op.columnNames_),
+                               f.field("projectColumnGroups", op.projectColumnGroups_),
+                               f.field("allColumnNames", op.allColumnNames_),
                                f.field("partition", op.partition_),
                                f.field("startOffset", op.startOffset_),
                                f.field("finishOffset", op.finishOffset_),
-                               f.field("hitOperator", op.hitOperatorName_),
-                               f.field("missOperatorToCache", op.missOperatorToCacheName_),
-                               f.field("missOperatorToPushdown", op.missOperatorToPushdownName_),
-                               f.field("s3ClientType", op.s3ClientType_));
+                               f.field("hitOperatorName", op.hitOperatorName_),
+                               f.field("missOperatorToCacheName", op.missOperatorToCacheName_),
+                               f.field("missOperatorToPushdownName", op.missOperatorToPushdownName_),
+                               f.field("isStoreColumnar", op.isStoreColumnar_),
+                               f.field("objStoreConnector", op.objStoreConnector_));
   }
 };
 

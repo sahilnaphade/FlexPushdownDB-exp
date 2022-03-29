@@ -30,6 +30,7 @@ public:
   std::string showCurrentLayout() override;
   std::string toString() override;
   void onNewQuery() override;
+  void onClear() override;
 
 private:
   std::vector<std::shared_ptr<SegmentKey>> keysInCache_;

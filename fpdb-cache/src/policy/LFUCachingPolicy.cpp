@@ -237,3 +237,13 @@ std::string LFUCachingPolicy::toString() {
 void LFUCachingPolicy::onNewQuery() {
 
 }
+
+void LFUCachingPolicy::onClear() {
+  freqMap_.clear();
+  keyMap_.clear();
+  minFreq_ = 0;
+  freqSet_.clear();
+  keySet_.clear();
+  keysToReplace_.clear();
+  estimateCachingDecisions_.clear();
+}

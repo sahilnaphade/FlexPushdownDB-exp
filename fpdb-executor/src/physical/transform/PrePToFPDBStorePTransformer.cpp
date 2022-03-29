@@ -24,15 +24,11 @@ namespace fpdb::executor::physical {
 PrePToFPDBStorePTransformer::PrePToFPDBStorePTransformer(uint prePOpId,
                                                          const shared_ptr<Mode> &mode,
                                                          int numNodes,
-                                                         const std::string &host,
-                                                         int fileServicePort,
-                                                         int flightPort):
+                                                         const shared_ptr<FPDBStoreConnector> &fpdbStoreConnector):
   prePOpId_(prePOpId),
   mode_(mode),
   numNodes_(numNodes),
-  host_(host),
-  fileServicePort_(fileServicePort),
-  flightPort_(flightPort) {}
+  fpdbStoreConnector_(fpdbStoreConnector) {}
 
 pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
 PrePToFPDBStorePTransformer::transformSeparableSuper(const shared_ptr<SeparableSuperPrePOp> &separableSuperPrePOp) {
@@ -104,9 +100,8 @@ PrePToFPDBStorePTransformer::transformSeparableSuper(const shared_ptr<SeparableS
                 collatePOps[i]->getProjectColumnNames(),
                 collatePOps[i]->getNodeId(),
                 subPlan,
-                host_,
-                flightPort_
-                ));
+                fpdbStoreConnector_->getHost(),
+                fpdbStoreConnector_->getFlightPort()));
       }
 
       // check whether has reduce op
@@ -249,8 +244,8 @@ PrePToFPDBStorePTransformer::transformFilterableScanPullup(const shared_ptr<Filt
                                                                object,
                                                                table->getFormat(),
                                                                table->getSchema(),
-                                                               host_,
-                                                               fileServicePort_);
+                                                               fpdbStoreConnector_->getHost(),
+                                                               fpdbStoreConnector_->getFileServicePort());
     scanPOps.emplace_back(scanPOp);
 
     // filter
@@ -378,15 +373,18 @@ PrePToFPDBStorePTransformer::transformFilterableScanCachingOnly(const shared_ptr
     }
 
     // cache load
+    // TODO: projectColumnGroups
     const auto cacheLoadPOp = make_shared<cache::CacheLoadPOp>(fmt::format("CacheLoad[{}]-{}/{}", prePOpId_, bucket, object),
                                                                projectColumnNames,
                                                                partitionId % numNodes_,
                                                                predicateColumnNames,
+                                                               std::vector<std::set<std::string>>{},
                                                                projPredColumnNames,
                                                                partition,
                                                                scanRange.first,
                                                                scanRange.second,
-                                                               table->getFormat()->isColumnar());
+                                                               table->getFormat()->isColumnar(),
+                                                               fpdbStoreConnector_);
     allPOps.emplace_back(cacheLoadPOp);
 
     // remote file scan
@@ -397,8 +395,8 @@ PrePToFPDBStorePTransformer::transformFilterableScanCachingOnly(const shared_ptr
                                                                object,
                                                                table->getFormat(),
                                                                table->getSchema(),
-                                                               host_,
-                                                               fileServicePort_,
+                                                               fpdbStoreConnector_->getHost(),
+                                                               fpdbStoreConnector_->getFileServicePort(),
                                                                nullopt,
                                                                false,
                                                                true);

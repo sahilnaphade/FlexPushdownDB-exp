@@ -60,6 +60,19 @@ namespace fpdb::util {
     return vector<T>{unionSet.begin(), unionSet.end()};
   }
 
+  /**
+   * Check subset
+   */
+  template<typename T>
+  bool isSubSet(const set<T> &set1, const set<T> &set2) {
+    for (const auto &e1: set1) {
+      if (set2.find(e1) == set2.end()) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   size_t hashCombine(const vector<size_t> &hashes);
 
   /**
