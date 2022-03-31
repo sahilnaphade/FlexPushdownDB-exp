@@ -40,6 +40,10 @@ std::string CacheLoadPOp::getTypeString() const {
   return "CacheLoadPOp";
 }
 
+const std::shared_ptr<Partition> &CacheLoadPOp::getPartition() const {
+  return partition_;
+}
+
 void CacheLoadPOp::onReceive(const Envelope &message) {
   if (message.message().type() == MessageType::START) {
 	  this->onStart();

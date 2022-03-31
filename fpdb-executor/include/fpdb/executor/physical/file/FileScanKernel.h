@@ -26,6 +26,7 @@ public:
   FileScanKernel(CatalogueEntryType type,
                  const std::shared_ptr<FileFormat> &format,
                  const std::shared_ptr<::arrow::Schema> &schema,
+                 int64_t fileSize,
                  const std::optional<std::pair<int64_t, int64_t>> &byteRange);
   FileScanKernel() = default;
   FileScanKernel(const FileScanKernel&) = default;
@@ -35,6 +36,7 @@ public:
   CatalogueEntryType getType() const;
   const std::shared_ptr<FileFormat> &getFormat() const;
   const std::shared_ptr<::arrow::Schema> &getSchema() const;
+  int64_t getFileSize() const;
   const std::optional<std::pair<int64_t, int64_t>> &getByteRange() const;
 
 #if SHOW_DEBUG_METRICS == true
@@ -44,12 +46,12 @@ public:
 
   virtual tl::expected<std::shared_ptr<TupleSet>, std::string> scan() = 0;
   virtual tl::expected<std::shared_ptr<TupleSet>, std::string> scan(const std::vector<std::string> &columnNames) = 0;
-  virtual tl::expected<int64_t, std::string> getFileSize() const = 0;
 
 protected:
   CatalogueEntryType type_;
   std::shared_ptr<FileFormat> format_;
   std::shared_ptr<::arrow::Schema> schema_;
+  int64_t fileSize_;
   std::optional<std::pair<int64_t, int64_t>> byteRange_;
 
 #if SHOW_DEBUG_METRICS == true

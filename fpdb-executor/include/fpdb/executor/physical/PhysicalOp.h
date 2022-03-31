@@ -54,6 +54,7 @@ public:
   virtual void unConsume(const std::shared_ptr<PhysicalOp> &op);
   void setBloomFilterCreatePrepareConsumer(const std::shared_ptr<PhysicalOp> &op);
   void create(const std::shared_ptr<POpContext>& ctx);
+  void setSeparated(bool isSeparated);
 
   virtual void onReceive(const fpdb::executor::message::Envelope &msg) = 0;
   virtual void clear() = 0;
@@ -71,6 +72,9 @@ protected:
 
   // for bloom filter
   std::optional<std::string> bloomFilterCreatePrepareConsumer_;
+
+  // whether this operator is used in hybrid execution
+  bool isSeparated_;
 
 };
 

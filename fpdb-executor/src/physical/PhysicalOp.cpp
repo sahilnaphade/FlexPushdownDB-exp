@@ -16,7 +16,8 @@ PhysicalOp::PhysicalOp(std::string name,
   name_(std::move(name)),
   type_(type),
   projectColumnNames_(std::move(projectColumnNames)),
-  nodeId_(nodeId) {}
+  nodeId_(nodeId),
+  isSeparated_(false) {}
 
 POpType PhysicalOp::getType() const {
   return type_;
@@ -95,6 +96,10 @@ long PhysicalOp::getQueryId() const {
 
 void PhysicalOp::setQueryId(long queryId) {
   queryId_ = queryId;
+}
+
+void PhysicalOp::setSeparated(bool isSeparated) {
+  isSeparated_ = isSeparated;
 }
 
 } // namespace

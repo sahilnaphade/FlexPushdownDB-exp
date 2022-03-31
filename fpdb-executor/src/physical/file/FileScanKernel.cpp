@@ -9,10 +9,12 @@ namespace fpdb::executor::physical::file {
 FileScanKernel::FileScanKernel(CatalogueEntryType type,
                                const std::shared_ptr<FileFormat> &format,
                                const std::shared_ptr<::arrow::Schema> &schema,
+                               int64_t fileSize,
                                const std::optional<std::pair<int64_t, int64_t>> &byteRange) :
   type_(type),
   format_(format),
   schema_(schema),
+  fileSize_(fileSize),
   byteRange_(byteRange) {}
 
 CatalogueEntryType FileScanKernel::getType() const {
@@ -25,6 +27,10 @@ const std::shared_ptr<FileFormat> &FileScanKernel::getFormat() const {
 
 const std::shared_ptr<::arrow::Schema> &FileScanKernel::getSchema() const {
   return schema_;
+}
+
+int64_t FileScanKernel::getFileSize() const {
+  return fileSize_;
 }
 
 const std::optional<std::pair<int64_t, int64_t>> &FileScanKernel::getByteRange() const {

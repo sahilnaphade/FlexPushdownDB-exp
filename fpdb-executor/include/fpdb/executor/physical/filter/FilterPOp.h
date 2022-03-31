@@ -99,6 +99,8 @@ public:
                                f.field("opContext", op.opContext_),
                                f.field("producers", op.producers_),
                                f.field("consumers", op.consumers_),
+                               f.field("bloomFilterCreatePrepareConsumer", op.bloomFilterCreatePrepareConsumer_),
+                               f.field("isSeparated", op.isSeparated_),
                                f.field("predicate", op.predicate_),
                                f.field("received", op.received_),
                                f.field("filtered", op.filtered_),

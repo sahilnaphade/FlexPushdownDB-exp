@@ -76,7 +76,8 @@ PrePToFPDBStorePTransformer::transformSeparableSuper(const shared_ptr<SeparableS
         return make_pair(vector<shared_ptr<PhysicalOp>>{*reducePOp}, allPOps);
       }
     }
-    case PUSHDOWN_ONLY: {
+    case PUSHDOWN_ONLY:
+    case HYBRID: {
       // add collate at the end of each FPDB store super op
       vector<shared_ptr<PhysicalOp>> collatePOps;
       for (size_t i = 0; i < connPOps.size(); ++i) {
@@ -104,12 +105,21 @@ PrePToFPDBStorePTransformer::transformSeparableSuper(const shared_ptr<SeparableS
                 fpdbStoreConnector_->getFlightPort()));
       }
 
+      // transform to hybrid execution plan, if needed
+      if (mode_->id() == HYBRID) {
+        auto hybridTransformRes = transformPushdownOnlyToHybrid(fpdbStoreSuperPOps);
+        connPOps = hybridTransformRes.first;
+        allPOps = hybridTransformRes.second;
+      } else {
+        connPOps = fpdbStoreSuperPOps;
+        allPOps = fpdbStoreSuperPOps;
+      }
+
       // check whether has reduce op
       if (!reducePOp.has_value()) {
-        return make_pair(fpdbStoreSuperPOps, fpdbStoreSuperPOps);
+        return make_pair(connPOps, allPOps);
       } else {
-        PrePToPTransformerUtil::connectManyToOne(fpdbStoreSuperPOps, *reducePOp);
-        allPOps = fpdbStoreSuperPOps;
+        PrePToPTransformerUtil::connectManyToOne(connPOps, *reducePOp);
         allPOps.emplace_back(*reducePOp);
         return make_pair(vector<shared_ptr<PhysicalOp>>{*reducePOp}, allPOps);
       }
@@ -141,7 +151,10 @@ PrePToFPDBStorePTransformer::addBloomFilterUse(vector<shared_ptr<PhysicalOp>> &p
       // only pushable when the producer is FPDBStoreSuperPOp
       if (producer->getType() == POpType::FPDB_STORE_SUPER) {
         auto fpdbStoreSuperPOp = static_pointer_cast<fpdb_store::FPDBStoreSuperPOp>(producer);
-        fpdbStoreSuperPOp->addAsLastOp(bloomFilterUsePOp);
+        auto res = fpdbStoreSuperPOp->getSubPlan()->addAsLast(bloomFilterUsePOp);
+        if (!res.has_value()) {
+          throw runtime_error(res.error());
+        }
         connPOps.emplace_back(fpdbStoreSuperPOp);
       } else {
         PrePToPTransformerUtil::connectOneToOne(producer, bloomFilterUsePOp);
@@ -191,6 +204,171 @@ PrePToFPDBStorePTransformer::transformProducers(const shared_ptr<PrePhysicalOp> 
 }
 
 pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
+PrePToFPDBStorePTransformer::transformPushdownOnlyToHybrid(const vector<shared_ptr<PhysicalOp>> &fpdbStoreSuperPOps) {
+  vector<shared_ptr<PhysicalOp>> connPOps, allPOps;
+
+  for (const auto &fpdbStoreSuperPOp: fpdbStoreSuperPOps) {
+    auto typedFPDBStoreSuperPOp = static_pointer_cast<fpdb_store::FPDBStoreSuperPOp>(fpdbStoreSuperPOp);
+    unordered_map<shared_ptr<PhysicalOp>, shared_ptr<PhysicalOp>> storePOpToLocalPOp;
+    unordered_map<string, shared_ptr<PhysicalOp>> storePOpMap, localPOpMap;
+    optional<shared_ptr<merge::MergePOp>> mergePOp1, mergePOp2;
+
+    // create mirror ops which are executed locally
+    for (const auto &storePOp: typedFPDBStoreSuperPOp->getSubPlan()->getPhysicalOps()) {
+      if (storePOp->getType() == POpType::COLLATE) {
+        continue;
+      }
+
+      shared_ptr<PhysicalOp> localPOp;
+      switch (storePOp->getType()) {
+        case POpType::FPDB_STORE_FILE_SCAN: {
+          auto fpdbStoreFileScanPOp = static_pointer_cast<fpdb_store::FPDBStoreFileScanPOp>(storePOp);
+          auto bucket = fpdbStoreFileScanPOp->getBucket();
+          auto object = fpdbStoreFileScanPOp->getObject();
+          auto kernel = fpdbStoreFileScanPOp->getKernel();
+          auto fileSize = kernel->getFileSize();
+
+          // TODO: parameters
+          std::vector<std::string> predicateColumnNames;
+          std::vector<std::set<std::string>> projectColumnGroups;
+          std::vector<std::string> allColumnNames;
+
+          auto cacheLoadPOp = make_shared<cache::CacheLoadPOp>(fmt::format("CacheLoad[{}]-{}/{}", prePOpId_, bucket, object),
+                                                               fpdbStoreFileScanPOp->getProjectColumnNames(),
+                                                               fpdbStoreFileScanPOp->getNodeId(),
+                                                               predicateColumnNames,
+                                                               projectColumnGroups,
+                                                               allColumnNames,
+                                                               make_shared<ObjStorePartition>(bucket, object, fileSize),
+                                                               0,
+                                                               fileSize,
+                                                               fpdbStoreFileScanPOp->getKernel()->getFormat()->isColumnar(),
+                                                               fpdbStoreConnector_);
+          localPOp = cacheLoadPOp;
+
+          // Create a RemoteFileScanPOp to load data to cache, and a MergePOp, then wire them up
+          auto missPOpToCache = make_shared<file::RemoteFileScanPOp>(fmt::format("RemoteFileScan(cache)[{}]-{}/{}", prePOpId_, bucket, object),
+                                                                     fpdbStoreFileScanPOp->getProjectColumnNames(),
+                                                                     fpdbStoreFileScanPOp->getNodeId(),
+                                                                     bucket,
+                                                                     object,
+                                                                     kernel->getFormat(),
+                                                                     kernel->getSchema(),
+                                                                     fileSize,
+                                                                     fpdbStoreConnector_->getHost(),
+                                                                     fpdbStoreConnector_->getFileServicePort(),
+                                                                     nullopt,
+                                                                     false,
+                                                                     true);
+          // first merge for cached data and to-cache data
+          mergePOp1 = make_shared<merge::MergePOp>(fmt::format("merge1[{}]-{}/{}", prePOpId_, bucket, object),
+                                                   fpdbStoreFileScanPOp->getProjectColumnNames(),
+                                                   fpdbStoreFileScanPOp->getNodeId());
+          cacheLoadPOp->setHitOperator(*mergePOp1);
+          (*mergePOp1)->setLeftProducer(cacheLoadPOp);
+          cacheLoadPOp->setMissOperatorToCache(missPOpToCache);
+          missPOpToCache->consume(cacheLoadPOp);
+          missPOpToCache->produce(*mergePOp1);
+          (*mergePOp1)->setRightProducer(missPOpToCache);
+
+          // miss operator to push down
+          cacheLoadPOp->setMissOperatorToPushdown(fpdbStoreSuperPOp);
+          fpdbStoreSuperPOp->consume(cacheLoadPOp);
+
+          // second merge for local result and pushdown result
+          mergePOp2 = make_shared<merge::MergePOp>(fmt::format("merge2[{}]-{}/{}", prePOpId_, bucket, object),
+                                                   fpdbStoreFileScanPOp->getProjectColumnNames(),
+                                                   fpdbStoreFileScanPOp->getNodeId());
+
+          // save created ops
+          connPOps.emplace_back(*mergePOp2);
+          allPOps.emplace_back(missPOpToCache);
+          allPOps.emplace_back(fpdbStoreSuperPOp);
+          allPOps.emplace_back(*mergePOp1);
+          allPOps.emplace_back(*mergePOp2);
+
+          break;
+        }
+        case POpType::FILTER: {
+          localPOp = make_shared<filter::FilterPOp>(dynamic_cast<filter::FilterPOp &>(*storePOp));
+          break;
+        }
+        case POpType::PROJECT: {
+          localPOp = make_shared<project::ProjectPOp>(dynamic_cast<project::ProjectPOp &>(*storePOp));
+          break;
+        }
+        case POpType::AGGREGATE: {
+          localPOp = make_shared<aggregate::AggregatePOp>(dynamic_cast<aggregate::AggregatePOp &>(*storePOp));
+          break;
+        }
+        default: {
+          throw runtime_error(fmt::format("Unsupported physical operator type at FPDB store: {}", storePOp->getTypeString()));
+        }
+      }
+      localPOp->setName(fmt::format("{}-separated", storePOp->name()));
+      storePOpToLocalPOp.emplace(storePOp, localPOp);
+      storePOpMap.emplace(storePOp->name(), storePOp);
+      localPOpMap.emplace(localPOp->name(), localPOp);
+      allPOps.emplace_back(localPOp);
+    }
+
+    if (!mergePOp1.has_value() || !mergePOp2.has_value()) {
+      throw runtime_error("FPDBFileScanPOp not found in pushdown subPlan");
+    }
+
+    // wire up local ops following the connection among store ops
+    for (const auto &storeToLocalIt: storePOpToLocalPOp) {
+      auto storePOp = storeToLocalIt.first;
+      auto localPOp = storeToLocalIt.second;
+
+      if (localPOp->getType() == POpType::CACHE_LOAD) {
+        // already completed connected when created
+        continue;
+      } else {
+        for (const auto &storeConsumerName: storePOp->consumers()) {
+          auto storeConsumer = storePOpMap.find(storeConsumerName)->second;
+          auto localConsumer = storePOpToLocalPOp.find(storeConsumer)->second;
+          localPOp->produce(localConsumer);
+        }
+        for (const auto &storeProducerName: storePOp->producers()) {
+          auto storeProducer = storePOpMap.find(storeProducerName)->second;
+          auto localProducer = storePOpToLocalPOp.find(storeProducer)->second;
+
+          // if the corresponding local producer is CacheLoadPOp, then it needs to be connected to mergePOp1
+          if (localProducer->getType() == POpType::CACHE_LOAD) {
+            (*mergePOp1)->produce(localPOp);
+            localPOp->consume(*mergePOp1);
+          } else {
+            localPOp->consume(localProducer);
+          }
+        }
+      }
+    }
+
+    // wire up for the second merge
+    auto expStoreCollatePOp = typedFPDBStoreSuperPOp->getSubPlan()->getCollatePOp();
+    if (!expStoreCollatePOp.has_value()) {
+      throw runtime_error(expStoreCollatePOp.error());
+    }
+    auto storeCollatePOp = *expStoreCollatePOp;
+
+    if (storeCollatePOp->producers().size() > 1) {
+      throw runtime_error("Currently pushdown only supports plan with serial operators");
+    }
+    auto storeLastPOpName = *storeCollatePOp->producers().begin();
+    auto storeLastPOp = storePOpMap.find(storeLastPOpName)->second;
+    auto localLastPOp = storePOpToLocalPOp.find(storeLastPOp)->second;
+
+    (*mergePOp2)->setLeftProducer(localLastPOp);
+    localLastPOp->produce(*mergePOp2);
+    (*mergePOp2)->setRightProducer(fpdbStoreSuperPOp);
+    fpdbStoreSuperPOp->produce(*mergePOp2);
+  }
+
+  return {connPOps, allPOps};
+}
+
+pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
 PrePToFPDBStorePTransformer::transformFilterableScan(const shared_ptr<FilterableScanPrePOp> &filterableScanPrePOp) {
   const auto &objStoreTable = std::static_pointer_cast<ObjStoreTable>(filterableScanPrePOp->getTable());
   const auto &partitions = (const vector<shared_ptr<Partition>> &) objStoreTable->getObjStorePartitions();
@@ -203,6 +381,8 @@ PrePToFPDBStorePTransformer::transformFilterableScan(const shared_ptr<Filterable
       return transformFilterableScanPushdownOnly(filterableScanPrePOp, partitionPredicates);
     case CACHING_ONLY:
       return transformFilterableScanCachingOnly(filterableScanPrePOp, partitionPredicates);
+    case HYBRID:
+      throw runtime_error("Hybrid mode should use transform result of pushdown-only");
     default:
       throw runtime_error(fmt::format("Unsupported mode for FPDB Store: {}", mode_->toString()));
   }
@@ -244,6 +424,7 @@ PrePToFPDBStorePTransformer::transformFilterableScanPullup(const shared_ptr<Filt
                                                                object,
                                                                table->getFormat(),
                                                                table->getSchema(),
+                                                               partition->getNumBytes(),
                                                                fpdbStoreConnector_->getHost(),
                                                                fpdbStoreConnector_->getFileServicePort());
     scanPOps.emplace_back(scanPOp);
@@ -308,7 +489,8 @@ PrePToFPDBStorePTransformer::transformFilterableScanPushdownOnly(const shared_pt
                                                                         bucket,
                                                                         object,
                                                                         table->getFormat(),
-                                                                        table->getSchema());
+                                                                        table->getSchema(),
+                                                                        partition->getNumBytes());
     scanPOps.emplace_back(scanPOp);
 
     // filter
@@ -373,7 +555,6 @@ PrePToFPDBStorePTransformer::transformFilterableScanCachingOnly(const shared_ptr
     }
 
     // cache load
-    // TODO: projectColumnGroups
     const auto cacheLoadPOp = make_shared<cache::CacheLoadPOp>(fmt::format("CacheLoad[{}]-{}/{}", prePOpId_, bucket, object),
                                                                projectColumnNames,
                                                                partitionId % numNodes_,
@@ -395,6 +576,7 @@ PrePToFPDBStorePTransformer::transformFilterableScanCachingOnly(const shared_ptr
                                                                object,
                                                                table->getFormat(),
                                                                table->getSchema(),
+                                                               partition->getNumBytes(),
                                                                fpdbStoreConnector_->getHost(),
                                                                fpdbStoreConnector_->getFileServicePort(),
                                                                nullopt,

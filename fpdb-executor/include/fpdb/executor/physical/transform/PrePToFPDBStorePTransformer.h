@@ -63,6 +63,14 @@ private:
   vector<pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>>
   transformProducers(const shared_ptr<PrePhysicalOp> &prePOp);
 
+  /**
+   * Transform the plan of pushdown-only into hybrid execution, where the plan of pushdown-only is just FpdbStoreSuperPOps
+   * @param fpdbStoreSuperPOps
+   * @return a pair of connect physical ops (to producer) and current all (cumulative) physical ops
+   */
+  pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
+  transformPushdownOnlyToHybrid(const vector<shared_ptr<PhysicalOp>> &fpdbStoreSuperPOps);
+
   pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
   transformFilterableScan(const shared_ptr<FilterableScanPrePOp> &filterableScanPrePOp);
 

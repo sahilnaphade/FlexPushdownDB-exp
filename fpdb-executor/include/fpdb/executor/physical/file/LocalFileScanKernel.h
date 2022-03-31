@@ -14,6 +14,7 @@ class LocalFileScanKernel: public FileScanKernel {
 public:
   LocalFileScanKernel(const std::shared_ptr<FileFormat> &format,
                       const std::shared_ptr<::arrow::Schema> &schema,
+                      int64_t fileSize,
                       const std::optional<std::pair<int64_t, int64_t>> &byteRange,
                       const std::string &path);
   LocalFileScanKernel() = default;
@@ -23,6 +24,7 @@ public:
 
   static std::shared_ptr<LocalFileScanKernel> make(const std::shared_ptr<FileFormat> &format,
                                                    const std::shared_ptr<::arrow::Schema> &schema,
+                                                   int64_t fileSize,
                                                    const std::optional<std::pair<int64_t, int64_t>> &byteRange,
                                                    const std::string &path);
 
@@ -31,7 +33,6 @@ public:
 
   tl::expected<std::shared_ptr<TupleSet>, std::string> scan() override;
   tl::expected<std::shared_ptr<TupleSet>, std::string> scan(const std::vector<std::string> &columnNames) override;
-  tl::expected<int64_t, std::string> getFileSize() const override;
 
 private:
   std::string path_;
@@ -49,6 +50,7 @@ public:
     };
     return f.object(kernel).fields(f.field("format", kernel.format_),
                                    f.field("schema", schemaToBytes, schemaFromBytes),
+                                   f.field("fileSize", kernel.fileSize_),
                                    f.field("byteRange", kernel.byteRange_),
                                    f.field("path", kernel.path_));
   }

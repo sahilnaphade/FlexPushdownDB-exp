@@ -31,11 +31,7 @@ public:
   void clear() override;
   std::string getTypeString() const override;
 
-  /**
-   * Add op as the last op (except collate) in the subPlan
-   * @param lastOp
-   */
-  void addAsLastOp(std::shared_ptr<PhysicalOp> &lastOp);
+  const std::shared_ptr<PhysicalPlan> &getSubPlan() const;
 
 private:
   void onStart();
@@ -62,6 +58,8 @@ public:
                                f.field("opContext", op.opContext_),
                                f.field("producers", op.producers_),
                                f.field("consumers", op.consumers_),
+                               f.field("bloomFilterCreatePrepareConsumer", op.bloomFilterCreatePrepareConsumer_),
+                               f.field("isSeparated", op.isSeparated_),
                                f.field("subPlan", op.subPlan_),
                                f.field("host", op.host_),
                                f.field("port", op.port_));

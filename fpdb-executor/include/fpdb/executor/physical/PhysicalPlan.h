@@ -7,6 +7,7 @@
 
 #include <fpdb/executor/physical/PhysicalOp.h>
 #include <fpdb/caf/CAFUtil.h>
+#include <tl/expected.hpp>
 #include <utility>
 
 using namespace std;
@@ -22,7 +23,8 @@ public:
   ~PhysicalPlan() = default;
 
   const vector<shared_ptr<PhysicalOp>> &getPhysicalOps() const;
-  void addPOp(const shared_ptr<PhysicalOp> &op);
+  tl::expected<void, string> addAsLast(shared_ptr<PhysicalOp> &newOp);
+  tl::expected<shared_ptr<PhysicalOp>, string> getCollatePOp() const;
 
 private:
   vector<shared_ptr<PhysicalOp>> physicalOps_;

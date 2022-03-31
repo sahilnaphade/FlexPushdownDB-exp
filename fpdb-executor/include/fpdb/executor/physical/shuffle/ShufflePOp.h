@@ -93,6 +93,8 @@ public:
                                f.field("opContext", op.opContext_),
                                f.field("producers", op.producers_),
                                f.field("consumers", op.consumers_),
+                               f.field("bloomFilterCreatePrepareConsumer", op.bloomFilterCreatePrepareConsumer_),
+                               f.field("isSeparated", op.isSeparated_),
                                f.field("shuffleColumnNames", op.shuffleColumnNames_),
                                f.field("consumerVec", op.consumerVec_));
   }

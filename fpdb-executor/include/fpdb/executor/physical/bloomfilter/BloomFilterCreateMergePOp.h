@@ -36,6 +36,21 @@ private:
   std::optional<std::shared_ptr<BloomFilter>> mergedBloomFilter_;
   int nBloomFilterReceived_;
 
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, BloomFilterCreateMergePOp& op) {
+    return f.object(op).fields(f.field("name", op.name_),
+                               f.field("type", op.type_),
+                               f.field("projectColumnNames", op.projectColumnNames_),
+                               f.field("nodeId", op.nodeId_),
+                               f.field("queryId", op.queryId_),
+                               f.field("opContext", op.opContext_),
+                               f.field("producers", op.producers_),
+                               f.field("consumers", op.consumers_),
+                               f.field("bloomFilterCreatePrepareConsumer", op.bloomFilterCreatePrepareConsumer_),
+                               f.field("isSeparated", op.isSeparated_));
+  }
 };
 
 }

@@ -13,12 +13,13 @@ namespace fpdb::executor::physical::file {
 
 RemoteFileScanKernel::RemoteFileScanKernel(const std::shared_ptr<FileFormat> &format,
                                            const std::shared_ptr<::arrow::Schema> &schema,
+                                           int64_t fileSize,
                                            const std::optional<std::pair<int64_t, int64_t>> &byteRange,
                                            const std::string &bucket,
                                            const std::string &object,
                                            const std::string &host,
                                            int port):
-  FileScanKernel(CatalogueEntryType::OBJ_STORE, format, schema, byteRange),
+  FileScanKernel(CatalogueEntryType::OBJ_STORE, format, schema, fileSize, byteRange),
   bucket_(bucket),
   object_(object),
   host_(host),
@@ -27,12 +28,13 @@ RemoteFileScanKernel::RemoteFileScanKernel(const std::shared_ptr<FileFormat> &fo
 std::shared_ptr<RemoteFileScanKernel>
 RemoteFileScanKernel::make(const std::shared_ptr<FileFormat> &format,
                            const std::shared_ptr<::arrow::Schema> &schema,
+                           int64_t fileSize,
                            const std::optional<std::pair<int64_t, int64_t>> &byteRange,
                            const std::string &bucket,
                            const std::string &object,
                            const std::string &host,
                            int port) {
-  return std::make_shared<RemoteFileScanKernel>(format, schema, byteRange, bucket, object, host, port);
+  return std::make_shared<RemoteFileScanKernel>(format, schema, fileSize, byteRange, bucket, object, host, port);
 }
 
 const std::string &RemoteFileScanKernel::getBucket() const {
@@ -94,11 +96,6 @@ RemoteFileScanKernel::scan(const std::vector<std::string> &columnNames) {
   } else {
     return expTupleSet;
   }
-}
-
-tl::expected<int64_t, std::string> RemoteFileScanKernel::getFileSize() const {
-  auto reader = RemoteFileReaderBuilder::make(format_, schema_, bucket_, object_, host_, port_);
-  return reader->getFileSize();
 }
 
 }

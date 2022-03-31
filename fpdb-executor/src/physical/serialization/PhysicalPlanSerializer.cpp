@@ -91,6 +91,7 @@ tl::expected<::nlohmann::json, std::string> PhysicalPlanSerializer::serializeFPD
   jObj.emplace("object", storeFileScanPOp->getObject());
   jObj.emplace("format", kernel->getFormat()->toJson());
   jObj.emplace("schema", ArrowSerializer::schema_to_bytes(kernel->getSchema()));
+  jObj.emplace("fileSize", kernel->getFileSize());
 
   auto optByteRange = kernel->getByteRange();
   if (optByteRange.has_value()) {

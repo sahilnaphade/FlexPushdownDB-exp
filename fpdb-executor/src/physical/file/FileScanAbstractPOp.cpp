@@ -141,11 +141,7 @@ void FileScanAbstractPOp::requestStoreSegmentsInCache(const std::shared_ptr<Tupl
   if (optByteRange.has_value()) {
     byteRange = *optByteRange;
   } else {
-    auto expFileSize = kernel_->getFileSize();
-    if (!expFileSize.has_value()) {
-      ctx()->notifyError(expFileSize.error());
-    }
-    byteRange = {0, *expFileSize};
+    byteRange = {0, kernel_->getFileSize()};
   }
 
   cache::CacheHelper::requestStoreSegmentsInCache(tupleSet,

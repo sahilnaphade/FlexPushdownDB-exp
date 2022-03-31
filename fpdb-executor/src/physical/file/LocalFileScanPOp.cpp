@@ -13,6 +13,7 @@ LocalFileScanPOp::LocalFileScanPOp(const std::string &name,
                                    const std::string &path,
                                    const std::shared_ptr<FileFormat> &format,
                                    const std::shared_ptr<::arrow::Schema> &schema,
+                                   int64_t fileSize,
                                    const std::optional<std::pair<int64_t, int64_t>> &byteRange,
                                    bool scanOnStart,
                                    bool toCache):
@@ -20,7 +21,7 @@ LocalFileScanPOp::LocalFileScanPOp(const std::string &name,
                       LOCAL_FILE_SCAN,
                       columnNames,
                       nodeId,
-                      LocalFileScanKernel::make(format, schema, byteRange, path),
+                      LocalFileScanKernel::make(format, schema, fileSize, byteRange, path),
                       scanOnStart,
                       toCache) {}
 

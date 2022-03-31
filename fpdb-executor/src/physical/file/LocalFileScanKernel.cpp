@@ -12,17 +12,19 @@ namespace fpdb::executor::physical::file {
 
 LocalFileScanKernel::LocalFileScanKernel(const std::shared_ptr<FileFormat> &format,
                                          const std::shared_ptr<::arrow::Schema> &schema,
+                                         int64_t fileSize,
                                          const std::optional<std::pair<int64_t, int64_t>> &byteRange,
                                          const std::string &path) :
-  FileScanKernel(CatalogueEntryType::LOCAL_FS, format, schema, byteRange),
+  FileScanKernel(CatalogueEntryType::LOCAL_FS, format, schema, fileSize, byteRange),
   path_(path) {}
 
 std::shared_ptr<LocalFileScanKernel>
 LocalFileScanKernel::make(const std::shared_ptr<FileFormat> &format,
                           const std::shared_ptr<::arrow::Schema> &schema,
+                          int64_t fileSize,
                           const std::optional<std::pair<int64_t, int64_t>> &byteRange,
                           const std::string &path) {
-  return std::make_shared<LocalFileScanKernel>(format, schema, byteRange, path);
+  return std::make_shared<LocalFileScanKernel>(format, schema, fileSize, byteRange, path);
 }
 
 const std::string &LocalFileScanKernel::getPath() const {
@@ -76,11 +78,6 @@ LocalFileScanKernel::scan(const std::vector<std::string> &columnNames) {
   } else {
     return expTupleSet;
   }
-}
-
-tl::expected<int64_t, std::string> LocalFileScanKernel::getFileSize() const {
-  auto reader = LocalFileReaderBuilder::make(format_, schema_, path_);
-  return reader->getFileSize();
 }
 
 }

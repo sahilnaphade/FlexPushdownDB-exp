@@ -40,6 +40,8 @@ public:
   void clear() override;
   std::string getTypeString() const override;
 
+  const std::shared_ptr<Partition> &getPartition() const;
+
   void setHitOperator(const std::shared_ptr<PhysicalOp> &op);
   void setMissOperatorToCache(const std::shared_ptr<PhysicalOp> &op);
   void setMissOperatorToPushdown(const std::shared_ptr<PhysicalOp> &op);
@@ -82,6 +84,8 @@ public:
                                f.field("opContext", op.opContext_),
                                f.field("producers", op.producers_),
                                f.field("consumers", op.consumers_),
+                               f.field("bloomFilterCreatePrepareConsumer", op.bloomFilterCreatePrepareConsumer_),
+                               f.field("isSeparated", op.isSeparated_),
                                f.field("predicateColumnNames", op.predicateColumnNames_),
                                f.field("projectColumnGroups", op.projectColumnGroups_),
                                f.field("allColumnNames", op.allColumnNames_),

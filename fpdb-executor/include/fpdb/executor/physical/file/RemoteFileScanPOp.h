@@ -22,6 +22,7 @@ public:
                     const std::string &object,
                     const std::shared_ptr<FileFormat> &format,
                     const std::shared_ptr<::arrow::Schema> &schema,
+                    int64_t fileSize,
                     const std::string &host,
                     int port,
                     const std::optional<std::pair<int64_t, int64_t>> &byteRange = std::nullopt,
@@ -46,6 +47,8 @@ public:
                                f.field("opContext", op.opContext_),
                                f.field("producers", op.producers_),
                                f.field("consumers", op.consumers_),
+                               f.field("bloomFilterCreatePrepareConsumer", op.bloomFilterCreatePrepareConsumer_),
+                               f.field("isSeparated", op.isSeparated_),
                                f.field("kernel", op.kernel_),
                                f.field("scanOnStart", op.scanOnStart_));
   }

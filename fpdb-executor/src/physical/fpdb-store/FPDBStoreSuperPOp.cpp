@@ -5,7 +5,6 @@
 #include <fpdb/executor/physical/fpdb-store/FPDBStoreSuperPOp.h>
 #include <fpdb/executor/physical/bloomfilter/BloomFilterUsePOp.h>
 #include <fpdb/executor/physical/serialization/PhysicalPlanSerializer.h>
-#include <fpdb/executor/physical/transform/PrePToPTransformerUtil.h>
 #include <fpdb/executor/message/DebugMetricsMessage.h>
 #include <fpdb/executor/metrics/Globals.h>
 #include <fpdb/store/server/flight/SelectObjectContentTicket.hpp>
@@ -46,28 +45,8 @@ std::string FPDBStoreSuperPOp::getTypeString() const {
   return "FPDBStoreSuperPOp";
 }
 
-void FPDBStoreSuperPOp::addAsLastOp(std::shared_ptr<PhysicalOp> &lastOp) {
-  // find collate
-  std::optional<std::shared_ptr<PhysicalOp>> collatePOp;
-  std::unordered_map<std::string, std::shared_ptr<PhysicalOp>> opMap;
-  for (const auto &op: subPlan_->getPhysicalOps()) {
-    opMap.emplace(op->name(), op);
-    if (op->getType() == POpType::COLLATE) {
-      collatePOp = op;
-    }
-  }
-
-  // add before collate
-  std::vector<std::shared_ptr<PhysicalOp>> collateProducers;
-  for (const auto &producerName: (*collatePOp)->producers()) {
-    auto producer = opMap.find(producerName)->second;
-    collateProducers.emplace_back(producer);
-    producer->unProduce(*collatePOp);
-    (*collatePOp)->unConsume(producer);
-  }
-  PrePToPTransformerUtil::connectManyToOne(collateProducers, lastOp);
-  PrePToPTransformerUtil::connectOneToOne(lastOp, *collatePOp);
-  subPlan_->addPOp(lastOp);
+const std::shared_ptr<PhysicalPlan> &FPDBStoreSuperPOp::getSubPlan() const {
+  return subPlan_;
 }
 
 void FPDBStoreSuperPOp::onStart() {

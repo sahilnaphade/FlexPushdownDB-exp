@@ -119,6 +119,11 @@ PhysicalPlanDeserializer::deserializeFPDBStoreFileScanPOp(::nlohmann::json jObj)
   }
   auto schema = ArrowSerializer::bytes_to_schema(jObj["schema"].get<std::vector<uint8_t>>());
 
+  if (!jObj.contains("fileSize")) {
+    return tl::make_unexpected(fmt::format("FileSize not specified in FileScanPOp JSON '{}'", jObj));
+  }
+  auto fileSize = jObj["fileSize"].get<int64_t>();
+
   std::optional<std::pair<int64_t, int64_t>> byteRange = std::nullopt;
   if (jObj.contains("byteRange")) {
     auto byteRangeJObj = jObj["byteRange"];
@@ -141,6 +146,7 @@ PhysicalPlanDeserializer::deserializeFPDBStoreFileScanPOp(::nlohmann::json jObj)
                                                                                                     object,
                                                                                                     format,
                                                                                                     schema,
+                                                                                                    fileSize,
                                                                                                     byteRange);
   physicalOps_.emplace_back(storeFileScanPOp);
   
