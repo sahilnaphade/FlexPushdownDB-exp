@@ -63,6 +63,7 @@ public:
            size_t cacheSize);
 
   double getCrtQueryHitRatio() const;
+  void setFixLayoutIndices(const set<int> &fixLayoutIndices);
 
   void runTest();
 
@@ -96,6 +97,9 @@ private:
   shared_ptr<::caf::actor_system> actorSystem_;
   vector<::caf::node_id> nodes_;
   shared_ptr<Executor> executor_;
+
+  // used to fix cache layout for testing
+  set<int> fixLayoutIndices_;
 
   // metrics used for checking in some unit tests
   double crtQueryHitRatio_;

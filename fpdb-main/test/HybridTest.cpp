@@ -143,8 +143,14 @@ TEST_CASE ("hybrid-partial-cached-filter-separable" * doctest::skip(false || SKI
                     Mode::hybridMode(),
                     CachingPolicyType::LFU,
                     1L * 1024 * 1024 * 1024);
+  // fix cache layout after caching query, otherwise it keeps fetching new segments
+  // which is not intra-partition hybrid execution (i.e. hit data + loaded new cache data is enough for execution,
+  // pushdown part actually does nothing)
+  testUtil.setFixLayoutIndices({0});
 
-  // TODO: check
+  REQUIRE_NOTHROW(testUtil.runTest());
+  REQUIRE_GT(testUtil.getCrtQueryHitRatio(), 0.0);
+  REQUIRE_LT(testUtil.getCrtQueryHitRatio(), 1.0);
 
   stopFPDBStoreServer();
 
@@ -186,8 +192,12 @@ TEST_CASE ("hybrid-partial-cached-project-separable" * doctest::skip(false || SK
                     Mode::hybridMode(),
                     CachingPolicyType::LFU,
                     1L * 1024 * 1024 * 1024);
+  // see comments from the previous test case
+  testUtil.setFixLayoutIndices({0});
 
-  // TODO: check
+  REQUIRE_NOTHROW(testUtil.runTest());
+  REQUIRE_GT(testUtil.getCrtQueryHitRatio(), 0.0);
+  REQUIRE_LT(testUtil.getCrtQueryHitRatio(), 1.0);
 
   stopFPDBStoreServer();
 
@@ -202,11 +212,11 @@ TEST_CASE ("hybrid-partial-cached-aggregate-separable" * doctest::skip(false || 
   std::string cachingQuery = "select\n"
                              "    sum(l_extendedprice * l_discount) as sum1\n"
                              "from\n"
-                             "    lineitem\n";
+                             "    lineitem";
   std::string testQuery = "select\n"
                           "    sum(l_extendedprice * l_discount) as sum1, sum(l_extendedprice * l_quantity) as sum2\n"
                           "from\n"
-                          "    lineitem\n";
+                          "    lineitem";
 
   // write query to file
   TestUtil::writeQueryToFile(cachingQueryFileName, cachingQuery);
@@ -223,8 +233,12 @@ TEST_CASE ("hybrid-partial-cached-aggregate-separable" * doctest::skip(false || 
                     Mode::hybridMode(),
                     CachingPolicyType::LFU,
                     1L * 1024 * 1024 * 1024);
+  // see comments from the previous test case
+  testUtil.setFixLayoutIndices({0});
 
-  // TODO: check
+  REQUIRE_NOTHROW(testUtil.runTest());
+  REQUIRE_GT(testUtil.getCrtQueryHitRatio(), 0.0);
+  REQUIRE_LT(testUtil.getCrtQueryHitRatio(), 1.0);
 
   stopFPDBStoreServer();
 
@@ -241,7 +255,7 @@ TEST_CASE ("hybrid-partial-cached-filter-project-separable" * doctest::skip(fals
                              "from\n"
                              "    lineitem\n"
                              "where\n"
-                             "    l_discount <= 0.02\n"
+                             "    l_tax <= 0.02\n"
                              "order by\n"
                              "    mul1\n"
                              "limit 10";
@@ -250,7 +264,7 @@ TEST_CASE ("hybrid-partial-cached-filter-project-separable" * doctest::skip(fals
                           "from\n"
                           "    lineitem\n"
                           "where\n"
-                          "    l_discount <= 0.02\n"
+                          "    l_tax <= 0.02\n"
                           "order by\n"
                           "    mul1, mul2\n"
                           "limit 10";
@@ -270,8 +284,12 @@ TEST_CASE ("hybrid-partial-cached-filter-project-separable" * doctest::skip(fals
                     Mode::hybridMode(),
                     CachingPolicyType::LFU,
                     1L * 1024 * 1024 * 1024);
+  // see comments from the previous test case
+  testUtil.setFixLayoutIndices({0});
 
-  // TODO: check
+  REQUIRE_NOTHROW(testUtil.runTest());
+  REQUIRE_GT(testUtil.getCrtQueryHitRatio(), 0.0);
+  REQUIRE_LT(testUtil.getCrtQueryHitRatio(), 1.0);
 
   stopFPDBStoreServer();
 
@@ -285,16 +303,16 @@ TEST_CASE ("hybrid-partial-cached-filter-aggregate-separable" * doctest::skip(fa
   std::string testQueryFileName = "test.sql";
   std::string cachingQuery = "select\n"
                              "    sum(l_extendedprice * l_discount) as sum1\n"
-                             "where\n"
-                             "    l_discount <= 0.02\n"
                              "from\n"
-                             "    lineitem\n";
+                             "    lineitem\n"
+                             "where\n"
+                             "    l_tax <= 0.02";
   std::string testQuery = "select\n"
                           "    sum(l_extendedprice * l_discount) as sum1, sum(l_extendedprice * l_quantity) as sum2\n"
-                          "where\n"
-                          "    l_discount <= 0.02\n"
                           "from\n"
-                          "    lineitem\n";
+                          "    lineitem\n"
+                          "where\n"
+                          "    l_tax <= 0.02";
 
   // write query to file
   TestUtil::writeQueryToFile(cachingQueryFileName, cachingQuery);
@@ -311,8 +329,12 @@ TEST_CASE ("hybrid-partial-cached-filter-aggregate-separable" * doctest::skip(fa
                     Mode::hybridMode(),
                     CachingPolicyType::LFU,
                     1L * 1024 * 1024 * 1024);
+  // see comments from the previous test case
+  testUtil.setFixLayoutIndices({0});
 
-  // TODO: check
+  REQUIRE_NOTHROW(testUtil.runTest());
+  REQUIRE_GT(testUtil.getCrtQueryHitRatio(), 0.0);
+  REQUIRE_LT(testUtil.getCrtQueryHitRatio(), 1.0);
 
   stopFPDBStoreServer();
 

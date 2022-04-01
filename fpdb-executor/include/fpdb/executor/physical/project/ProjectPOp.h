@@ -93,6 +93,12 @@ private:
   void projectAndSendTuples();
 
   /**
+   * Used in hybrid execution, keep only those projections that are applicable to input tupleSet
+   * @param tupleSet
+   */
+  void discardInapplicableProjections(const std::shared_ptr<TupleSet> &tupleSet);
+
+  /**
    * The project expressions and the attribute names
    */
   std::vector<std::shared_ptr<fpdb::expression::gandiva::Expression>> exprs_;
@@ -112,6 +118,11 @@ private:
    * The expression projector, created when input schema is extracted from first tuple received
    */
   std::optional<std::shared_ptr<fpdb::expression::Projector>> projector_;
+
+  /**
+   * Whether discardInapplicableProjections() has been invoked
+   */
+  bool inapplicableProjectionsDiscarded_ = false;
 
 // caf inspect
 public:

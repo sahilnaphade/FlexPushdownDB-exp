@@ -231,7 +231,6 @@ PrePToS3PTransformer::transformFilterableScanCachingOnly(const shared_ptr<Filter
     }
 
     // cache load
-    // TODO: projectColumnGroups
     const auto cacheLoadPOp = make_shared<cache::CacheLoadPOp>(fmt::format("CacheLoad[{}]-{}/{}",
                                                                            separableSuperPrePOp_->getId(),
                                                                            s3Bucket,
@@ -239,12 +238,11 @@ PrePToS3PTransformer::transformFilterableScanCachingOnly(const shared_ptr<Filter
                                                                projectColumnNames,
                                                                partitionId % numNodes_,
                                                                predicateColumnNames,
-                                                               std::vector<std::set<std::string>>{},
+                                                               std::vector<std::set<std::string>>{},    // not needed
                                                                projPredColumnNames,
                                                                s3Partition,
                                                                scanRange.first,
                                                                scanRange.second,
-                                                               table->getFormat()->isColumnar(),
                                                                s3Connector_);
     allPOps.emplace_back(cacheLoadPOp);
 
@@ -314,6 +312,7 @@ PrePToS3PTransformer::transformFilterableScanHybrid(const shared_ptr<FilterableS
   const auto &table = filterableScanPrePOp->getTable();
   vector<string> projectColumnNames{filterableScanPrePOp->getProjectColumnNames().begin(),
                                     filterableScanPrePOp->getProjectColumnNames().end()};
+  auto projectColumnGroups = splitToUnarySet(projectColumnNames);
 
   /**
    * For each partition, construct:
@@ -346,7 +345,6 @@ PrePToS3PTransformer::transformFilterableScanHybrid(const shared_ptr<FilterableS
     }
 
     // cache load
-    // TODO: projectColumnGroups
     const auto cacheLoadPOp = make_shared<cache::CacheLoadPOp>(fmt::format("CacheLoad[{}]-{}/{}",
                                                                            separableSuperPrePOp_->getId(),
                                                                            s3Bucket,
@@ -354,12 +352,11 @@ PrePToS3PTransformer::transformFilterableScanHybrid(const shared_ptr<FilterableS
                                                                projectColumnNames,
                                                                partitionId % numNodes_,
                                                                predicateColumnNames,
-                                                               std::vector<std::set<std::string>>{},
+                                                               projectColumnGroups,
                                                                projPredColumnNames,
                                                                s3Partition,
                                                                scanRange.first,
                                                                scanRange.second,
-                                                               table->getFormat()->isColumnar(),
                                                                s3Connector_);
     allPOps.emplace_back(cacheLoadPOp);
 

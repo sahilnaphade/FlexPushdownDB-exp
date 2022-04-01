@@ -29,7 +29,6 @@ public:
                         const std::shared_ptr<Partition> &partition,
                         int64_t startOffset,
                         int64_t finishOffset,
-                        bool isStoreColumnar,
                         const std::optional<std::shared_ptr<ObjStoreConnector>> &objStoreConnector);
   CacheLoadPOp() = default;
   CacheLoadPOp(const CacheLoadPOp&) = default;
@@ -69,7 +68,6 @@ private:
   std::optional<std::string> missOperatorToCacheName_;
   std::optional<std::string> missOperatorToPushdownName_;
 
-  bool isStoreColumnar_;
   std::optional<std::shared_ptr<ObjStoreConnector>> objStoreConnector_;
 
 // caf inspect
@@ -95,7 +93,6 @@ public:
                                f.field("hitOperatorName", op.hitOperatorName_),
                                f.field("missOperatorToCacheName", op.missOperatorToCacheName_),
                                f.field("missOperatorToPushdownName", op.missOperatorToPushdownName_),
-                               f.field("isStoreColumnar", op.isStoreColumnar_),
                                f.field("objStoreConnector", op.objStoreConnector_));
   }
 };

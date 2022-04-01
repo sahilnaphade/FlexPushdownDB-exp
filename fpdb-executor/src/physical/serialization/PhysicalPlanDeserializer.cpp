@@ -48,8 +48,8 @@ tl::expected<std::shared_ptr<PhysicalPlan>, std::string> PhysicalPlanDeserialize
   }
 }
 
-tl::expected<std::shared_ptr<PhysicalOp>, std::string> PhysicalPlanDeserializer::deserializeDfs(::nlohmann::json jObj,
-                                                                                                bool isRoot) {
+tl::expected<std::shared_ptr<PhysicalOp>, std::string>
+PhysicalPlanDeserializer::deserializeDfs(const ::nlohmann::json &jObj, bool isRoot) {
   if (!jObj.contains("type")) {
     return tl::make_unexpected(fmt::format("Type not specified in physical operator JSON '{}'", jObj));
   }
@@ -79,7 +79,7 @@ tl::expected<std::shared_ptr<PhysicalOp>, std::string> PhysicalPlanDeserializer:
 }
 
 tl::expected<std::vector<std::shared_ptr<PhysicalOp>>, std::string>
-PhysicalPlanDeserializer::deserializeProducers(::nlohmann::json jObj) {
+PhysicalPlanDeserializer::deserializeProducers(const ::nlohmann::json &jObj) {
   if (!jObj.contains("inputs")) {
     return tl::make_unexpected(fmt::format("Inputs not specified in physical operator JSON '{}'", jObj));
   }
@@ -97,17 +97,16 @@ PhysicalPlanDeserializer::deserializeProducers(::nlohmann::json jObj) {
 }
 
 tl::expected<std::shared_ptr<PhysicalOp>, std::string>
-PhysicalPlanDeserializer::deserializeFPDBStoreFileScanPOp(::nlohmann::json jObj) {
+PhysicalPlanDeserializer::deserializeFPDBStoreFileScanPOp(const ::nlohmann::json &jObj) {
   // deserialize self
-  if (!jObj.contains("name")) {
-    return tl::make_unexpected(fmt::format("Name not specified in FileScanPOp JSON '{}'", jObj));
+  auto expCommonTuple = deserializePOpCommon(jObj);
+  if (!expCommonTuple.has_value()) {
+    return tl::make_unexpected(expCommonTuple.error());
   }
-  auto name = jObj["name"].get<std::string>();
-  
-  if (!jObj.contains("projectColumnNames")) {
-    return tl::make_unexpected(fmt::format("ProjectColumnNames not specified in FileScanPOp JSON '{}'", jObj));
-  }
-  auto projectColumnNames = jObj["projectColumnNames"].get<std::vector<std::string>>();
+  auto commonTuple = *expCommonTuple;
+  auto name = std::get<0>(commonTuple);
+  auto projectColumnNames = std::get<1>(commonTuple);
+  auto isSeparated = std::get<2>(commonTuple);
 
   if (!jObj.contains("bucket")) {
     return tl::make_unexpected(fmt::format("Bucket not specified in FileScanPOp JSON '{}'", jObj));
@@ -162,6 +161,7 @@ PhysicalPlanDeserializer::deserializeFPDBStoreFileScanPOp(::nlohmann::json jObj)
                                                                                                     schema,
                                                                                                     fileSize,
                                                                                                     byteRange);
+  storeFileScanPOp->setSeparated(isSeparated);
   physicalOps_.emplace(storeFileScanPOp->name(), storeFileScanPOp);
   
   // deserialize producers
@@ -177,17 +177,16 @@ PhysicalPlanDeserializer::deserializeFPDBStoreFileScanPOp(::nlohmann::json jObj)
 }
 
 tl::expected<std::shared_ptr<PhysicalOp>, std::string>
-PhysicalPlanDeserializer::deserializeFilterPOp(::nlohmann::json jObj) {
+PhysicalPlanDeserializer::deserializeFilterPOp(const ::nlohmann::json &jObj) {
   // deserialize self
-  if (!jObj.contains("name")) {
-    return tl::make_unexpected(fmt::format("Name not specified in FilterPOp JSON '{}'", jObj));
+  auto expCommonTuple = deserializePOpCommon(jObj);
+  if (!expCommonTuple.has_value()) {
+    return tl::make_unexpected(expCommonTuple.error());
   }
-  auto name = jObj["name"].get<std::string>();
-
-  if (!jObj.contains("projectColumnNames")) {
-    return tl::make_unexpected(fmt::format("ProjectColumnNames not specified in FilterPOp JSON '{}'", jObj));
-  }
-  auto projectColumnNames = jObj["projectColumnNames"].get<std::vector<std::string>>();
+  auto commonTuple = *expCommonTuple;
+  auto name = std::get<0>(commonTuple);
+  auto projectColumnNames = std::get<1>(commonTuple);
+  auto isSeparated = std::get<2>(commonTuple);
 
   if (!jObj.contains("predicate")) {
     return tl::make_unexpected(fmt::format("Predicate not specified in FilterPOp JSON '{}'", jObj));
@@ -202,6 +201,7 @@ PhysicalPlanDeserializer::deserializeFilterPOp(::nlohmann::json jObj) {
                                                                               projectColumnNames,
                                                                               0,
                                                                               predicate);
+  filterPOp->setSeparated(isSeparated);
   physicalOps_.emplace(filterPOp->name(), filterPOp);
 
   // deserialize producers
@@ -217,17 +217,16 @@ PhysicalPlanDeserializer::deserializeFilterPOp(::nlohmann::json jObj) {
 }
 
 tl::expected<std::shared_ptr<PhysicalOp>, std::string>
-PhysicalPlanDeserializer::deserializeProjectPOp(::nlohmann::json jObj) {
+PhysicalPlanDeserializer::deserializeProjectPOp(const ::nlohmann::json &jObj) {
   // deserialize self
-  if (!jObj.contains("name")) {
-    return tl::make_unexpected(fmt::format("Name not specified in ProjectPOp JSON '{}'", jObj));
+  auto expCommonTuple = deserializePOpCommon(jObj);
+  if (!expCommonTuple.has_value()) {
+    return tl::make_unexpected(expCommonTuple.error());
   }
-  auto name = jObj["name"].get<std::string>();
-
-  if (!jObj.contains("projectColumnNames")) {
-    return tl::make_unexpected(fmt::format("ProjectColumnNames not specified in ProjectPOp JSON '{}'", jObj));
-  }
-  auto projectColumnNames = jObj["projectColumnNames"].get<std::vector<std::string>>();
+  auto commonTuple = *expCommonTuple;
+  auto name = std::get<0>(commonTuple);
+  auto projectColumnNames = std::get<1>(commonTuple);
+  auto isSeparated = std::get<2>(commonTuple);
 
   if (!jObj.contains("exprs")) {
     return tl::make_unexpected(fmt::format("Exprs not specified in ProjectPOp JSON '{}'", jObj));
@@ -258,6 +257,7 @@ PhysicalPlanDeserializer::deserializeProjectPOp(::nlohmann::json jObj) {
                                                                                  exprs,
                                                                                  exprNames,
                                                                                  projectColumnPairs);
+  projectPOp->setSeparated(isSeparated);
   physicalOps_.emplace(projectPOp->name(), projectPOp);
 
   // deserialize producers
@@ -273,17 +273,16 @@ PhysicalPlanDeserializer::deserializeProjectPOp(::nlohmann::json jObj) {
 }
 
 tl::expected<std::shared_ptr<PhysicalOp>, std::string>
-PhysicalPlanDeserializer::deserializeAggregatePOp(::nlohmann::json jObj) {
+PhysicalPlanDeserializer::deserializeAggregatePOp(const ::nlohmann::json &jObj) {
   // deserialize self
-  if (!jObj.contains("name")) {
-    return tl::make_unexpected(fmt::format("Name not specified in AggregatePOp JSON '{}'", jObj));
+  auto expCommonTuple = deserializePOpCommon(jObj);
+  if (!expCommonTuple.has_value()) {
+    return tl::make_unexpected(expCommonTuple.error());
   }
-  auto name = jObj["name"].get<std::string>();
-
-  if (!jObj.contains("projectColumnNames")) {
-    return tl::make_unexpected(fmt::format("ProjectColumnNames not specified in AggregatePOp JSON '{}'", jObj));
-  }
-  auto projectColumnNames = jObj["projectColumnNames"].get<std::vector<std::string>>();
+  auto commonTuple = *expCommonTuple;
+  auto name = std::get<0>(commonTuple);
+  auto projectColumnNames = std::get<1>(commonTuple);
+  auto isSeparated = std::get<2>(commonTuple);
 
   if (!jObj.contains("functions")) {
     return tl::make_unexpected(fmt::format("Aggregate functions not specified in AggregatePOp JSON '{}'", jObj));
@@ -302,6 +301,7 @@ PhysicalPlanDeserializer::deserializeAggregatePOp(::nlohmann::json jObj) {
                                                                                        projectColumnNames,
                                                                                        0,
                                                                                        functions);
+  aggregatePOp->setSeparated(isSeparated);
   physicalOps_.emplace(aggregatePOp->name(), aggregatePOp);
 
   // deserialize producers
@@ -317,17 +317,16 @@ PhysicalPlanDeserializer::deserializeAggregatePOp(::nlohmann::json jObj) {
 }
 
 tl::expected<std::shared_ptr<PhysicalOp>, std::string>
-PhysicalPlanDeserializer::deserializeBloomFilterUsePOp(::nlohmann::json jObj) {
+PhysicalPlanDeserializer::deserializeBloomFilterUsePOp(const ::nlohmann::json &jObj) {
   // deserialize self
-  if (!jObj.contains("name")) {
-    return tl::make_unexpected(fmt::format("Name not specified in BloomFilterUsePOp JSON '{}'", jObj));
+  auto expCommonTuple = deserializePOpCommon(jObj);
+  if (!expCommonTuple.has_value()) {
+    return tl::make_unexpected(expCommonTuple.error());
   }
-  auto name = jObj["name"].get<std::string>();
-
-  if (!jObj.contains("projectColumnNames")) {
-    return tl::make_unexpected(fmt::format("ProjectColumnNames not specified in BloomFilterUsePOp JSON '{}'", jObj));
-  }
-  auto projectColumnNames = jObj["projectColumnNames"].get<std::vector<std::string>>();
+  auto commonTuple = *expCommonTuple;
+  auto name = std::get<0>(commonTuple);
+  auto projectColumnNames = std::get<1>(commonTuple);
+  auto isSeparated = std::get<2>(commonTuple);
 
   if (!jObj.contains("bloomFilterColumnNames")) {
     return tl::make_unexpected(fmt::format("BloomFilterColumnNames not specified in BloomFilterUsePOp JSON '{}'", jObj));
@@ -348,6 +347,7 @@ PhysicalPlanDeserializer::deserializeBloomFilterUsePOp(::nlohmann::json jObj) {
                                                                                                    0,
                                                                                                    bloomFilterColumnNames,
                                                                                                    bloomFilter);
+  bloomFilterUsePOp->setSeparated(isSeparated);
   physicalOps_.emplace(bloomFilterUsePOp->name(), bloomFilterUsePOp);
 
   // deserialize producers
@@ -363,22 +363,22 @@ PhysicalPlanDeserializer::deserializeBloomFilterUsePOp(::nlohmann::json jObj) {
 }
 
 tl::expected<std::shared_ptr<PhysicalOp>, std::string>
-PhysicalPlanDeserializer::deserializeCollatePOp(::nlohmann::json jObj) {
+PhysicalPlanDeserializer::deserializeCollatePOp(const ::nlohmann::json &jObj) {
   // deserialize self
-  if (!jObj.contains("name")) {
-    return tl::make_unexpected(fmt::format("Name not specified in CollatePOp JSON '{}'", jObj));
+  auto expCommonTuple = deserializePOpCommon(jObj);
+  if (!expCommonTuple.has_value()) {
+    return tl::make_unexpected(expCommonTuple.error());
   }
-  auto name = jObj["name"].get<std::string>();
-
-  if (!jObj.contains("projectColumnNames")) {
-    return tl::make_unexpected(fmt::format("ProjectColumnNames not specified in CollatePOp JSON '{}'", jObj));
-  }
-  auto projectColumnNames = jObj["projectColumnNames"].get<std::vector<std::string>>();
+  auto commonTuple = *expCommonTuple;
+  auto name = std::get<0>(commonTuple);
+  auto projectColumnNames = std::get<1>(commonTuple);
+  auto isSeparated = std::get<2>(commonTuple);
 
   std::shared_ptr<PhysicalOp> collatePOp = std::make_shared<fpdb::executor::physical::collate::CollatePOp>(
           name,
           projectColumnNames,
           0);
+  collatePOp->setSeparated(isSeparated);
   physicalOps_.emplace(collatePOp->name(), collatePOp);
 
   // deserialize producers
@@ -391,6 +391,26 @@ PhysicalPlanDeserializer::deserializeCollatePOp(::nlohmann::json jObj) {
   PrePToPTransformerUtil::connectManyToOne(*expProducers, collatePOp);
 
   return collatePOp;
+}
+
+tl::expected<std::tuple<std::string, std::vector<std::string>, bool>, std::string>
+PhysicalPlanDeserializer::deserializePOpCommon(const ::nlohmann::json &jObj) {
+  if (!jObj.contains("name")) {
+    return tl::make_unexpected(fmt::format("Name not specified in physical operator JSON '{}'", jObj));
+  }
+  auto name = jObj["name"].get<std::string>();
+
+  if (!jObj.contains("projectColumnNames")) {
+    return tl::make_unexpected(fmt::format("ProjectColumnNames not specified in physical operator JSON '{}'", jObj));
+  }
+  auto projectColumnNames = jObj["projectColumnNames"].get<std::vector<std::string>>();
+
+  if (!jObj.contains("isSeparated")) {
+    return tl::make_unexpected(fmt::format("IsSeparated not specified in physical operator JSON '{}'", jObj));
+  }
+  auto isSeparated = jObj["isSeparated"].get<bool>();
+
+  return std::tuple<std::string, std::vector<std::string>, bool>{name, projectColumnNames, isSeparated};
 }
 
 }

@@ -78,13 +78,10 @@ tl::expected<json, std::string> PhysicalPlanSerializer::serializeProducers(const
 
 tl::expected<::nlohmann::json, std::string> PhysicalPlanSerializer::serializeFPDBStoreFileScanPOp(
         const std::shared_ptr<fpdb_store::FPDBStoreFileScanPOp> &storeFileScanPOp) {
-  json jObj;
   auto kernel = storeFileScanPOp->getKernel();
 
   // serialize self
-  jObj.emplace("type", storeFileScanPOp->getTypeString());
-  jObj.emplace("name", storeFileScanPOp->name());
-  jObj.emplace("projectColumnNames", storeFileScanPOp->getProjectColumnNames());
+  auto jObj = serializePOpCommon(storeFileScanPOp);
   jObj.emplace("bucket", storeFileScanPOp->getBucket());
   jObj.emplace("object", storeFileScanPOp->getObject());
   jObj.emplace("format", kernel->getFormat()->toJson());
@@ -111,12 +108,8 @@ tl::expected<::nlohmann::json, std::string> PhysicalPlanSerializer::serializeFPD
 
 tl::expected<::nlohmann::json, std::string>
 PhysicalPlanSerializer::serializeFilterPOp(const std::shared_ptr<filter::FilterPOp> &filterPOp) {
-  json jObj;
-
   // serialize self
-  jObj.emplace("type", filterPOp->getTypeString());
-  jObj.emplace("name", filterPOp->name());
-  jObj.emplace("projectColumnNames", filterPOp->getProjectColumnNames());
+  auto jObj = serializePOpCommon(filterPOp);
   jObj.emplace("predicate", filterPOp->getPredicate()->toJson());
 
   // serialize producers
@@ -131,12 +124,8 @@ PhysicalPlanSerializer::serializeFilterPOp(const std::shared_ptr<filter::FilterP
 
 tl::expected<::nlohmann::json, std::string>
 PhysicalPlanSerializer::serializeProjectPOp(const std::shared_ptr<project::ProjectPOp> &projectPOp) {
-  json jObj;
-
   // serialize self
-  jObj.emplace("type", projectPOp->getTypeString());
-  jObj.emplace("name", projectPOp->name());
-  jObj.emplace("projectColumnNames", projectPOp->getProjectColumnNames());
+  auto jObj = serializePOpCommon(projectPOp);
 
   vector<json> exprsJArr;
   for (const auto &expr: projectPOp->getExprs()) {
@@ -159,12 +148,8 @@ PhysicalPlanSerializer::serializeProjectPOp(const std::shared_ptr<project::Proje
 
 tl::expected<::nlohmann::json, std::string>
 PhysicalPlanSerializer::serializeAggregatePOp(const std::shared_ptr<aggregate::AggregatePOp> &aggregatePOp) {
-  json jObj;
-
   // serialize self
-  jObj.emplace("type", aggregatePOp->getTypeString());
-  jObj.emplace("name", aggregatePOp->name());
-  jObj.emplace("projectColumnNames", aggregatePOp->getProjectColumnNames());
+  auto jObj = serializePOpCommon(aggregatePOp);
   vector<json> functionsJArr;
   for (const auto &function: aggregatePOp->getFunctions()) {
     functionsJArr.emplace_back(function->toJson());
@@ -183,12 +168,8 @@ PhysicalPlanSerializer::serializeAggregatePOp(const std::shared_ptr<aggregate::A
 
 tl::expected<::nlohmann::json, std::string>
 PhysicalPlanSerializer::serializeBloomFilterUsePOp(const std::shared_ptr<bloomfilter::BloomFilterUsePOp> &bloomFilterUsePOp) {
-  json jObj;
-
   // serialize self
-  jObj.emplace("type", bloomFilterUsePOp->getTypeString());
-  jObj.emplace("name", bloomFilterUsePOp->name());
-  jObj.emplace("projectColumnNames", bloomFilterUsePOp->getProjectColumnNames());
+  auto jObj = serializePOpCommon(bloomFilterUsePOp);
   jObj.emplace("bloomFilterColumnNames", bloomFilterUsePOp->getBloomFilterColumnNames());
 
   auto bloomFilter = bloomFilterUsePOp->getBloomFilter();
@@ -209,12 +190,8 @@ PhysicalPlanSerializer::serializeBloomFilterUsePOp(const std::shared_ptr<bloomfi
 
 tl::expected<::nlohmann::json, std::string>
 PhysicalPlanSerializer::serializeCollatePOp(const std::shared_ptr<collate::CollatePOp> &collatePOp) {
-  json jObj;
-
   // serialize self
-  jObj.emplace("type", collatePOp->getTypeString());
-  jObj.emplace("name", collatePOp->name());
-  jObj.emplace("projectColumnNames", collatePOp->getProjectColumnNames());
+  auto jObj = serializePOpCommon(collatePOp);
 
   // serialize producers
   auto expProducersJObj = serializeProducers(collatePOp);
@@ -223,6 +200,15 @@ PhysicalPlanSerializer::serializeCollatePOp(const std::shared_ptr<collate::Colla
   }
   jObj.emplace("inputs", *expProducersJObj);
 
+  return jObj;
+}
+
+::nlohmann::json PhysicalPlanSerializer::serializePOpCommon(const std::shared_ptr<PhysicalOp> &op) {
+  json jObj;
+  jObj.emplace("type", op->getTypeString());
+  jObj.emplace("name", op->name());
+  jObj.emplace("projectColumnNames", op->getProjectColumnNames());
+  jObj.emplace("isSeparated", op->isSeparated());
   return jObj;
 }
 

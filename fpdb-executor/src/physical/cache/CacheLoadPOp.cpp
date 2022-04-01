@@ -24,7 +24,6 @@ CacheLoadPOp::CacheLoadPOp(const std::string &name,
                            const std::shared_ptr<Partition> &partition,
                            int64_t startOffset,
                            int64_t finishOffset,
-                           bool isStoreColumnar,
                            const std::optional<std::shared_ptr<ObjStoreConnector>> &objStoreConnector) :
   PhysicalOp(name, CACHE_LOAD, projectColumnNames, nodeId),
   predicateColumnNames_(predicateColumnNames),
@@ -33,7 +32,6 @@ CacheLoadPOp::CacheLoadPOp(const std::string &name,
   partition_(partition),
   startOffset_(startOffset),
   finishOffset_(finishOffset),
-  isStoreColumnar_(isStoreColumnar),
   objStoreConnector_(objStoreConnector) {}
 
 std::string CacheLoadPOp::getTypeString() const {
@@ -180,7 +178,8 @@ void CacheLoadPOp::onCacheLoadResponse(const LoadResponseMessage &message) {
                               std::vector<std::string>(missPushdownProjectColumnNameSet.begin(),
                                                        missPushdownProjectColumnNameSet.end()) :
                               projectColumnNames_;
-    if ((*objStoreConnector_)->getStoreType() == ObjStoreType::FPDB_STORE) {
+    if ((*objStoreConnector_)->getStoreType() == ObjStoreType::FPDB_STORE
+      && !missPushdownColumnNames.empty()) {
       // Need to add predicateColumnNames for fpdb-store because we push query plan rather than sql
       missPushdownColumnNames = union_(missPushdownColumnNames, predicateColumnNames_);
     }
@@ -190,11 +189,13 @@ void CacheLoadPOp::onCacheLoadResponse(const LoadResponseMessage &message) {
   }
 
   /**
-   * 4. Send cache metrics to segmentCacheActor
+   * 4. Send cache metrics to segmentCacheActor and complete
    */
-  size_t hitNum, missNum;
-  size_t shardHitNum, shardMissNum;
+  size_t hitNum = hitColumns.size();
+  size_t missNum = allColumnNames_.size() - hitNum;
+
   // If every segment is a hit, then we call it a shard hit, otherwise a shard miss
+  size_t shardHitNum, shardMissNum;
   if (hitColumns.size() == allColumnNames_.size()) {
     shardHitNum = 1;
     shardMissNum = 0;
@@ -202,39 +203,7 @@ void CacheLoadPOp::onCacheLoadResponse(const LoadResponseMessage &message) {
     shardHitNum = 0;
     shardMissNum = 1;
   }
-
-  // For hybrid
-  if (missOperatorToPushdownName_.has_value()) {
-    if (cachingColumnsNeeded) {
-      hitNum = hitColumns.size();
-      missNum = allColumnNames_.size() - hitNum;
-    } else {
-      hitNum = 0;
-      missNum = allColumnNames_.size();
-    }
-  }
-  // For caching-only
-  else {
-    if (isStoreColumnar_) {
-      // If the underlying store format is columnar, then we count hit and miss regularly
-      hitNum = hitColumns.size();
-      missNum = allColumnNames_.size() - hitNum;
-    } else {
-      // Otherwise (e.g. CSV), even for a single segment miss, we need to scan the whole shard
-      if (hitColumns.size() == allColumnNames_.size()) {
-        hitNum = hitColumns.size();
-        missNum = 0;
-      } else {
-        hitNum = 0;
-        missNum = allColumnNames_.size();
-      }
-    }
-  }
   ctx()->send(CacheMetricsMessage::make(hitNum, missNum, shardHitNum, shardMissNum, this->name()), "SegmentCache");
-
-  /**
-   * 5. Complete
-   */
   ctx()->notifyComplete();
 }
 

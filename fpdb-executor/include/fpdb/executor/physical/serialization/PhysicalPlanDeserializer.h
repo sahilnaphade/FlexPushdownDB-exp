@@ -26,22 +26,25 @@ private:
    */
   tl::expected<std::shared_ptr<PhysicalPlan>, std::string> deserialize();
 
-  tl::expected<std::shared_ptr<PhysicalOp>, std::string> deserializeDfs(::nlohmann::json jObj,
+  tl::expected<std::shared_ptr<PhysicalOp>, std::string> deserializeDfs(const ::nlohmann::json &jObj,
                                                                         bool isRoot = false);
 
-  tl::expected<std::vector<std::shared_ptr<PhysicalOp>>, std::string> deserializeProducers(::nlohmann::json jObj);
+  tl::expected<std::vector<std::shared_ptr<PhysicalOp>>, std::string> deserializeProducers(const ::nlohmann::json &jObj);
 
-  tl::expected<std::shared_ptr<PhysicalOp>, std::string> deserializeFPDBStoreFileScanPOp(::nlohmann::json jObj);
+  tl::expected<std::shared_ptr<PhysicalOp>, std::string> deserializeFPDBStoreFileScanPOp(const ::nlohmann::json &jObj);
 
-  tl::expected<std::shared_ptr<PhysicalOp>, std::string> deserializeFilterPOp(::nlohmann::json jObj);
+  tl::expected<std::shared_ptr<PhysicalOp>, std::string> deserializeFilterPOp(const ::nlohmann::json &jObj);
 
-  tl::expected<std::shared_ptr<PhysicalOp>, std::string> deserializeProjectPOp(::nlohmann::json jObj);
+  tl::expected<std::shared_ptr<PhysicalOp>, std::string> deserializeProjectPOp(const ::nlohmann::json &jObj);
 
-  tl::expected<std::shared_ptr<PhysicalOp>, std::string> deserializeAggregatePOp(::nlohmann::json jObj);
+  tl::expected<std::shared_ptr<PhysicalOp>, std::string> deserializeAggregatePOp(const ::nlohmann::json &jObj);
 
-  tl::expected<std::shared_ptr<PhysicalOp>, std::string> deserializeBloomFilterUsePOp(::nlohmann::json jObj);
+  tl::expected<std::shared_ptr<PhysicalOp>, std::string> deserializeBloomFilterUsePOp(const ::nlohmann::json &jObj);
 
-  tl::expected<std::shared_ptr<PhysicalOp>, std::string> deserializeCollatePOp(::nlohmann::json jObj);
+  tl::expected<std::shared_ptr<PhysicalOp>, std::string> deserializeCollatePOp(const ::nlohmann::json &jObj);
+
+  tl::expected<std::tuple<std::string, std::vector<std::string>, bool>, std::string>
+  deserializePOpCommon(const ::nlohmann::json &jObj);
 
   std::string planString_;
   std::string storeRootPath_;

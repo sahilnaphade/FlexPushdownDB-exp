@@ -54,6 +54,8 @@ private:
   tl::expected<::nlohmann::json, std::string>
   serializeCollatePOp(const std::shared_ptr<collate::CollatePOp> &collatePOp);
 
+  ::nlohmann::json serializePOpCommon(const std::shared_ptr<PhysicalOp> &op);
+
   std::shared_ptr<PhysicalPlan> physicalPlan_;
   bool pretty_;
 

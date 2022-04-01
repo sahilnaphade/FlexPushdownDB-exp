@@ -51,6 +51,11 @@ void PhysicalOp::unConsume(const std::shared_ptr<PhysicalOp> &op) {
   producers_.erase(op->name());
 }
 
+void PhysicalOp::clearConnections() {
+  producers_.clear();
+  consumers_.clear();
+}
+
 void PhysicalOp::setBloomFilterCreatePrepareConsumer(const std::shared_ptr<PhysicalOp> &op) {
   bloomFilterCreatePrepareConsumer_ = op->name();
   consumers_.emplace(op->name());
@@ -96,6 +101,10 @@ long PhysicalOp::getQueryId() const {
 
 void PhysicalOp::setQueryId(long queryId) {
   queryId_ = queryId;
+}
+
+bool PhysicalOp::isSeparated() const {
+  return isSeparated_;
 }
 
 void PhysicalOp::setSeparated(bool isSeparated) {

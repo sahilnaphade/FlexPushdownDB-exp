@@ -11,6 +11,12 @@
 #include "spdlog/spdlog.h"
 
 namespace fpdb::cache {
+
+/**
+ * Whether to fix cache layout, i.e. not admit new data into the cache and evict data from the cache
+ */
+inline bool FIX_CACHE_LAYOUT = false;
+
 }
 
 #endif //FPDB_FPDB_CACHE_INCLUDE_FPDB_CACHE_GLOBALS_H

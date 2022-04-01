@@ -32,19 +32,23 @@ public:
   std::string getTypeString() const override;
 
   const std::shared_ptr<PhysicalPlan> &getSubPlan() const;
+  void setWaitForScanMessage(bool waitForScanMessage);
 
 private:
   void onStart();
+  void onCacheLoadResponse(const ScanMessage &msg);
   void onBloomFilter(const BloomFilterMessage &msg);
   void onComplete(const CompleteMessage &);
 
   bool readyToProcess();
   void processAtStore();
+  void processEmpty();
   tl::expected<std::string, std::string> serialize(bool pretty);
 
   std::shared_ptr<PhysicalPlan> subPlan_;
   std::string host_;
   int port_;
+  bool waitForScanMessage_ = false;
 
 // caf inspect
 public:
@@ -62,7 +66,8 @@ public:
                                f.field("isSeparated", op.isSeparated_),
                                f.field("subPlan", op.subPlan_),
                                f.field("host", op.host_),
-                               f.field("port", op.port_));
+                               f.field("port", op.port_),
+                               f.field("waitForScanMessage", op.waitForScanMessage_));
   }
 
 };

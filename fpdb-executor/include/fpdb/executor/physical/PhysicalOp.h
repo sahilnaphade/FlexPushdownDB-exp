@@ -52,8 +52,10 @@ public:
   virtual void consume(const std::shared_ptr<PhysicalOp> &op);
   virtual void unProduce(const std::shared_ptr<PhysicalOp> &op);
   virtual void unConsume(const std::shared_ptr<PhysicalOp> &op);
+  void clearConnections();
   void setBloomFilterCreatePrepareConsumer(const std::shared_ptr<PhysicalOp> &op);
   void create(const std::shared_ptr<POpContext>& ctx);
+  bool isSeparated() const;
   void setSeparated(bool isSeparated);
 
   virtual void onReceive(const fpdb::executor::message::Envelope &msg) = 0;

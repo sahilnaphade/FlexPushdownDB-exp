@@ -10,11 +10,13 @@
 #include <fpdb/expression/gandiva/Filter.h>
 #include <fpdb/expression/gandiva/BinaryExpression.h>
 #include <fpdb/tuple/Globals.h>
+#include <fpdb/util/Util.h>
 #include <utility>
 
 using namespace fpdb::executor::physical::filter;
 using namespace fpdb::cache;
 using namespace fpdb::expression::gandiva;
+using namespace fpdb::util;
 
 FilterPOp::FilterPOp(std::string name,
                std::vector<std::string> projectColumnNames,
@@ -80,12 +82,17 @@ void FilterPOp::onTupleSet(const TupleSetMessage &Message) {
       sendTuples();
     }
   } else {
-    // empty table
-    auto emptyTupleSet = fpdb::tuple::TupleSet::makeWithEmptyTable();
-    std::shared_ptr<fpdb::executor::message::Message> tupleMessage = std::make_shared<TupleSetMessage>(emptyTupleSet,
-                                                                                                       name());
-    ctx()->tell(tupleMessage);
-    ctx()->notifyComplete();
+    // hybrid execution allows that the predicate is inapplicable to input tupleSet
+    if (isSeparated_) {
+      // empty table
+      auto emptyTupleSet = fpdb::tuple::TupleSet::makeWithEmptyTable();
+      std::shared_ptr<fpdb::executor::message::Message> tupleMessage = std::make_shared<TupleSetMessage>(emptyTupleSet,
+                                                                                                         name());
+      ctx()->tell(tupleMessage);
+      ctx()->notifyComplete();
+    } else {
+      ctx()->notifyError("Filter predicate is inapplicable to input tupleSet, columns not enough");
+    }
   }
 }
 
@@ -124,17 +131,12 @@ void FilterPOp::bufferTuples(const std::shared_ptr<fpdb::tuple::TupleSet>& tuple
 
 bool FilterPOp::isApplicable(const std::shared_ptr<fpdb::tuple::TupleSet>& tupleSet) {
   auto predicateColumnNames = predicate_->involvedColumnNames();
-  auto tupleColumnNames = std::make_shared<std::vector<std::string>>();
-  for (auto const &field: tupleSet->schema()->fields()) {
-    tupleColumnNames->emplace_back(field->name());
-  }
+  std::set<std::string> predicateColumnNameSet(predicateColumnNames.begin(), predicateColumnNames.end());
 
-  for (auto const &columnName: predicateColumnNames) {
-    if (std::find(tupleColumnNames->begin(), tupleColumnNames->end(), columnName) == tupleColumnNames->end()) {
-      return false;
-    }
-  }
-  return true;
+  auto inputColumnNames = tupleSet->schema()->field_names();
+  std::set<std::string> inputColumnNameSet(inputColumnNames.begin(), inputColumnNames.end());
+
+  return isSubSet(predicateColumnNameSet, inputColumnNameSet);
 }
 
 void FilterPOp::buildFilter() {

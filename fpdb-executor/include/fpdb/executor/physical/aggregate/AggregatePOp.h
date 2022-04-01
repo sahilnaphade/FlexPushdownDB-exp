@@ -46,9 +46,20 @@ private:
   shared_ptr<TupleSet> finalizeEmpty();
 
   bool hasResult();
+
+  /**
+   * Used in hybrid execution, keep only those aggregate functions that are applicable to input tupleSet
+   * @param tupleSet
+   */
+  void discardInapplicableFunctions(const std::shared_ptr<TupleSet> &tupleSet);
   
   vector<shared_ptr<AggregateFunction>> functions_;
   vector<vector<shared_ptr<AggregateResult>>> aggregateResults_;
+
+  /**
+   * Whether discardInapplicableFunctions() has been invoked
+   */
+  bool inapplicableFunctionsDiscarded_ = false;
 
 // caf inspect
 public:

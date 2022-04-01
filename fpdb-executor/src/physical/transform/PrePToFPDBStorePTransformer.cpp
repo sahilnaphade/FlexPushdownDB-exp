@@ -9,6 +9,7 @@
 #include <fpdb/executor/physical/file/RemoteFileScanPOp.h>
 #include <fpdb/executor/physical/fpdb-store/FPDBStoreFileScanPOp.h>
 #include <fpdb/executor/physical/fpdb-store/FPDBStoreSuperPOp.h>
+#include <fpdb/executor/physical/fpdb-store/FPDBStoreSuperPOpUtil.h>
 #include <fpdb/executor/physical/project/ProjectPOp.h>
 #include <fpdb/executor/physical/filter/FilterPOp.h>
 #include <fpdb/executor/physical/aggregate/AggregatePOp.h>
@@ -173,7 +174,7 @@ PrePToFPDBStorePTransformer::addBloomFilterUse(vector<shared_ptr<PhysicalOp>> &p
 
     return {connPOps, addiPOps};
   } else {
-    throw runtime_error(fmt::format("Unsupported mode for FPDB Store: {}", mode->toString()));
+    throw runtime_error(fmt::format("Unsupported mode for push bloom filters to FPDB Store: {}", mode->toString()));
   }
 }
 
@@ -214,13 +215,28 @@ PrePToFPDBStorePTransformer::transformProducers(const shared_ptr<PrePhysicalOp> 
 pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
 PrePToFPDBStorePTransformer::transformPushdownOnlyToHybrid(const vector<shared_ptr<PhysicalOp>> &fpdbStoreSuperPOps) {
   vector<shared_ptr<PhysicalOp>> connPOps, allPOps;
+  if (fpdbStoreSuperPOps.empty()) {
+    return {connPOps, allPOps};
+  }
+
+  // get projectColumnGroups needed for hybrid execution, this is same for all fpdbStoreSuperPOps
+  auto projectColumnGroups = fpdb_store::FPDBStoreSuperPOpUtil::getProjectColumnGroups(
+          static_pointer_cast<fpdb_store::FPDBStoreSuperPOp>(fpdbStoreSuperPOps[0]));
 
   for (const auto &fpdbStoreSuperPOp: fpdbStoreSuperPOps) {
     auto typedFPDBStoreSuperPOp = static_pointer_cast<fpdb_store::FPDBStoreSuperPOp>(fpdbStoreSuperPOp);
+
+    // set waitForScanMessage, so it won't run until receiving scan message
+    typedFPDBStoreSuperPOp->setWaitForScanMessage(true);
+
     unordered_map<shared_ptr<PhysicalOp>, shared_ptr<PhysicalOp>> storePOpToLocalPOp;
     unordered_map<string, shared_ptr<PhysicalOp>> storePOpMap = typedFPDBStoreSuperPOp->getSubPlan()->getPhysicalOps();
     unordered_map<string, shared_ptr<PhysicalOp>> localPOpMap;
     optional<shared_ptr<merge::MergePOp>> mergePOp1, mergePOp2;
+
+    // get predicateColumnNames needed for hybrid execution, this may be different for some fpdbStoreSuperPOps
+    // so we need to get it for each one
+    auto predicateColumnNames = fpdb_store::FPDBStoreSuperPOpUtil::getPredicateColumnNames(typedFPDBStoreSuperPOp);
 
     // create mirror ops which are executed locally
     for (const auto &storePOpIt: storePOpMap) {
@@ -230,6 +246,7 @@ PrePToFPDBStorePTransformer::transformPushdownOnlyToHybrid(const vector<shared_p
       }
 
       shared_ptr<PhysicalOp> localPOp;
+      bool isMirrored = false;
       switch (storePOp->getType()) {
         case POpType::FPDB_STORE_FILE_SCAN: {
           auto fpdbStoreFileScanPOp = static_pointer_cast<fpdb_store::FPDBStoreFileScanPOp>(storePOp);
@@ -237,11 +254,6 @@ PrePToFPDBStorePTransformer::transformPushdownOnlyToHybrid(const vector<shared_p
           auto object = fpdbStoreFileScanPOp->getObject();
           auto kernel = fpdbStoreFileScanPOp->getKernel();
           auto fileSize = kernel->getFileSize();
-
-          // TODO: parameters
-          std::vector<std::string> predicateColumnNames;
-          std::vector<std::set<std::string>> projectColumnGroups;
-          std::vector<std::string> allColumnNames;
 
           auto cacheLoadPOp = make_shared<cache::CacheLoadPOp>(fmt::format("CacheLoad[{}]-{}/{}",
                                                                            separableSuperPrePOp_->getId(),
@@ -251,11 +263,10 @@ PrePToFPDBStorePTransformer::transformPushdownOnlyToHybrid(const vector<shared_p
                                                                fpdbStoreFileScanPOp->getNodeId(),
                                                                predicateColumnNames,
                                                                projectColumnGroups,
-                                                               allColumnNames,
+                                                               fpdbStoreFileScanPOp->getProjectColumnNames(),
                                                                make_shared<ObjStorePartition>(bucket, object, fileSize),
                                                                0,
                                                                fileSize,
-                                                               fpdbStoreFileScanPOp->getKernel()->getFormat()->isColumnar(),
                                                                fpdbStoreConnector_);
           localPOp = cacheLoadPOp;
 
@@ -299,8 +310,8 @@ PrePToFPDBStorePTransformer::transformPushdownOnlyToHybrid(const vector<shared_p
                                                                separableSuperPrePOp_->getId(),
                                                                bucket,
                                                                object),
-                                                   fpdbStoreFileScanPOp->getProjectColumnNames(),
-                                                   fpdbStoreFileScanPOp->getNodeId());
+                                                   fpdbStoreSuperPOp->getProjectColumnNames(),
+                                                   fpdbStoreSuperPOp->getNodeId());
 
           // save created ops
           connPOps.emplace_back(*mergePOp2);
@@ -313,21 +324,33 @@ PrePToFPDBStorePTransformer::transformPushdownOnlyToHybrid(const vector<shared_p
         }
         case POpType::FILTER: {
           localPOp = make_shared<filter::FilterPOp>(dynamic_cast<filter::FilterPOp &>(*storePOp));
+          isMirrored = true;
           break;
         }
         case POpType::PROJECT: {
           localPOp = make_shared<project::ProjectPOp>(dynamic_cast<project::ProjectPOp &>(*storePOp));
+          isMirrored = true;
           break;
         }
         case POpType::AGGREGATE: {
           localPOp = make_shared<aggregate::AggregatePOp>(dynamic_cast<aggregate::AggregatePOp &>(*storePOp));
+          isMirrored = true;
           break;
         }
         default: {
           throw runtime_error(fmt::format("Unsupported physical operator type at FPDB store: {}", storePOp->getTypeString()));
         }
       }
-      localPOp->setName(fmt::format("{}-separated", storePOp->name()));
+
+      // clear connections and set separated for mirrored operators
+      if (isMirrored) {
+        localPOp->clearConnections();
+        localPOp->setName(fmt::format("{}-separated(local)", localPOp->name()));
+        localPOp->setSeparated(true);
+        storePOp->setName(fmt::format("{}-separated(fpdb-store)", storePOp->name()));
+        storePOp->setSeparated(true);
+      }
+
       storePOpToLocalPOp.emplace(storePOp, localPOp);
       localPOpMap.emplace(localPOp->name(), localPOp);
       allPOps.emplace_back(localPOp);
@@ -348,6 +371,10 @@ PrePToFPDBStorePTransformer::transformPushdownOnlyToHybrid(const vector<shared_p
       } else {
         for (const auto &storeConsumerName: storePOp->consumers()) {
           auto storeConsumer = storePOpMap.find(storeConsumerName)->second;
+          // need to get rid of CollatePOp here
+          if (storeConsumer->getType() == POpType::COLLATE) {
+            continue;
+          }
           auto localConsumer = storePOpToLocalPOp.find(storeConsumer)->second;
           localPOp->produce(localConsumer);
         }
@@ -399,11 +426,12 @@ PrePToFPDBStorePTransformer::transformFilterableScan(const shared_ptr<Filterable
     case PULL_UP:
       return transformFilterableScanPullup(filterableScanPrePOp, partitionPredicates);
     case PUSHDOWN_ONLY:
+    case HYBRID:
+      // note: hybrid will transform pushdown-only plan to hybrid after the entire plan is transformed
+      // so here both modes call the same function
       return transformFilterableScanPushdownOnly(filterableScanPrePOp, partitionPredicates);
     case CACHING_ONLY:
       return transformFilterableScanCachingOnly(filterableScanPrePOp, partitionPredicates);
-    case HYBRID:
-      throw runtime_error("Hybrid mode should use transform result of pushdown-only");
     default:
       throw runtime_error(fmt::format("Unsupported mode for FPDB Store: {}", mode_->toString()));
   }
@@ -580,12 +608,11 @@ PrePToFPDBStorePTransformer::transformFilterableScanCachingOnly(const shared_ptr
                                                                projectColumnNames,
                                                                partitionId % numNodes_,
                                                                predicateColumnNames,
-                                                               std::vector<std::set<std::string>>{},
+                                                               std::vector<std::set<std::string>>{},    // not needed
                                                                projPredColumnNames,
                                                                partition,
                                                                scanRange.first,
                                                                scanRange.second,
-                                                               table->getFormat()->isColumnar(),
                                                                fpdbStoreConnector_);
     allPOps.emplace_back(cacheLoadPOp);
 

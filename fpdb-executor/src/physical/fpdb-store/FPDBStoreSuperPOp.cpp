@@ -31,6 +31,9 @@ void FPDBStoreSuperPOp::onReceive(const Envelope &envelope) {
 
   if (message.type() == MessageType::START) {
     this->onStart();
+  } else if (message.type() == MessageType::SCAN) {
+    auto scanMessage = dynamic_cast<const ScanMessage &>(message);
+    this->onCacheLoadResponse(scanMessage);
   } else if (message.type() == MessageType::BLOOM_FILTER) {
     auto bloomFilterMessage = dynamic_cast<const BloomFilterMessage &>(message);
     this->onBloomFilter(bloomFilterMessage);
@@ -49,8 +52,38 @@ const std::shared_ptr<PhysicalPlan> &FPDBStoreSuperPOp::getSubPlan() const {
   return subPlan_;
 }
 
+void FPDBStoreSuperPOp::setWaitForScanMessage(bool waitForScanMessage) {
+  waitForScanMessage_ = waitForScanMessage;
+}
+
 void FPDBStoreSuperPOp::onStart() {
   SPDLOG_DEBUG("Starting operator  |  name: '{}'", this->name());
+
+  // try to process
+  if (readyToProcess()) {
+    processAtStore();
+  }
+}
+
+void FPDBStoreSuperPOp::onCacheLoadResponse(const ScanMessage &msg) {
+  // check if nothing to process (i.e. no columns in scan message)
+  auto scanColumnNames = msg.getColumnNames();
+  if (scanColumnNames.empty()) {
+    processEmpty();
+    return;
+  }
+
+  // set project column names
+  for (const auto &opIt: subPlan_->getPhysicalOps()) {
+    auto op = opIt.second;
+    if (op->getType() == POpType::FPDB_STORE_FILE_SCAN) {
+      op->setProjectColumnNames(scanColumnNames);
+      break;
+    }
+  }
+
+  // set flag
+  waitForScanMessage_ = false;
 
   // try to process
   if (readyToProcess()) {
@@ -73,15 +106,21 @@ void FPDBStoreSuperPOp::onBloomFilter(const BloomFilterMessage &msg) {
     // no BloomFilterUsePOp found
     ctx()->notifyError("No BloomFilterUsePOp found");
   }
+  (*bloomFilterUsePOp)->setBloomFilter(msg.getBloomFilter());
 
   // try to process
-  (*bloomFilterUsePOp)->setBloomFilter(msg.getBloomFilter());
   if (readyToProcess()) {
     processAtStore();
   }
 }
 
 bool FPDBStoreSuperPOp::readyToProcess() {
+  // check if waiting for scan message, specifically in hybrid mode
+  if (waitForScanMessage_) {
+    return false;
+  }
+
+  // check if there exists BloomFilterUsePOp and if bloom filter is set
   for (const auto &opIt: subPlan_->getPhysicalOps()) {
     auto op = opIt.second;
     if (op->getType() == POpType::BLOOM_FILTER_USE) {
@@ -140,8 +179,8 @@ void FPDBStoreSuperPOp::processAtStore() {
   } else {
     tupleSet = TupleSet::make(table->schema());
   }
-  std::shared_ptr<Message> tupleMessage = std::make_shared<TupleSetMessage>(tupleSet, name_);
-  ctx()->tell(tupleMessage);
+  std::shared_ptr<Message> tupleSetMessage = std::make_shared<TupleSetMessage>(tupleSet, name_);
+  ctx()->tell(tupleSetMessage);
 
   // metrics
 #if SHOW_DEBUG_METRICS == true
@@ -151,6 +190,13 @@ void FPDBStoreSuperPOp::processAtStore() {
 #endif
 
   // complete
+  ctx()->notifyComplete();
+}
+
+void FPDBStoreSuperPOp::processEmpty() {
+  // send an empty tupleSet and complete
+  std::shared_ptr<Message> tupleSetMessage = std::make_shared<TupleSetMessage>(TupleSet::makeWithEmptyTable(), name_);
+  ctx()->tell(tupleSetMessage);
   ctx()->notifyComplete();
 }
 

@@ -4,6 +4,7 @@
 
 #include <fpdb/cache/SegmentCache.h>
 #include <fpdb/cache/policy/LRUCachingPolicy.h>
+#include <fpdb/cache/Globals.h>
 #include <fmt/format.h>
 #include <utility>
 
@@ -64,6 +65,10 @@ size_t SegmentCache::getSize() const {
 
 std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>>
 SegmentCache::toCache(std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> segmentKeys) {
+  if (FIX_CACHE_LAYOUT) {
+    return std::make_shared<std::vector<std::shared_ptr<SegmentKey>>>();
+  }
+
   return cachingPolicy_->onToCache(std::move(segmentKeys));
 }
 

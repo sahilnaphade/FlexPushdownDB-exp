@@ -61,7 +61,7 @@ namespace fpdb::util {
   }
 
   /**
-   * Check subset
+   * Check if set1 is a subset of set2
    */
   template<typename T>
   bool isSubSet(const set<T> &set1, const set<T> &set2) {
@@ -71,6 +71,15 @@ namespace fpdb::util {
       }
     }
     return true;
+  }
+
+  template<typename T>
+  vector<set<T>> splitToUnarySet(const vector<T> vec) {
+    vector<set<T>> sets;
+    for (const auto &e: vec) {
+      sets.emplace_back(set<T>{e});
+    }
+    return sets;
   }
 
   size_t hashCombine(const vector<size_t> &hashes);

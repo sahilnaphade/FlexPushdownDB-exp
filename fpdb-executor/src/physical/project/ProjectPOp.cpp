@@ -46,6 +46,11 @@ void ProjectPOp::onReceive(const Envelope &message) {
 }
 
 void ProjectPOp::onTupleSet(const TupleSetMessage &message) {
+  // Discard inapplicable projections for hybrid execution
+  if (isSeparated_) {
+    discardInapplicableProjections(message.tuples());
+  }
+
   // Build the project if not built
   buildProjector(message);
 
@@ -144,6 +149,43 @@ void ProjectPOp::projectAndSendTuples() {
 void ProjectPOp::sendTuples(std::shared_ptr<TupleSet> &projected) {
 	std::shared_ptr<Message> tupleSetMessage = std::make_shared<TupleSetMessage>(projected, name());
 	ctx()->tell(tupleSetMessage);
+}
+
+void ProjectPOp::discardInapplicableProjections(const std::shared_ptr<TupleSet> &tupleSet) {
+  if (inapplicableProjectionsDiscarded_) {
+    return;
+  }
+
+  // collect input column names
+  auto tupleSetColumnNames = tupleSet->schema()->field_names();
+  std::set<std::string> tupleSetColumnNameSet(tupleSetColumnNames.begin(), tupleSetColumnNames.end());
+
+  // check projectColumnNamePairs_
+  projectColumnNamePairs_.erase(
+          std::remove_if(projectColumnNamePairs_.begin(), projectColumnNamePairs_.end(),
+                         [&](const std::pair<std::string, std::string> &pair) {
+                           return tupleSetColumnNameSet.find(pair.first) == tupleSetColumnNameSet.end();
+                         }),
+          projectColumnNamePairs_.end()
+  );
+
+  // check exprs_ and exprNames_
+  std::stack<uint> exprIdsToRemove;
+  for (uint i = 0; i < exprs_.size(); ++i) {
+    auto exprColumnNames = exprs_[i]->involvedColumnNames();
+    std::set<std::string> exprColumnNameSet(exprColumnNames.begin(), exprColumnNames.end());
+    if (!isSubSet(exprColumnNameSet, tupleSetColumnNameSet)) {
+      exprIdsToRemove.push(i);
+    }
+  }
+  while (!exprIdsToRemove.empty()) {
+    uint id = exprIdsToRemove.top();
+    exprIdsToRemove.pop();
+    exprs_.erase(std::next(exprs_.begin(), id));
+    exprNames_.erase(std::next(exprNames_.begin(), id));
+  }
+
+  inapplicableProjectionsDiscarded_ = true;
 }
 
 const std::vector<std::shared_ptr<fpdb::expression::gandiva::Expression>> &ProjectPOp::getExprs() const {

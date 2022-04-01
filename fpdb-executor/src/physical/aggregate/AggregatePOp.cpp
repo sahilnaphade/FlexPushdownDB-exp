@@ -55,7 +55,15 @@ void AggregatePOp::onReceive(const Envelope &message) {
 }
 
 void AggregatePOp::onTupleSet(const TupleSetMessage &message) {
-  compute(message.tuples());
+  auto tupleSet = message.tuples();
+
+  // Discard inapplicable functions for hybrid execution
+  if (isSeparated_) {
+    discardInapplicableFunctions(tupleSet);
+  }
+
+  // compute aggregation
+  compute(tupleSet);
 }
 
 void AggregatePOp::onComplete(const CompleteMessage &) {
@@ -147,6 +155,36 @@ shared_ptr<TupleSet> AggregatePOp::finalizeEmpty() {
 
 bool AggregatePOp::hasResult() {
   return !aggregateResults_[0].empty();
+}
+
+void AggregatePOp::discardInapplicableFunctions(const std::shared_ptr<TupleSet> &tupleSet) {
+  if (inapplicableFunctionsDiscarded_) {
+    return;
+  }
+
+  // collect input column names
+  auto tupleSetColumnNames = tupleSet->schema()->field_names();
+  std::set<std::string> tupleSetColumnNameSet(tupleSetColumnNames.begin(), tupleSetColumnNames.end());
+
+  // check aggregate functions
+  functions_.erase(
+          std::remove_if(functions_.begin(), functions_.end(),
+                         [&](const std::shared_ptr<AggregateFunction> &function) {
+                           auto expr = function->getExpression();
+                           if (!expr) {
+                             return false;
+                           }
+                           auto exprColumnNames = expr->involvedColumnNames();
+                           std::set<std::string> exprColumnNameSet(exprColumnNames.begin(), exprColumnNames.end());
+                           return !isSubSet(exprColumnNameSet, tupleSetColumnNameSet);
+                         }),
+          functions_.end()
+  );
+
+  // resize aggregate results
+  aggregateResults_.resize(functions_.size());
+
+  inapplicableFunctionsDiscarded_ = true;
 }
 
 void AggregatePOp::clear() {

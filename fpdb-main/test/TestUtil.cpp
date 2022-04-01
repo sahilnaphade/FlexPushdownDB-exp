@@ -6,6 +6,7 @@
 #include <fpdb/main/ExecConfig.h>
 #include <fpdb/executor/caf/CAFInit.h>
 #include <fpdb/executor/physical/transform/PrePToPTransformer.h>
+#include <fpdb/cache/Globals.h>
 #include <fpdb/cache/policy/LRUCachingPolicy.h>
 #include <fpdb/cache/policy/LFUCachingPolicy.h>
 #include <fpdb/cache/policy/LFUSCachingPolicy.h>
@@ -94,6 +95,10 @@ double TestUtil::getCrtQueryHitRatio() const {
   return crtQueryHitRatio_;
 }
 
+void TestUtil::setFixLayoutIndices(const set<int> &fixLayoutIndices) {
+  fixLayoutIndices_ = fixLayoutIndices;
+}
+
 void TestUtil::runTest() {
   spdlog::set_level(spdlog::level::info);
 
@@ -112,8 +117,14 @@ void TestUtil::runTest() {
   // create the executor
   makeExecutor();
 
-  for (const auto &queryFileName: queryFileNames_) {
-    executeQueryFile(queryFileName);
+  // run queries
+  for (uint i = 0; i < queryFileNames_.size(); ++i) {
+    executeQueryFile(queryFileNames_[i]);
+
+    // fix cache layout if needed
+    if (fixLayoutIndices_.find((int) i) != fixLayoutIndices_.end()) {
+      fpdb::cache::FIX_CACHE_LAYOUT = true;
+    }
   }
 
   // stop

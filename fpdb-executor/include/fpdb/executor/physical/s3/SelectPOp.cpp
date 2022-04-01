@@ -374,7 +374,7 @@ std::shared_ptr<TupleSet> SelectPOp::s3Select(uint64_t startOffset, uint64_t end
   }
 
   if(!hasEndEvent){
-    int x = 1;
+    ctx()->notifyError(fmt::format("Not end event received, {}", name()));
   }
 
   return tupleSet;
