@@ -49,6 +49,12 @@ CalcitePlanJsonDeserializer::CalcitePlanJsonDeserializer(string planJsonString,
   catalogueEntry_(catalogueEntry),
   pOpIdGenerator_(0) {}
 
+shared_ptr<PrePhysicalPlan> CalcitePlanJsonDeserializer::deserialize(string planJsonString,
+                                                                     const shared_ptr<CatalogueEntry> &catalogueEntry) {
+  CalcitePlanJsonDeserializer deserializer(planJsonString, catalogueEntry);
+  return deserializer.deserialize();
+}
+
 shared_ptr<PrePhysicalPlan> CalcitePlanJsonDeserializer::deserialize() {
   auto jObj = json::parse(planJsonString_);
   auto rootPrePOp = deserializeDfs(jObj["plan"]);

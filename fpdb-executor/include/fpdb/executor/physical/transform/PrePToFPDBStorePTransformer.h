@@ -26,25 +26,22 @@ namespace fpdb::executor::physical {
 class PrePToFPDBStorePTransformer {
 
 public:
-  PrePToFPDBStorePTransformer(uint prePOpId,
-                              const shared_ptr<Mode> &mode,
-                              int numNodes,
-                              const shared_ptr<FPDBStoreConnector> &fpdbStoreConnector);
-
   /**
    * Transform separable super prephysical op to physical op
-   * @param separableSuperPrePOp
-   * @return a pair of connect physical ops (to producer) and current all (cumulative) physical ops
+   * @return a pair of connect physical ops (to consumers) and current all (cumulative) physical ops
    */
-  pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
-  transformSeparableSuper(const shared_ptr<SeparableSuperPrePOp> &separableSuperPrePOp);
+  static pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
+  transform(const shared_ptr<SeparableSuperPrePOp> &separableSuperPrePOp,
+            const shared_ptr<Mode> &mode,
+            int numNodes,
+            const shared_ptr<FPDBStoreConnector> &fpdbStoreConnector);
 
   /**
    * Add BloomFilterUsePOp to FPDBStoreSuperPOp
    * if producers are FPDBStoreSuperPOp and bloom filter pushdown is enabled
    * @param producers
    * @param bloomFilterUsePOps
-   * @return a pair of connect physical ops (to producer) and additional physical ops to add to plan
+   * @return a pair of connect physical ops (to consumers) and additional physical ops to add to plan
    */
   static pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
   addBloomFilterUse(vector<shared_ptr<PhysicalOp>> &producers,
@@ -52,10 +49,21 @@ public:
                     const shared_ptr<Mode> &mode);
 
 private:
+  PrePToFPDBStorePTransformer(const shared_ptr<SeparableSuperPrePOp> &separableSuperPrePOp,
+                              const shared_ptr<Mode> &mode,
+                              int numNodes,
+                              const shared_ptr<FPDBStoreConnector> &fpdbStoreConnector);
+  
+  /**
+   * Impl of transformation
+   * @return 
+   */
+  pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>> transform();
+  
   /**
    * Transform prephysical op to physical op in dfs style
    * @param prePOp: prephysical op
-   * @return a pair of connect physical ops (to producer) and current all (cumulative) physical ops
+   * @return a pair of connect physical ops (to consumers) and current all (cumulative) physical ops
    */
   pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
   transformDfs(const shared_ptr<PrePhysicalOp> &prePOp);
@@ -66,7 +74,7 @@ private:
   /**
    * Transform the plan of pushdown-only into hybrid execution, where the plan of pushdown-only is just FpdbStoreSuperPOps
    * @param fpdbStoreSuperPOps
-   * @return a pair of connect physical ops (to producer) and current all (cumulative) physical ops
+   * @return a pair of connect physical ops (to consumers) and current all (cumulative) physical ops
    */
   pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
   transformPushdownOnlyToHybrid(const vector<shared_ptr<PhysicalOp>> &fpdbStoreSuperPOps);
@@ -95,7 +103,7 @@ private:
   pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
   transformAggregate(const shared_ptr<AggregatePrePOp> &aggregatePrePOp);
 
-  uint prePOpId_;
+  shared_ptr<SeparableSuperPrePOp> separableSuperPrePOp_;
   std::shared_ptr<Mode> mode_;
   int numNodes_;
   std::shared_ptr<FPDBStoreConnector> fpdbStoreConnector_;

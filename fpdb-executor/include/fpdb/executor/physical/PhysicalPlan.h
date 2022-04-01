@@ -16,24 +16,28 @@ namespace fpdb::executor::physical {
 
 class PhysicalPlan {
 public:
-  PhysicalPlan(const vector<shared_ptr<PhysicalOp>> &physicalOps);
+  PhysicalPlan(const unordered_map<string, shared_ptr<PhysicalOp>> &physicalOps,
+               const string &rootPOpName);
   PhysicalPlan() = default;
   PhysicalPlan(const PhysicalPlan&) = default;
   PhysicalPlan& operator=(const PhysicalPlan&) = default;
   ~PhysicalPlan() = default;
 
-  const vector<shared_ptr<PhysicalOp>> &getPhysicalOps() const;
-  tl::expected<void, string> addAsLast(shared_ptr<PhysicalOp> &newOp);
-  tl::expected<shared_ptr<PhysicalOp>, string> getCollatePOp() const;
+  const unordered_map<string, shared_ptr<PhysicalOp>> &getPhysicalOps() const;
+  tl::expected<shared_ptr<PhysicalOp>, string> getPhysicalOp(const string &name) const;
+  tl::expected<void, string> addAsLast(shared_ptr<PhysicalOp> &op);
+  tl::expected<shared_ptr<PhysicalOp>, string> getRootPOp() const;
 
 private:
-  vector<shared_ptr<PhysicalOp>> physicalOps_;
+  unordered_map<string, shared_ptr<PhysicalOp>> physicalOps_;
+  string rootPOpName_;
 
 // caf inspect
 public:
   template <class Inspector>
   friend bool inspect(Inspector& f, PhysicalPlan& plan) {
-    return f.apply(plan.physicalOps_);
+    return f.object(plan).fields(f.field("physicalOps", plan.physicalOps_),
+                                 f.field("rootPOpName", plan.rootPOpName_));
   }
 };
 

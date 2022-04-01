@@ -27,12 +27,21 @@ using namespace std;
 namespace fpdb::plan::calcite {
 
 class CalcitePlanJsonDeserializer {
-public:
-  CalcitePlanJsonDeserializer(string planJsonString, const shared_ptr<CatalogueEntry> &catalogueEntry);
 
-  shared_ptr<PrePhysicalPlan> deserialize();
+public:
+  static shared_ptr<PrePhysicalPlan> deserialize(string planJsonString,
+                                                 const shared_ptr<CatalogueEntry> &catalogueEntry);
 
 private:
+  CalcitePlanJsonDeserializer(string planJsonString,
+                              const shared_ptr<CatalogueEntry> &catalogueEntry);
+
+  /**
+   * Impl of deserialization
+   * @return
+   */
+  shared_ptr<PrePhysicalPlan> deserialize();
+
   shared_ptr<PrePhysicalOp> deserializeDfs(json &jObj);
   vector<shared_ptr<PrePhysicalOp>> deserializeProducers(const json &jObj);
 

@@ -30,7 +30,16 @@ using namespace fpdb::catalogue::obj_store;
 namespace fpdb::executor::physical {
 
 class PrePToPTransformer {
+
 public:
+  static shared_ptr<PhysicalPlan> transform(const shared_ptr<PrePhysicalPlan> &prePhysicalPlan,
+                                            const shared_ptr<CatalogueEntry> &catalogueEntry,
+                                            const shared_ptr<ObjStoreConnector> &objStoreConnector,
+                                            const shared_ptr<Mode> &mode,
+                                            int parallelDegree,
+                                            int numNodes);
+
+private:
   PrePToPTransformer(const shared_ptr<PrePhysicalPlan> &prePhysicalPlan,
                      const shared_ptr<CatalogueEntry> &catalogueEntry,
                      const shared_ptr<ObjStoreConnector> &objStoreConnector,
@@ -38,49 +47,40 @@ public:
                      int parallelDegree,
                      int numNodes);
 
+  /**
+   * Impl of transformation
+   * @return
+   */
   shared_ptr<PhysicalPlan> transform();
 
-private:
   /**
    * Transform prephysical op to physical op in dfs style
    * @param prePOp: prephysical op
-   * @return a pair of connect physical ops (to producer) and current all (cumulative) physical ops
+   * @return physical ops to be connect to its consumers
    */
-  pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
-  transformDfs(const shared_ptr<PrePhysicalOp> &prePOp);
+  vector<shared_ptr<PhysicalOp>> transformDfs(const shared_ptr<PrePhysicalOp> &prePOp);
 
-  vector<pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>>
-  transformProducers(const shared_ptr<PrePhysicalOp> &prePOp);
+  vector<vector<shared_ptr<PhysicalOp>>> transformProducers(const shared_ptr<PrePhysicalOp> &prePOp);
 
-  pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
-  transformSort(const shared_ptr<SortPrePOp> &sortPrePOp);
+  vector<shared_ptr<PhysicalOp>> transformSort(const shared_ptr<SortPrePOp> &sortPrePOp);
 
-  pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
-  transformLimitSort(const shared_ptr<LimitSortPrePOp> &limitSortPrePOp);
+  vector<shared_ptr<PhysicalOp>> transformLimitSort(const shared_ptr<LimitSortPrePOp> &limitSortPrePOp);
 
-  pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
-  transformAggregate(const shared_ptr<AggregatePrePOp> &aggregatePrePOp);
+  vector<shared_ptr<PhysicalOp>> transformAggregate(const shared_ptr<AggregatePrePOp> &aggregatePrePOp);
 
-  pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
-  transformGroup(const shared_ptr<GroupPrePOp> &groupPrePOp);
+  vector<shared_ptr<PhysicalOp>> transformGroup(const shared_ptr<GroupPrePOp> &groupPrePOp);
 
-  pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
-  transformProject(const shared_ptr<ProjectPrePOp> &projectPrePOp);
+  vector<shared_ptr<PhysicalOp>> transformProject(const shared_ptr<ProjectPrePOp> &projectPrePOp);
 
-  pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
-  transformFilter(const shared_ptr<FilterPrePOp> &filterPrePOp);
+  vector<shared_ptr<PhysicalOp>> transformFilter(const shared_ptr<FilterPrePOp> &filterPrePOp);
 
-  pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
-  transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoinPrePOp);
+  vector<shared_ptr<PhysicalOp>> transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoinPrePOp);
 
-  pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
-  transformNestedLoopJoin(const shared_ptr<NestedLoopJoinPrePOp> &nestedLoopJoinPrePOp);
+  vector<shared_ptr<PhysicalOp>> transformNestedLoopJoin(const shared_ptr<NestedLoopJoinPrePOp> &nestedLoopJoinPrePOp);
 
-  pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
-  transformFilterableScan(const shared_ptr<FilterableScanPrePOp> &filterableScanPrePOp);
+  vector<shared_ptr<PhysicalOp>> transformFilterableScan(const shared_ptr<FilterableScanPrePOp> &filterableScanPrePOp);
 
-  pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
-  transformSeparableSuper(const shared_ptr<SeparableSuperPrePOp> &separableSuperPrePOp);
+  vector<shared_ptr<PhysicalOp>> transformSeparableSuper(const shared_ptr<SeparableSuperPrePOp> &separableSuperPrePOp);
 
   shared_ptr<PrePhysicalPlan> prePhysicalPlan_;
   shared_ptr<CatalogueEntry> catalogueEntry_;
@@ -88,6 +88,8 @@ private:
   shared_ptr<Mode> mode_;
   int parallelDegree_;
   int numNodes_;
+
+  unordered_map<string, shared_ptr<PhysicalOp>> physicalOps_;
 };
 
 }

@@ -7,51 +7,59 @@
 
 namespace fpdb::executor::physical {
 
-PhysicalPlan::PhysicalPlan(const vector<shared_ptr<PhysicalOp>> &physicalOps)
-        : physicalOps_(physicalOps) {}
+PhysicalPlan::PhysicalPlan(const unordered_map<string, shared_ptr<PhysicalOp>> &physicalOps,
+                           const string &rootPOpName):
+  physicalOps_(physicalOps),
+  rootPOpName_(rootPOpName) {}
 
-const vector<shared_ptr<PhysicalOp>> &PhysicalPlan::getPhysicalOps() const {
+const unordered_map<string, shared_ptr<PhysicalOp>> &PhysicalPlan::getPhysicalOps() const {
   return physicalOps_;
 }
 
-tl::expected<void, string> PhysicalPlan::addAsLast(shared_ptr<PhysicalOp> &newOp) {
-  // find collate
-  std::optional<std::shared_ptr<PhysicalOp>> collatePOp;
-  std::unordered_map<std::string, std::shared_ptr<PhysicalOp>> opMap;
-  for (const auto &op: physicalOps_) {
-    opMap.emplace(op->name(), op);
-    if (op->getType() == POpType::COLLATE) {
-      collatePOp = op;
-    }
+tl::expected<shared_ptr<PhysicalOp>, string> PhysicalPlan::getPhysicalOp(const string &name) const {
+  auto physicalOpIt = physicalOps_.find(name);
+  if (physicalOpIt != physicalOps_.end()) {
+    return physicalOpIt->second;
+  } else {
+    return tl::make_unexpected(fmt::format("Operator '{}' not found in the physical plan", name));
+  }
+}
+
+tl::expected<void, string> PhysicalPlan::addAsLast(shared_ptr<PhysicalOp> &op) {
+  // check exist
+  if (physicalOps_.find(op->name()) != physicalOps_.end()) {
+    return tl::make_unexpected(fmt::format("Operator '{}' already exists in the physical plan", op->name()));
   }
 
-  if (!collatePOp.has_value()) {
-    return tl::make_unexpected("CollatePOp not found in physical plan");
+  // find root
+  auto expRootPOp = getRootPOp();
+  if (!expRootPOp.has_value()) {
+    return tl::make_unexpected(expRootPOp.error());
   }
+  auto rootPOp = *expRootPOp;
 
-  // add before collate
-  std::vector<std::shared_ptr<PhysicalOp>> collateProducers;
-  for (const auto &producerName: (*collatePOp)->producers()) {
-    auto producer = opMap.find(producerName)->second;
-    collateProducers.emplace_back(producer);
-    producer->unProduce(*collatePOp);
-    (*collatePOp)->unConsume(producer);
+  // add before root
+  std::vector<std::shared_ptr<PhysicalOp>> rootProducers;
+  for (const auto &producerName: rootPOp->producers()) {
+    auto producer = physicalOps_.find(producerName)->second;
+    rootProducers.emplace_back(producer);
+    producer->unProduce(rootPOp);
+    rootPOp->unConsume(producer);
   }
-  PrePToPTransformerUtil::connectManyToOne(collateProducers, newOp);
-  PrePToPTransformerUtil::connectOneToOne(newOp, *collatePOp);
+  PrePToPTransformerUtil::connectManyToOne(rootProducers, op);
+  PrePToPTransformerUtil::connectOneToOne(op, rootPOp);
   
-  physicalOps_.emplace_back(newOp);
+  physicalOps_.emplace(op->name(), op);
   return {};
 }
 
-tl::expected<shared_ptr<PhysicalOp>, string> PhysicalPlan::getCollatePOp() const {
-  unordered_map<string, shared_ptr<PhysicalOp>> opMap;
-  for (const auto &op: physicalOps_) {
-    if (op->getType() == POpType::COLLATE) {
-      return op;
-    }
+tl::expected<shared_ptr<PhysicalOp>, string> PhysicalPlan::getRootPOp() const {
+  auto rootPOpIt = physicalOps_.find(rootPOpName_);
+  if (rootPOpIt != physicalOps_.end()) {
+    return rootPOpIt->second;
+  } else {
+    return tl::make_unexpected(fmt::format("Root operator '{}' not found in physical plan", rootPOpName_));
   }
-  return tl::make_unexpected("CollatePOp not found in physical plan");
 }
 
 }

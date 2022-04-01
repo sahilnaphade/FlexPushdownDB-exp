@@ -278,8 +278,8 @@ tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::
   const ServerCallContext& context, const std::shared_ptr<SelectObjectContentTicket>& select_object_content_ticket) {
 
   // deserialize the query plan
-  PhysicalPlanDeserializer deserializer(select_object_content_ticket->query_plan_string(), store_root_path_);
-  auto exp_physical_plan = deserializer.deserialize();
+  auto exp_physical_plan = PhysicalPlanDeserializer::deserialize(select_object_content_ticket->query_plan_string(),
+                                                                 store_root_path_);
   if (!exp_physical_plan.has_value()) {
     return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed, exp_physical_plan.error()));
   }

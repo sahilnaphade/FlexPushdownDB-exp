@@ -136,21 +136,19 @@ shared_ptr<PhysicalPlan> Client::plan(const string &query, const shared_ptr<Cata
   string planResult = calciteClient_->planQuery(query, execConfig_->getSchemaName());
 
   // deserialize plan json string into prephysical plan
-  auto planDeserializer = make_shared<CalcitePlanJsonDeserializer>(planResult, catalogueEntry);
-  const auto &prePhysicalPlan = planDeserializer->deserialize();
+  auto prePhysicalPlan = CalcitePlanJsonDeserializer::deserialize(planResult, catalogueEntry);
 
   // trim unused fields (Calcite trimmer does not trim completely)
   prePhysicalPlan->populateAndTrimProjectColumns();
 
   // transform prephysical plan to physical plan
   auto s3Connector = make_shared<obj_store::S3Connector>(awsClient_);
-  auto prePToPTransformer = make_shared<PrePToPTransformer>(prePhysicalPlan,
-                                                            catalogueEntry,
-                                                            s3Connector,
-                                                            execConfig_->getMode(),
-                                                            execConfig_->getParallelDegree(),
-                                                            nodes_.size() + 1);
-  const auto &physicalPlan = prePToPTransformer->transform();
+  auto physicalPlan = PrePToPTransformer::transform(prePhysicalPlan,
+                                                    catalogueEntry,
+                                                    s3Connector,
+                                                    execConfig_->getMode(),
+                                                    execConfig_->getParallelDegree(),
+                                                    nodes_.size() + 1);
 
   return physicalPlan;
 }

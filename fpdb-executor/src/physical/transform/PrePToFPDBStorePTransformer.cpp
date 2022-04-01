@@ -21,19 +21,27 @@ using namespace fpdb::catalogue::obj_store;
 
 namespace fpdb::executor::physical {
 
-PrePToFPDBStorePTransformer::PrePToFPDBStorePTransformer(uint prePOpId,
+PrePToFPDBStorePTransformer::PrePToFPDBStorePTransformer(const shared_ptr<SeparableSuperPrePOp> &separableSuperPrePOp,
                                                          const shared_ptr<Mode> &mode,
                                                          int numNodes,
                                                          const shared_ptr<FPDBStoreConnector> &fpdbStoreConnector):
-  prePOpId_(prePOpId),
+  separableSuperPrePOp_(separableSuperPrePOp),
   mode_(mode),
   numNodes_(numNodes),
   fpdbStoreConnector_(fpdbStoreConnector) {}
 
 pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
-PrePToFPDBStorePTransformer::transformSeparableSuper(const shared_ptr<SeparableSuperPrePOp> &separableSuperPrePOp) {
+PrePToFPDBStorePTransformer::transform(const shared_ptr<SeparableSuperPrePOp> &separableSuperPrePOp,
+                                       const shared_ptr<Mode> &mode,
+                                       int numNodes,
+                                       const shared_ptr<FPDBStoreConnector> &fpdbStoreConnector) {
+  PrePToFPDBStorePTransformer transformer(separableSuperPrePOp, mode, numNodes, fpdbStoreConnector);
+  return transformer.transform();
+} 
+
+pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>> PrePToFPDBStorePTransformer::transform() {
   // transform in DFS
-  auto rootPrePOp = separableSuperPrePOp->getRootOp();
+  auto rootPrePOp = separableSuperPrePOp_->getRootOp();
   auto transformRes = transformDfs(rootPrePOp);
   auto connPOps = transformRes.first;
   auto allPOps = transformRes.second;
@@ -210,11 +218,13 @@ PrePToFPDBStorePTransformer::transformPushdownOnlyToHybrid(const vector<shared_p
   for (const auto &fpdbStoreSuperPOp: fpdbStoreSuperPOps) {
     auto typedFPDBStoreSuperPOp = static_pointer_cast<fpdb_store::FPDBStoreSuperPOp>(fpdbStoreSuperPOp);
     unordered_map<shared_ptr<PhysicalOp>, shared_ptr<PhysicalOp>> storePOpToLocalPOp;
-    unordered_map<string, shared_ptr<PhysicalOp>> storePOpMap, localPOpMap;
+    unordered_map<string, shared_ptr<PhysicalOp>> storePOpMap = typedFPDBStoreSuperPOp->getSubPlan()->getPhysicalOps();
+    unordered_map<string, shared_ptr<PhysicalOp>> localPOpMap;
     optional<shared_ptr<merge::MergePOp>> mergePOp1, mergePOp2;
 
     // create mirror ops which are executed locally
-    for (const auto &storePOp: typedFPDBStoreSuperPOp->getSubPlan()->getPhysicalOps()) {
+    for (const auto &storePOpIt: storePOpMap) {
+      auto storePOp = storePOpIt.second;
       if (storePOp->getType() == POpType::COLLATE) {
         continue;
       }
@@ -233,7 +243,10 @@ PrePToFPDBStorePTransformer::transformPushdownOnlyToHybrid(const vector<shared_p
           std::vector<std::set<std::string>> projectColumnGroups;
           std::vector<std::string> allColumnNames;
 
-          auto cacheLoadPOp = make_shared<cache::CacheLoadPOp>(fmt::format("CacheLoad[{}]-{}/{}", prePOpId_, bucket, object),
+          auto cacheLoadPOp = make_shared<cache::CacheLoadPOp>(fmt::format("CacheLoad[{}]-{}/{}",
+                                                                           separableSuperPrePOp_->getId(),
+                                                                           bucket,
+                                                                           object),
                                                                fpdbStoreFileScanPOp->getProjectColumnNames(),
                                                                fpdbStoreFileScanPOp->getNodeId(),
                                                                predicateColumnNames,
@@ -247,7 +260,10 @@ PrePToFPDBStorePTransformer::transformPushdownOnlyToHybrid(const vector<shared_p
           localPOp = cacheLoadPOp;
 
           // Create a RemoteFileScanPOp to load data to cache, and a MergePOp, then wire them up
-          auto missPOpToCache = make_shared<file::RemoteFileScanPOp>(fmt::format("RemoteFileScan(cache)[{}]-{}/{}", prePOpId_, bucket, object),
+          auto missPOpToCache = make_shared<file::RemoteFileScanPOp>(fmt::format("RemoteFileScan(cache)[{}]-{}/{}",
+                                                                                 separableSuperPrePOp_->getId(),
+                                                                                 bucket,
+                                                                                 object),
                                                                      fpdbStoreFileScanPOp->getProjectColumnNames(),
                                                                      fpdbStoreFileScanPOp->getNodeId(),
                                                                      bucket,
@@ -261,7 +277,10 @@ PrePToFPDBStorePTransformer::transformPushdownOnlyToHybrid(const vector<shared_p
                                                                      false,
                                                                      true);
           // first merge for cached data and to-cache data
-          mergePOp1 = make_shared<merge::MergePOp>(fmt::format("merge1[{}]-{}/{}", prePOpId_, bucket, object),
+          mergePOp1 = make_shared<merge::MergePOp>(fmt::format("merge1[{}]-{}/{}",
+                                                               separableSuperPrePOp_->getId(),
+                                                               bucket,
+                                                               object),
                                                    fpdbStoreFileScanPOp->getProjectColumnNames(),
                                                    fpdbStoreFileScanPOp->getNodeId());
           cacheLoadPOp->setHitOperator(*mergePOp1);
@@ -276,7 +295,10 @@ PrePToFPDBStorePTransformer::transformPushdownOnlyToHybrid(const vector<shared_p
           fpdbStoreSuperPOp->consume(cacheLoadPOp);
 
           // second merge for local result and pushdown result
-          mergePOp2 = make_shared<merge::MergePOp>(fmt::format("merge2[{}]-{}/{}", prePOpId_, bucket, object),
+          mergePOp2 = make_shared<merge::MergePOp>(fmt::format("merge2[{}]-{}/{}",
+                                                               separableSuperPrePOp_->getId(),
+                                                               bucket,
+                                                               object),
                                                    fpdbStoreFileScanPOp->getProjectColumnNames(),
                                                    fpdbStoreFileScanPOp->getNodeId());
 
@@ -307,7 +329,6 @@ PrePToFPDBStorePTransformer::transformPushdownOnlyToHybrid(const vector<shared_p
       }
       localPOp->setName(fmt::format("{}-separated", storePOp->name()));
       storePOpToLocalPOp.emplace(storePOp, localPOp);
-      storePOpMap.emplace(storePOp->name(), storePOp);
       localPOpMap.emplace(localPOp->name(), localPOp);
       allPOps.emplace_back(localPOp);
     }
@@ -346,7 +367,7 @@ PrePToFPDBStorePTransformer::transformPushdownOnlyToHybrid(const vector<shared_p
     }
 
     // wire up for the second merge
-    auto expStoreCollatePOp = typedFPDBStoreSuperPOp->getSubPlan()->getCollatePOp();
+    auto expStoreCollatePOp = typedFPDBStoreSuperPOp->getSubPlan()->getRootPOp();
     if (!expStoreCollatePOp.has_value()) {
       throw runtime_error(expStoreCollatePOp.error());
     }
@@ -417,7 +438,7 @@ PrePToFPDBStorePTransformer::transformFilterableScanPullup(const shared_ptr<Filt
     const auto &projPredColumnNames = union_(projectColumnNames, predicateColumnNames);
 
     // remote file scan
-    const auto &scanPOp = make_shared<file::RemoteFileScanPOp>(fmt::format("RemoteFileScan[{}]-{}/{}", prePOpId_, bucket, object),
+    const auto &scanPOp = make_shared<file::RemoteFileScanPOp>(fmt::format("RemoteFileScan[{}]-{}/{}", separableSuperPrePOp_->getId(), bucket, object),
                                                                projPredColumnNames,
                                                                partitionId % numNodes_,
                                                                bucket,
@@ -431,7 +452,7 @@ PrePToFPDBStorePTransformer::transformFilterableScanPullup(const shared_ptr<Filt
 
     // filter
     if (predicate) {
-      const auto &filterPOp = make_shared<filter::FilterPOp>(fmt::format("Filter[{}]-{}/{}", prePOpId_, bucket, object),
+      const auto &filterPOp = make_shared<filter::FilterPOp>(fmt::format("Filter[{}]-{}/{}", separableSuperPrePOp_->getId(), bucket, object),
                                                              projectColumnNames,
                                                              partitionId % numNodes_,
                                                              predicate,
@@ -483,7 +504,7 @@ PrePToFPDBStorePTransformer::transformFilterableScanPushdownOnly(const shared_pt
     const auto &projPredColumnNames = union_(projectColumnNames, predicateColumnNames);
 
     // FPDB Store file scan
-    const auto &scanPOp = make_shared<fpdb_store::FPDBStoreFileScanPOp>(fmt::format("FPDBStoreFileScan[{}]-{}/{}", prePOpId_, bucket, object),
+    const auto &scanPOp = make_shared<fpdb_store::FPDBStoreFileScanPOp>(fmt::format("FPDBStoreFileScan[{}]-{}/{}", separableSuperPrePOp_->getId(), bucket, object),
                                                                         projPredColumnNames,
                                                                         partitionId % numNodes_,
                                                                         bucket,
@@ -495,7 +516,7 @@ PrePToFPDBStorePTransformer::transformFilterableScanPushdownOnly(const shared_pt
 
     // filter
     if (predicate) {
-      const auto &filterPOp = make_shared<filter::FilterPOp>(fmt::format("Filter[{}]-{}/{}", prePOpId_, bucket, object),
+      const auto &filterPOp = make_shared<filter::FilterPOp>(fmt::format("Filter[{}]-{}/{}", separableSuperPrePOp_->getId(), bucket, object),
                                                              projectColumnNames,
                                                              partitionId % numNodes_,
                                                              predicate,
@@ -555,7 +576,7 @@ PrePToFPDBStorePTransformer::transformFilterableScanCachingOnly(const shared_ptr
     }
 
     // cache load
-    const auto cacheLoadPOp = make_shared<cache::CacheLoadPOp>(fmt::format("CacheLoad[{}]-{}/{}", prePOpId_, bucket, object),
+    const auto cacheLoadPOp = make_shared<cache::CacheLoadPOp>(fmt::format("CacheLoad[{}]-{}/{}", separableSuperPrePOp_->getId(), bucket, object),
                                                                projectColumnNames,
                                                                partitionId % numNodes_,
                                                                predicateColumnNames,
@@ -569,7 +590,7 @@ PrePToFPDBStorePTransformer::transformFilterableScanCachingOnly(const shared_ptr
     allPOps.emplace_back(cacheLoadPOp);
 
     // remote file scan
-    const auto &scanPOp = make_shared<file::RemoteFileScanPOp>(fmt::format("RemoteFileScan[{}]-{}/{}", prePOpId_, bucket, object),
+    const auto &scanPOp = make_shared<file::RemoteFileScanPOp>(fmt::format("RemoteFileScan[{}]-{}/{}", separableSuperPrePOp_->getId(), bucket, object),
                                                                projPredColumnNames,
                                                                partitionId % numNodes_,
                                                                bucket,
@@ -585,7 +606,7 @@ PrePToFPDBStorePTransformer::transformFilterableScanCachingOnly(const shared_ptr
     allPOps.emplace_back(scanPOp);
 
     // merge
-    const auto &mergePOp = make_shared<merge::MergePOp>(fmt::format("Merge[{}]-{}/{}", prePOpId_, bucket, object),
+    const auto &mergePOp = make_shared<merge::MergePOp>(fmt::format("Merge[{}]-{}/{}", separableSuperPrePOp_->getId(), bucket, object),
                                                         projPredColumnNames,
                                                         partitionId % numNodes_);
     allPOps.emplace_back(mergePOp);
@@ -600,7 +621,7 @@ PrePToFPDBStorePTransformer::transformFilterableScanCachingOnly(const shared_ptr
 
     // filter
     if (predicate) {
-      const auto &filterPOp = make_shared<filter::FilterPOp>(fmt::format("Filter[{}]-{}/{}", prePOpId_, bucket, object),
+      const auto &filterPOp = make_shared<filter::FilterPOp>(fmt::format("Filter[{}]-{}/{}", separableSuperPrePOp_->getId(), bucket, object),
                                                              projectColumnNames,
                                                              partitionId % numNodes_,
                                                              predicate,

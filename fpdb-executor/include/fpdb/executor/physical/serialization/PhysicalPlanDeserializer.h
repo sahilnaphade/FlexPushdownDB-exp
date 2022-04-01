@@ -13,13 +13,21 @@ namespace fpdb::executor::physical {
 class PhysicalPlanDeserializer {
 
 public:
-  PhysicalPlanDeserializer(const std::string &planString,
-                           const std::string &storeRootPath);
-  
-  tl::expected<std::shared_ptr<PhysicalPlan>, std::string> deserialize();
+  static tl::expected<std::shared_ptr<PhysicalPlan>, std::string> deserialize(const std::string &planString,
+                                                                              const std::string &storeRootPath);
 
 private:
-  tl::expected<std::shared_ptr<PhysicalOp>, std::string> deserializeDfs(::nlohmann::json jObj);
+  PhysicalPlanDeserializer(const std::string &planString,
+                           const std::string &storeRootPath);
+
+  /**
+   * Impl of deserialization
+   * @return
+   */
+  tl::expected<std::shared_ptr<PhysicalPlan>, std::string> deserialize();
+
+  tl::expected<std::shared_ptr<PhysicalOp>, std::string> deserializeDfs(::nlohmann::json jObj,
+                                                                        bool isRoot = false);
 
   tl::expected<std::vector<std::shared_ptr<PhysicalOp>>, std::string> deserializeProducers(::nlohmann::json jObj);
 
@@ -38,7 +46,8 @@ private:
   std::string planString_;
   std::string storeRootPath_;
 
-  std::vector<std::shared_ptr<PhysicalOp>> physicalOps_;
+  std::unordered_map<std::string, std::shared_ptr<PhysicalOp>> physicalOps_;
+  std::string rootPOpName_;
 
 };
 

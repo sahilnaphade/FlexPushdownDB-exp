@@ -21,6 +21,13 @@ PhysicalPlanDeserializer::PhysicalPlanDeserializer(const std::string &planString
   planString_(planString),
   storeRootPath_(storeRootPath) {}
 
+tl::expected<std::shared_ptr<PhysicalPlan>, std::string>
+PhysicalPlanDeserializer::deserialize(const std::string &planString,
+                                      const std::string &storeRootPath) {
+  PhysicalPlanDeserializer deserializer(planString, storeRootPath);
+  return deserializer.deserialize();
+}
+
 tl::expected<std::shared_ptr<PhysicalPlan>, std::string> PhysicalPlanDeserializer::deserialize() {
   try {
     // parse
@@ -30,20 +37,27 @@ tl::expected<std::shared_ptr<PhysicalPlan>, std::string> PhysicalPlanDeserialize
     }
 
     // deserialize in DFS order
-    auto deserializeRes = deserializeDfs(jObj);
+    auto deserializeRes = deserializeDfs(jObj, true);
     if (!deserializeRes.has_value()) {
       return tl::make_unexpected(deserializeRes.error());
     }
 
-    return std::make_shared<PhysicalPlan>(physicalOps_);
+    return std::make_shared<PhysicalPlan>(physicalOps_, rootPOpName_);
   } catch(nlohmann::json::parse_error& ex) {
     return tl::make_unexpected(ex.what());
   }
 }
 
-tl::expected<std::shared_ptr<PhysicalOp>, std::string> PhysicalPlanDeserializer::deserializeDfs(::nlohmann::json jObj) {
+tl::expected<std::shared_ptr<PhysicalOp>, std::string> PhysicalPlanDeserializer::deserializeDfs(::nlohmann::json jObj,
+                                                                                                bool isRoot) {
   if (!jObj.contains("type")) {
     return tl::make_unexpected(fmt::format("Type not specified in physical operator JSON '{}'", jObj));
+  }
+  if (isRoot) {
+    if (!jObj.contains("name")) {
+      return tl::make_unexpected(fmt::format("Name not specified in physical operator JSON '{}'", jObj));
+    }
+    rootPOpName_ = jObj["name"].get<std::string>();
   }
 
   auto type = jObj["type"].get<std::string>();
@@ -148,7 +162,7 @@ PhysicalPlanDeserializer::deserializeFPDBStoreFileScanPOp(::nlohmann::json jObj)
                                                                                                     schema,
                                                                                                     fileSize,
                                                                                                     byteRange);
-  physicalOps_.emplace_back(storeFileScanPOp);
+  physicalOps_.emplace(storeFileScanPOp->name(), storeFileScanPOp);
   
   // deserialize producers
   auto expProducers = deserializeProducers(jObj);
@@ -188,7 +202,7 @@ PhysicalPlanDeserializer::deserializeFilterPOp(::nlohmann::json jObj) {
                                                                               projectColumnNames,
                                                                               0,
                                                                               predicate);
-  physicalOps_.emplace_back(filterPOp);
+  physicalOps_.emplace(filterPOp->name(), filterPOp);
 
   // deserialize producers
   auto expProducers = deserializeProducers(jObj);
@@ -244,7 +258,7 @@ PhysicalPlanDeserializer::deserializeProjectPOp(::nlohmann::json jObj) {
                                                                                  exprs,
                                                                                  exprNames,
                                                                                  projectColumnPairs);
-  physicalOps_.emplace_back(projectPOp);
+  physicalOps_.emplace(projectPOp->name(), projectPOp);
 
   // deserialize producers
   auto expProducers = deserializeProducers(jObj);
@@ -288,7 +302,7 @@ PhysicalPlanDeserializer::deserializeAggregatePOp(::nlohmann::json jObj) {
                                                                                        projectColumnNames,
                                                                                        0,
                                                                                        functions);
-  physicalOps_.emplace_back(aggregatePOp);
+  physicalOps_.emplace(aggregatePOp->name(), aggregatePOp);
 
   // deserialize producers
   auto expProducers = deserializeProducers(jObj);
@@ -334,7 +348,7 @@ PhysicalPlanDeserializer::deserializeBloomFilterUsePOp(::nlohmann::json jObj) {
                                                                                                    0,
                                                                                                    bloomFilterColumnNames,
                                                                                                    bloomFilter);
-  physicalOps_.emplace_back(bloomFilterUsePOp);
+  physicalOps_.emplace(bloomFilterUsePOp->name(), bloomFilterUsePOp);
 
   // deserialize producers
   auto expProducers = deserializeProducers(jObj);
@@ -365,7 +379,7 @@ PhysicalPlanDeserializer::deserializeCollatePOp(::nlohmann::json jObj) {
           name,
           projectColumnNames,
           0);
-  physicalOps_.emplace_back(collatePOp);
+  physicalOps_.emplace(collatePOp->name(), collatePOp);
 
   // deserialize producers
   auto expProducers = deserializeProducers(jObj);

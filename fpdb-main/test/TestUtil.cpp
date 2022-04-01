@@ -237,8 +237,7 @@ void TestUtil::executeQueryFile(const string &queryFileName) {
   string planResult = calciteClient_->planQuery(query, schemaName_);
 
   // deserialize plan json string into prephysical plan
-  auto planDeserializer = make_shared<CalcitePlanJsonDeserializer>(planResult, catalogueEntry_);
-  const auto &prePhysicalPlan = planDeserializer->deserialize();
+  auto prePhysicalPlan = CalcitePlanJsonDeserializer::deserialize(planResult, catalogueEntry_);
 
   // trim unused fields (Calcite trimmer does not trim completely)
   prePhysicalPlan->populateAndTrimProjectColumns();
@@ -249,13 +248,12 @@ void TestUtil::executeQueryFile(const string &queryFileName) {
 
   // transform prephysical plan to physical plan
   int numNodes = isDistributed_ ? (int) nodes_.size() : 1;
-  auto prePToPTransformer = make_shared<PrePToPTransformer>(prePhysicalPlan,
-                                                            catalogueEntry_,
-                                                            objStoreConnector_,
-                                                            mode_,
-                                                            parallelDegree_,
-                                                            numNodes);
-  const auto &physicalPlan = prePToPTransformer->transform();
+  auto physicalPlan = PrePToPTransformer::transform(prePhysicalPlan,
+                                                    catalogueEntry_,
+                                                    objStoreConnector_,
+                                                    mode_,
+                                                    parallelDegree_,
+                                                    numNodes);
 
   // execute
   const auto &execRes = executor_->execute(physicalPlan, isDistributed_);

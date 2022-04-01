@@ -24,25 +24,22 @@ namespace fpdb::executor::physical {
 class PrePToS3PTransformer {
 
 public:
-  PrePToS3PTransformer(uint prePOpId,
-                       const shared_ptr<Mode> &mode,
-                       int numNodes,
-                       const shared_ptr<S3Connector> &s3Connector);
-
   /**
    * Transform separable super prephysical op to physical op
-   * @param separableSuperPrePOp
-   * @return a pair of connect physical ops (to producer) and current all (cumulative) physical ops
+   * @return a pair of connect physical ops (to consumers) and current all (cumulative) physical ops
    */
-  pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
-  transformSeparableSuper(const shared_ptr<SeparableSuperPrePOp> &separableSuperPrePOp);
+  static pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
+  transform(const shared_ptr<SeparableSuperPrePOp> &separableSuperPrePOp,
+            const shared_ptr<Mode> &mode,
+            int numNodes,
+            const shared_ptr<S3Connector> &s3Connector);
 
   /**
    * Add BloomFilterUsePOp to S3SelectPOp
    * if producers are S3SelectPOp and bloom filter pushdown is enabled
    * @param producers
    * @param bloomFilterUsePOps
-   * @return a pair of connect physical ops (to producer) and additional physical ops to add to plan
+   * @return a pair of connect physical ops (to consumers) and additional physical ops to add to plan
    */
   static pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
   addBloomFilterUse(vector<shared_ptr<PhysicalOp>> &producers,
@@ -50,6 +47,17 @@ public:
                     const shared_ptr<Mode> &mode);
 
 private:
+  PrePToS3PTransformer(const shared_ptr<SeparableSuperPrePOp> &separableSuperPrePOp,
+                       const shared_ptr<Mode> &mode,
+                       int numNodes,
+                       const shared_ptr<S3Connector> &s3Connector);
+
+  /**
+   * Impl of transformation
+   * @return a pair of connect physical ops (to consumers) and current all (cumulative) physical ops
+   */
+  pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>> transform();
+
   pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
   transformFilterableScan(const shared_ptr<FilterableScanPrePOp> &filterableScanPrePOp);
 
@@ -76,7 +84,7 @@ private:
    */
   string genFilterSql(const std::shared_ptr<Expression>& predicate);
 
-  uint prePOpId_;
+  shared_ptr<SeparableSuperPrePOp> separableSuperPrePOp_;
   shared_ptr<Mode> mode_;
   int numNodes_;
   shared_ptr<S3Connector> s3Connector_;

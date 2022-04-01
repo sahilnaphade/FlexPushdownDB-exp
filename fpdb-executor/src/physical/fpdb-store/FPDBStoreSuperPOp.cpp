@@ -61,7 +61,8 @@ void FPDBStoreSuperPOp::onStart() {
 void FPDBStoreSuperPOp::onBloomFilter(const BloomFilterMessage &msg) {
   std::optional<std::shared_ptr<bloomfilter::BloomFilterUsePOp>> bloomFilterUsePOp;
 
-  for (const auto &op: subPlan_->getPhysicalOps()) {
+  for (const auto &opIt: subPlan_->getPhysicalOps()) {
+    auto op = opIt.second;
     if (op->getType() == POpType::BLOOM_FILTER_USE) {
       bloomFilterUsePOp = std::static_pointer_cast<bloomfilter::BloomFilterUsePOp>(op);
       break;
@@ -81,7 +82,8 @@ void FPDBStoreSuperPOp::onBloomFilter(const BloomFilterMessage &msg) {
 }
 
 bool FPDBStoreSuperPOp::readyToProcess() {
-  for (const auto &op: subPlan_->getPhysicalOps()) {
+  for (const auto &opIt: subPlan_->getPhysicalOps()) {
+    auto op = opIt.second;
     if (op->getType() == POpType::BLOOM_FILTER_USE) {
       auto typedOp = std::static_pointer_cast<bloomfilter::BloomFilterUsePOp>(op);
       if (!typedOp->receivedBloomFilter()) {
@@ -153,8 +155,7 @@ void FPDBStoreSuperPOp::processAtStore() {
 }
 
 tl::expected<std::string, std::string> FPDBStoreSuperPOp::serialize(bool pretty) {
-  PhysicalPlanSerializer serializer(subPlan_);
-  return serializer.serialize(pretty);
+  return PhysicalPlanSerializer::serialize(subPlan_, pretty);
 }
 
 void FPDBStoreSuperPOp::clear() {

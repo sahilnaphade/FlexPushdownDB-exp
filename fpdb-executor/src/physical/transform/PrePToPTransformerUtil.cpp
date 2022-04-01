@@ -124,8 +124,9 @@ PrePToPTransformerUtil::transformAggReduceFunction(const string &outputColumnNam
 shared_ptr<PhysicalPlan> PrePToPTransformerUtil::rootOpToPlan(const shared_ptr<PhysicalOp> &rootOp,
                                                               const unordered_map<string, shared_ptr<PhysicalOp>> &opMap) {
   // collect operators in the subtree of the rootOp
-  vector<shared_ptr<PhysicalOp>> ops{rootOp};
+  unordered_map<string, shared_ptr<PhysicalOp>> ops;
   queue<shared_ptr<PhysicalOp>> pendOpQueue;
+  ops.emplace(rootOp->name(), rootOp);
   pendOpQueue.push(rootOp);
 
   while (!pendOpQueue.empty()) {
@@ -133,16 +134,27 @@ shared_ptr<PhysicalPlan> PrePToPTransformerUtil::rootOpToPlan(const shared_ptr<P
     for (const auto &producerName: op->producers()) {
       auto producerIt = opMap.find(producerName);
       if (producerIt == opMap.end()) {
-        throw runtime_error(fmt::format("Error when making physical plan from root op: producer {} not found in opMap", producerName));
+        throw runtime_error(fmt::format("Producer '{}' not found in opMap when making physical plan from root op",
+                                        producerName));
       }
       auto producer = producerIt->second;
-      ops.emplace_back(producer);
+      ops.emplace(producer->name(), producer);
       pendOpQueue.push(producer);
     }
     pendOpQueue.pop();
   }
 
-  return make_shared<PhysicalPlan>(ops);
+  return make_shared<PhysicalPlan>(ops, rootOp->name());
+}
+
+void PrePToPTransformerUtil::addPhysicalOps(const vector<shared_ptr<PhysicalOp>> &newOps,
+                                            unordered_map<string, shared_ptr<PhysicalOp>> &ops) {
+  for (const auto &newOp: newOps) {
+    if (ops.find(newOp->name()) != ops.end()) {
+      throw runtime_error(fmt::format("Operator '{}' already exists when adding physical operators", newOp->name()));
+    }
+    ops.emplace(newOp->name(), newOp);
+  }
 }
   
 }

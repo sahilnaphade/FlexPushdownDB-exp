@@ -57,6 +57,14 @@ public:
   static shared_ptr<PhysicalPlan> rootOpToPlan(const shared_ptr<PhysicalOp> &rootOp,
                                                const unordered_map<string, shared_ptr<PhysicalOp>> &opMap);
 
+  /**
+   * Add physical operators to existing ones
+   * @param newOps
+   * @param ops
+   */
+  static void addPhysicalOps(const vector<shared_ptr<PhysicalOp>> &newOps,
+                             unordered_map<string, shared_ptr<PhysicalOp>> &ops);
+
 };
 
 }

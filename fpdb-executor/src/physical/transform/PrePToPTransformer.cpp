@@ -44,25 +44,32 @@ PrePToPTransformer::PrePToPTransformer(const shared_ptr<PrePhysicalPlan> &prePhy
   parallelDegree_(parallelDegree),
   numNodes_(numNodes) {}
 
+shared_ptr<PhysicalPlan> PrePToPTransformer::transform(const shared_ptr<PrePhysicalPlan> &prePhysicalPlan,
+                                                       const shared_ptr<CatalogueEntry> &catalogueEntry,
+                                                       const shared_ptr<ObjStoreConnector> &objStoreConnector,
+                                                       const shared_ptr<Mode> &mode,
+                                                       int parallelDegree,
+                                                       int numNodes) {
+  PrePToPTransformer transformer(prePhysicalPlan, catalogueEntry, objStoreConnector, mode, parallelDegree, numNodes);
+  return transformer.transform();
+}
+
 shared_ptr<PhysicalPlan> PrePToPTransformer::transform() {
   // transform from root in dfs
-  auto rootTransRes = transformDfs(prePhysicalPlan_->getRootOp());
-  auto upConnPOps = rootTransRes.first;
-  auto allPOps = rootTransRes.second;
+  auto upConnPOps = transformDfs(prePhysicalPlan_->getRootOp());
 
   // make a collate operator
   shared_ptr<PhysicalOp> collatePOp = make_shared<collate::CollatePOp>(
           "Collate",
           ColumnName::canonicalize(prePhysicalPlan_->getOutputColumnNames()),
           0);
-  allPOps.emplace_back(collatePOp);
   PrePToPTransformerUtil::connectManyToOne(upConnPOps, collatePOp);
+  PrePToPTransformerUtil::addPhysicalOps({collatePOp}, physicalOps_);
 
-  return make_shared<PhysicalPlan>(allPOps);
+  return make_shared<PhysicalPlan>(physicalOps_, collatePOp->name());
 }
 
-pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
-PrePToPTransformer::transformDfs(const shared_ptr<PrePhysicalOp> &prePOp) {
+vector<shared_ptr<PhysicalOp>> PrePToPTransformer::transformDfs(const shared_ptr<PrePhysicalOp> &prePOp) {
   switch (prePOp->getType()) {
     case PrePOpType::SORT: {
       const auto &sortPrePOp = std::static_pointer_cast<SortPrePOp>(prePOp);
@@ -110,16 +117,16 @@ PrePToPTransformer::transformDfs(const shared_ptr<PrePhysicalOp> &prePOp) {
   }
 }
 
-vector<pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>>
+vector<vector<shared_ptr<PhysicalOp>>>
 PrePToPTransformer::transformProducers(const shared_ptr<PrePhysicalOp> &prePOp) {
-  vector<pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>> transformRes;
+  vector<vector<shared_ptr<PhysicalOp>>> transformRes;
   for (const auto &producer: prePOp->getProducers()) {
     transformRes.emplace_back(transformDfs(producer));
   }
   return transformRes;
 }
 
-pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
+vector<shared_ptr<PhysicalOp>>
 PrePToPTransformer::transformSort(const shared_ptr<SortPrePOp> &sortPrePOp) {
   // id
   auto prePOpId = sortPrePOp->getId();
@@ -130,12 +137,9 @@ PrePToPTransformer::transformSort(const shared_ptr<SortPrePOp> &sortPrePOp) {
     throw runtime_error(fmt::format("Unsupported number of producers for sort, should be {}, but get {}",
                                     1, producersTransRes.size()));
   }
+  auto upConnPOps = producersTransRes[0];
 
   // transform self
-  const auto &producerTransRes = producersTransRes[0];
-  auto upConnPOps = producerTransRes.first;
-  auto allPOps = producerTransRes.second;
-
   vector<string> projectColumnNames{sortPrePOp->getProjectColumnNames().begin(),
                                     sortPrePOp->getProjectColumnNames().end()};
 
@@ -143,15 +147,16 @@ PrePToPTransformer::transformSort(const shared_ptr<SortPrePOp> &sortPrePOp) {
                                                               projectColumnNames,
                                                               rand() % numNodes_,
                                                               sortPrePOp->getSortKeys());
-  allPOps.emplace_back(sortPOp);
 
   // connect to upstream
   PrePToPTransformerUtil::connectManyToOne(upConnPOps, sortPOp);
 
-  return make_pair(vector<shared_ptr<PhysicalOp>>{sortPOp}, allPOps);
+  // add and return
+  PrePToPTransformerUtil::addPhysicalOps({sortPOp}, physicalOps_);
+  return {sortPOp};
 }
 
-pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
+vector<shared_ptr<PhysicalOp>>
 PrePToPTransformer::transformLimitSort(const shared_ptr<LimitSortPrePOp> &limitSortPrePOp) {
   // id
   auto prePOpId = limitSortPrePOp->getId();
@@ -162,12 +167,9 @@ PrePToPTransformer::transformLimitSort(const shared_ptr<LimitSortPrePOp> &limitS
     throw runtime_error(fmt::format("Unsupported number of producers for limitSort, should be {}, but get {}",
                                     1, producersTransRes.size()));
   }
+  auto upConnPOps = producersTransRes[0];
 
   // transform self
-  const auto &producerTransRes = producersTransRes[0];
-  auto upConnPOps = producerTransRes.first;
-  auto allPOps = producerTransRes.second;
-
   vector<string> projectColumnNames{limitSortPrePOp->getProjectColumnNames().begin(),
                                     limitSortPrePOp->getProjectColumnNames().end()};
 
@@ -177,15 +179,16 @@ PrePToPTransformer::transformLimitSort(const shared_ptr<LimitSortPrePOp> &limitS
           rand() % numNodes_,
           limitSortPrePOp->getK(),
           limitSortPrePOp->getSortKeys());
-  allPOps.emplace_back(limitSortPOp);
 
   // connect to upstream
   PrePToPTransformerUtil::connectManyToOne(upConnPOps, limitSortPOp);
 
-  return make_pair(vector<shared_ptr<PhysicalOp>>{limitSortPOp}, allPOps);
+  // add and return
+  PrePToPTransformerUtil::addPhysicalOps({limitSortPOp}, physicalOps_);
+  return {limitSortPOp};
 }
 
-pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
+vector<shared_ptr<PhysicalOp>>
 PrePToPTransformer::transformAggregate(const shared_ptr<AggregatePrePOp> &aggregatePrePOp) {
   // id
   auto prePOpId = aggregatePrePOp->getId();
@@ -196,14 +199,11 @@ PrePToPTransformer::transformAggregate(const shared_ptr<AggregatePrePOp> &aggreg
     throw runtime_error(fmt::format("Unsupported number of producers for aggregate, should be {}, but get {}",
                                     1, producersTransRes.size()));
   }
+  auto upConnPOps = producersTransRes[0];
 
   // transform self
-  const auto &producerTransRes = producersTransRes[0];
-  auto upConnPOps = producerTransRes.first;
-  auto allPOps = producerTransRes.second;
   bool isParallel = upConnPOps.size() > 1;
-
-  vector<shared_ptr<PhysicalOp>> selfPOps, selfConnUpPOps, selfConnDownPOps;
+  vector<shared_ptr<PhysicalOp>> allPOps, selfConnUpPOps, selfConnDownPOps;
   vector<string> projectColumnNames{aggregatePrePOp->getProjectColumnNames().begin(),
                                     aggregatePrePOp->getProjectColumnNames().end()};
   vector<string> parallelAggProjectColumnNames;
@@ -234,7 +234,7 @@ PrePToPTransformer::transformAggregate(const shared_ptr<AggregatePrePOp> &aggreg
       aggFunctions.insert(aggFunctions.end(), transAggFunctions.begin(), transAggFunctions.end());
     }
 
-    selfPOps.emplace_back(make_shared<aggregate::AggregatePOp>(
+    allPOps.emplace_back(make_shared<aggregate::AggregatePOp>(
             fmt::format("Aggregate[{}]-{}", prePOpId, i),
             parallelAggProjectColumnNames,
             upConnPOps[i]->getNodeId(),
@@ -243,8 +243,8 @@ PrePToPTransformer::transformAggregate(const shared_ptr<AggregatePrePOp> &aggreg
 
   // if num > 1, then we need an aggregate reduce operator
   if (upConnPOps.size() == 1) {
-    selfConnUpPOps = selfPOps;
-    selfConnDownPOps = selfPOps;
+    selfConnUpPOps = allPOps;
+    selfConnDownPOps = allPOps;
   } else {
     // aggregate reduce functions
     vector<shared_ptr<aggregate::AggregateFunction>> aggReduceFunctions;
@@ -260,22 +260,21 @@ PrePToPTransformer::transformAggregate(const shared_ptr<AggregatePrePOp> &aggreg
             projectColumnNames,
             rand() % numNodes_,
             aggReduceFunctions);
-    PrePToPTransformerUtil::connectManyToOne(selfPOps, aggReducePOp);
-    selfConnUpPOps = selfPOps;
+    PrePToPTransformerUtil::connectManyToOne(allPOps, aggReducePOp);
+    selfConnUpPOps = allPOps;
     selfConnDownPOps.emplace_back(aggReducePOp);
-    selfPOps.emplace_back(aggReducePOp);
+    allPOps.emplace_back(aggReducePOp);
   }
 
   // connect to upstream
   PrePToPTransformerUtil::connectOneToOne(upConnPOps, selfConnUpPOps);
 
-  // collect all physical ops
-  allPOps.insert(allPOps.end(), selfPOps.begin(), selfPOps.end());
-
-  return make_pair(selfConnDownPOps, allPOps);
+  // add and return
+  PrePToPTransformerUtil::addPhysicalOps(allPOps, physicalOps_);
+  return selfConnDownPOps;
 }
 
-pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
+vector<shared_ptr<PhysicalOp>>
 PrePToPTransformer::transformGroup(const shared_ptr<GroupPrePOp> &groupPrePOp) {
   // id
   auto prePOpId = groupPrePOp->getId();
@@ -286,13 +285,10 @@ PrePToPTransformer::transformGroup(const shared_ptr<GroupPrePOp> &groupPrePOp) {
     throw runtime_error(fmt::format("Unsupported number of producers for group, should be {}, but get {}",
                                     1, producersTransRes.size()));
   }
+  auto upConnPOps = producersTransRes[0];
 
   // transform self
-  auto producerTransRes = producersTransRes[0];
-  auto upConnPOps = producerTransRes.first;
-  auto allPOps = producerTransRes.second;
-
-  vector<shared_ptr<PhysicalOp>> groupPOps;
+  vector<shared_ptr<PhysicalOp>> allPOps, groupPOps;
   vector<string> projectColumnNames{groupPrePOp->getProjectColumnNames().begin(),
                                     groupPrePOp->getProjectColumnNames().end()};
   for (int i = 0; i < parallelDegree_ * numNodes_; ++i) {
@@ -318,10 +314,10 @@ PrePToPTransformer::transformGroup(const shared_ptr<GroupPrePOp> &groupPrePOp) {
   // if num > 1, then we add a shuffle stage ahead
   if (parallelDegree_ * numNodes_ == 1) {
     // connect to upstream
-    PrePToPTransformerUtil::connectManyToOne(producerTransRes.first, groupPOps[0]);
+    PrePToPTransformerUtil::connectManyToOne(upConnPOps, groupPOps[0]);
   } else {
     vector<shared_ptr<PhysicalOp>> shufflePOps;
-    for (const auto &upConnPOp: producerTransRes.first) {
+    for (const auto &upConnPOp: upConnPOps) {
       shufflePOps.emplace_back(make_shared<shuffle::ShufflePOp>(
               fmt::format("Shuffle[{}]-{}", prePOpId, upConnPOp->name()),
               upConnPOp->getProjectColumnNames(),
@@ -332,13 +328,15 @@ PrePToPTransformer::transformGroup(const shared_ptr<GroupPrePOp> &groupPrePOp) {
     allPOps.insert(allPOps.end(), shufflePOps.begin(), shufflePOps.end());
 
     // connect to upstream
-    PrePToPTransformerUtil::connectOneToOne(producerTransRes.first, shufflePOps);
+    PrePToPTransformerUtil::connectOneToOne(upConnPOps, shufflePOps);
   }
 
-  return make_pair(groupPOps, allPOps);
+  // add and return
+  PrePToPTransformerUtil::addPhysicalOps(allPOps, physicalOps_);
+  return groupPOps;
 }
 
-pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
+vector<shared_ptr<PhysicalOp>>
 PrePToPTransformer::transformProject(const shared_ptr<ProjectPrePOp> &projectPrePOp) {
   // id
   auto prePOpId = projectPrePOp->getId();
@@ -349,34 +347,30 @@ PrePToPTransformer::transformProject(const shared_ptr<ProjectPrePOp> &projectPre
     throw runtime_error(fmt::format("Unsupported number of producers for project, should be {}, but get {}",
                                     1, producersTransRes.size()));
   }
+  auto upConnPOps = producersTransRes[0];
 
   // transform self
-  const auto &producerTransRes = producersTransRes[0];
-  auto upConnPOps = producerTransRes.first;
-  auto allPOps = producerTransRes.second;
-
-  vector<shared_ptr<PhysicalOp>> selfPOps;
+  vector<shared_ptr<PhysicalOp>> allPOps;
   vector<string> projectColumnNames{projectPrePOp->getProjectColumnNames().begin(),
                                     projectPrePOp->getProjectColumnNames().end()};
   for (size_t i = 0; i < upConnPOps.size(); ++i) {
-    selfPOps.emplace_back(make_shared<project::ProjectPOp>(fmt::format("Project[{}]-{}", prePOpId, i),
-                                                           projectColumnNames,
-                                                           upConnPOps[i]->getNodeId(),
-                                                           projectPrePOp->getExprs(),
-                                                           projectPrePOp->getExprNames(),
-                                                           projectPrePOp->getProjectColumnNamePairs()));
+    allPOps.emplace_back(make_shared<project::ProjectPOp>(fmt::format("Project[{}]-{}", prePOpId, i),
+                                                          projectColumnNames,
+                                                          upConnPOps[i]->getNodeId(),
+                                                          projectPrePOp->getExprs(),
+                                                          projectPrePOp->getExprNames(),
+                                                          projectPrePOp->getProjectColumnNamePairs()));
   }
 
   // connect to upstream
-  PrePToPTransformerUtil::connectOneToOne(upConnPOps, selfPOps);
+  PrePToPTransformerUtil::connectOneToOne(upConnPOps, allPOps);
 
-  // collect all physical ops
-  allPOps.insert(allPOps.end(), selfPOps.begin(), selfPOps.end());
-
-  return make_pair(selfPOps, allPOps);
+  // add and return
+  PrePToPTransformerUtil::addPhysicalOps(allPOps, physicalOps_);
+  return allPOps;
 }
 
-pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
+vector<shared_ptr<PhysicalOp>>
 PrePToPTransformer::transformFilter(const shared_ptr<FilterPrePOp> &filterPrePOp) {
   // id
   auto prePOpId = filterPrePOp->getId();
@@ -387,33 +381,29 @@ PrePToPTransformer::transformFilter(const shared_ptr<FilterPrePOp> &filterPrePOp
     throw runtime_error(fmt::format("Unsupported number of producers for filter, should be {}, but get {}",
                                     1, producersTransRes.size()));
   }
+  auto upConnPOps = producersTransRes[0];
 
   // transform self
-  const auto &producerTransRes = producersTransRes[0];
-  auto upConnPOps = producerTransRes.first;
-  auto allPOps = producerTransRes.second;
-
-  vector<shared_ptr<PhysicalOp>> selfPOps;
+  vector<shared_ptr<PhysicalOp>> allPOps;
   vector<string> projectColumnNames{filterPrePOp->getProjectColumnNames().begin(),
                                     filterPrePOp->getProjectColumnNames().end()};
   for (size_t i = 0; i < upConnPOps.size(); ++i) {
-    selfPOps.emplace_back(make_shared<filter::FilterPOp>(fmt::format("Filter[{}]-{}", prePOpId, i),
-                                                         projectColumnNames,
-                                                         upConnPOps[i]->getNodeId(),
-                                                         filterPrePOp->getPredicate(),
-                                                         nullptr));
+    allPOps.emplace_back(make_shared<filter::FilterPOp>(fmt::format("Filter[{}]-{}", prePOpId, i),
+                                                        projectColumnNames,
+                                                        upConnPOps[i]->getNodeId(),
+                                                        filterPrePOp->getPredicate(),
+                                                        nullptr));
   }
 
   // connect to upstream
-  PrePToPTransformerUtil::connectOneToOne(upConnPOps, selfPOps);
+  PrePToPTransformerUtil::connectOneToOne(upConnPOps, allPOps);
 
-  // collect all physical ops
-  allPOps.insert(allPOps.end(), selfPOps.begin(), selfPOps.end());
-
-  return make_pair(selfPOps, allPOps);
+  // add and return
+  PrePToPTransformerUtil::addPhysicalOps(allPOps, physicalOps_);
+  return allPOps;
 }
 
-pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
+vector<shared_ptr<PhysicalOp>>
 PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoinPrePOp) {
   // id
   auto prePOpId = hashJoinPrePOp->getId();
@@ -424,13 +414,11 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
     throw runtime_error(fmt::format("Unsupported number of producers for hashJoin, should be {}, but get {}",
                                     2, producersTransRes.size()));
   }
-
-  auto leftTransRes = producersTransRes[0];
-  auto rightTransRes = producersTransRes[1];
-  auto allPOps = leftTransRes.second;
-  allPOps.insert(allPOps.end(), rightTransRes.second.begin(), rightTransRes.second.end());
+  auto upLeftConnPOps = producersTransRes[0];
+  auto upRightConnPOps = producersTransRes[1];
 
   // transform self
+  vector<shared_ptr<PhysicalOp>> allPOps;
   vector<string> projectColumnNames{hashJoinPrePOp->getProjectColumnNames().begin(),
                                     hashJoinPrePOp->getProjectColumnNames().end()};
   auto joinType = hashJoinPrePOp->getJoinType();
@@ -457,8 +445,6 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
   allPOps.insert(allPOps.end(), hashJoinProbePOps.begin(), hashJoinProbePOps.end());
   PrePToPTransformerUtil::connectOneToOne(hashJoinBuildPOps, hashJoinProbePOps);
 
-  vector<shared_ptr<PhysicalOp>> rightUpConnPOps;
-
   // if using bloom filter, and bloom filter cannot be used before right join
   if (USE_BLOOM_FILTER &&
     (joinType == JoinType::INNER || joinType == JoinType::LEFT || joinType == JoinType::SEMI)) {
@@ -470,22 +456,22 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
     allPOps.emplace_back(bloomFilterCreatePreparePOp);
 
     // Connect to upstream as a special type of op
-    for (const auto &leftUpConnPOp: leftTransRes.first) {
-      leftUpConnPOp->setBloomFilterCreatePrepareConsumer(bloomFilterCreatePreparePOp);
-      bloomFilterCreatePreparePOp->consume(leftUpConnPOp);
+    for (const auto &upLeftConnPOp: upLeftConnPOps) {
+      upLeftConnPOp->setBloomFilterCreatePrepareConsumer(bloomFilterCreatePreparePOp);
+      bloomFilterCreatePreparePOp->consume(upLeftConnPOp);
     }
 
     // BloomFilterCreatePOp
     vector<shared_ptr<PhysicalOp>> bloomFilterCreatePOps;
-    for (uint i = 0; i < leftTransRes.first.size(); ++i) {
+    for (uint i = 0; i < upLeftConnPOps.size(); ++i) {
       bloomFilterCreatePOps.emplace_back(make_shared<bloomfilter::BloomFilterCreatePOp>(
               fmt::format("BloomFilterCreate[{}]-{}-{}", prePOpId, hashJoinPredicateStr, i),
               std::vector<std::string>{},
-              leftTransRes.first[i]->getNodeId(),         // not needed
+              upLeftConnPOps[i]->getNodeId(),         // not needed
               leftColumnNames));
     }
     allPOps.insert(allPOps.end(), bloomFilterCreatePOps.begin(), bloomFilterCreatePOps.end());
-    PrePToPTransformerUtil::connectOneToOne(leftTransRes.first, bloomFilterCreatePOps);
+    PrePToPTransformerUtil::connectOneToOne(upLeftConnPOps, bloomFilterCreatePOps);
     PrePToPTransformerUtil::connectOneToMany(bloomFilterCreatePreparePOp, bloomFilterCreatePOps);
 
     // BloomFilterCreateMergePOp if more than one BloomFilterCreatePOp
@@ -503,11 +489,11 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
 
     // BloomFilterUsePOp
     vector<shared_ptr<PhysicalOp>> bloomFilterUsePOps;
-    for (uint i = 0; i < rightTransRes.first.size(); ++i) {
+    for (uint i = 0; i < upRightConnPOps.size(); ++i) {
       bloomFilterUsePOps.emplace_back(make_shared<bloomfilter::BloomFilterUsePOp>(
               fmt::format("BloomFilterUse[{}]-{}-{}", prePOpId, hashJoinPredicateStr, i),
-              rightTransRes.first[i]->getProjectColumnNames(),
-              rightTransRes.first[i]->getNodeId(),
+              upRightConnPOps[i]->getProjectColumnNames(),
+              upRightConnPOps[i]->getNodeId(),
               rightColumnNames));
     }
 
@@ -519,13 +505,13 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
 
         switch (objCatalogueEntry->getStoreType()) {
           case obj_store::ObjStoreType::FPDB_STORE: {
-            bloomFilterAddRes = PrePToFPDBStorePTransformer::addBloomFilterUse(rightTransRes.first,
+            bloomFilterAddRes = PrePToFPDBStorePTransformer::addBloomFilterUse(upRightConnPOps,
                                                                                bloomFilterUsePOps,
                                                                                mode_);
             break;
           }
           case obj_store::ObjStoreType::S3: {
-            bloomFilterAddRes = PrePToS3PTransformer::addBloomFilterUse(rightTransRes.first,
+            bloomFilterAddRes = PrePToS3PTransformer::addBloomFilterUse(upRightConnPOps,
                                                                         bloomFilterUsePOps,
                                                                         mode_);
             break;
@@ -541,39 +527,37 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
 
         allPOps.insert(allPOps.end(), addiPOps.begin(), addiPOps.end());
         PrePToPTransformerUtil::connectOneToMany(finalOpForBloomFilterCreate, opsForBloomFilterUse);
-        rightUpConnPOps = bloomFilterAddRes.first;
+        upRightConnPOps = bloomFilterAddRes.first;
         break;
       }
       case CatalogueEntryType::LOCAL_FS: {
         // no bloom filter pushdown
         allPOps.insert(allPOps.end(), bloomFilterUsePOps.begin(), bloomFilterUsePOps.end());
-        PrePToPTransformerUtil::connectOneToOne(rightTransRes.first, bloomFilterUsePOps);
+        PrePToPTransformerUtil::connectOneToOne(upRightConnPOps, bloomFilterUsePOps);
         PrePToPTransformerUtil::connectOneToMany(finalOpForBloomFilterCreate, bloomFilterUsePOps);
-        rightUpConnPOps = bloomFilterUsePOps;
+        upRightConnPOps = bloomFilterUsePOps;
         break;
       }
       default: {
         throw std::runtime_error(fmt::format("Unsupported catalogue entry type: '{}'", catalogueEntry_->getTypeName()));
       }
     }
-  } else {
-    rightUpConnPOps = rightTransRes.first;
   }
 
   // if num > 1, then we need shuffle operators
   if (parallelDegree_ * numNodes_ == 1) {
-    PrePToPTransformerUtil::connectManyToOne(leftTransRes.first, hashJoinBuildPOps[0]);
-    PrePToPTransformerUtil::connectManyToOne(rightUpConnPOps, hashJoinProbePOps[0]);
+    PrePToPTransformerUtil::connectManyToOne(upLeftConnPOps, hashJoinBuildPOps[0]);
+    PrePToPTransformerUtil::connectManyToOne(upRightConnPOps, hashJoinProbePOps[0]);
   } else {
     vector<shared_ptr<PhysicalOp>> shuffleLeftPOps, shuffleRightPOps;
-    for (const auto &upLeftConnPOp: leftTransRes.first) {
+    for (const auto &upLeftConnPOp: upLeftConnPOps) {
       shuffleLeftPOps.emplace_back(make_shared<shuffle::ShufflePOp>(
               fmt::format("Shuffle[{}]-{}", prePOpId, upLeftConnPOp->name()),
               upLeftConnPOp->getProjectColumnNames(),
               upLeftConnPOp->getNodeId(),
               leftColumnNames));
     }
-    for (const auto &upRightConnPOp : rightTransRes.first) {
+    for (const auto &upRightConnPOp : upRightConnPOps) {
       shuffleRightPOps.emplace_back(make_shared<shuffle::ShufflePOp>(
               fmt::format("Shuffle[{}]-{}", prePOpId, upRightConnPOp->name()),
               upRightConnPOp->getProjectColumnNames(),
@@ -586,14 +570,16 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
     allPOps.insert(allPOps.end(), shuffleRightPOps.begin(), shuffleRightPOps.end());
 
     // connect to upstream
-    PrePToPTransformerUtil::connectOneToOne(leftTransRes.first, shuffleLeftPOps);
-    PrePToPTransformerUtil::connectOneToOne(rightUpConnPOps, shuffleRightPOps);
+    PrePToPTransformerUtil::connectOneToOne(upLeftConnPOps, shuffleLeftPOps);
+    PrePToPTransformerUtil::connectOneToOne(upRightConnPOps, shuffleRightPOps);
   }
 
-  return make_pair(hashJoinProbePOps, allPOps);
+  // add and return
+  PrePToPTransformerUtil::addPhysicalOps(allPOps, physicalOps_);
+  return hashJoinProbePOps;
 }
 
-pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
+vector<shared_ptr<PhysicalOp>>
 PrePToPTransformer::transformNestedLoopJoin(const shared_ptr<NestedLoopJoinPrePOp> &nestedLoopJoinPrePOp) {
   // id
   auto prePOpId = nestedLoopJoinPrePOp->getId();
@@ -604,13 +590,11 @@ PrePToPTransformer::transformNestedLoopJoin(const shared_ptr<NestedLoopJoinPrePO
     throw runtime_error(fmt::format("Unsupported number of producers for nestedLoopJoin, should be {}, but get {}",
                                     2, producersTransRes.size()));
   }
-
-  auto leftTransRes = producersTransRes[0];
-  auto rightTransRes = producersTransRes[1];
-  auto allPOps = leftTransRes.second;
-  allPOps.insert(allPOps.end(), rightTransRes.second.begin(), rightTransRes.second.end());
+  auto upLeftConnPOps = producersTransRes[0];
+  auto upRightConnPOps = producersTransRes[1];
 
   // transform self
+  vector<shared_ptr<PhysicalOp>> allPOps;
   vector<string> projectColumnNames{nestedLoopJoinPrePOp->getProjectColumnNames().begin(),
                                     nestedLoopJoinPrePOp->getProjectColumnNames().end()};
   auto joinType = nestedLoopJoinPrePOp->getJoinType();
@@ -628,7 +612,7 @@ PrePToPTransformer::transformNestedLoopJoin(const shared_ptr<NestedLoopJoinPrePO
                                                  predicate,
                                                  joinType);
     // connect to left inputs
-    for (const auto &upLeftConnPOp: leftTransRes.first) {
+    for (const auto &upLeftConnPOp: upLeftConnPOps) {
       upLeftConnPOp->produce(nestedLoopJoinPOp);
       nestedLoopJoinPOp->addLeftProducer(upLeftConnPOp);
     }
@@ -638,13 +622,13 @@ PrePToPTransformer::transformNestedLoopJoin(const shared_ptr<NestedLoopJoinPrePO
 
   // connect to right inputs, if num > 1, then we need split operators for right producers
   if (parallelDegree_ * numNodes_ == 1) {
-    for (const auto &upRightConnPOp: rightTransRes.first) {
+    for (const auto &upRightConnPOp: upRightConnPOps) {
       upRightConnPOp->produce(nestedLoopJoinPOps[0]);
       static_pointer_cast<join::NestedLoopJoinPOp>(nestedLoopJoinPOps[0])->addRightProducer(upRightConnPOp);
     }
   } else {
     vector<shared_ptr<PhysicalOp>> splitPOps;
-    for (const auto &upRightConnPOp : rightTransRes.first) {
+    for (const auto &upRightConnPOp : upRightConnPOps) {
       shared_ptr<split::SplitPOp> splitPOp = make_shared<split::SplitPOp>(
               fmt::format("Split[{}]-{}", prePOpId, upRightConnPOp->name()),
               upRightConnPOp->getProjectColumnNames(),
@@ -660,13 +644,15 @@ PrePToPTransformer::transformNestedLoopJoin(const shared_ptr<NestedLoopJoinPrePO
     allPOps.insert(allPOps.end(), splitPOps.begin(), splitPOps.end());
 
     // connect to upstream
-    PrePToPTransformerUtil::connectOneToOne(rightTransRes.first, splitPOps);
+    PrePToPTransformerUtil::connectOneToOne(upRightConnPOps, splitPOps);
   }
 
-  return make_pair(nestedLoopJoinPOps, allPOps);
+  // add and return
+  PrePToPTransformerUtil::addPhysicalOps(allPOps, physicalOps_);
+  return nestedLoopJoinPOps;
 }
 
-pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
+vector<shared_ptr<PhysicalOp>>
 PrePToPTransformer::transformFilterableScan(const shared_ptr<FilterableScanPrePOp> &) {
   switch (catalogueEntry_->getType()) {
     case CatalogueEntryType::LOCAL_FS: {
@@ -682,7 +668,7 @@ PrePToPTransformer::transformFilterableScan(const shared_ptr<FilterableScanPrePO
   }
 }
 
-pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
+vector<shared_ptr<PhysicalOp>>
 PrePToPTransformer::transformSeparableSuper(const shared_ptr<SeparableSuperPrePOp> &separableSuperPrePOp) {
   if (catalogueEntry_->getType() != CatalogueEntryType::OBJ_STORE) {
     throw runtime_error(fmt::format("Unsupported catalogue entry type for separable super prephysical operator: {}",
@@ -696,22 +682,18 @@ PrePToPTransformer::transformSeparableSuper(const shared_ptr<SeparableSuperPrePO
         throw runtime_error("object store type for catalogue entry and connector mismatch, catalogue entry is 'S3'");
       }
       auto s3Connector = static_pointer_cast<obj_store::S3Connector>(objStoreConnector_);
-      auto s3PTransformer = make_shared<PrePToS3PTransformer>(separableSuperPrePOp->getId(),
-                                                              mode_,
-                                                              numNodes_,
-                                                              s3Connector);
-      return s3PTransformer->transformSeparableSuper(separableSuperPrePOp);
+      auto transformRes = PrePToS3PTransformer::transform(separableSuperPrePOp, mode_, numNodes_, s3Connector);
+      PrePToPTransformerUtil::addPhysicalOps(transformRes.second, physicalOps_);
+      return transformRes.first;
     }
     case ObjStoreType::FPDB_STORE: {
       if (objStoreConnector_->getStoreType() != obj_store::ObjStoreType::FPDB_STORE) {
         throw runtime_error("object store type for catalogue entry and connector mismatch, catalogue entry is 'FPDB-Store'");
       }
       auto fpdbStoreConnector = static_pointer_cast<obj_store::FPDBStoreConnector>(objStoreConnector_);
-      auto fpdbStorePTransformer = make_shared<PrePToFPDBStorePTransformer>(separableSuperPrePOp->getId(),
-                                                                            mode_,
-                                                                            numNodes_,
-                                                                            fpdbStoreConnector);
-      return fpdbStorePTransformer->transformSeparableSuper(separableSuperPrePOp);
+      auto transformRes = PrePToFPDBStorePTransformer::transform(separableSuperPrePOp, mode_, numNodes_, fpdbStoreConnector);
+      PrePToPTransformerUtil::addPhysicalOps(transformRes.second, physicalOps_);
+      return transformRes.first;
     }
     default:
       throw runtime_error(fmt::format("Unsupported object store type for separable super prephysical operator: {}",

@@ -10,34 +10,32 @@ using json = nlohmann::json;
 
 namespace fpdb::executor::physical {
 
-PhysicalPlanSerializer::PhysicalPlanSerializer(const std::shared_ptr<PhysicalPlan> &physicalPlan) {
-  for (const auto &op: physicalPlan->getPhysicalOps()) {
-    operatorMap_.emplace(op->name(), op);
-  }
+PhysicalPlanSerializer::PhysicalPlanSerializer(const std::shared_ptr<PhysicalPlan> &physicalPlan,
+                                               bool pretty):
+  physicalPlan_(physicalPlan),
+  pretty_(pretty){}
+
+tl::expected<std::string, std::string>
+PhysicalPlanSerializer::serialize(const std::shared_ptr<PhysicalPlan> &physicalPlan,
+                                  bool pretty) {
+  PhysicalPlanSerializer serializer(physicalPlan, pretty);
+  return serializer.serialize();
 }
 
-tl::expected<std::string, std::string> PhysicalPlanSerializer::serialize(bool pretty) {
-  // find root op (collate)
-  std::optional<std::shared_ptr<PhysicalOp>> optRootOp = std::nullopt;
-  for (const auto &opIt: operatorMap_) {
-    if (opIt.second->getType() == POpType::COLLATE) {
-      if (!optRootOp.has_value()) {
-        optRootOp = opIt.second;
-      } else {
-        return tl::make_unexpected("More than one Collate (root) operators found");
-      }
-    }
+tl::expected<std::string, std::string> PhysicalPlanSerializer::serialize() {
+  // get root op
+  auto expRootOp = physicalPlan_->getRootPOp();
+  if (!expRootOp.has_value()) {
+    return tl::make_unexpected(expRootOp.error());
   }
-  if (!optRootOp.has_value()) {
-    return tl::make_unexpected("Collate (root) operator not found in StoreSuperPOp");
-  }
+  auto rootOp = *expRootOp;
 
   // serialize in DFS
-  auto expRootJObj = serializeDfs(*optRootOp);
+  auto expRootJObj = serializeDfs(rootOp);
   if (!expRootJObj.has_value()) {
     return tl::make_unexpected(expRootJObj.error());
   }
-  return (*expRootJObj).dump(pretty ? 2 : -1);
+  return (*expRootJObj).dump(pretty_ ? 2 : -1);
 }
 
 tl::expected<json, std::string> PhysicalPlanSerializer::serializeDfs(const std::shared_ptr<PhysicalOp> &op) {
@@ -64,11 +62,11 @@ tl::expected<json, std::string> PhysicalPlanSerializer::serializeProducers(const
   std::vector<json> producerJArr;
 
   for (const auto &name: op->producers()) {
-    auto producerIt = operatorMap_.find(name);
-    if (producerIt == operatorMap_.end()) {
-      return tl::make_unexpected(fmt::format("Operator '{}' not found in StoreSuperPOp", name));
+    auto expProducer = physicalPlan_->getPhysicalOp(name);
+    if (!expProducer.has_value()) {
+      return tl::make_unexpected(expProducer.error());
     }
-    auto expProducerJObj = serializeDfs(producerIt->second);
+    auto expProducerJObj = serializeDfs(*expProducer);
     if (!expProducerJObj.has_value()) {
       return tl::make_unexpected(expProducerJObj.error());
     }

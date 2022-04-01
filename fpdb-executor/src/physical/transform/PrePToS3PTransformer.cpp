@@ -19,19 +19,28 @@ using namespace fpdb::util;
 
 namespace fpdb::executor::physical {
 
-PrePToS3PTransformer::PrePToS3PTransformer(uint prePOpId,
+PrePToS3PTransformer::PrePToS3PTransformer(const shared_ptr<SeparableSuperPrePOp> &separableSuperPrePOp,
                                            const shared_ptr<Mode> &mode,
                                            int numNodes,
                                            const shared_ptr<S3Connector> &s3Connector) :
-  prePOpId_(prePOpId),
+  separableSuperPrePOp_(separableSuperPrePOp),
   mode_(mode),
   numNodes_(numNodes),
   s3Connector_(s3Connector) {}
 
 pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
-PrePToS3PTransformer::transformSeparableSuper(const shared_ptr<SeparableSuperPrePOp> &separableSuperPrePOp) {
+PrePToS3PTransformer::transform(const shared_ptr<SeparableSuperPrePOp> &separableSuperPrePOp,
+                                const shared_ptr<Mode> &mode,
+                                int numNodes,
+                                const shared_ptr<S3Connector> &s3Connector) {
+  PrePToS3PTransformer transformer(separableSuperPrePOp, mode, numNodes, s3Connector);
+  return transformer.transform();
+}
+
+pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
+PrePToS3PTransformer::transform() {
   // currently only support push filterable scan to S3
-  auto rootOp = separableSuperPrePOp->getRootOp();
+  auto rootOp = separableSuperPrePOp_->getRootOp();
   if (rootOp->getType() != PrePOpType::FILTERABLE_SCAN) {
     throw runtime_error(fmt::format("Unsupported prephysical operator type for S3: {}", rootOp->getTypeString()));
   }
@@ -97,7 +106,10 @@ PrePToS3PTransformer::transformFilterableScanPullup(const shared_ptr<FilterableS
     const auto &projPredColumnNames = union_(projectColumnNames, predicateColumnNames);
 
     // s3 get
-    const auto &scanPOp = make_shared<s3::S3GetPOp>(fmt::format("S3Get[{}]-{}/{}", prePOpId_, s3Bucket, s3Object),
+    const auto &scanPOp = make_shared<s3::S3GetPOp>(fmt::format("S3Get[{}]-{}/{}",
+                                                                separableSuperPrePOp_->getId(),
+                                                                s3Bucket,
+                                                                s3Object),
                                                    projPredColumnNames,
                                                    partitionId % numNodes_,
                                                    s3Bucket,
@@ -112,7 +124,10 @@ PrePToS3PTransformer::transformFilterableScanPullup(const shared_ptr<FilterableS
 
     // filter
     if (predicate) {
-      const auto &filterPOp = make_shared<filter::FilterPOp>(fmt::format("Filter[{}]-{}/{}", prePOpId_, s3Bucket, s3Object),
+      const auto &filterPOp = make_shared<filter::FilterPOp>(fmt::format("Filter[{}]-{}/{}",
+                                                                         separableSuperPrePOp_->getId(),
+                                                                         s3Bucket,
+                                                                         s3Object),
                                                              projectColumnNames,
                                                              partitionId % numNodes_,
                                                              predicate,
@@ -157,7 +172,10 @@ PrePToS3PTransformer::transformFilterableScanPushdownOnly(const shared_ptr<Filte
     pair<long, long> scanRange{0, s3Partition->getNumBytes()};
 
     // s3 select
-    pOps.emplace_back(make_shared<s3::SelectPOp>(fmt::format("Select[{}]-{}/{}", prePOpId_, s3Bucket, s3Object),
+    pOps.emplace_back(make_shared<s3::SelectPOp>(fmt::format("Select[{}]-{}/{}",
+                                                             separableSuperPrePOp_->getId(),
+                                                             s3Bucket,
+                                                             s3Object),
                                                    projectColumnNames,
                                                    partitionId % numNodes_,
                                                    s3Bucket,
@@ -214,7 +232,10 @@ PrePToS3PTransformer::transformFilterableScanCachingOnly(const shared_ptr<Filter
 
     // cache load
     // TODO: projectColumnGroups
-    const auto cacheLoadPOp = make_shared<cache::CacheLoadPOp>(fmt::format("CacheLoad[{}]-{}/{}", prePOpId_, s3Bucket, s3Object),
+    const auto cacheLoadPOp = make_shared<cache::CacheLoadPOp>(fmt::format("CacheLoad[{}]-{}/{}",
+                                                                           separableSuperPrePOp_->getId(),
+                                                                           s3Bucket,
+                                                                           s3Object),
                                                                projectColumnNames,
                                                                partitionId % numNodes_,
                                                                predicateColumnNames,
@@ -228,7 +249,10 @@ PrePToS3PTransformer::transformFilterableScanCachingOnly(const shared_ptr<Filter
     allPOps.emplace_back(cacheLoadPOp);
 
     // s3 get
-    const auto &scanPOp = make_shared<s3::S3GetPOp>(fmt::format("S3Get[{}]-{}/{}", prePOpId_, s3Bucket, s3Object),
+    const auto &scanPOp = make_shared<s3::S3GetPOp>(fmt::format("S3Get[{}]-{}/{}",
+                                                                separableSuperPrePOp_->getId(),
+                                                                s3Bucket,
+                                                                s3Object),
                                                     projPredColumnNames,
                                                     partitionId % numNodes_,
                                                     s3Bucket,
@@ -242,7 +266,10 @@ PrePToS3PTransformer::transformFilterableScanCachingOnly(const shared_ptr<Filter
     allPOps.emplace_back(scanPOp);
 
     // merge
-    const auto &mergePOp = make_shared<merge::MergePOp>(fmt::format("Merge[{}]-{}/{}", prePOpId_, s3Bucket, s3Object),
+    const auto &mergePOp = make_shared<merge::MergePOp>(fmt::format("Merge[{}]-{}/{}",
+                                                                    separableSuperPrePOp_->getId(),
+                                                                    s3Bucket,
+                                                                    s3Object),
                                                         projPredColumnNames,
                                                         partitionId % numNodes_);
     allPOps.emplace_back(mergePOp);
@@ -257,7 +284,10 @@ PrePToS3PTransformer::transformFilterableScanCachingOnly(const shared_ptr<Filter
 
     // filter
     if (predicate) {
-      const auto &filterPOp = make_shared<filter::FilterPOp>(fmt::format("Filter[{}]-{}/{}", prePOpId_, s3Bucket, s3Object),
+      const auto &filterPOp = make_shared<filter::FilterPOp>(fmt::format("Filter[{}]-{}/{}",
+                                                                         separableSuperPrePOp_->getId(),
+                                                                         s3Bucket,
+                                                                         s3Object),
                                                              projectColumnNames,
                                                              partitionId % numNodes_,
                                                              predicate,
@@ -317,7 +347,10 @@ PrePToS3PTransformer::transformFilterableScanHybrid(const shared_ptr<FilterableS
 
     // cache load
     // TODO: projectColumnGroups
-    const auto cacheLoadPOp = make_shared<cache::CacheLoadPOp>(fmt::format("CacheLoad[{}]-{}/{}", prePOpId_, s3Bucket, s3Object),
+    const auto cacheLoadPOp = make_shared<cache::CacheLoadPOp>(fmt::format("CacheLoad[{}]-{}/{}",
+                                                                           separableSuperPrePOp_->getId(),
+                                                                           s3Bucket,
+                                                                           s3Object),
                                                                projectColumnNames,
                                                                partitionId % numNodes_,
                                                                predicateColumnNames,
@@ -331,7 +364,10 @@ PrePToS3PTransformer::transformFilterableScanHybrid(const shared_ptr<FilterableS
     allPOps.emplace_back(cacheLoadPOp);
 
     // s3 select (cache)
-    const auto &scanPOp = make_shared<s3::SelectPOp>(fmt::format("Select(cache)[{}]-{}/{}", prePOpId_, s3Bucket, s3Object),
+    const auto &scanPOp = make_shared<s3::SelectPOp>(fmt::format("Select(cache)[{}]-{}/{}",
+                                                                 separableSuperPrePOp_->getId(),
+                                                                 s3Bucket,
+                                                                 s3Object),
                                                        projPredColumnNames,
                                                        partitionId % numNodes_,
                                                        s3Bucket,
@@ -346,7 +382,10 @@ PrePToS3PTransformer::transformFilterableScanHybrid(const shared_ptr<FilterableS
     allPOps.emplace_back(scanPOp);
 
     // first merge
-    const auto &mergePOp1 = make_shared<merge::MergePOp>(fmt::format("merge1[{}]-{}/{}", prePOpId_, s3Bucket, s3Object),
+    const auto &mergePOp1 = make_shared<merge::MergePOp>(fmt::format("merge1[{}]-{}/{}",
+                                                                     separableSuperPrePOp_->getId(),
+                                                                     s3Bucket,
+                                                                     s3Object),
                                                          projPredColumnNames,
                                                          partitionId % numNodes_);
     allPOps.emplace_back(mergePOp1);
@@ -362,7 +401,10 @@ PrePToS3PTransformer::transformFilterableScanHybrid(const shared_ptr<FilterableS
     // filter
     shared_ptr<PhysicalOp> localResultPOp;
     if (predicate) {
-      const auto &filterPOp = make_shared<filter::FilterPOp>(fmt::format("Filter[{}]-{}/{}", prePOpId_, s3Bucket, s3Object),
+      const auto &filterPOp = make_shared<filter::FilterPOp>(fmt::format("Filter[{}]-{}/{}",
+                                                                         separableSuperPrePOp_->getId(),
+                                                                         s3Bucket,
+                                                                         s3Object),
                                                              projectColumnNames,
                                                              partitionId % numNodes_,
                                                              predicate,
@@ -377,7 +419,10 @@ PrePToS3PTransformer::transformFilterableScanHybrid(const shared_ptr<FilterableS
     }
 
     // s3 select (pushdown)
-    const auto &selectPOp = make_shared<s3::SelectPOp>(fmt::format("Select(pushdown)[{}]-{}/{}", prePOpId_, s3Bucket, s3Object),
+    const auto &selectPOp = make_shared<s3::SelectPOp>(fmt::format("Select(pushdown)[{}]-{}/{}",
+                                                                   separableSuperPrePOp_->getId(),
+                                                                   s3Bucket,
+                                                                   s3Object),
                                                          projectColumnNames,
                                                          partitionId % numNodes_,
                                                          s3Bucket,
@@ -393,7 +438,10 @@ PrePToS3PTransformer::transformFilterableScanHybrid(const shared_ptr<FilterableS
     allPOps.emplace_back(selectPOp);
 
     // second merge
-    const auto &mergePOp2 = make_shared<merge::MergePOp>(fmt::format("merge2[{}]-{}/{}", prePOpId_, s3Bucket, s3Object),
+    const auto &mergePOp2 = make_shared<merge::MergePOp>(fmt::format("merge2[{}]-{}/{}",
+                                                                     separableSuperPrePOp_->getId(),
+                                                                     s3Bucket,
+                                                                     s3Object),
                                                          projectColumnNames,
                                                          partitionId % numNodes_);
     allPOps.emplace_back(mergePOp2);

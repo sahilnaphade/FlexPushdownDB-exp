@@ -50,7 +50,8 @@ void Execution::boot() {
   }
 
   // Set query id, and add physical operators to operator directory
-  for (const auto &op: physicalPlan_->getPhysicalOps()) {
+  for (const auto &opIt: physicalPlan_->getPhysicalOps()) {
+    auto op = opIt.second;
     assert(op);
     op->setQueryId(queryId_);
     auto result = opDirectory_.insert(POpDirectoryEntry(op, nullptr, false));

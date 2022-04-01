@@ -20,11 +20,19 @@ namespace fpdb::executor::physical {
 class PhysicalPlanSerializer {
 
 public:
-  PhysicalPlanSerializer(const std::shared_ptr<PhysicalPlan> &physicalPlan);
-
-  tl::expected<std::string, std::string> serialize(bool pretty);
+  static tl::expected<std::string, std::string> serialize(const std::shared_ptr<PhysicalPlan> &physicalPlan,
+                                                          bool pretty);
 
 private:
+  PhysicalPlanSerializer(const std::shared_ptr<PhysicalPlan> &physicalPlan,
+                         bool pretty);
+
+  /**
+   * Impl of serialization
+   * @return
+   */
+  tl::expected<std::string, std::string> serialize();
+
   tl::expected<::nlohmann::json, std::string> serializeDfs(const std::shared_ptr<PhysicalOp> &op);
   tl::expected<::nlohmann::json, std::string> serializeProducers(const std::shared_ptr<PhysicalOp> &op);
 
@@ -46,7 +54,8 @@ private:
   tl::expected<::nlohmann::json, std::string>
   serializeCollatePOp(const std::shared_ptr<collate::CollatePOp> &collatePOp);
 
-  std::unordered_map<std::string, std::shared_ptr<PhysicalOp>> operatorMap_;
+  std::shared_ptr<PhysicalPlan> physicalPlan_;
+  bool pretty_;
 
 };
 
