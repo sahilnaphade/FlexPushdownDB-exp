@@ -51,6 +51,16 @@ void PhysicalOp::unConsume(const std::shared_ptr<PhysicalOp> &op) {
   producers_.erase(op->name());
 }
 
+void PhysicalOp::reProduce(const std::string &oldOp, const std::string &newOp) {
+  consumers_.erase(oldOp);
+  consumers_.emplace(newOp);
+}
+
+void PhysicalOp::reConsume(const std::string &oldOp, const std::string &newOp) {
+  producers_.erase(oldOp);
+  producers_.emplace(newOp);
+}
+
 void PhysicalOp::clearConnections() {
   producers_.clear();
   consumers_.clear();

@@ -112,6 +112,11 @@ PhysicalPlanSerializer::serializeFilterPOp(const std::shared_ptr<filter::FilterP
   auto jObj = serializePOpCommon(filterPOp);
   jObj.emplace("predicate", filterPOp->getPredicate()->toJson());
 
+  auto bitmapWrapper = filterPOp->getBitmapWrapper();
+  if (bitmapWrapper.has_value()) {
+    jObj.emplace("bitmapWrapper", bitmapWrapper->toJson());
+  }
+
   // serialize producers
   auto expProducersJObj = serializeProducers(filterPOp);
   if (!expProducersJObj.has_value()) {

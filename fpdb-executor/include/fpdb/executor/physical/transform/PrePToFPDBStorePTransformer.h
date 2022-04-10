@@ -79,6 +79,9 @@ private:
   pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
   transformPushdownOnlyToHybrid(const vector<shared_ptr<PhysicalOp>> &fpdbStoreSuperPOps);
 
+  void enableBitmapPushdown(const unordered_map<shared_ptr<PhysicalOp>, shared_ptr<PhysicalOp>> &storePOpToLocalPOp,
+                            const shared_ptr<PhysicalOp> &fpdbStoreSuperPOp);
+
   pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
   transformFilterableScan(const shared_ptr<FilterableScanPrePOp> &filterableScanPrePOp);
 

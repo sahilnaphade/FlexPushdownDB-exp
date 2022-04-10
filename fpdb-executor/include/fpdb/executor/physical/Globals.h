@@ -40,7 +40,8 @@ inline constexpr int variableSleepRetryTimeMS = 15;
 /**
  * Parameters used in transformer
  */
-inline constexpr bool USE_BLOOM_FILTER = true;
+inline bool USE_BLOOM_FILTER = true;
+inline bool ENABLE_FPDB_STORE_BITMAP_PUSHDOWN = false;
 
 }
 

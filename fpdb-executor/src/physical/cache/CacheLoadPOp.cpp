@@ -42,6 +42,25 @@ const std::shared_ptr<Partition> &CacheLoadPOp::getPartition() const {
   return partition_;
 }
 
+void CacheLoadPOp::setHitOperator(const std::shared_ptr<PhysicalOp> &op) {
+  this->hitOperatorName_ = op->name();
+  this->produce(op);
+}
+
+void CacheLoadPOp::setMissOperatorToCache(const std::shared_ptr<PhysicalOp> &op) {
+  this->missOperatorToCacheName_ = op->name();
+  this->produce(op);
+}
+
+void CacheLoadPOp::setMissOperatorToPushdown(const std::shared_ptr<PhysicalOp> &op) {
+  this->missOperatorToPushdownName_ = op->name();
+  this->produce(op);
+}
+
+void CacheLoadPOp::enableBitmapPushdown() {
+  isBitmapPushdownEnabled_ = true;
+}
+
 void CacheLoadPOp::onReceive(const Envelope &message) {
   if (message.message().type() == MessageType::START) {
 	  this->onStart();
@@ -163,8 +182,8 @@ void CacheLoadPOp::onCacheLoadResponse(const LoadResponseMessage &message) {
   /**
    * 3. Send messages to consumers
    */
-  // To hitOperator: if caching columns are needed, send hitSegments, otherwise send empty tupleSet
-  auto hitTupleSet = cachingColumnsNeeded ? TupleSet::make(hitColumns) : TupleSet::makeWithEmptyTable();
+  // To hitOperator
+  auto hitTupleSet = TupleSet::make(hitColumns);
   auto hitMessage = std::make_shared<TupleSetMessage>(hitTupleSet, this->name());
   ctx()->send(hitMessage, *hitOperatorName_);
 
@@ -178,9 +197,11 @@ void CacheLoadPOp::onCacheLoadResponse(const LoadResponseMessage &message) {
                               std::vector<std::string>(missPushdownProjectColumnNameSet.begin(),
                                                        missPushdownProjectColumnNameSet.end()) :
                               projectColumnNames_;
+    // Need to add predicateColumnNames for fpdb-store because we push query plan rather than sql
+    // not needed when bitmap pushdown is enabled
     if ((*objStoreConnector_)->getStoreType() == ObjStoreType::FPDB_STORE
-      && !missPushdownColumnNames.empty()) {
-      // Need to add predicateColumnNames for fpdb-store because we push query plan rather than sql
+      && !missPushdownColumnNames.empty()
+      && !isBitmapPushdownEnabled_) {
       missPushdownColumnNames = union_(missPushdownColumnNames, predicateColumnNames_);
     }
 
@@ -205,21 +226,6 @@ void CacheLoadPOp::onCacheLoadResponse(const LoadResponseMessage &message) {
   }
   ctx()->send(CacheMetricsMessage::make(hitNum, missNum, shardHitNum, shardMissNum, this->name()), "SegmentCache");
   ctx()->notifyComplete();
-}
-
-void CacheLoadPOp::setHitOperator(const std::shared_ptr<PhysicalOp> &op) {
-  this->hitOperatorName_ = op->name();
-  this->produce(op);
-}
-
-void CacheLoadPOp::setMissOperatorToCache(const std::shared_ptr<PhysicalOp> &op) {
-  this->missOperatorToCacheName_ = op->name();
-  this->produce(op);
-}
-
-void CacheLoadPOp::setMissOperatorToPushdown(const std::shared_ptr<PhysicalOp> &op) {
-  this->missOperatorToPushdownName_ = op->name();
-  this->produce(op);
 }
 
 void CacheLoadPOp::clear() {

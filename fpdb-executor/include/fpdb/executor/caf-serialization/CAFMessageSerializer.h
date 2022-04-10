@@ -16,6 +16,7 @@
 #include <fpdb/executor/message/TupleSetIndexMessage.h>
 #include <fpdb/executor/message/TupleSetSizeMessage.h>
 #include <fpdb/executor/message/BloomFilterMessage.h>
+#include <fpdb/executor/message/BitmapMessage.h>
 #include <fpdb/executor/message/cache/LoadRequestMessage.h>
 #include <fpdb/executor/message/cache/LoadResponseMessage.h>
 #include <fpdb/executor/message/cache/StoreRequestMessage.h>
@@ -40,6 +41,7 @@ CAF_ADD_TYPE_ID(Message, (TupleSetMessage))
 CAF_ADD_TYPE_ID(Message, (TupleSetIndexMessage))
 CAF_ADD_TYPE_ID(Message, (TupleSetSizeMessage))
 CAF_ADD_TYPE_ID(Message, (BloomFilterMessage))
+CAF_ADD_TYPE_ID(Message, (BitmapMessage))
 // For the following cache messages, we have to implement `inspect` for concrete derived shared_ptr type one by one,
 // because SegmentCacheActor directly uses the concrete derived types rather than base type Message used by other actors
 CAF_ADD_TYPE_ID(Message, (LoadRequestMessage))
@@ -73,7 +75,8 @@ struct variant_inspector_traits<MessagePtr> {
           type_id_v<TupleSetMessage>,
           type_id_v<TupleSetIndexMessage>,
           type_id_v<TupleSetSizeMessage>,
-          type_id_v<BloomFilterMessage>
+          type_id_v<BloomFilterMessage>,
+          type_id_v<BitmapMessage>
   };
 
   // Returns which type in allowed_types corresponds to x.
@@ -100,6 +103,8 @@ struct variant_inspector_traits<MessagePtr> {
       return 9;
     else if (x->type() == MessageType::BLOOM_FILTER)
       return 10;
+    else if (x->type() == MessageType::BITMAP)
+      return 11;
     else
       return -1;
   }
@@ -128,6 +133,8 @@ struct variant_inspector_traits<MessagePtr> {
         return f(dynamic_cast<TupleSetSizeMessage &>(*x));
       case 10:
         return f(dynamic_cast<BloomFilterMessage &>(*x));
+      case 11:
+        return f(dynamic_cast<BitmapMessage &>(*x));
       default: {
         none_t dummy;
         return f(dummy);
@@ -203,6 +210,11 @@ struct variant_inspector_traits<MessagePtr> {
       }
       case type_id_v<BloomFilterMessage>: {
         auto tmp = BloomFilterMessage{};
+        continuation(tmp);
+        return true;
+      }
+      case type_id_v<BitmapMessage>: {
+        auto tmp = BitmapMessage{};
         continuation(tmp);
         return true;
       }

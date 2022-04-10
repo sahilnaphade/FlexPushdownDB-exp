@@ -737,6 +737,18 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pullup-22" * doctest::skip(
   stopFPDBStoreServer();
 }
 
+TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pullup-multi-query" * doctest::skip(false || SKIP_SUITE)) {
+  std::vector<std::string> queryFileNames(10, "tpch/original/02.sql");
+
+  startFPDBStoreServer();
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/parquet/",
+                                            queryFileNames,
+                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            false,
+                                            ObjStoreType::FPDB_STORE));
+  stopFPDBStoreServer();
+}
+
 }
 
 TEST_SUITE ("tpch-sf0.01-fpdb-store-same-node-parquet-pushdown-only" * doctest::skip(SKIP_SUITE)) {

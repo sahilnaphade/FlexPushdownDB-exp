@@ -36,7 +36,6 @@ public:
 protected:
   void onStart();
   void onCacheLoadResponse(const ScanMessage &message);
-  void onComplete(const CompleteMessage &message);
   void readAndSendTuples(const std::vector<std::string> &columnNames);
   std::shared_ptr<TupleSet> readTuples(const std::vector<std::string> &columnNames);
   void requestStoreSegmentsInCache(const std::shared_ptr<TupleSet> &tupleSet);

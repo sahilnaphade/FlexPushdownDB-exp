@@ -44,6 +44,7 @@ public:
   void setHitOperator(const std::shared_ptr<PhysicalOp> &op);
   void setMissOperatorToCache(const std::shared_ptr<PhysicalOp> &op);
   void setMissOperatorToPushdown(const std::shared_ptr<PhysicalOp> &op);
+  void enableBitmapPushdown();
 
 private:
   void requestLoadSegmentsFromCache();
@@ -69,6 +70,11 @@ private:
   std::optional<std::string> missOperatorToPushdownName_;
 
   std::optional<std::shared_ptr<ObjStoreConnector>> objStoreConnector_;
+
+  /**
+   * Used for bitmap pushdown, i.e. decide whether to send predicateColumnNames to missOperatorToPushdown
+   */
+  bool isBitmapPushdownEnabled_ = false;
 
 // caf inspect
 public:

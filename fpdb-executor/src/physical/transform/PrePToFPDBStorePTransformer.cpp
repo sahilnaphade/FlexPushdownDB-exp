@@ -230,7 +230,7 @@ PrePToFPDBStorePTransformer::transformPushdownOnlyToHybrid(const vector<shared_p
     typedFPDBStoreSuperPOp->setWaitForScanMessage(true);
 
     unordered_map<shared_ptr<PhysicalOp>, shared_ptr<PhysicalOp>> storePOpToLocalPOp;
-    unordered_map<string, shared_ptr<PhysicalOp>> storePOpMap = typedFPDBStoreSuperPOp->getSubPlan()->getPhysicalOps();
+    const auto &storePOpMap = typedFPDBStoreSuperPOp->getSubPlan()->getPhysicalOps();
     unordered_map<string, shared_ptr<PhysicalOp>> localPOpMap;
     optional<shared_ptr<merge::MergePOp>> mergePOp1, mergePOp2;
 
@@ -347,7 +347,8 @@ PrePToFPDBStorePTransformer::transformPushdownOnlyToHybrid(const vector<shared_p
         localPOp->clearConnections();
         localPOp->setName(fmt::format("{}-separated(local)", localPOp->name()));
         localPOp->setSeparated(true);
-        storePOp->setName(fmt::format("{}-separated(fpdb-store)", storePOp->name()));
+        typedFPDBStoreSuperPOp->getSubPlan()->renamePOp(storePOp->name(),
+                                                        fmt::format("{}-separated(fpdb-store)", storePOp->name()));
         storePOp->setSeparated(true);
       }
 
@@ -357,7 +358,7 @@ PrePToFPDBStorePTransformer::transformPushdownOnlyToHybrid(const vector<shared_p
     }
 
     if (!mergePOp1.has_value() || !mergePOp2.has_value()) {
-      throw runtime_error("FPDBFileScanPOp not found in pushdown subPlan");
+      throw runtime_error("FPDBStoreFileScanPOp not found in pushdown subPlan");
     }
 
     // wire up local ops following the connection among store ops
@@ -411,9 +412,43 @@ PrePToFPDBStorePTransformer::transformPushdownOnlyToHybrid(const vector<shared_p
     localLastPOp->produce(*mergePOp2);
     (*mergePOp2)->setRightProducer(fpdbStoreSuperPOp);
     fpdbStoreSuperPOp->produce(*mergePOp2);
+
+    // enable bitmap pushdown if required
+    if (StoreTransformTraits::FPDBStoreStoreTransformTraits()->isBitmapPushdownEnabled()) {
+      enableBitmapPushdown(storePOpToLocalPOp, fpdbStoreSuperPOp);
+    }
   }
 
   return {connPOps, allPOps};
+}
+
+void PrePToFPDBStorePTransformer::enableBitmapPushdown(
+        const unordered_map<shared_ptr<PhysicalOp>, shared_ptr<PhysicalOp>> &storePOpToLocalPOp,
+        const shared_ptr<PhysicalOp> &fpdbStoreSuperPOp) {
+  for (const auto &storeToLocalIt: storePOpToLocalPOp) {
+    auto storePOp = storeToLocalIt.first;
+    auto localPOp = storeToLocalIt.second;
+
+    switch (localPOp->getType()) {
+      case CACHE_LOAD: {
+        auto typedLocalPOp = static_pointer_cast<cache::CacheLoadPOp>(localPOp);
+        typedLocalPOp->enableBitmapPushdown();
+        break;
+      }
+      case FILTER: {
+        auto typedLocalPOp = static_pointer_cast<filter::FilterPOp>(localPOp);
+        auto typedStorePOp = static_pointer_cast<filter::FilterPOp>(storePOp);
+        typedLocalPOp->enableBitmapPushdown(fpdbStoreSuperPOp->name(), typedStorePOp->name(), true);
+        typedStorePOp->enableBitmapPushdown(fpdbStoreSuperPOp->name(), typedLocalPOp->name(), false);
+        typedLocalPOp->produce(fpdbStoreSuperPOp);
+        fpdbStoreSuperPOp->consume(typedLocalPOp);
+        break;
+      }
+      default: {
+        // noop
+      }
+    }
+  }
 }
 
 pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>

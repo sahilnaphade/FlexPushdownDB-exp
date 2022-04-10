@@ -204,6 +204,14 @@ PhysicalPlanDeserializer::deserializeFilterPOp(const ::nlohmann::json &jObj) {
   filterPOp->setSeparated(isSeparated);
   physicalOps_.emplace(filterPOp->name(), filterPOp);
 
+  if (jObj.contains("bitmapWrapper")) {
+    auto expBitmapWrapper = FPDBStoreFilterBitmapWrapper::fromJson(jObj["bitmapWrapper"]);
+    if (!expBitmapWrapper.has_value()) {
+      return tl::make_unexpected(expBitmapWrapper.error());
+    }
+    std::static_pointer_cast<filter::FilterPOp>(filterPOp)->setBitmapWrapper(*expBitmapWrapper);
+  }
+
   // deserialize producers
   auto expProducers = deserializeProducers(jObj);
   if (!expProducers.has_value()) {

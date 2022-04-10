@@ -39,8 +39,7 @@ void FileScanAbstractPOp::onReceive(const Envelope &message) {
     auto scanMessage = dynamic_cast<const ScanMessage &>(message.message());
     this->onCacheLoadResponse(scanMessage);
   } else if (message.message().type() == MessageType::COMPLETE) {
-    auto completeMessage = dynamic_cast<const CompleteMessage &>(message.message());
-    this->onComplete(completeMessage);
+    // noop
   } else {
     ctx()->notifyError("Unrecognized message type " + message.message().getTypeString());
   }
@@ -52,13 +51,6 @@ void FileScanAbstractPOp::onStart() {
   if(scanOnStart_) {
     // scan and complete
     readAndSendTuples(getProjectColumnNames());
-    ctx()->notifyComplete();
-  }
-}
-
-void FileScanAbstractPOp::onComplete(const CompleteMessage &) {
-  if(ctx()->operatorMap().allComplete(POpRelationshipType::Producer)){
-    ctx()->notifyComplete();
   }
 }
 
@@ -81,6 +73,7 @@ void FileScanAbstractPOp::readAndSendTuples(const std::vector<std::string> &colu
   auto readTupleSet = readTuples(columnNames);
   std::shared_ptr<Message> message = std::make_shared<TupleSetMessage>(readTupleSet, this->name());
   ctx()->tell(message);
+  ctx()->notifyComplete();
 }
 
 std::shared_ptr<TupleSet> FileScanAbstractPOp::readTuples(const std::vector<std::string> &columnNames) {

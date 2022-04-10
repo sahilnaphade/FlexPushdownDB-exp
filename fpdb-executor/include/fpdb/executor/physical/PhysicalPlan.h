@@ -27,6 +27,7 @@ public:
   tl::expected<shared_ptr<PhysicalOp>, string> getPhysicalOp(const string &name) const;
   tl::expected<void, string> addAsLast(shared_ptr<PhysicalOp> &op);
   tl::expected<shared_ptr<PhysicalOp>, string> getRootPOp() const;
+  tl::expected<void, string> renamePOp(const string oldName, const string newName);
 
 private:
   unordered_map<string, shared_ptr<PhysicalOp>> physicalOps_;

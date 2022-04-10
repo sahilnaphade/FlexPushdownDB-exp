@@ -58,6 +58,16 @@ std::shared_ptr<TupleSet> TupleSet::make(const std::shared_ptr<arrow::Schema>& s
 }
 
 tl::expected<std::shared_ptr<TupleSet>, std::string>
+TupleSet::make(const std::vector<std::shared_ptr<arrow::RecordBatch>> &recordBatches) {
+  auto expTable = ::arrow::Table::FromRecordBatches(recordBatches);
+  if (!expTable.ok()) {
+    return tl::make_unexpected(expTable.status().message());
+  }
+
+  return make(*expTable);
+}
+
+tl::expected<std::shared_ptr<TupleSet>, std::string>
 TupleSet::make(const std::shared_ptr<arrow::csv::TableReader> &tableReader) {
   auto result = tableReader->Read();
   if (!result.ok()) {
@@ -235,9 +245,6 @@ TupleSet::projectExist(const std::vector<std::string> &columnNames) const {
     if (expColumn.has_value()) {
       columns.emplace_back(expColumn.value());
     }
-  }
-  if (columns.empty()) {
-    return tl::make_unexpected("No column exists.");
   }
   return make(columns);
 }

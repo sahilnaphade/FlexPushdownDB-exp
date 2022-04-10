@@ -62,4 +62,43 @@ tl::expected<shared_ptr<PhysicalOp>, string> PhysicalPlan::getRootPOp() const {
   }
 }
 
+tl::expected<void, string> PhysicalPlan::renamePOp(const string oldName, const string newName) {
+  // check if new name already exists
+  if (physicalOps_.find(newName) != physicalOps_.end()) {
+    return tl::make_unexpected(fmt::format("Operator '{}' already exists in the physical plan", newName));
+  }
+
+  // get op
+  auto expOp = getPhysicalOp(oldName);
+  if (!expOp.has_value()) {
+    return tl::make_unexpected(expOp.error());
+  }
+  auto op = *expOp;
+
+  // rename op
+  op->setName(newName);
+  physicalOps_.erase(oldName);
+  physicalOps_.emplace(newName, op);
+
+  // fix relationship
+  for (const auto &producer: op->producers()) {
+    auto expProducerOp = getPhysicalOp(producer);
+    if (!expProducerOp.has_value()) {
+      return tl::make_unexpected(expProducerOp.error());
+    }
+    auto producerOp = *expProducerOp;
+    producerOp->reProduce(oldName, newName);
+  }
+  for (const auto &consumer: op->consumers()) {
+    auto expConsumerOp = getPhysicalOp(consumer);
+    if (!expConsumerOp.has_value()) {
+      return tl::make_unexpected(expConsumerOp.error());
+    }
+    auto consumerOp = *expConsumerOp;
+    consumerOp->reConsume(oldName, newName);
+  }
+
+  return {};
+}
+
 }

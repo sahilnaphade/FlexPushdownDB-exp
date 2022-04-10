@@ -17,6 +17,7 @@ add_library(fpdb-executor STATIC
         src/message/DebugMetricsMessage.cpp include/fpdb/executor/message/DebugMetricsMessage.h
         src/message/ErrorMessage.cpp include/fpdb/executor/message/ErrorMessage.h
         src/message/BloomFilterMessage.cpp include/fpdb/executor/message/BloomFilterMessage.h
+        src/message/BitmapMessage.cpp include/fpdb/executor/message/BitmapMessage.h
         src/message/cache/CacheMetricsMessage.cpp include/fpdb/executor/message/cache/CacheMetricsMessage.h
         src/message/cache/LoadRequestMessage.cpp include/fpdb/executor/message/cache/LoadRequestMessage.h
         src/message/cache/LoadResponseMessage.cpp include/fpdb/executor/message/cache/LoadResponseMessage.h
@@ -101,6 +102,7 @@ add_library(fpdb-executor STATIC
         src/physical/fpdb-store/FPDBStoreSuperPOp.cpp include/fpdb/executor/physical/fpdb-store/FPDBStoreSuperPOp.h
         src/physical/fpdb-store/FPDBStoreFileScanPOp.cpp include/fpdb/executor/physical/fpdb-store/FPDBStoreFileScanPOp.h
         src/physical/fpdb-store/FPDBStoreSuperPOpUtil.cpp include/fpdb/executor/physical/fpdb-store/FPDBStoreSuperPOpUtil.h
+        src/physical/fpdb-store/FPDBStoreFilterBitmapWrapper.cpp include/fpdb/executor/physical/fpdb-store/FPDBStoreFilterBitmapWrapper.h
 #        physical plan
         src/physical/PhysicalPlan.cpp include/fpdb/executor/physical/PhysicalPlan.h
         src/physical/prune/PartitionPruner.cpp include/fpdb/executor/physical/prune/PartitionPruner.h

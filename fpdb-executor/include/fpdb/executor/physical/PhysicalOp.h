@@ -52,6 +52,8 @@ public:
   virtual void consume(const std::shared_ptr<PhysicalOp> &op);
   virtual void unProduce(const std::shared_ptr<PhysicalOp> &op);
   virtual void unConsume(const std::shared_ptr<PhysicalOp> &op);
+  virtual void reProduce(const std::string &oldOp, const std::string &newOp);
+  virtual void reConsume(const std::string &oldOp, const std::string &newOp);
   void clearConnections();
   void setBloomFilterCreatePrepareConsumer(const std::shared_ptr<PhysicalOp> &op);
   void create(const std::shared_ptr<POpContext>& ctx);

@@ -21,22 +21,54 @@ public:
 
   static std::shared_ptr<Filter> make(const std::shared_ptr<Expression> &Pred);
 
+  /**
+   * Evaluate filter on recordBatch using selectionVector, static function
+   * @param recordBatch
+   * @param selectionVector
+   * @return
+   */
   static tl::expected<arrow::ArrayVector, std::string>
   evaluateBySelectionVectorStatic(const arrow::RecordBatch &recordBatch,
                                   const std::shared_ptr<::gandiva::SelectionVector> &selectionVector);
 
+  /**
+   * Evaluate filter on tupleSet completely
+   * @param TupleSet
+   * @return
+   */
   tl::expected<std::shared_ptr<fpdb::tuple::TupleSet>, std::string>
   evaluate(const fpdb::tuple::TupleSet &TupleSet) override;
 
+  /**
+   * Evaluate filter on recordBatch completely
+   * @param recordBatch
+   * @return
+   */
   tl::expected<arrow::ArrayVector, std::string> evaluate(const arrow::RecordBatch &recordBatch) override;
 
+  /**
+   * Compute selectionVector on recordBatch
+   * @param recordBatch
+   * @return
+   */
   tl::expected<std::shared_ptr<::gandiva::SelectionVector>, std::string>
   computeSelectionVector(const arrow::RecordBatch &recordBatch);
 
+  /**
+   * Evaluate filter on recordBatch using selectionVector
+   * @param recordBatch
+   * @param selectionVector
+   * @return
+   */
   tl::expected<arrow::ArrayVector, std::string>
   evaluateBySelectionVector(const arrow::RecordBatch &recordBatch,
                             const std::shared_ptr<::gandiva::SelectionVector> &selectionVector);
 
+  /**
+   * Compile filter, i.e. generate gandivaFilter_ and gandivaProjector_
+   * @param schema
+   * @return
+   */
   tl::expected<void, std::string> compile(const std::shared_ptr<fpdb::tuple::Schema> &schema) override;
 
 private:

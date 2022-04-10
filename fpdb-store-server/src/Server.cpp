@@ -89,7 +89,7 @@ tl::expected<void, std::string> Server::start() {
   if(start_coordinator_) {
     // Local coordinator, start coordinator and node actor
     cluster_actor_handle_ = actor_manager_->actor_system()->spawn(ClusterActorState::actor_functor);
-    
+
     auto expected_coordinator_port = actor_manager_->actor_system()->middleman().publish(cluster_actor_handle_.value(),
                                                                                         coordinator_port_.value());
     coordinator_port_ = expected_coordinator_port.value();

@@ -288,6 +288,9 @@ void TestUtil::stop() {
     s3Connector->getAwsClient()->shutdown();
   }
   executor_->stop();
+
+  // reset flag for cache layout
+  fpdb::cache::FIX_CACHE_LAYOUT = false;
 }
 
 }

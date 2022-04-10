@@ -19,15 +19,18 @@ namespace fpdb::executor::physical {
 class StoreTransformTraits {
 
 public:
-  StoreTransformTraits(const std::set<POpType> &addiSeparablePOpTypes);
+  StoreTransformTraits(const std::set<POpType> &addiSeparablePOpTypes,
+                       bool isBitmapPushdownEnabled);
 
   static std::shared_ptr<StoreTransformTraits> S3StoreTransformTraits();
   static std::shared_ptr<StoreTransformTraits> FPDBStoreStoreTransformTraits();
 
   bool isSeparable(POpType pOpType) const;
+  bool isBitmapPushdownEnabled() const;
 
 private:
   std::set<POpType> addiSeparablePOpTypes_;
+  bool isBitmapPushdownEnabled_;
 
 };
 

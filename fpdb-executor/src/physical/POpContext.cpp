@@ -113,6 +113,7 @@ void POpContext::notifyComplete() {
   }
 
   complete_ = true;
+  operatorActor->running_ = false;
 }
 
 /**
