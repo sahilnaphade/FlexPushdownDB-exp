@@ -35,6 +35,22 @@ struct FPDBStoreFilterBitmapWrapper {
 
   // whether the bitmap has already been sent
   bool isBitmapSent_ = false;
+
+  // used to connect to store flight
+  std::string host_;
+  int port_;
+
+  // caf inspect
+  template <class Inspector>
+  friend bool inspect(Inspector& f, FPDBStoreFilterBitmapWrapper& wrapper) {
+    return f.object(wrapper).fields(f.field("fpdbStoreSuperPOp", wrapper.fpdbStoreSuperPOp_),
+                                    f.field("mirrorOp", wrapper.mirrorOp_),
+                                    f.field("bitmap", wrapper.bitmap_),
+                                    f.field("isComputeSide", wrapper.isComputeSide_),
+                                    f.field("isBitmapSent", wrapper.isBitmapSent_),
+                                    f.field("host", wrapper.host_),
+                                    f.field("port", wrapper.port_));
+  }
 };
 
 }

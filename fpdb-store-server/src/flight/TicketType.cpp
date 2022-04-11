@@ -11,11 +11,15 @@ TicketType::TicketType(TicketTypeId id, std::string name) : id_(id), name_(std::
 }
 
 std::shared_ptr<TicketType> TicketType::get_object() {
-  return std::make_shared<TicketType>(TicketTypeId::GetObject, GetObjectTicketTypeName.data());
+  return std::make_shared<TicketType>(TicketTypeId::GET_OBJECT, GetObjectTicketTypeName.data());
 }
 
 std::shared_ptr<TicketType> TicketType::select_object_content() {
-  return std::make_shared<TicketType>(TicketTypeId::SelectObjectContent, SelectObjectContentTypeName.data());
+  return std::make_shared<TicketType>(TicketTypeId::SELECT_OBJECT_CONTENT, SelectObjectContentTicketTypeName.data());
+}
+
+std::shared_ptr<TicketType> TicketType::get_bitmap() {
+  return std::make_shared<TicketType>(TicketTypeId::GET_BITMAP, GetBitmapTicketTypeName.data());
 }
 
 TicketTypeId TicketType::id() const {

@@ -32,6 +32,9 @@ public:
   std::string getTypeString() const override;
 
   const std::shared_ptr<PhysicalPlan> &getSubPlan() const;
+  const std::string &getHost() const;
+  int getPort() const;
+
   void setWaitForScanMessage(bool waitForScanMessage);
 
 private:

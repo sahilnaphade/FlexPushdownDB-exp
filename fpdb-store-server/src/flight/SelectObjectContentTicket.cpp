@@ -8,13 +8,18 @@
 
 namespace fpdb::store::server::flight {
 
-SelectObjectContentTicket::SelectObjectContentTicket(std::string query_plan_string)
-        : TicketObject(TicketType::select_object_content()),
-          query_plan_string_(std::move(query_plan_string)) {
+SelectObjectContentTicket::SelectObjectContentTicket(long query_id, std::string query_plan_string):
+  TicketObject(TicketType::select_object_content()),
+  query_id_(query_id),
+  query_plan_string_(std::move(query_plan_string)) {}
+
+std::shared_ptr<SelectObjectContentTicket> SelectObjectContentTicket::make(long query_id,
+                                                                           std::string query_plan_string) {
+  return std::make_shared<SelectObjectContentTicket>(query_id, std::move(query_plan_string));
 }
 
-std::shared_ptr<SelectObjectContentTicket> SelectObjectContentTicket::make(std::string query_plan_string) {
-  return std::make_shared<SelectObjectContentTicket>(std::move(query_plan_string));
+long SelectObjectContentTicket::query_id() const {
+  return query_id_;
 }
 
 const std::string & SelectObjectContentTicket::query_plan_string() const {
@@ -24,18 +29,24 @@ const std::string & SelectObjectContentTicket::query_plan_string() const {
 tl::expected<std::string, std::string> SelectObjectContentTicket::serialize(bool pretty) {
   nlohmann::json document;
   document.emplace(TypeJSONName.data(), type()->name());
+  document.emplace(QueryIdJSONName.data(), query_id_);
   document.emplace(QueryPlanJSONName.data(), query_plan_string_);
   return document.dump(pretty ? 2 : -1);
 }
 
 tl::expected<std::shared_ptr<SelectObjectContentTicket>, std::string>
 SelectObjectContentTicket::from_json(const nlohmann::json &jObj) {
+  if (!jObj.contains(QueryIdJSONName.data())) {
+    return tl::make_unexpected(fmt::format("Query id not specified in SelectObjectContentTicket JSON '{}'", jObj));
+  }
+  auto query_id = jObj[QueryIdJSONName.data()].get<int64_t>();
+
   if (!jObj.contains(QueryPlanJSONName.data())) {
-    return tl::make_unexpected(fmt::format("Query plan not specified in GetObjectTicket JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("Query plan not specified in SelectObjectContentTicket JSON '{}'", jObj));
   }
   auto query_plan_string = jObj[QueryPlanJSONName.data()].get<std::string>();
 
-  return SelectObjectContentTicket::make(query_plan_string);
+  return SelectObjectContentTicket::make(query_id, query_plan_string);
 }
 
 }

@@ -68,8 +68,18 @@ target_link_libraries(fpdb-store-server-flight-api PRIVATE nlohmann_json)
 target_link_libraries(fpdb-store-server-flight-api PRIVATE fmt::fmt)
 
 add_library(fpdb-store-server-objlib OBJECT
-        src/Module.cpp include/fpdb/store/server/Module.hpp
         include/fpdb/store/server/flight/Util.hpp
+        include/fpdb/store/server/Global.hpp
+        src/Module.cpp include/fpdb/store/server/Module.hpp
+        src/Server.cpp include/fpdb/store/server/Server.hpp
+        src/ServerConfig.cpp include/fpdb/store/server/ServerConfig.hpp
+        src/FPDBStoreServerConfig.cpp include/fpdb/store/server/FPDBStoreServerConfig.hpp
+        src/SignalHandler.cpp include/fpdb/store/server/SignalHandler.hpp
+        src/caf/ActorManager.cpp include/fpdb/store/server/caf/ActorManager.hpp
+        src/caf/ServerMeta.cpp include/fpdb/store/server/caf/ServerMeta.hpp
+        src/caf/AbstractActor.cpp include/fpdb/store/server/caf/AbstractActor.hpp
+        src/cluster/ClusterActor.cpp include/fpdb/store/server/cluster/ClusterActor.hpp
+        src/cluster/NodeActor.cpp include/fpdb/store/server/cluster/NodeActor.hpp
         src/flight/FlightHandler.cpp include/fpdb/store/server/flight/FlightHandler.hpp
         src/flight/HeaderMiddleware.cpp include/fpdb/store/server/flight/HeaderMiddleware.hpp
         src/flight/HeaderMiddlewareFactory.cpp include/fpdb/store/server/flight/HeaderMiddlewareFactory.hpp
@@ -80,15 +90,8 @@ add_library(fpdb-store-server-objlib OBJECT
         src/flight/TicketObject.cpp include/fpdb/store/server/flight/TicketObject.hpp
         src/flight/GetObjectTicket.cpp include/fpdb/store/server/flight/GetObjectTicket.hpp
         src/flight/SelectObjectContentTicket.cpp include/fpdb/store/server/flight/SelectObjectContentTicket.hpp
-        src/Server.cpp include/fpdb/store/server/Server.hpp include/fpdb/store/server/Global.hpp
-        src/SignalHandler.cpp include/fpdb/store/server/SignalHandler.hpp
-        src/caf/ActorManager.cpp include/fpdb/store/server/caf/ActorManager.hpp
-        src/caf/ServerMeta.cpp include/fpdb/store/server/caf/ServerMeta.hpp
-        src/cluster/ClusterActor.cpp include/fpdb/store/server/cluster/ClusterActor.hpp
-        src/caf/AbstractActor.cpp include/fpdb/store/server/caf/AbstractActor.hpp
-        src/cluster/NodeActor.cpp include/fpdb/store/server/cluster/NodeActor.hpp
-        src/ServerConfig.cpp include/fpdb/store/server/ServerConfig.hpp
-        src/FPDBStoreServerConfig.cpp include/fpdb/store/server/FPDBStoreServerConfig.hpp)
+        src/flight/GetBitmapTicket.cpp include/fpdb/store/server/flight/GetBitmapTicket.hpp
+        src/cache/BitmapCache.cpp include/fpdb/store/server/cache/BitmapCache.hpp)
 
 set_target_properties(fpdb-store-server-objlib PROPERTIES POSITION_INDEPENDENT_CODE ON)
 set_target_properties(fpdb-store-server-objlib PROPERTIES OUTPUT_NAME fpdb-store-server)

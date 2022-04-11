@@ -23,32 +23,34 @@ namespace fpdb::executor::physical::fpdb_store {
 }
 
 tl::expected<FPDBStoreFilterBitmapWrapper, std::string> FPDBStoreFilterBitmapWrapper::fromJson(const ::nlohmann::json &jObj) {
+  FPDBStoreFilterBitmapWrapper fpdbStoreFilterBitmapWrapper{};
+
   if (!jObj.contains("fpdbStoreSuperPOp")) {
     return tl::make_unexpected(fmt::format("FpdbStoreSuperPOp not specified in FPDBStoreFilterBitmapWrapper JSON '{}'", jObj));
   }
-  auto fpdbStoreSuperPOp = jObj["fpdbStoreSuperPOp"].get<std::string>();
+  fpdbStoreFilterBitmapWrapper.fpdbStoreSuperPOp_ = jObj["fpdbStoreSuperPOp"].get<std::string>();
 
   if (!jObj.contains("mirrorOp")) {
     return tl::make_unexpected(fmt::format("MirrorOp not specified in FPDBStoreFilterBitmapWrapper JSON '{}'", jObj));
   }
-  auto mirrorOp = jObj["mirrorOp"].get<std::string>();
+  fpdbStoreFilterBitmapWrapper.mirrorOp_ = jObj["mirrorOp"].get<std::string>();
 
   std::optional<std::vector<bool>> bitmap;
   if (jObj.contains("bitmap")) {
-    bitmap = jObj["bitmap"].get<std::vector<bool>>();
+    fpdbStoreFilterBitmapWrapper.bitmap_ = jObj["bitmap"].get<std::vector<bool>>();
   }
 
   if (!jObj.contains("isComputeSide")) {
     return tl::make_unexpected(fmt::format("IsComputeSide not specified in FPDBStoreFilterBitmapWrapper JSON '{}'", jObj));
   }
-  auto isComputeSide = jObj["isComputeSide"].get<bool>();
+  fpdbStoreFilterBitmapWrapper.isComputeSide_ = jObj["isComputeSide"].get<bool>();
 
   if (!jObj.contains("isBitmapSent")) {
     return tl::make_unexpected(fmt::format("IsBitmapSent not specified in FPDBStoreFilterBitmapWrapper JSON '{}'", jObj));
   }
-  auto isBitmapSent = jObj["isBitmapSent"].get<bool>();
+  fpdbStoreFilterBitmapWrapper.isBitmapSent_ = jObj["isBitmapSent"].get<bool>();
 
-  return FPDBStoreFilterBitmapWrapper{fpdbStoreSuperPOp, mirrorOp, bitmap, isComputeSide, isBitmapSent};
+  return fpdbStoreFilterBitmapWrapper;
 }
 
 }

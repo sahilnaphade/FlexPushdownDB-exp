@@ -226,6 +226,15 @@ void Execution::join() {
                 break;
               }
 
+              case MessageType::BITMAP: {
+                auto bitmapMessage = ((BitmapMessage &) msg);
+                auto bitmap = bitmapMessage.getBitmap();
+                if (bitmap.has_value()) {
+                  bitmaps_[bitmapMessage.sender()] = *bitmap;
+                }
+                break;
+              }
+
 #if SHOW_DEBUG_METRICS == true
               case MessageType::DEBUG_METRICS: {
                 auto debugMetricsMsg = ((DebugMetricsMessage &) msg);
@@ -327,6 +336,10 @@ void Execution::write_graph(const string &file) {
 
 long Execution::getQueryId() const {
   return queryId_;
+}
+
+const std::unordered_map<std::string, std::vector<bool>> &Execution::getBitmaps() {
+  return bitmaps_;
 }
 
 long Execution::getElapsedTime() {

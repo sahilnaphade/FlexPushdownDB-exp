@@ -89,7 +89,7 @@ void POpContext::send(const std::shared_ptr<message::Message> &msg, const std::s
  * Send a CompleteMessage to all consumers and the root actor
  */
 void POpContext::notifyComplete() {
-  SPDLOG_DEBUG("Completing operator  |  source: {} ('{}')", this->operatorActor()->id(), this->operatorActor()->operator_()->name());
+  SPDLOG_CRITICAL("Completing operator  |  source: {} ('{}')", this->operatorActor()->id(), this->operatorActor()->operator_()->name());
   if(complete_)
     notifyError(fmt::format("Cannot complete already completed operator {} ('{}')", this->operatorActor()->id(), this->operatorActor()->operator_()->name()));
 

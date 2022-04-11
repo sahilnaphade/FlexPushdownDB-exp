@@ -15,17 +15,19 @@ namespace fpdb::store::server::flight {
  */
 class SelectObjectContentTicket : public TicketObject {
 public:
-  SelectObjectContentTicket(std::string query_plan_string);
+  SelectObjectContentTicket(long query_id, std::string query_plan_string);
 
-  static std::shared_ptr<SelectObjectContentTicket> make(std::string query_plan_string);
+  static std::shared_ptr<SelectObjectContentTicket> make(long queryId, std::string query_plan_string);
 
-  [[nodiscard]] const std::string& query_plan_string() const;
+  long query_id() const;
+  const std::string& query_plan_string() const;
 
   tl::expected<std::string, std::string> serialize(bool pretty) override;
 
   static tl::expected<std::shared_ptr<SelectObjectContentTicket>, std::string> from_json(const nlohmann::json &jObj);
 
 private:
+  long query_id_;
   std::string query_plan_string_;
 };
 

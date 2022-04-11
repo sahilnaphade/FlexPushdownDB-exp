@@ -19,7 +19,7 @@ const std::string& CmdType::name() const {
 }
 
 std::shared_ptr<CmdType> CmdType::select_object_content() {
-  return std::make_shared<CmdType>(CmdTypeId::SelectObjectContent, SelectObjectCmdTypeName.data());
+  return std::make_shared<CmdType>(CmdTypeId::SelectObjectContent, SelectObjectContentCmdTypeName.data());
 }
 
 } // namespace fpdb::store::server::flight

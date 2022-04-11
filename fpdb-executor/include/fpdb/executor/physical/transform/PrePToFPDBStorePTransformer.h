@@ -6,6 +6,7 @@
 #define FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_TRANSFORM_PREPTOFPDBSTOREPTRANSFORMER_H
 
 #include <fpdb/executor/physical/PhysicalOp.h>
+#include <fpdb/executor/physical/fpdb-store/FPDBStoreSuperPOp.h>
 #include <fpdb/plan/prephysical/separable/SeparableSuperPrePOp.h>
 #include <fpdb/plan/prephysical/FilterableScanPrePOp.h>
 #include <fpdb/plan/prephysical/FilterPrePOp.h>
@@ -80,7 +81,7 @@ private:
   transformPushdownOnlyToHybrid(const vector<shared_ptr<PhysicalOp>> &fpdbStoreSuperPOps);
 
   void enableBitmapPushdown(const unordered_map<shared_ptr<PhysicalOp>, shared_ptr<PhysicalOp>> &storePOpToLocalPOp,
-                            const shared_ptr<PhysicalOp> &fpdbStoreSuperPOp);
+                            const shared_ptr<fpdb_store::FPDBStoreSuperPOp> &fpdbStoreSuperPOp);
 
   pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
   transformFilterableScan(const shared_ptr<FilterableScanPrePOp> &filterableScanPrePOp);

@@ -46,7 +46,9 @@ public:
   bool isBitmapPushdownEnabled();
   void enableBitmapPushdown(const std::string &fpdbStoreSuperPOp,
                             const std::string &mirrorOp,
-                            bool isComputeSide);
+                            bool isComputeSide,
+                            const std::string &host,
+                            int port);
   void setBitmap(const std::optional<std::vector<bool>> &bitmap);
 
   [[nodiscard]] size_t getFilterTimeNS() const;
@@ -91,6 +93,7 @@ private:
   void sendTuples();
   void sendSegmentWeight();
   void sendBitmap();
+  void fetchBitmapFromFPDBStore();
 
   void checkApplicability(const std::shared_ptr<fpdb::tuple::TupleSet>& tupleSet);
   bool isComputeSide();
@@ -137,7 +140,8 @@ public:
                                f.field("received", op.received_),
                                f.field("filtered", op.filtered_),
                                f.field("table", op.table_),
-                               f.field("weightedSegmentKeys", op.weightedSegmentKeys_));
+                               f.field("weightedSegmentKeys", op.weightedSegmentKeys_),
+                               f.field("bitmapWrapper", op.bitmapWrapper_));
   }
 };
 

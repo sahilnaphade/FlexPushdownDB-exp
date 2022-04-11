@@ -191,18 +191,39 @@ void CacheLoadPOp::onCacheLoadResponse(const LoadResponseMessage &message) {
   auto missCachingMessage = std::make_shared<ScanMessage>(missCachingColumnNames, this->name(), cachingColumnsNeeded);
   ctx()->send(missCachingMessage, *missOperatorToCacheName_);
 
-  // To missOperatorToPushdown, need to distinguish between S3 and fpdb-store
+  // To missOperatorToPushdown, need to distinguish between S3 and fpdb-store, and whether bitmap pushdown is enabled
   if (missOperatorToPushdownName_.has_value()) {
-    missPushdownColumnNames = cachingColumnsNeeded ?
-                              std::vector<std::string>(missPushdownProjectColumnNameSet.begin(),
-                                                       missPushdownProjectColumnNameSet.end()) :
-                              projectColumnNames_;
-    // Need to add predicateColumnNames for fpdb-store because we push query plan rather than sql
-    // not needed when bitmap pushdown is enabled
-    if ((*objStoreConnector_)->getStoreType() == ObjStoreType::FPDB_STORE
-      && !missPushdownColumnNames.empty()
-      && !isBitmapPushdownEnabled_) {
-      missPushdownColumnNames = union_(missPushdownColumnNames, predicateColumnNames_);
+    switch ((*objStoreConnector_)->getStoreType()) {
+      case ObjStoreType::S3: {
+        missPushdownColumnNames = cachingColumnsNeeded ?
+                                  std::vector<std::string>(missPushdownProjectColumnNameSet.begin(),
+                                                           missPushdownProjectColumnNameSet.end()) :
+                                  projectColumnNames_;
+        break;
+      }
+      case ObjStoreType::FPDB_STORE: {
+        if (!isBitmapPushdownEnabled_) {
+          missPushdownColumnNames = cachingColumnsNeeded ?
+                                    std::vector<std::string>(missPushdownProjectColumnNameSet.begin(),
+                                                             missPushdownProjectColumnNameSet.end()) :
+                                    projectColumnNames_;
+          // Need to add predicateColumnNames for fpdb-store because we push query plan rather than sql
+          if (!missPushdownColumnNames.empty()) {
+            missPushdownColumnNames = union_(missPushdownColumnNames, predicateColumnNames_);
+          }
+        } else {
+          missPushdownColumnNames = std::vector<std::string>(missPushdownProjectColumnNameSet.begin(),
+                                                             missPushdownProjectColumnNameSet.end());
+          // If bitmap cannot be constructed at compute side, need to add predicateColumnNames
+          if (!coverAllPredicateColumns) {
+            missPushdownColumnNames = union_(missPushdownColumnNames, predicateColumnNames_);
+          }
+        }
+        break;
+      }
+      default: {
+        ctx()->notifyError("Unknown object store type");
+      }
     }
 
     auto missPushdownMessage = std::make_shared<ScanMessage>(missPushdownColumnNames, this->name(), true);

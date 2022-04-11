@@ -8,12 +8,16 @@
 #include <fpdb/executor/message/CompleteMessage.h>
 #include <fpdb/executor/message/BitmapMessage.h>
 #include <fpdb/executor/message/cache/WeightRequestMessage.h>
+#include <fpdb/store/server/flight/GetBitmapTicket.hpp>
 #include <fpdb/expression/gandiva/BinaryExpression.h>
 #include <fpdb/tuple/Globals.h>
+#include <fpdb/tuple/serialization/ArrowSerializer.h>
 #include <fpdb/util/Util.h>
+#include <arrow/flight/api.h>
 #include <utility>
 
 using namespace fpdb::executor::physical::filter;
+using namespace fpdb::store::server::flight;
 using namespace fpdb::cache;
 using namespace fpdb::expression::gandiva;
 using namespace fpdb::util;
@@ -53,11 +57,15 @@ bool FilterPOp::isBitmapPushdownEnabled() {
 
 void FilterPOp::enableBitmapPushdown(const std::string &fpdbStoreSuperPOp,
                                      const std::string &mirrorOp,
-                                     bool isComputeSide) {
+                                     bool isComputeSide,
+                                     const std::string &host,
+                                     int port) {
   bitmapWrapper_ = FPDBStoreFilterBitmapWrapper{};
   bitmapWrapper_->fpdbStoreSuperPOp_ = fpdbStoreSuperPOp;
   bitmapWrapper_->mirrorOp_ = mirrorOp;
   bitmapWrapper_->isComputeSide_ = isComputeSide;
+  bitmapWrapper_->host_ = host;
+  bitmapWrapper_->port_ = port;
 }
 
 void FilterPOp::setBitmap(const std::optional<std::vector<bool>> &bitmap) {
@@ -195,7 +203,8 @@ void FilterPOp::onCompleteBitmapPushdown() {
       // if bitmap is set, it means compute side needs to send constructed bitmap to storage side
       sendBitmap();
     } else {
-      // TODO: fetch bitmap from storage side
+      // fetch bitmap from storage side
+      fetchBitmapFromFPDBStore();
 
       // filter using bitmap
       filterTuplesUsingBitmap();
@@ -210,7 +219,11 @@ void FilterPOp::onCompleteBitmapPushdown() {
     // complete
     ctx()->notifyComplete();
   } else {
-    // TODO: if at storage side, put bitmap to flight buffer
+    // if at storage side, put bitmap to flight buffer if bitmap is created during filtering instead of receiving
+    // from compute side
+    if (filter_.has_value()) {
+      sendBitmap();
+    }
 
     // complete
     ctx()->notifyComplete();
@@ -218,7 +231,7 @@ void FilterPOp::onCompleteBitmapPushdown() {
 }
 
 void FilterPOp::bufferReceived(const std::shared_ptr<fpdb::tuple::TupleSet>& tupleSet) {
-  if(!received_->valid()) {
+  if (!received_->valid()) {
     received_ = tupleSet;
   } else {
     auto result = received_->append(tupleSet);
@@ -230,7 +243,7 @@ void FilterPOp::bufferReceived(const std::shared_ptr<fpdb::tuple::TupleSet>& tup
 }
 
 void FilterPOp::bufferFiltered(const std::shared_ptr<fpdb::tuple::TupleSet>& tupleSet) {
-  if(!filtered_->valid()) {
+  if (!filtered_->valid()) {
     filtered_ = tupleSet;
   } else {
     auto result = filtered_->append(tupleSet);
@@ -497,9 +510,66 @@ void FilterPOp::sendBitmap() {
     std::shared_ptr<Message> bitmapMessage = std::make_shared<BitmapMessage>(bitmapWrapper_->bitmap_,
                                                                              bitmapWrapper_->mirrorOp_,
                                                                              this->name());
-    ctx()->send(bitmapMessage, bitmapWrapper_->fpdbStoreSuperPOp_);
+
+    // if at compute side, send bitmap to FPDBStoreSuperPOp
+    // otherwise, send bitmap to root actor to buffer at flight server
+    if (bitmapWrapper_->isComputeSide_) {
+      ctx()->send(bitmapMessage, bitmapWrapper_->fpdbStoreSuperPOp_);
+    } else {
+      ctx()->notifyRoot(bitmapMessage);
+    }
+
     bitmapWrapper_->isBitmapSent_ = true;
   }
+}
+
+void FilterPOp::fetchBitmapFromFPDBStore() {
+  if (!isBitmapPushdownEnabled()) {
+    ctx()->notifyError("Bitmap pushdown not enabled");
+  }
+
+  // make flight client and connect
+  arrow::flight::Location clientLocation;
+  auto status = arrow::flight::Location::ForGrpcTcp(bitmapWrapper_->host_, bitmapWrapper_->port_, &clientLocation);
+  if (!status.ok()) {
+    ctx()->notifyError(status.message());
+  }
+
+  arrow::flight::FlightClientOptions clientOptions = arrow::flight::FlightClientOptions::Defaults();
+  std::unique_ptr<arrow::flight::FlightClient> client;
+  status = arrow::flight::FlightClient::Connect(clientLocation, clientOptions, &client);
+  if (!status.ok()) {
+    ctx()->notifyError(status.message());
+  }
+
+  // send request to store
+  auto ticketObj = GetBitmapTicket::make(queryId_, bitmapWrapper_->mirrorOp_);
+  auto expTicket = ticketObj->to_ticket(false);
+  if (!expTicket.has_value()) {
+    ctx()->notifyError(expTicket.error());
+  }
+
+  std::unique_ptr<::arrow::flight::FlightStreamReader> reader;
+  status = client->DoGet(*expTicket, &reader);
+  if (!status.ok()) {
+    ctx()->notifyError(status.message());
+  }
+
+  arrow::RecordBatchVector recordBatches;
+  status = reader->ReadAll(&recordBatches);
+  if (!status.ok()) {
+    ctx()->notifyError(status.message());
+  }
+  if (recordBatches.size() != 1) {
+    ctx()->notifyError("Bitmap recordBatch stream should only contain one recordBatch");
+  }
+
+  // get bitmap
+  auto expBitmap = ArrowSerializer::recordBatch_to_bitmap(recordBatches[0]);
+  if (!expBitmap.has_value()) {
+    ctx()->notifyError(expBitmap.error());
+  }
+  bitmapWrapper_->bitmap_ = *expBitmap;
 }
 
 void FilterPOp::checkApplicability(const std::shared_ptr<fpdb::tuple::TupleSet>& tupleSet) {

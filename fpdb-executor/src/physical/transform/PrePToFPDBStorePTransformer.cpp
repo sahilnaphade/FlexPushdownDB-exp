@@ -8,7 +8,6 @@
 #include <fpdb/executor/physical/prune/PartitionPruner.h>
 #include <fpdb/executor/physical/file/RemoteFileScanPOp.h>
 #include <fpdb/executor/physical/fpdb-store/FPDBStoreFileScanPOp.h>
-#include <fpdb/executor/physical/fpdb-store/FPDBStoreSuperPOp.h>
 #include <fpdb/executor/physical/fpdb-store/FPDBStoreSuperPOpUtil.h>
 #include <fpdb/executor/physical/project/ProjectPOp.h>
 #include <fpdb/executor/physical/filter/FilterPOp.h>
@@ -230,8 +229,9 @@ PrePToFPDBStorePTransformer::transformPushdownOnlyToHybrid(const vector<shared_p
     typedFPDBStoreSuperPOp->setWaitForScanMessage(true);
 
     unordered_map<shared_ptr<PhysicalOp>, shared_ptr<PhysicalOp>> storePOpToLocalPOp;
-    const auto &storePOpMap = typedFPDBStoreSuperPOp->getSubPlan()->getPhysicalOps();
+    unordered_map<string, shared_ptr<PhysicalOp>> storePOpMap = typedFPDBStoreSuperPOp->getSubPlan()->getPhysicalOps();
     unordered_map<string, shared_ptr<PhysicalOp>> localPOpMap;
+    unordered_map<string, string> storePOpRenames;
     optional<shared_ptr<merge::MergePOp>> mergePOp1, mergePOp2;
 
     // get predicateColumnNames needed for hybrid execution, this may be different for some fpdbStoreSuperPOps
@@ -347,8 +347,7 @@ PrePToFPDBStorePTransformer::transformPushdownOnlyToHybrid(const vector<shared_p
         localPOp->clearConnections();
         localPOp->setName(fmt::format("{}-separated(local)", localPOp->name()));
         localPOp->setSeparated(true);
-        typedFPDBStoreSuperPOp->getSubPlan()->renamePOp(storePOp->name(),
-                                                        fmt::format("{}-separated(fpdb-store)", storePOp->name()));
+        storePOpRenames.emplace(storePOp->name(), fmt::format("{}-separated(fpdb-store)", storePOp->name()));
         storePOp->setSeparated(true);
       }
 
@@ -413,9 +412,14 @@ PrePToFPDBStorePTransformer::transformPushdownOnlyToHybrid(const vector<shared_p
     (*mergePOp2)->setRightProducer(fpdbStoreSuperPOp);
     fpdbStoreSuperPOp->produce(*mergePOp2);
 
+    // rename store ops
+    for (const auto &renameIt: storePOpRenames) {
+      typedFPDBStoreSuperPOp->getSubPlan()->renamePOp(renameIt.first, renameIt.second);
+    }
+
     // enable bitmap pushdown if required
     if (StoreTransformTraits::FPDBStoreStoreTransformTraits()->isBitmapPushdownEnabled()) {
-      enableBitmapPushdown(storePOpToLocalPOp, fpdbStoreSuperPOp);
+      enableBitmapPushdown(storePOpToLocalPOp, typedFPDBStoreSuperPOp);
     }
   }
 
@@ -424,7 +428,7 @@ PrePToFPDBStorePTransformer::transformPushdownOnlyToHybrid(const vector<shared_p
 
 void PrePToFPDBStorePTransformer::enableBitmapPushdown(
         const unordered_map<shared_ptr<PhysicalOp>, shared_ptr<PhysicalOp>> &storePOpToLocalPOp,
-        const shared_ptr<PhysicalOp> &fpdbStoreSuperPOp) {
+        const shared_ptr<fpdb_store::FPDBStoreSuperPOp> &fpdbStoreSuperPOp) {
   for (const auto &storeToLocalIt: storePOpToLocalPOp) {
     auto storePOp = storeToLocalIt.first;
     auto localPOp = storeToLocalIt.second;
@@ -438,8 +442,10 @@ void PrePToFPDBStorePTransformer::enableBitmapPushdown(
       case FILTER: {
         auto typedLocalPOp = static_pointer_cast<filter::FilterPOp>(localPOp);
         auto typedStorePOp = static_pointer_cast<filter::FilterPOp>(storePOp);
-        typedLocalPOp->enableBitmapPushdown(fpdbStoreSuperPOp->name(), typedStorePOp->name(), true);
-        typedStorePOp->enableBitmapPushdown(fpdbStoreSuperPOp->name(), typedLocalPOp->name(), false);
+        typedLocalPOp->enableBitmapPushdown(fpdbStoreSuperPOp->name(), typedStorePOp->name(), true,
+                                            fpdbStoreSuperPOp->getHost(), fpdbStoreSuperPOp->getPort());
+        typedStorePOp->enableBitmapPushdown(fpdbStoreSuperPOp->name(), typedLocalPOp->name(), false,
+                                            fpdbStoreSuperPOp->getHost(), fpdbStoreSuperPOp->getPort());
         typedLocalPOp->produce(fpdbStoreSuperPOp);
         fpdbStoreSuperPOp->consume(typedLocalPOp);
         break;

@@ -8,17 +8,22 @@
 #include <arrow/api.h>
 #include <arrow/flight/api.h>
 #include <tl/expected.hpp>
+#include "mutex"
+#include "condition_variable"
 
 #include "fpdb/store/server/flight/SelectObjectContentCmd.hpp"
 #include "fpdb/store/server/flight/SelectObjectContentTicket.hpp"
 #include "fpdb/store/server/flight/GetObjectTicket.hpp"
+#include "fpdb/store/server/flight/GetBitmapTicket.hpp"
 #include "fpdb/store/server/flight/HeaderMiddleware.hpp"
 #include "fpdb/store/server/flight/TicketObject.hpp"
 #include "fpdb/store/server/caf/ActorManager.hpp"
+#include "fpdb/store/server/cache/BitmapCache.hpp"
+
+using namespace fpdb::store::server::cache;
+using namespace ::arrow::flight;
 
 namespace fpdb::store::server::flight {
-
-using namespace ::arrow::flight;
 
 class FlightHandler : FlightServerBase {
 
@@ -178,9 +183,26 @@ private:
   do_get_select_object_content(const ServerCallContext& context,
                                const std::shared_ptr<SelectObjectContentTicket>& select_object_content_ticket);
 
+  /**
+   *
+   * @param context
+   * @param get_bitmap_ticket
+   * @return
+   */
+  tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status>
+  do_get_get_bitmap(const ServerCallContext& context,
+                    const std::shared_ptr<GetBitmapTicket>& get_bitmap_ticket);
+
+  std::vector<bool> do_get_get_bitmap_from_bitmap_cache(const std::string &key);
+
   ::arrow::flight::Location location_;
   std::string store_root_path_;
   std::shared_ptr<::caf::actor_system> actor_system_;
+
+  // for bitmap constructed during execution
+  std::shared_ptr<BitmapCache> bitmap_cache_;
+  std::mutex get_bitmap_mutex_;
+  std::condition_variable_any get_bitmap_cv_;
 };
 
 } // namespace fpdb::store::server::flight

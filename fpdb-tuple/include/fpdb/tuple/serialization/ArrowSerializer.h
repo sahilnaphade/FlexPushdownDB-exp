@@ -7,6 +7,7 @@
 
 #include <caf/all.hpp>
 #include <arrow/api.h>
+#include <tl/expected.hpp>
 
 namespace fpdb::tuple {
 
@@ -51,6 +52,16 @@ public:
    */
   static std::shared_ptr<arrow::DataType> bytes_to_dataType(const std::vector<std::uint8_t>& bytes_vec);
   static std::vector<std::uint8_t> dataType_to_bytes(const std::shared_ptr<arrow::DataType>& dataType);
+
+  /**
+   * Transformation between bitmap and recordBatch
+   */
+  static constexpr std::string_view BITMAP_FIELD_NAME = "bitmap";
+  static tl::expected<std::shared_ptr<arrow::RecordBatch>, std::string>
+  bitmap_to_recordBatch(const std::vector<bool> &bitmap);
+  static tl::expected<std::vector<bool>, std::string>
+  recordBatch_to_bitmap(const std::shared_ptr<arrow::RecordBatch> &recordBatch);
+
 };
 
 }

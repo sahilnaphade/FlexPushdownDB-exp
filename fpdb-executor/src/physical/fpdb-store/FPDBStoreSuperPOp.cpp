@@ -56,6 +56,14 @@ const std::shared_ptr<PhysicalPlan> &FPDBStoreSuperPOp::getSubPlan() const {
   return subPlan_;
 }
 
+const std::string &FPDBStoreSuperPOp::getHost() const {
+  return host_;
+}
+
+int FPDBStoreSuperPOp::getPort() const {
+  return port_;
+}
+
 void FPDBStoreSuperPOp::setWaitForScanMessage(bool waitForScanMessage) {
   waitForScanMessage_ = waitForScanMessage;
 }
@@ -211,7 +219,7 @@ void FPDBStoreSuperPOp::processAtStore() {
   if (!expPlanString.has_value()) {
     ctx()->notifyError(expPlanString.error());
   }
-  auto ticketObj = SelectObjectContentTicket::make(*expPlanString);
+  auto ticketObj = SelectObjectContentTicket::make(queryId_, *expPlanString);
   auto expTicket = ticketObj->to_ticket(false);
   if (!expTicket.has_value()) {
     ctx()->notifyError(expTicket.error());

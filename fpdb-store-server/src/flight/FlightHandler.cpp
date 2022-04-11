@@ -23,7 +23,8 @@ FlightHandler::FlightHandler(Location location,
                              std::shared_ptr<::caf::actor_system> actor_system) :
   location_(std::move(location)),
   store_root_path_(std::move(store_root_path)),
-  actor_system_(std::move(actor_system)) {}
+  actor_system_(std::move(actor_system)),
+  bitmap_cache_(std::make_shared<BitmapCache>()) {}
 
 FlightHandler::~FlightHandler() {
   this->shutdown();
@@ -204,7 +205,8 @@ tl::expected<std::unique_ptr<FlightInfo>, ::arrow::Status> FlightHandler::get_fl
   const std::shared_ptr<SelectObjectContentCmd>& select_object_content_cmd) {
 
   // Create the ticket
-  auto ticket_object = SelectObjectContentTicket::make(select_object_content_cmd->query_plan_string());
+  auto ticket_object = SelectObjectContentTicket::make(0,
+                                                       select_object_content_cmd->query_plan_string());
   auto exp_ticket = ticket_object->to_ticket(false);
   if (!exp_ticket.has_value()) {
     return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed, exp_ticket.error()));
@@ -230,27 +232,31 @@ tl::expected<std::unique_ptr<FlightInfo>, ::arrow::Status> FlightHandler::get_fl
 tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::do_get(const ServerCallContext& context,
                                                                                        const Ticket& request) {
 
-    auto expected_ticket_object = TicketObject::deserialize(request);
-    if(!expected_ticket_object.has_value()) {
-      return tl::make_unexpected(
-              MakeFlightError(FlightStatusCode::Failed, fmt::format("Cannot parse Flight Ticket '{}'", request.ticket)));
-    }
-    auto ticket_object = expected_ticket_object.value();
-
-    switch(ticket_object->type()->id()) {
-      case TicketTypeId::GetObject: {
-        auto get_object_ticket = std::static_pointer_cast<GetObjectTicket>(ticket_object);
-        return do_get_get_object(context, get_object_ticket);
-      }
-      case TicketTypeId::SelectObjectContent: {
-        auto select_object_content_ticket = std::static_pointer_cast<SelectObjectContentTicket>(ticket_object);
-        return do_get_select_object_content(context, select_object_content_ticket);
-      }
-    }
-
-    return tl::make_unexpected(MakeFlightError(
-            FlightStatusCode::Failed, fmt::format("Unrecognized Flight Ticket type '{}'", ticket_object->type()->name())));
+  auto expected_ticket_object = TicketObject::deserialize(request);
+  if(!expected_ticket_object.has_value()) {
+    return tl::make_unexpected(
+            MakeFlightError(FlightStatusCode::Failed, fmt::format("Cannot parse Flight Ticket '{}'", request.ticket)));
   }
+  auto ticket_object = expected_ticket_object.value();
+
+  switch(ticket_object->type()->id()) {
+    case TicketTypeId::GET_OBJECT: {
+      auto get_object_ticket = std::static_pointer_cast<GetObjectTicket>(ticket_object);
+      return do_get_get_object(context, get_object_ticket);
+    }
+    case TicketTypeId::SELECT_OBJECT_CONTENT: {
+      auto select_object_content_ticket = std::static_pointer_cast<SelectObjectContentTicket>(ticket_object);
+      return do_get_select_object_content(context, select_object_content_ticket);
+    }
+    case TicketTypeId::GET_BITMAP: {
+      auto get_bitmap_ticket = std::static_pointer_cast<GetBitmapTicket>(ticket_object);
+      return do_get_get_bitmap(context, get_bitmap_ticket);
+    }
+  }
+
+  return tl::make_unexpected(MakeFlightError(
+          FlightStatusCode::Failed, fmt::format("Unrecognized Flight Ticket type '{}'", ticket_object->type()->name())));
+}
 
 tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status>
 FlightHandler::do_get_get_object(const ServerCallContext& context,
@@ -277,6 +283,9 @@ FlightHandler::do_get_get_object(const ServerCallContext& context,
 tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::do_get_select_object_content(
   const ServerCallContext& context, const std::shared_ptr<SelectObjectContentTicket>& select_object_content_ticket) {
 
+  // query id
+  auto query_id = select_object_content_ticket->query_id();
+
   // deserialize the query plan
   auto exp_physical_plan = PhysicalPlanDeserializer::deserialize(select_object_content_ticket->query_plan_string(),
                                                                  store_root_path_);
@@ -285,16 +294,24 @@ tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::
   }
 
   // execute the query plan
-  auto execution = std::make_shared<fpdb::executor::Execution>(0,
+  auto execution = std::make_shared<fpdb::executor::Execution>(query_id,
                                                                actor_system_,
                                                                std::vector<::caf::node_id>{},
                                                                nullptr,
                                                                *exp_physical_plan,
                                                                false);
 
+  // get query result
   auto table = execution->execute()->table();
 
-  // make record batch stream, need to specially handle when numRows = 0
+  // buffer bitmaps
+  for (const auto &bitmapIt: execution->getBitmaps()) {
+    auto key = BitmapCache::generateKey(query_id, bitmapIt.first);
+    bitmap_cache_->produceBitmap(key, bitmapIt.second);
+    get_bitmap_cv_.notify_all();
+  }
+
+  // make record batch stream, need to specially handle when num_rows = 0
   ::arrow::RecordBatchVector batches;
 
   if (table->num_rows() > 0) {
@@ -320,6 +337,36 @@ tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::
 
   auto rb_reader = ::arrow::RecordBatchReader::Make(batches);
   return std::make_unique<::arrow::flight::RecordBatchStream>(*rb_reader);
+}
+
+tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::do_get_get_bitmap(
+        const ServerCallContext& context,const std::shared_ptr<GetBitmapTicket>& get_bitmap_ticket) {
+
+  // get bitmap from bitmap cache
+  auto query_id = get_bitmap_ticket->query_id();
+  auto op = get_bitmap_ticket->op();
+  auto key = BitmapCache::generateKey(query_id, op);
+  auto bitmap = do_get_get_bitmap_from_bitmap_cache(key);
+
+  // make recordBatch from bitmap
+  auto exp_record_batch = ArrowSerializer::bitmap_to_recordBatch(bitmap);
+  if (!exp_record_batch .has_value()) {
+    return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed, exp_record_batch .error()));
+  }
+
+  // make flightDataStream
+  auto rb_reader = ::arrow::RecordBatchReader::Make({*exp_record_batch });
+  return std::make_unique<::arrow::flight::RecordBatchStream>(*rb_reader);
+}
+
+std::vector<bool> FlightHandler::do_get_get_bitmap_from_bitmap_cache(const std::string &key) {
+  auto exp_bitmap = bitmap_cache_->consumeBitmap(key);
+  std::unique_lock lock(get_bitmap_mutex_);
+  get_bitmap_cv_.wait(lock, [&] {
+    exp_bitmap = bitmap_cache_->consumeBitmap(key);
+    return exp_bitmap.has_value();
+  });
+  return *exp_bitmap;
 }
 
 } // namespace fpdb::store::server::flight

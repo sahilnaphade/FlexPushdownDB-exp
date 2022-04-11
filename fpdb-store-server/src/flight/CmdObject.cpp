@@ -22,10 +22,10 @@ tl::expected<std::shared_ptr<CmdObject>, std::string> CmdObject::deserialize(con
   }
   auto type = document[TypeJSONName.data()].get<std::string>();
 
-  if (type == SelectObjectCmdTypeName.data()) {
+  if (type == SelectObjectContentCmdTypeName.data()) {
     return SelectObjectContentCmd::from_json(document);
   } else {
-    return tl::make_unexpected(fmt::format("Unsupported Ticket object type: '{}'", type));
+    return tl::make_unexpected(fmt::format("Unsupported cmd object type: '{}'", type));
   }
 }
 

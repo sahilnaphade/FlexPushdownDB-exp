@@ -5,9 +5,9 @@
 #include <fmt/format.h>
 #include <nlohmann/json.hpp>
 
-#include "fpdb/store/server/flight/TicketObject.hpp"
 #include "fpdb/store/server/flight/GetObjectTicket.hpp"
 #include "fpdb/store/server/flight/SelectObjectContentTicket.hpp"
+#include "fpdb/store/server/flight/GetBitmapTicket.hpp"
 #include "fpdb/store/server/flight/Util.hpp"
 
 namespace fpdb::store::server::flight {
@@ -40,8 +40,10 @@ tl::expected<std::shared_ptr<TicketObject>, std::string> TicketObject::deseriali
 
   if (type == GetObjectTicketTypeName.data()) {
     return GetObjectTicket::from_json(document);
-  } else if (type == SelectObjectContentTypeName.data()) {
+  } else if (type == SelectObjectContentTicketTypeName.data()) {
     return SelectObjectContentTicket::from_json(document);
+  } else if (type == GetBitmapTicketTypeName.data()) {
+    return GetBitmapTicket::from_json(document);
   } else {
     return tl::make_unexpected(fmt::format("Unsupported Ticket object type: '{}'", type));
   }
