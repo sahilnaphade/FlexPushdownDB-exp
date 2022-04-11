@@ -360,7 +360,7 @@ tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::
 }
 
 std::vector<bool> FlightHandler::do_get_get_bitmap_from_bitmap_cache(const std::string &key) {
-  auto exp_bitmap = bitmap_cache_->consumeBitmap(key);
+  tl::expected<std::vector<bool>, std::string> exp_bitmap;
   std::unique_lock lock(get_bitmap_mutex_);
   get_bitmap_cv_.wait(lock, [&] {
     exp_bitmap = bitmap_cache_->consumeBitmap(key);
