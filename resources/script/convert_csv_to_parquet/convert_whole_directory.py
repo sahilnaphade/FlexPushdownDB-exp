@@ -5,7 +5,7 @@
 
 import sys
 import os
-import threading
+from multiprocessing import Process
 
 
 def run_command(cmd):
@@ -30,7 +30,7 @@ root_files = os.listdir(csv_path)
 os.system("rm -rf " + parquet_path)
 os.system("mkdir -p " + parquet_path)
 
-threads = []
+procs = []
 
 for table in tables:
     schema_format_file_path = "{}/{}{}".format(schema_format_path, table, schema_format_file_suffix)
@@ -44,9 +44,9 @@ for table in tables:
                                               parquet_file_path,
                                               'uncompressed',
                                               schema_format_file_path)
-        t = threading.Thread(target=run_command, args=(convert_cmd,))
-        t.start()
-        threads.append(t)
+        p = Process(target=run_command, args=(convert_cmd,))
+        procs.append(p)
+        p.start()
 
     else:
         csv_partitions_folder = "{}/{}{}".format(csv_path, table, partition_folder_prefix)
@@ -62,9 +62,9 @@ for table in tables:
                                                   parquet_partition_file_path,
                                                   'uncompressed',
                                                   schema_format_file_path)
-            t = threading.Thread(target=run_command, args=(convert_cmd,))
-            t.start()
-            threads.append(t)
+            p = Process(target=run_command, args=(convert_cmd,))
+            procs.append(p)
+            p.start()
 
-for t in threads:
-    t.join()
+for p in procs:
+    p.join()

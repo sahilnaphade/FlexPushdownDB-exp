@@ -6,7 +6,7 @@
 import os
 import platform
 import math
-import threading
+from multiprocessing import Process
 
 # configurable parameters
 sf = 0.01
@@ -41,12 +41,6 @@ def format_data_for_table(table, column_names, num_partitions):
     partition_file_prefix = table_file + "."
     partition_dir = table + "_sharded"
 
-    # remove '|' at the end of each row
-    if platform.system() == "Darwin":
-        os.system('sed -i \'\' \'s/.$//\' {}'.format(table_file))
-    else:
-        os.system('sed -i \'s/.$//\' {}'.format(table_file))
-
     # split table file if it has multiple partitions
     if num_partitions > 1:
         # get num of lines
@@ -61,22 +55,40 @@ def format_data_for_table(table, column_names, num_partitions):
                                                    table_file,
                                                    partition_file_prefix))
 
-        # remove leading 0s in the suffix of partitions and add column names
-        threads = []
+        # remove leading 0s in the suffix of partitions
+        partition_files = []
         for i in range(num_partitions):
             old_name = partition_file_prefix + str(i).zfill(num_digits_suffix)
             new_name = partition_file_prefix + str(i)
             os.system('mv {} {} 2>/dev/null'.format(old_name, new_name))
+            partition_files.append(new_name)
 
+        # remove '|' at the end of each row
+        procs = []
+        print("start")
+        for partition_file in partition_files:
             if platform.system() == "Darwin":
-                cmd_add_column_names = 'sed -i \'\' \'1s/^/{}\\\'$\'\\n/\' {}'.format(column_names, new_name)
+                cmd_remove_end = 'sed -i \'\' \'s/.$//\' {}'.format(partition_file)
             else:
-                cmd_add_column_names = 'sed -i \'1i {}\' {}'.format(column_names, new_name)
-            t = threading.Thread(target=run_command, args=(cmd_add_column_names,))
-            t.start()
-            threads.append(t)
-        for t in threads:
-            t.join()
+                cmd_remove_end = 'sed -i \'s/.$//\' {}'.format(partition_file)
+            p = Process(target=run_command, args=(cmd_remove_end,))
+            procs.append(p)
+            p.start()
+        for p in procs:
+            p.join()
+
+        # add column names
+        procs = []
+        for partition_file in partition_files:
+            if platform.system() == "Darwin":
+                cmd_add_column_names = 'sed -i \'\' \'1s/^/{}\\\'$\'\\n/\' {}'.format(column_names, partition_file)
+            else:
+                cmd_add_column_names = 'sed -i \'1i {}\' {}'.format(column_names, partition_file)
+            p = Process(target=run_command, args=(cmd_add_column_names,))
+            procs.append(p)
+            p.start()
+        for p in procs:
+            p.join()
 
         # move partitions into the directory
         os.system('mkdir {}'.format(partition_dir))
@@ -86,6 +98,12 @@ def format_data_for_table(table, column_names, num_partitions):
         os.system('mv {} {}'.format(partition_dir, data_dir))
 
     else:
+        # remove '|' at the end of each row
+        if platform.system() == "Darwin":
+            os.system('sed -i \'\' \'s/.$//\' {}'.format(table_file))
+        else:
+            os.system('sed -i \'s/.$//\' {}'.format(table_file))
+
         # add column names
         if platform.system() == "Darwin":
             os.system('sed -i \'\' \'1s/^/{}\\\'$\'\\n/\' {}'.format(column_names, table_file))

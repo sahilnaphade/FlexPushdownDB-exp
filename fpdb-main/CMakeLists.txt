@@ -51,7 +51,8 @@ add_executable(fpdb-main-test
         test/BytesReadTest.cpp
         test/CachingOnlyTest.cpp
         test/HybridTest.cpp
-        test/BitmapPushdownTest.cpp)
+        test/BitmapPushdownTest.cpp
+        test/BitmapPushdownBench.cpp)
 
 target_link_libraries(fpdb-main-test PRIVATE fpdb-main)
 target_link_libraries(fpdb-main-test PRIVATE doctest::doctest)
