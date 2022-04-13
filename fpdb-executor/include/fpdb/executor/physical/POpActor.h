@@ -30,6 +30,7 @@ public:
 
   std::shared_ptr<PhysicalOp> operator_() const;
   ::caf::behavior make_behavior() override;
+  void on_regular_message(const fpdb::executor::message::Envelope &msg);
   void on_exit() override;
   const char* name() const override {
     return name_.c_str();
@@ -39,8 +40,7 @@ public:
   void incrementProcessingTime(long time);
   bool running_ = false;
   std::string name_;
-  std::queue<std::pair<::caf::message, ::caf::strong_actor_ptr>> buffer_;
-  std::optional<::caf::strong_actor_ptr> overriddenMessageSender_;
+  std::queue<fpdb::executor::message::Envelope> messageBuffer_;
 
 private:
   std::shared_ptr<PhysicalOp> opBehaviour_;

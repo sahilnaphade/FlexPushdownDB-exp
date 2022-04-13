@@ -62,14 +62,11 @@ POpActor::POpActor(::caf::actor_config &cfg, std::shared_ptr<PhysicalOp> opBehav
 
 		  self->operator_()->onReceive(msg);
 
-		  while(!self->buffer_.empty()){
-			auto item = self->buffer_.front();
-			self->overriddenMessageSender_ = item.second;
-			self->call_handler(self->current_behavior(), item.first);
-			self->buffer_.pop();
+      while (!self->messageBuffer_.empty()){
+        const auto &bufferedMsg = self->messageBuffer_.front();
+        self->on_regular_message(bufferedMsg);
+        self->messageBuffer_.pop();
 		  }
-
-		  self->overriddenMessageSender_ = std::nullopt;
 
 		} else if (msg.message().type() == MessageType::STOP) {
 		  self->running_ = false;
@@ -77,19 +74,11 @@ POpActor::POpActor(::caf::actor_config &cfg, std::shared_ptr<PhysicalOp> opBehav
 		  self->operator_()->onReceive(msg);
 		}
 		else{
-		  if(!self->running_){
-			self->buffer_.emplace(self->current_mailbox_element()->content(), self->current_sender());
+		  if (!self->running_){
+			  self->messageBuffer_.emplace(msg);
 		  }
 		  else {
-			if (msg.message().type() == MessageType::COMPLETE) {
-			  auto completeMessage = dynamic_cast<const message::CompleteMessage &>(msg.message());
-			  auto result = self->operator_()->ctx()->operatorMap().setComplete(msg.message().sender());
-        if (!result.has_value()) {
-          return self->operator_()->ctx()->notifyError(result.error());
-        }
-			}
-
-			self->operator_()->onReceive(msg);
+        self->on_regular_message(msg);
 		  }
 		}
 
@@ -98,6 +87,18 @@ POpActor::POpActor(::caf::actor_config &cfg, std::shared_ptr<PhysicalOp> opBehav
 		self->incrementProcessingTime(elapsedTime);
 	  }
   };
+}
+
+void POpActor::on_regular_message(const fpdb::executor::message::Envelope &msg) {
+  if (msg.message().type() == MessageType::COMPLETE) {
+    auto completeMessage = dynamic_cast<const message::CompleteMessage &>(msg.message());
+    auto result = opBehaviour_->ctx()->operatorMap().setComplete(msg.message().sender());
+    if (!result.has_value()) {
+      opBehaviour_->ctx()->notifyError(result.error());
+    }
+  }
+
+  opBehaviour_->onReceive(msg);
 }
 
 ::caf::behavior POpActor::make_behavior() {
