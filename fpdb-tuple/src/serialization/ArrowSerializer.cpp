@@ -312,7 +312,7 @@ ArrowSerializer::recordBatch_to_bitmap(const std::shared_ptr<arrow::RecordBatch>
   }
   auto typedBitmapArray = std::static_pointer_cast<arrow::Int64Array>(bitmapArray);
 
-  auto bitmapData = typedBitmapArray->data()->GetValuesSafe<int64_t>(1, typedBitmapArray->offset());
+  auto bitmapData = typedBitmapArray->data()->GetValues<int64_t>(1, typedBitmapArray->offset());
   return std::vector<int64_t>(bitmapData, bitmapData + typedBitmapArray->length());
 }
 

@@ -6,8 +6,7 @@
 #define FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_POPACTOR_H
 
 #include <fpdb/executor/physical/PhysicalOp.h>
-#include <fpdb/executor/message/Message.h>
-#include <fpdb/executor/message/StartMessage.h>
+#include <fpdb/executor/message/Envelope.h>
 #include <fpdb/executor/caf-serialization/CAFMessageSerializer.h>
 #include <fpdb/executor/physical/Forward.h>
 #include <fpdb/caf/CAFUtil.h>

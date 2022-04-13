@@ -3,7 +3,7 @@
 //
 
 #include <fpdb/executor/physical/POpActor.h>
-#include <fpdb/executor/message/Envelope.h>
+#include <fpdb/executor/message/StartMessage.h>
 #include <fpdb/executor/message/ConnectMessage.h>
 #include <fpdb/executor/message/CompleteMessage.h>
 #include <spdlog/spdlog.h>
