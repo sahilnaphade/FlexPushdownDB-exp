@@ -49,7 +49,7 @@ public:
                             bool isComputeSide,
                             const std::string &host,
                             int port);
-  void setBitmap(const std::optional<std::vector<bool>> &bitmap);
+  void setBitmap(const std::optional<std::vector<int64_t>> &bitmap);
 
   [[nodiscard]] size_t getFilterTimeNS() const;
   [[nodiscard]] size_t getFilterInputBytes() const;

@@ -11,7 +11,7 @@ std::string BitmapCache::generateKey(long queryId, const std::string &op) {
   return fmt::format("{}-{}", std::to_string(queryId), op);
 }
 
-tl::expected<std::vector<bool>, std::string> BitmapCache::consumeBitmap(const std::string &key) {
+tl::expected<std::vector<int64_t>, std::string> BitmapCache::consumeBitmap(const std::string &key) {
   std::unique_lock lock(mutex_);
 
   auto bitmapIt = bitmaps_.find(key);
@@ -24,7 +24,7 @@ tl::expected<std::vector<bool>, std::string> BitmapCache::consumeBitmap(const st
   }
 }
 
-void BitmapCache::produceBitmap(const std::string &key, const std::vector<bool> &bitmap) {
+void BitmapCache::produceBitmap(const std::string &key, const std::vector<int64_t> &bitmap) {
   std::unique_lock lock(mutex_);
 
   bitmaps_[key] = bitmap;

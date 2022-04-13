@@ -338,7 +338,7 @@ long Execution::getQueryId() const {
   return queryId_;
 }
 
-const std::unordered_map<std::string, std::vector<bool>> &Execution::getBitmaps() {
+const std::unordered_map<std::string, std::vector<int64_t>> &Execution::getBitmaps() {
   return bitmaps_;
 }
 

@@ -108,6 +108,18 @@ size_t fpdb::util::hashCombine(const vector<size_t> &hashes) {
   return seed;
 }
 
+void fpdb::util::setBit(vector<int64_t> &bitmap, int64_t n) {
+  bitmap[n / 64] |= 1UL << (n % 64);
+}
+
+void fpdb::util::unsetBit(vector<int64_t> &bitmap, int64_t n) {
+  bitmap[n / 64] &= ~(1UL << (n % 64));
+}
+
+bool fpdb::util::getBit(const vector<int64_t> &bitmap, int64_t n) {
+  return (bitmap[n / 64] >> (n % 64)) & 1UL;
+}
+
 bool fpdb::util::isInteger(const string& str) {
   try {
     int parsedInt = stoi(str);

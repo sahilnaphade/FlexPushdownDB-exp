@@ -85,6 +85,13 @@ namespace fpdb::util {
   size_t hashCombine(const vector<size_t> &hashes);
 
   /**
+   * Bitmap util
+   */
+  void setBit(vector<int64_t> &bitmap, int64_t n);
+  void unsetBit(vector<int64_t> &bitmap, int64_t n);
+  bool getBit(const vector<int64_t> &bitmap, int64_t n);
+
+  /**
    * Given a start and finish number, will create pairs of numbers from start to finish (inclusive)
    * evenly split across the number of ranges given.
    *

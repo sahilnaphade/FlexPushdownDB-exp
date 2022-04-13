@@ -24,11 +24,11 @@ public:
 
   static std::string generateKey(long queryId, const std::string &op);
 
-  tl::expected<std::vector<bool>, std::string> consumeBitmap(const std::string &key);
-  void produceBitmap(const std::string &key, const std::vector<bool> &bitmap);
+  tl::expected<std::vector<int64_t>, std::string> consumeBitmap(const std::string &key);
+  void produceBitmap(const std::string &key, const std::vector<int64_t> &bitmap);
 
 private:
-  std::unordered_map<std::string, std::vector<bool>> bitmaps_;
+  std::unordered_map<std::string, std::vector<int64_t>> bitmaps_;
   std::shared_mutex mutex_;
 
 };

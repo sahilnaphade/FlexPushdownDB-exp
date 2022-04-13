@@ -58,8 +58,8 @@ public:
    */
   static constexpr std::string_view BITMAP_FIELD_NAME = "bitmap";
   static tl::expected<std::shared_ptr<arrow::RecordBatch>, std::string>
-  bitmap_to_recordBatch(const std::vector<bool> &bitmap);
-  static tl::expected<std::vector<bool>, std::string>
+  bitmap_to_recordBatch(const std::vector<int64_t> &bitmap);
+  static tl::expected<std::vector<int64_t>, std::string>
   recordBatch_to_bitmap(const std::shared_ptr<arrow::RecordBatch> &recordBatch);
 
 };

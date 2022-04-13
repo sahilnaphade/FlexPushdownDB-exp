@@ -281,9 +281,9 @@ std::vector<std::uint8_t> ArrowSerializer::dataType_to_bytes(const std::shared_p
 }
 
 tl::expected<std::shared_ptr<arrow::RecordBatch>, std::string>
-ArrowSerializer::bitmap_to_recordBatch(const std::vector<bool> &bitmap) {
+ArrowSerializer::bitmap_to_recordBatch(const std::vector<int64_t> &bitmap) {
   // make boolean array from bitmap
-  auto arrayBuilder = std::make_shared<arrow::BooleanBuilder>();
+  auto arrayBuilder = std::make_shared<arrow::Int64Builder>();
   auto status = arrayBuilder->AppendValues(bitmap);
   if (!status.ok()) {
     return tl::make_unexpected(status.message());
@@ -295,31 +295,25 @@ ArrowSerializer::bitmap_to_recordBatch(const std::vector<bool> &bitmap) {
   auto bitmapArray = *expBitmapArray;
 
   // make record batch from array
-  return arrow::RecordBatch::Make(::arrow::schema({{field(BITMAP_FIELD_NAME.data(), ::arrow::boolean())}}),
+  return arrow::RecordBatch::Make(::arrow::schema({{field(BITMAP_FIELD_NAME.data(), ::arrow::int64())}}),
                                   bitmapArray->length(),
                                   arrow::ArrayVector{bitmapArray});
 }
 
-tl::expected<std::vector<bool>, std::string>
+tl::expected<std::vector<int64_t>, std::string>
 ArrowSerializer::recordBatch_to_bitmap(const std::shared_ptr<arrow::RecordBatch> &recordBatch) {
   // get bitmap array
   auto bitmapArray = recordBatch->GetColumnByName(BITMAP_FIELD_NAME.data());
   if (bitmapArray == nullptr) {
     return tl::make_unexpected("Bitmap array not found in the recordBatch");
   }
-  if (bitmapArray->type()->id() != arrow::boolean()->id()) {
-    return tl::make_unexpected("Type of bitmap array is not boolean");
+  if (bitmapArray->type()->id() != arrow::int64()->id()) {
+    return tl::make_unexpected("Type of bitmap array is not int64");
   }
-  auto typedBitmapArray = std::static_pointer_cast<arrow::BooleanArray>(bitmapArray);
+  auto typedBitmapArray = std::static_pointer_cast<arrow::Int64Array>(bitmapArray);
 
-  // get bitmap from array
-  std::vector<bool> bitmap;
-  bitmap.reserve(typedBitmapArray->length());
-  for (int64_t i = 0; i < typedBitmapArray->length(); ++i) {
-    bitmap.emplace_back(typedBitmapArray->Value(i));
-  }
-
-  return bitmap;
+  auto bitmapData = typedBitmapArray->data()->GetValuesSafe<int64_t>(1, typedBitmapArray->offset());
+  return std::vector<int64_t>(bitmapData, bitmapData + typedBitmapArray->length());
 }
 
 }

@@ -28,7 +28,7 @@ struct FPDBStoreFilterBitmapWrapper {
   std::string mirrorOp_;
 
   // the bitmap
-  std::optional<std::vector<bool>> bitmap_;
+  std::optional<std::vector<int64_t>> bitmap_;
 
   // whether this is used at compute/storage side
   bool isComputeSide_;

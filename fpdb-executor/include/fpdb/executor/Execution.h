@@ -38,7 +38,7 @@ public:
   ~Execution();
 
   long getQueryId() const;
-  const std::unordered_map<std::string, std::vector<bool>> &getBitmaps();
+  const std::unordered_map<std::string, std::vector<int64_t>> &getBitmaps();
 
   shared_ptr<TupleSet> execute();
 
@@ -80,7 +80,7 @@ private:
   chrono::steady_clock::time_point stopTime_;
 
   // for bitmap constructed at storage side
-  std::unordered_map<std::string, std::vector<bool>> bitmaps_;
+  std::unordered_map<std::string, std::vector<int64_t>> bitmaps_;
 
   // metrics
 #if SHOW_DEBUG_METRICS == true

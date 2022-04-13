@@ -16,7 +16,7 @@ namespace fpdb::executor::message {
 class BitmapMessage: public Message {
 
 public:
-  explicit BitmapMessage(const std::optional<std::vector<bool>> &bitmap,
+  explicit BitmapMessage(const std::optional<std::vector<int64_t>> &bitmap,
                          const std::optional<std::string> &receiverInFPDBStoreSuper,
                          const std::string &sender);
   BitmapMessage() = default;
@@ -25,12 +25,12 @@ public:
 
   std::string getTypeString() const override;
 
-  const std::optional<std::vector<bool>> &getBitmap() const;
+  const std::optional<std::vector<int64_t>> &getBitmap() const;
   const std::optional<std::string> &getReceiverInFPDBStoreSuper() const;
 
 private:
   // the bitmap, nullopt means the bitmap cannot be constructed
-  std::optional<std::vector<bool>> bitmap_;
+  std::optional<std::vector<int64_t>> bitmap_;
 
   // the operator inside FPDBStoreSuperPOp to receive the bitmap, only used when sending bitmap from compute to storage
   // but not the opposite

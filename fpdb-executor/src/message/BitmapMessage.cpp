@@ -6,7 +6,7 @@
 
 namespace fpdb::executor::message {
 
-BitmapMessage::BitmapMessage(const std::optional<std::vector<bool>> &bitmap,
+BitmapMessage::BitmapMessage(const std::optional<std::vector<int64_t>> &bitmap,
                              const std::optional<std::string> &receiverInFPDBStoreSuper,
                              const std::string &sender) :
   Message(BITMAP, sender),
@@ -17,7 +17,7 @@ std::string BitmapMessage::getTypeString() const {
   return "BitmapMessage";
 }
 
-const std::optional<std::vector<bool>> &BitmapMessage::getBitmap() const {
+const std::optional<std::vector<int64_t>> &BitmapMessage::getBitmap() const {
   return bitmap_;
 }
 

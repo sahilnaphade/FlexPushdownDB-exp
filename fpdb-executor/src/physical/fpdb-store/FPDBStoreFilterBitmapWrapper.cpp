@@ -37,7 +37,7 @@ tl::expected<FPDBStoreFilterBitmapWrapper, std::string> FPDBStoreFilterBitmapWra
 
   std::optional<std::vector<bool>> bitmap;
   if (jObj.contains("bitmap")) {
-    fpdbStoreFilterBitmapWrapper.bitmap_ = jObj["bitmap"].get<std::vector<bool>>();
+    fpdbStoreFilterBitmapWrapper.bitmap_ = jObj["bitmap"].get<std::vector<int64_t>>();
   }
 
   if (!jObj.contains("isComputeSide")) {

@@ -359,8 +359,8 @@ tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::
   return std::make_unique<::arrow::flight::RecordBatchStream>(*rb_reader);
 }
 
-std::vector<bool> FlightHandler::do_get_get_bitmap_from_bitmap_cache(const std::string &key) {
-  tl::expected<std::vector<bool>, std::string> exp_bitmap;
+std::vector<int64_t> FlightHandler::do_get_get_bitmap_from_bitmap_cache(const std::string &key) {
+  tl::expected<std::vector<int64_t>, std::string> exp_bitmap;
   std::unique_lock lock(get_bitmap_mutex_);
   get_bitmap_cv_.wait(lock, [&] {
     exp_bitmap = bitmap_cache_->consumeBitmap(key);

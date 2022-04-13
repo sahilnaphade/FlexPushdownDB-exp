@@ -193,7 +193,7 @@ private:
   do_get_get_bitmap(const ServerCallContext& context,
                     const std::shared_ptr<GetBitmapTicket>& get_bitmap_ticket);
 
-  std::vector<bool> do_get_get_bitmap_from_bitmap_cache(const std::string &key);
+  std::vector<int64_t> do_get_get_bitmap_from_bitmap_cache(const std::string &key);
 
   ::arrow::flight::Location location_;
   std::string store_root_path_;

@@ -15,6 +15,7 @@
 #include <fpdb/util/Util.h>
 #include <arrow/flight/api.h>
 #include <utility>
+#include <cmath>
 
 using namespace fpdb::executor::physical::filter;
 using namespace fpdb::store::server::flight;
@@ -68,7 +69,7 @@ void FilterPOp::enableBitmapPushdown(const std::string &fpdbStoreSuperPOp,
   bitmapWrapper_->port_ = port;
 }
 
-void FilterPOp::setBitmap(const std::optional<std::vector<bool>> &bitmap) {
+void FilterPOp::setBitmap(const std::optional<std::vector<int64_t>> &bitmap) {
   if (!isBitmapPushdownEnabled()) {
     ctx()->notifyError("Bitmap pushdown not enabled");
   }
@@ -262,11 +263,11 @@ void FilterPOp::bufferBitMap(const std::shared_ptr<::gandiva::SelectionVector> &
   }
 
   if (!bitmapWrapper_->bitmap_.has_value()) {
-    bitmapWrapper_->bitmap_ = std::vector<bool>();
+    bitmapWrapper_->bitmap_ = std::vector<int64_t>();
   }
-  (*bitmapWrapper_->bitmap_).resize(rowOffset + inputNumRows, false);
+  bitmapWrapper_->bitmap_->resize(std::ceil((double) (rowOffset + inputNumRows) / 64), 0);
   for (int64_t i = 0; i < selectionVector->GetNumSlots(); ++i) {
-    (*bitmapWrapper_->bitmap_)[selectionVector->GetIndex(i) + rowOffset] = true;
+    setBit(*bitmapWrapper_->bitmap_, selectionVector->GetIndex(i) + rowOffset);
   }
 }
 
@@ -279,7 +280,7 @@ std::shared_ptr<::gandiva::SelectionVector> FilterPOp::makeSelectionVector(int64
   auto status = ::gandiva::SelectionVector::MakeInt64(numRows, ::arrow::default_memory_pool(), &selectionVector);
   int64_t slotId = 0;
   for (int64_t r = startRowOffset; r < startRowOffset + numRows; ++r) {
-    if (bitmapWrapper_->bitmap_->at(r)) {
+    if (getBit(*bitmapWrapper_->bitmap_, r)) {
       selectionVector->SetIndex(slotId++, r - startRowOffset);
     }
   }
