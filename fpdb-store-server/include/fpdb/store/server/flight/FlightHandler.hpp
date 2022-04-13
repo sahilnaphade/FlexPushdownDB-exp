@@ -202,7 +202,7 @@ private:
   // for bitmap constructed during execution
   std::shared_ptr<BitmapCache> bitmap_cache_;
   std::mutex get_bitmap_mutex_;
-  std::condition_variable_any get_bitmap_cv_;
+  std::unordered_map<std::string, std::shared_ptr<std::condition_variable_any>> get_bitmap_cvs_;
 };
 
 } // namespace fpdb::store::server::flight

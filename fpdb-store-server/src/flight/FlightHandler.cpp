@@ -308,7 +308,13 @@ tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::
   for (const auto &bitmapIt: execution->getBitmaps()) {
     auto key = BitmapCache::generateKey(query_id, bitmapIt.first);
     bitmap_cache_->produceBitmap(key, bitmapIt.second);
-    get_bitmap_cv_.notify_all();
+
+    get_bitmap_mutex_.lock();
+    auto cvIt = get_bitmap_cvs_.find(key);
+    if (cvIt != get_bitmap_cvs_.end()) {
+      cvIt->second->notify_one();
+    }
+    get_bitmap_mutex_.unlock();
   }
 
   // make record batch stream, need to specially handle when num_rows = 0
@@ -360,12 +366,18 @@ tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::
 }
 
 std::vector<int64_t> FlightHandler::do_get_get_bitmap_from_bitmap_cache(const std::string &key) {
-  tl::expected<std::vector<int64_t>, std::string> exp_bitmap;
   std::unique_lock lock(get_bitmap_mutex_);
-  get_bitmap_cv_.wait(lock, [&] {
+
+  tl::expected<std::vector<int64_t>, std::string> exp_bitmap;
+  auto cv = std::make_shared<std::condition_variable_any>();
+  get_bitmap_cvs_[key] = cv;
+
+  cv->wait(lock, [&] {
     exp_bitmap = bitmap_cache_->consumeBitmap(key);
     return exp_bitmap.has_value();
   });
+
+  get_bitmap_cvs_.erase(key);
   return *exp_bitmap;
 }
 
