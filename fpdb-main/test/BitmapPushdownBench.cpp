@@ -32,7 +32,7 @@ TEST_CASE ("bitmap-pushdown-bench-tpch-sf50-fpdb-store-diff-node-compute-bitmap"
                                          "l_orderkey >= 0",
                                          "l_partkey >= 0"};
 
-  for (uint predicateNum = 1; predicateNum < allPredicates.size(); ++predicateNum) {
+  for (uint predicateNum = 1; predicateNum <= allPredicates.size(); ++predicateNum) {
     // create queries
     std::vector<std::string> predicates(allPredicates.begin(), allPredicates.begin() + predicateNum);
     std::string cachingQuery = fmt::format("select\n"
@@ -40,15 +40,13 @@ TEST_CASE ("bitmap-pushdown-bench-tpch-sf50-fpdb-store-diff-node-compute-bitmap"
                                            "from\n"
                                            "    lineitem\n"
                                            "where\n"
-                                           "    {}\n"
-                                           "limit 10", fmt::join(predicates, " and "));
+                                           "    {}\n", fmt::join(predicates, " and "));
     std::string testQuery = fmt::format("select\n"
                                         "    l_tax, l_extendedprice\n"
                                         "from\n"
                                         "    lineitem\n"
                                         "where\n"
-                                        "    {}\n"
-                                        "limit 10", fmt::join(predicates, " and "));
+                                        "    {}\n", fmt::join(predicates, " and "));
     std::string testQueryFileName = fmt::format(testQueryFileNameBase, predicateNum);
     TestUtil::writeQueryToFile(cachingQueryFileName, cachingQuery);
     TestUtil::writeQueryToFile(testQueryFileName, testQuery);
@@ -90,7 +88,7 @@ TEST_CASE ("bitmap-pushdown-bench-tpch-sf50-fpdb-store-diff-node-storage-bitmap"
                                           "l_shipdate",
                                           "l_commitdate"};
 
-  for (uint projectColumnNum = 1; projectColumnNum < projectColumns.size(); ++projectColumnNum) {
+  for (uint projectColumnNum = 1; projectColumnNum <= projectColumns.size(); ++projectColumnNum) {
     // create queries, test query with ~20% selectivity
     std::vector<std::string> cachedProjectColumns(projectColumns.begin(), projectColumns.begin() + projectColumnNum);
     std::string cachingQuery = fmt::format("select\n"
@@ -98,15 +96,13 @@ TEST_CASE ("bitmap-pushdown-bench-tpch-sf50-fpdb-store-diff-node-storage-bitmap"
                                            "from\n"
                                            "    lineitem\n"
                                            "where\n"
-                                           "    l_quantity < 20\n"
-                                           "limit 10", fmt::join(cachedProjectColumns, ", "));
+                                           "    l_quantity < 20\n", fmt::join(cachedProjectColumns, ", "));
     std::string testQuery = fmt::format("select\n"
                                         "    {}\n"
                                         "from\n"
                                         "    lineitem\n"
                                         "where\n"
-                                        "    l_discount <= 0.01\n"
-                                        "limit 10", fmt::join(cachedProjectColumns, ", "));
+                                        "    l_discount <= 0.01\n", fmt::join(cachedProjectColumns, ", "));
     std::string testQueryFileName = fmt::format(testQueryFileNameBase, projectColumnNum);
     TestUtil::writeQueryToFile(cachingQueryFileName, cachingQuery);
     TestUtil::writeQueryToFile(testQueryFileName, testQuery);
