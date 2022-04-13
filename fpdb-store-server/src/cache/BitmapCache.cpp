@@ -16,8 +16,9 @@ tl::expected<std::vector<bool>, std::string> BitmapCache::consumeBitmap(const st
 
   auto bitmapIt = bitmaps_.find(key);
   if (bitmapIt != bitmaps_.end()) {
+    auto bitmap = bitmapIt->second;
     bitmaps_.erase(bitmapIt);
-    return bitmapIt->second;
+    return bitmap;
   } else {
     return tl::make_unexpected(fmt::format("Bitmap with key '{}' not found in the bitmap cache", key));
   }
