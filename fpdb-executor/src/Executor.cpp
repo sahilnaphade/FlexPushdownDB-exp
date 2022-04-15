@@ -50,7 +50,7 @@ void Executor::start() {
 void Executor::stop() {
   // Stop the cache actor if cache is used
   if (isCacheUsed()) {
-    (*rootActor_)->anon_send(segmentCacheActor_, ClearAtom_v);
+    (*rootActor_)->anon_send(segmentCacheActor_, StopCacheAtom_v);
     (*rootActor_)->send_exit(::caf::actor_cast<::caf::actor>(segmentCacheActor_), ::caf::exit_reason::user_shutdown);
   }
 

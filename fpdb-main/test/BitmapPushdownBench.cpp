@@ -17,7 +17,9 @@ namespace fpdb::main::test {
 
 TEST_SUITE ("bitmap-pushdown-bench" * doctest::skip(SKIP_SUITE)) {
 
-TEST_CASE ("bitmap-pushdown-bench-tpch-sf50-fpdb-store-diff-node-compute-bitmap" * doctest::skip(false || SKIP_SUITE)) {
+int SF_BITMAP_PUSHDOWN_BENCH = 10;
+
+TEST_CASE ("bitmap-pushdown-bench-tpch-fpdb-store-diff-node-compute-bitmap" * doctest::skip(false || SKIP_SUITE)) {
   fpdb::executor::physical::ENABLE_FPDB_STORE_BITMAP_PUSHDOWN = true;
 
   std::string cachingQueryFileName = "caching.sql";
@@ -52,7 +54,7 @@ TEST_CASE ("bitmap-pushdown-bench-tpch-sf50-fpdb-store-diff-node-compute-bitmap"
     TestUtil::writeQueryToFile(testQueryFileName, testQuery);
 
     // run test
-    TestUtil testUtil("tpch-sf50/parquet/",
+    TestUtil testUtil(fmt::format("tpch-sf{}/parquet/", SF_BITMAP_PUSHDOWN_BENCH),
                       {cachingQueryFileName,
                        testQueryFileName},
                       PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
@@ -73,7 +75,7 @@ TEST_CASE ("bitmap-pushdown-bench-tpch-sf50-fpdb-store-diff-node-compute-bitmap"
   }
 }
 
-TEST_CASE ("bitmap-pushdown-bench-tpch-sf50-fpdb-store-diff-node-storage-bitmap" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("bitmap-pushdown-bench-tpch-fpdb-store-diff-node-storage-bitmap" * doctest::skip(false || SKIP_SUITE)) {
   fpdb::executor::physical::ENABLE_FPDB_STORE_BITMAP_PUSHDOWN = true;
 
   std::string cachingQueryFileName = "caching.sql";
@@ -108,7 +110,7 @@ TEST_CASE ("bitmap-pushdown-bench-tpch-sf50-fpdb-store-diff-node-storage-bitmap"
     TestUtil::writeQueryToFile(testQueryFileName, testQuery);
 
     // run test
-    TestUtil testUtil("tpch-sf50/parquet/",
+    TestUtil testUtil(fmt::format("tpch-sf{}/parquet/", SF_BITMAP_PUSHDOWN_BENCH),
                       {cachingQueryFileName,
                        testQueryFileName},
                       PARALLEL_TPCH_FPDB_STORE_SAME_NODE,

@@ -24,6 +24,7 @@ sudo chown -R ubuntu:ubuntu "$mount_point"
 for data_relative_dir in "${data_relative_dirs[@]}"
 do
   aws s3 cp --recursive "s3://""$bucket""/""$data_relative_dir" "$temp_dir""/""$data_relative_dir"
+  mkdir -p "$(dirname "$bucket_dir""/""$data_relative_dir")"
   mv "$temp_dir""/""$data_relative_dir" "$bucket_dir""/""$data_relative_dir"
 done
 
