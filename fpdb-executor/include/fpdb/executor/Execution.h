@@ -62,6 +62,7 @@ private:
 
   ::caf::actor localSpawn(const shared_ptr<PhysicalOp> &op);
   ::caf::actor remoteSpawn(const shared_ptr<PhysicalOp> &op, int nodeId);
+  static bool useDetached(const shared_ptr<PhysicalOp> &op);
 
   long queryId_;
   shared_ptr<::caf::actor_system> actorSystem_;

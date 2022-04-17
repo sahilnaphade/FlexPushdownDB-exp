@@ -113,18 +113,12 @@ void Execution::boot() {
 //    element.second.setActorHandle(::caf::actor_cast<::caf::actor>(collateActorHandle_));
 //  }
 
-  // Need s3 operators to be "detached" to not block others while loading data.
-  // Don't run more S3Get requests in parallel than # cores, earlier testing showed this did not help as S3Get
-  // already utilizes the full network bandwidth with #cores requests whereas S3Select does not when
-  // selectivity is low.
-  if (op->getType() == POpType::S3_SELECT || op->getType() == POpType::S3_GET) {
+  if (useDetached(op)) {
     auto actorHandle = actorSystem_->spawn<POpActor, detached>(op);
     if (!actorHandle)
       throw runtime_error(fmt::format("Failed to spawn operator actor '{}'", op->name()));
     return ::caf::actor_cast<::caf::actor>(actorHandle);
-  }
-
-  else {
+  } else {
     auto actorHandle = actorSystem_->spawn<POpActor>(op);
     if (!actorHandle)
       throw runtime_error(fmt::format("Failed to spawn operator actor '{}'", op->name()));
@@ -135,18 +129,7 @@ void Execution::boot() {
 ::caf::actor Execution::remoteSpawn(const shared_ptr<PhysicalOp> &op, int nodeId) {
   auto remoteSpawnTout = std::chrono::seconds(10);
   auto args = make_message(op);
-
-  // Need s3 operators to be "detached" to not block others while loading data.
-  // Don't run more S3Get requests in parallel than # cores, earlier testing showed this did not help as S3Get
-  // already utilizes the full network bandwidth with #cores requests whereas S3Select does not when
-  // selectivity is low.
-  bool useDetached = op->getType() == POpType::LOCAL_FILE_SCAN
-                     || op->getType() == POpType::REMOTE_FILE_SCAN
-                     || op->getType() == POpType::FPDB_STORE_FILE_SCAN
-                     || op->getType() == POpType::FPDB_STORE_SUPER
-                     || op->getType() == POpType::S3_GET
-                     || op->getType() == POpType::S3_SELECT;
-  auto actorTypeName = useDetached ? "POpActor-detached" : "POpActor";
+  auto actorTypeName = useDetached(op) ? "POpActor-detached" : "POpActor";
 
   auto expectedActorHandle = actorSystem_->middleman().remote_spawn<::caf::actor>(nodes_[nodeId],
                                                                                   actorTypeName,
@@ -158,6 +141,21 @@ void Execution::boot() {
                                          to_string(expectedActorHandle.error())));
   }
   return *expectedActorHandle;
+}
+
+bool Execution::useDetached(const shared_ptr<PhysicalOp> &op) {
+  // Need the following operators to be "detached" to not block others while loading data or potentially causes deadlock.
+  // Don't run more S3Get requests in parallel than # cores, earlier testing showed this did not help as S3Get
+  // already utilizes the full network bandwidth with #cores requests whereas S3Select does not when
+  // selectivity is low.
+  return op->getType() == POpType::LOCAL_FILE_SCAN
+         || op->getType() == POpType::REMOTE_FILE_SCAN
+         || op->getType() == POpType::FPDB_STORE_FILE_SCAN
+         || op->getType() == POpType::FPDB_STORE_SUPER
+         || op->getType() == POpType::S3_GET
+         || op->getType() == POpType::S3_SELECT
+         || (op->getType() == POpType::FILTER
+             && (std::static_pointer_cast<filter::FilterPOp>(op)->isBitmapPushdownEnabled()));
 }
 
 void Execution::start() {
