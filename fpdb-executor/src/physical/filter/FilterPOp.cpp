@@ -568,7 +568,6 @@ void FilterPOp::putBitmapToFPDBStore() {
   if (!status.ok()) {
     ctx()->notifyError(status.message());
   }
-  std::shared_ptr<arrow::Buffer> buf;
   status = writer->Close();
   if (!status.ok()) {
     ctx()->notifyError(status.message());
