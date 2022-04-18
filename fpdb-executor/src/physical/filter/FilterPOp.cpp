@@ -18,11 +18,12 @@
 #include <utility>
 #include <cmath>
 
-using namespace fpdb::executor::physical::filter;
 using namespace fpdb::store::server::flight;
 using namespace fpdb::cache;
 using namespace fpdb::expression::gandiva;
 using namespace fpdb::util;
+
+namespace fpdb::executor::physical::filter {
 
 FilterPOp::FilterPOp(std::string name,
                std::vector<std::string> projectColumnNames,
@@ -535,18 +536,7 @@ void FilterPOp::putBitmapToFPDBStore() {
   }
 
   // make flight client and connect
-  arrow::flight::Location clientLocation;
-  auto status = arrow::flight::Location::ForGrpcTcp(bitmapWrapper_->host_, bitmapWrapper_->port_, &clientLocation);
-  if (!status.ok()) {
-    ctx()->notifyError(status.message());
-  }
-
-  arrow::flight::FlightClientOptions clientOptions = arrow::flight::FlightClientOptions::Defaults();
-  std::unique_ptr<arrow::flight::FlightClient> client;
-  status = arrow::flight::FlightClient::Connect(clientLocation, clientOptions, &client);
-  if (!status.ok()) {
-    ctx()->notifyError(status.message());
-  }
+  makeDoPutFlightClient(bitmapWrapper_->host_, bitmapWrapper_->port_);
 
   // send request to store
   bool valid = isBitmapSet();
@@ -565,7 +555,7 @@ void FilterPOp::putBitmapToFPDBStore() {
   auto descriptor = ::arrow::flight::FlightDescriptor::Command(*expCmd);
   std::unique_ptr<arrow::flight::FlightStreamWriter> writer;
   std::unique_ptr<arrow::flight::FlightMetadataReader> metadataReader;
-  status = client->DoPut(descriptor, recordBatch->schema(), &writer, &metadataReader);
+  auto status = (*DoPutFlightClient)->DoPut(descriptor, recordBatch->schema(), &writer, &metadataReader);
   if (!status.ok()) {
     ctx()->notifyError(status.message());
   }
@@ -574,6 +564,11 @@ void FilterPOp::putBitmapToFPDBStore() {
   if (!status.ok()) {
     ctx()->notifyError(status.message());
   }
+  status = writer->DoneWriting();
+  if (!status.ok()) {
+    ctx()->notifyError(status.message());
+  }
+  std::shared_ptr<arrow::Buffer> buf;
   status = writer->Close();
   if (!status.ok()) {
     ctx()->notifyError(status.message());
@@ -669,4 +664,6 @@ void FilterPOp::clear() {
   filter_ = std::nullopt;
   received_.reset();
   filtered_.reset();
+}
+
 }

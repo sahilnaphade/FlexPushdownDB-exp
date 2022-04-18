@@ -38,7 +38,7 @@ add_library(fpdb-executor STATIC
         src/physical/PhysicalOp.cpp include/fpdb/executor/physical/PhysicalOp.h
         include/fpdb/executor/physical/POpType.h
 #        physical operators
-        include/fpdb/executor/physical/Globals.h
+        src/physical/Globals.cpp include/fpdb/executor/physical/Globals.h
         src/physical/sort/SortPOp.cpp include/fpdb/executor/physical/sort/SortPOp.h
         src/physical/limitsort/LimitSortPOp.cpp include/fpdb/executor/physical/limitsort/LimitSortPOp.h
         src/physical/aggregate/AggregatePOp.cpp include/fpdb/executor/physical/aggregate/AggregatePOp.h

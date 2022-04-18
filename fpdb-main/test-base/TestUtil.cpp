@@ -6,6 +6,7 @@
 #include <fpdb/main/ExecConfig.h>
 #include <fpdb/executor/caf/CAFInit.h>
 #include <fpdb/executor/physical/transform/PrePToPTransformer.h>
+#include <fpdb/executor/physical/Globals.h>
 #include <fpdb/cache/Globals.h>
 #include <fpdb/cache/policy/LRUCachingPolicy.h>
 #include <fpdb/cache/policy/LFUCachingPolicy.h>
@@ -288,6 +289,9 @@ void TestUtil::stop() {
     s3Connector->getAwsClient()->shutdown();
   }
   executor_->stop();
+
+  // clear global states
+  fpdb::executor::physical::clearGlobal();
 
   // reset flag for cache layout
   fpdb::cache::FIX_CACHE_LAYOUT = false;

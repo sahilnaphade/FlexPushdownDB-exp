@@ -5,6 +5,9 @@
 #ifndef FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_GLOBALS_H
 #define FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_GLOBALS_H
 
+#include <arrow/flight/api.h>
+#include <mutex>
+
 namespace fpdb::executor::physical {
 
 /**
@@ -42,6 +45,19 @@ inline constexpr int variableSleepRetryTimeMS = 15;
  */
 inline bool USE_BLOOM_FILTER = true;
 inline bool ENABLE_FPDB_STORE_BITMAP_PUSHDOWN = false;
+
+/**
+ * If we create a client for each DoPut() request, some of them will be blocked at Connect() for ~10s,
+ * however this is not an issue for DoGet() requests.
+ */
+inline std::mutex DoPutFlightClientLock;
+inline std::optional<std::unique_ptr<arrow::flight::FlightClient>> DoPutFlightClient;
+void makeDoPutFlightClient(const std::string &host, int port);
+
+/**
+ * Clear global states
+ */
+void clearGlobal();
 
 }
 
