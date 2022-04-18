@@ -249,6 +249,30 @@ TupleSet::projectExist(const std::vector<std::string> &columnNames) const {
   return make(columns);
 }
 
+std::shared_ptr<arrow::RecordBatch> TupleSet::projectExist(const std::shared_ptr<arrow::RecordBatch> &recordBatch,
+                                                           const std::vector<std::string> &columnNames) {
+  return projectExist(*recordBatch, columnNames);
+}
+
+std::shared_ptr<arrow::RecordBatch> TupleSet::projectExist(const arrow::RecordBatch &recordBatch,
+                                                           const std::vector<std::string> &columnNames) {
+  ::arrow::FieldVector projectFields;
+  ::arrow::ArrayVector projectArrays;
+  for (const auto &projectColumnName: columnNames) {
+    auto projectField = recordBatch.schema()->GetFieldByName(projectColumnName);
+    if (projectField != nullptr) {
+      projectFields.emplace_back(projectField);
+    }
+    auto projectArray = recordBatch.GetColumnByName(projectColumnName);
+    if (projectArray != nullptr) {
+      projectArrays.emplace_back(projectArray);
+    }
+  }
+  return ::arrow::RecordBatch::Make(arrow::schema(projectFields),
+                                    recordBatch.num_rows(),
+                                    projectArrays);
+}
+
 tl::expected<std::shared_ptr<TupleSet>, std::string> TupleSet::project(const std::vector<int> &columnIds) const {
   const auto &expTable = table_->SelectColumns(columnIds);
   if (!expTable.ok()) {

@@ -20,6 +20,11 @@ std::shared_ptr<Filter> Filter::make(const std::shared_ptr<Expression> &Pred) {
 tl::expected<arrow::ArrayVector, std::string>
 Filter::evaluateBySelectionVectorStatic(const arrow::RecordBatch &recordBatch,
                                         const std::shared_ptr<::gandiva::SelectionVector> &selectionVector) {
+  // check if input recordBatch has no fields
+  if (recordBatch.num_columns() == 0) {
+    return {};
+  }
+
   // Build a projector for the pass through expression
   std::shared_ptr<::gandiva::Projector> gandivaProjector;
   std::vector<std::shared_ptr<::gandiva::Expression>> fieldExpressions;
@@ -72,15 +77,23 @@ tl::expected<arrow::ArrayVector, std::string> Filter::evaluate(const arrow::Reco
 
   SPDLOG_DEBUG("Evaluated SelectionVector  |  vector: {}", selectionVector->ToArray()->ToString());
 
+  // Project input record batch
+  auto projectBatch = TupleSet::projectExist(recordBatch, outputSchema_->field_names());
+
   // Evaluate the expressions
-  return evaluateBySelectionVector(recordBatch, selectionVector);
+  return evaluateBySelectionVector(*projectBatch, selectionVector);
 }
 
 tl::expected<std::shared_ptr<fpdb::tuple::TupleSet>, std::string>
 Filter::evaluate(const fpdb::tuple::TupleSet &tupleSet) {
   if (tupleSet.valid()) {
 
-    auto filteredTupleSet = fpdb::tuple::TupleSet::make(tupleSet.schema());
+    // check if output schema has no fields
+    if (outputSchema_->num_fields() == 0) {
+      return TupleSet::makeWithEmptyTable();
+    }
+
+    auto filteredTupleSet = fpdb::tuple::TupleSet::make(outputSchema_);
     auto arrowTable = tupleSet.table();
 
     assert(arrowTable->ValidateFull().ok());
@@ -113,6 +126,9 @@ Filter::evaluate(const fpdb::tuple::TupleSet &tupleSet) {
 
       SPDLOG_DEBUG("Evaluated SelectionVector  |  vector: {}", selection_vector->ToArray()->ToString());
 
+      // project input record batch
+      auto projectBatch = TupleSet::projectExist(batch, outputSchema_->field_names());
+
       // Evaluate the expressions
       std::shared_ptr<::arrow::Table> batchArrowTable;
 
@@ -121,18 +137,18 @@ Filter::evaluate(const fpdb::tuple::TupleSet &tupleSet) {
        */
       if(selection_vector->GetNumSlots() > 0) {
         arrow::ArrayVector outputs;
-        status = gandivaProjector_->Evaluate(*batch, selection_vector.get(), arrow::default_memory_pool(), &outputs);
+        status = gandivaProjector_->Evaluate(*projectBatch, selection_vector.get(), arrow::default_memory_pool(), &outputs);
 
         if (!status.ok()) {
           return tl::make_unexpected(status.message());
         }
 
-        batchArrowTable = ::arrow::Table::Make(batch->schema(), outputs);
+        batchArrowTable = ::arrow::Table::Make(projectBatch->schema(), outputs);
       }
       else{
-        auto columns = Schema::make(batch->schema())->makeColumns();
+        auto columns = Schema::make(projectBatch->schema())->makeColumns();
         auto arrowArrays = Column::columnVectorToArrowChunkedArrayVector(columns);
-        batchArrowTable = ::arrow::Table::Make(batch->schema(), arrowArrays);
+        batchArrowTable = ::arrow::Table::Make(projectBatch->schema(), arrowArrays);
       }
 
       auto batchTupleSet = std::make_shared<fpdb::tuple::TupleSet>(batchArrowTable);
@@ -181,6 +197,11 @@ Filter::computeSelectionVector(const arrow::RecordBatch &recordBatch) {
 tl::expected<arrow::ArrayVector, std::string>
 Filter::evaluateBySelectionVector(const arrow::RecordBatch &recordBatch,
                                   const std::shared_ptr<::gandiva::SelectionVector> &selectionVector) {
+  // check if output schema has no fields
+  if (outputSchema_->num_fields() == 0) {
+    return {};
+  }
+
   /**
    * NOTE: Gandiva fails if the projector is evaluated using an empty selection vector, so need to test for it
    */
@@ -203,18 +224,23 @@ Filter::evaluateBySelectionVector(const arrow::RecordBatch &recordBatch,
   return outputs;
 }
 
-tl::expected<void, std::string> Filter::compile(const std::shared_ptr<fpdb::tuple::Schema> &Schema) {
+tl::expected<void, std::string> Filter::compile(const std::shared_ptr<arrow::Schema> &inputSchema,
+                                                const std::shared_ptr<arrow::Schema> &outputSchema) {
   std::lock_guard<std::mutex> g(BigGlobalLock);
 
+  // Save schema
+  inputSchema_ = inputSchema;
+  outputSchema_ = outputSchema;
+
   // Compile the expressions
-  pred_->compile(Schema->getSchema());
+  pred_->compile(inputSchema);
 
   auto gandivaCondition = ::gandiva::TreeExprBuilder::MakeCondition(pred_->getGandivaExpression());
 
   SPDLOG_DEBUG("Filter predicate:\n{}", gandivaCondition->ToString());
 
   // Build a filter for the predicate.
-  auto status = ::gandiva::Filter::Make(Schema->getSchema(),
+  auto status = ::gandiva::Filter::Make(inputSchema,
                                         gandivaCondition,
                                         ::gandiva::ConfigurationBuilder::DefaultConfiguration(),
                                         &gandivaFilter_);
@@ -224,14 +250,14 @@ tl::expected<void, std::string> Filter::compile(const std::shared_ptr<fpdb::tupl
 
   // Create a pass through expression
   std::vector<std::shared_ptr<::gandiva::Expression>> fieldExpressions;
-  for (const auto &field: Schema->fields()) {
+  for (const auto &field: outputSchema->fields()) {
     auto gandivaField = ::gandiva::TreeExprBuilder::MakeField(field);
     auto fieldExpression = ::gandiva::TreeExprBuilder::MakeExpression(gandivaField, field);
     fieldExpressions.push_back(fieldExpression);
   }
 
   // Build a projector for the pass through expression
-  status = ::gandiva::Projector::Make(Schema->getSchema(),
+  status = ::gandiva::Projector::Make(outputSchema,
                                       fieldExpressions,
                                       ::gandiva::SelectionVector::MODE_UINT64,
                                       ::gandiva::ConfigurationBuilder::DefaultConfiguration(),

@@ -290,9 +290,21 @@ std::shared_ptr<::gandiva::SelectionVector> FilterPOp::makeSelectionVector(int64
 }
 
 void FilterPOp::buildFilter() {
-  if(!filter_.has_value()){
+  if (!filter_.has_value()){
     filter_ = Filter::make(predicate_);
-    filter_.value()->compile(Schema::make(received_->schema()));
+
+    // input schema and output schema
+    auto inputSchema = received_->schema();
+    arrow::FieldVector outputFields;
+    for (const auto &projectColumnName: getProjectColumnNames()) {
+      auto outputField = received_->schema()->GetFieldByName(projectColumnName);
+      if (outputField != nullptr) {
+        outputFields.emplace_back(outputField);
+      }
+    }
+    auto outputSchema = arrow::schema(outputFields);
+
+    filter_.value()->compile(inputSchema, outputSchema);
   }
 }
 
@@ -355,12 +367,15 @@ void FilterPOp::filterTuplesSaveBitMap() {
     auto selectionVector = *expSelectionVector;
     bufferBitMap(selectionVector, rowOffset, batch->num_rows());
 
+    // project input record batch
+    auto projectBatch = TupleSet::projectExist(batch, getProjectColumnNames());
+
     // get the filtered recordBatch
-    auto expFilteredArrays = (*filter_)->evaluateBySelectionVector(*batch, selectionVector);
+    auto expFilteredArrays = (*filter_)->evaluateBySelectionVector(*projectBatch, selectionVector);
     if (!expFilteredArrays.has_value()) {
       ctx()->notifyError(expFilteredArrays.error());
     }
-    auto filteredBatch = ::arrow::RecordBatch::Make(batch->schema(),
+    auto filteredBatch = ::arrow::RecordBatch::Make(projectBatch->schema(),
                                                     selectionVector->GetNumSlots(),
                                                     *expFilteredArrays);
     filteredBatches.emplace_back(filteredBatch);
@@ -417,12 +432,15 @@ void FilterPOp::filterTuplesUsingBitmap() {
     // make selection vector from bitmap
     auto selectionVector = makeSelectionVector(rowOffset, batch->num_rows());
 
+    // project input record batch
+    auto projectBatch = TupleSet::projectExist(batch, getProjectColumnNames());
+
     // evaluate the selection vector
-    auto expFilteredArrays = Filter::evaluateBySelectionVectorStatic(*batch, selectionVector);
+    auto expFilteredArrays = Filter::evaluateBySelectionVectorStatic(*projectBatch, selectionVector);
     if (!expFilteredArrays.has_value()) {
       ctx()->notifyError(expFilteredArrays.error());
     }
-    auto filteredBatch = ::arrow::RecordBatch::Make(batch->schema(),
+    auto filteredBatch = ::arrow::RecordBatch::Make(projectBatch->schema(),
                                                     selectionVector->GetNumSlots(),
                                                     *expFilteredArrays);
     filteredBatches.emplace_back(filteredBatch);
@@ -453,14 +471,9 @@ void FilterPOp::filterTuplesUsingBitmap() {
 }
 
 void FilterPOp::sendTuples() {
-  // Project using projectColumnNames
-  auto expProjectTupleSet = TupleSet::make(filtered_->table())->projectExist(getProjectColumnNames());
-  if (!expProjectTupleSet) {
-    ctx()->notifyError(expProjectTupleSet.error());
-  }
-
-  // send
-  std::shared_ptr<Message> tupleSetMessage = std::make_shared<TupleSetMessage>(expProjectTupleSet.value(), name());
+  // send, projectExist is already done during filtering
+  std::shared_ptr<Message> tupleSetMessage =
+          std::make_shared<TupleSetMessage>(TupleSet::make(filtered_->table()), name());
   ctx()->tell(tupleSetMessage);
 
   filtered_->clear();

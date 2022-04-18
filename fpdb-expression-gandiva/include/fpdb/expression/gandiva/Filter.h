@@ -66,13 +66,17 @@ public:
 
   /**
    * Compile filter, i.e. generate gandivaFilter_ and gandivaProjector_
-   * @param schema
+   * @param inputSchema
+   * @param outputSchema
    * @return
    */
-  tl::expected<void, std::string> compile(const std::shared_ptr<fpdb::tuple::Schema> &schema) override;
+  tl::expected<void, std::string> compile(const std::shared_ptr<arrow::Schema> &inputSchema,
+                                          const std::shared_ptr<arrow::Schema> &outputSchema) override;
 
 private:
   std::shared_ptr<Expression> pred_;
+  std::shared_ptr<arrow::Schema> inputSchema_;
+  std::shared_ptr<arrow::Schema> outputSchema_;
   std::shared_ptr<::gandiva::Filter> gandivaFilter_;
   std::shared_ptr<::gandiva::Projector> gandivaProjector_;
 };
