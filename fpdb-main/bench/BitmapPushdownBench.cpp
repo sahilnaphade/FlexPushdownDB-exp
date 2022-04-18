@@ -24,6 +24,7 @@ TEST_CASE ("bitmap-pushdown-bench-tpch-fpdb-store-diff-node-compute-bitmap" * do
   std::vector<bool> enableBitMapPushdownConfigs = {true, false};
   std::string cachingQueryFileName = "caching.sql";
   std::string testQueryFileNameBase = "test_{}.sql";
+  bool rerunFirst = false; // the first run is slower than the subsequent, so we rerun it
 
   // predicates with "and" that makes specified selectivity
   std::cout << fmt::format("Selectivity: {}", SELECTIVITY_BITMAP_PUSHDOWN_BENCH) << std::endl;
@@ -78,6 +79,11 @@ TEST_CASE ("bitmap-pushdown-bench-tpch-fpdb-store-diff-node-compute-bitmap" * do
       // delete queries
       TestUtil::removeQueryFile(cachingQueryFileName);
       TestUtil::removeQueryFile(testQueryFileName);
+
+      if (!rerunFirst) {
+        --predicateNum;
+        rerunFirst = true;
+      }
     }
   }
 
@@ -88,6 +94,7 @@ TEST_CASE ("bitmap-pushdown-bench-tpch-fpdb-store-diff-node-storage-bitmap" * do
   std::vector<bool> enableBitMapPushdownConfigs = {true, false};
   std::string cachingQueryFileName = "caching.sql";
   std::string testQueryFileNameBase = "test_{}.sql";
+  bool rerunFirst = false; // the first run is slower than the subsequent, so we rerun it
 
   // predicate that makes specified selectivity
   std::cout << fmt::format("Selectivity: {}", SELECTIVITY_BITMAP_PUSHDOWN_BENCH) << std::endl;
@@ -142,6 +149,11 @@ TEST_CASE ("bitmap-pushdown-bench-tpch-fpdb-store-diff-node-storage-bitmap" * do
       // delete queries
       TestUtil::removeQueryFile(cachingQueryFileName);
       TestUtil::removeQueryFile(testQueryFileName);
+
+      if (!rerunFirst) {
+        --projectColumnNum;
+        rerunFirst = true;
+      }
     }
   }
 
