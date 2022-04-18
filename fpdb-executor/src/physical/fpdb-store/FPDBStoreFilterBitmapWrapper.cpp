@@ -15,9 +15,8 @@ namespace fpdb::executor::physical::fpdb_store {
   jObj.emplace("isComputeSide", isComputeSide_);
   jObj.emplace("isBitmapSent", isBitmapSent_);
 
-  if (bitmap_.has_value()) {
-    jObj.emplace("bitmap", *bitmap_);
-  }
+  // bitmap_ is sent using arrow flight for performance
+  // host_ and port_ are not needed in storage side
 
   return jObj;
 }
@@ -35,11 +34,6 @@ tl::expected<FPDBStoreFilterBitmapWrapper, std::string> FPDBStoreFilterBitmapWra
   }
   fpdbStoreFilterBitmapWrapper.mirrorOp_ = jObj["mirrorOp"].get<std::string>();
 
-  std::optional<std::vector<bool>> bitmap;
-  if (jObj.contains("bitmap")) {
-    fpdbStoreFilterBitmapWrapper.bitmap_ = jObj["bitmap"].get<std::vector<int64_t>>();
-  }
-
   if (!jObj.contains("isComputeSide")) {
     return tl::make_unexpected(fmt::format("IsComputeSide not specified in FPDBStoreFilterBitmapWrapper JSON '{}'", jObj));
   }
@@ -49,6 +43,9 @@ tl::expected<FPDBStoreFilterBitmapWrapper, std::string> FPDBStoreFilterBitmapWra
     return tl::make_unexpected(fmt::format("IsBitmapSent not specified in FPDBStoreFilterBitmapWrapper JSON '{}'", jObj));
   }
   fpdbStoreFilterBitmapWrapper.isBitmapSent_ = jObj["isBitmapSent"].get<bool>();
+
+  // bitmap_ is sent using arrow flight for performance
+  // host_ and port_ are not needed in storage side
 
   return fpdbStoreFilterBitmapWrapper;
 }

@@ -446,8 +446,6 @@ void PrePToFPDBStorePTransformer::enableBitmapPushdown(
                                             fpdbStoreSuperPOp->getHost(), fpdbStoreSuperPOp->getPort());
         typedStorePOp->enableBitmapPushdown(fpdbStoreSuperPOp->name(), typedLocalPOp->name(), false,
                                             fpdbStoreSuperPOp->getHost(), fpdbStoreSuperPOp->getPort());
-        typedLocalPOp->produce(fpdbStoreSuperPOp);
-        fpdbStoreSuperPOp->consume(typedLocalPOp);
         break;
       }
       default: {

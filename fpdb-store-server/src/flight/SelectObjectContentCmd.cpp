@@ -31,7 +31,7 @@ tl::expected<std::string, std::string> SelectObjectContentCmd::serialize(bool pr
 tl::expected<std::shared_ptr<SelectObjectContentCmd>, std::string>
 SelectObjectContentCmd::from_json(const nlohmann::json& jObj) {
   if (!jObj.contains(QueryPlanJSONName.data())) {
-    return tl::make_unexpected(fmt::format("Query plan not specified in GetObjectTicket JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("Query plan not specified in SelectObjectContentCmd JSON '{}'", jObj));
   }
   auto query_plan_string = jObj[QueryPlanJSONName.data()].get<std::string>();
 

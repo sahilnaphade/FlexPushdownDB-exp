@@ -226,10 +226,7 @@ void Execution::join() {
 
               case MessageType::BITMAP: {
                 auto bitmapMessage = ((BitmapMessage &) msg);
-                auto bitmap = bitmapMessage.getBitmap();
-                if (bitmap.has_value()) {
-                  bitmaps_[bitmapMessage.sender()] = *bitmap;
-                }
+                bitmaps_[bitmapMessage.sender()] = bitmapMessage.getBitmap();
                 break;
               }
 

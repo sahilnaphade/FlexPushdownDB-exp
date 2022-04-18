@@ -4,6 +4,7 @@
 
 #include "fpdb/store/server/flight/CmdObject.hpp"
 #include "fpdb/store/server/flight/SelectObjectContentCmd.hpp"
+#include "fpdb/store/server/flight/PutBitmapCmd.hpp"
 #include "fpdb/store/server/flight/Util.hpp"
 #include <fmt/format.h>
 
@@ -24,6 +25,8 @@ tl::expected<std::shared_ptr<CmdObject>, std::string> CmdObject::deserialize(con
 
   if (type == SelectObjectContentCmdTypeName.data()) {
     return SelectObjectContentCmd::from_json(document);
+  } else if (type == PutBitmapCmdTypeName.data()) {
+    return PutBitmapCmd::from_json(document);
   } else {
     return tl::make_unexpected(fmt::format("Unsupported cmd object type: '{}'", type));
   }

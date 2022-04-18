@@ -41,7 +41,6 @@ private:
   void onStart();
   void onCacheLoadResponse(const ScanMessage &msg);
   void onBloomFilter(const BloomFilterMessage &msg);
-  void onBitmap(const BitmapMessage &msg);
   void onComplete(const CompleteMessage &);
 
   bool readyToProcess();
@@ -54,7 +53,6 @@ private:
   int port_;
 
   bool waitForScanMessage_ = false;
-  std::set<std::string> bitmapReceivedOps_;
 
 // caf inspect
 public:

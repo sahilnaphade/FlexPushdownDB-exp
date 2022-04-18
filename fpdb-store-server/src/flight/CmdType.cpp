@@ -18,8 +18,16 @@ const std::string& CmdType::name() const {
   return name_;
 }
 
+std::shared_ptr<CmdType> CmdType::get_object() {
+  return std::make_shared<CmdType>(CmdTypeId::GET_OBJECT, GetObjectCmdTypeName.data());
+}
+
 std::shared_ptr<CmdType> CmdType::select_object_content() {
-  return std::make_shared<CmdType>(CmdTypeId::SelectObjectContent, SelectObjectContentCmdTypeName.data());
+  return std::make_shared<CmdType>(CmdTypeId::SELECT_OBJECT_CONTENT, SelectObjectContentCmdTypeName.data());
+}
+
+std::shared_ptr<CmdType> CmdType::put_bitmap() {
+  return std::make_shared<CmdType>(CmdTypeId::PUT_BITMAP, PutBitmapCmdTypeName.data());
 }
 
 } // namespace fpdb::store::server::flight

@@ -7,6 +7,7 @@
 #include "fpdb/store/server/flight/GetObjectTicket.hpp"
 #include "fpdb/store/server/flight/Util.hpp"
 #include "fpdb/executor/physical/serialization/PhysicalPlanDeserializer.h"
+#include "fpdb/executor/physical/filter/FilterPOp.h"
 #include "fpdb/executor/caf/CAFInit.h"
 #include "fpdb/executor/Execution.h"
 #include "fpdb/tuple/serialization/ArrowSerializer.h"
@@ -24,7 +25,8 @@ FlightHandler::FlightHandler(Location location,
   location_(std::move(location)),
   store_root_path_(std::move(store_root_path)),
   actor_system_(std::move(actor_system)),
-  bitmap_cache_(std::make_shared<BitmapCache>()) {}
+  compute_bitmap_cache_(std::make_shared<BitmapCache>()),
+  storage_bitmap_cache_(std::make_shared<BitmapCache>()) {}
 
 FlightHandler::~FlightHandler() {
   this->shutdown();
@@ -95,6 +97,16 @@ int FlightHandler::port() {
   return ::arrow::Status::OK();
 }
 
+::arrow::Status FlightHandler::DoPut(const ServerCallContext& context,
+                                     std::unique_ptr<FlightMessageReader> reader,
+                                     std::unique_ptr<FlightMetadataWriter>) {
+  auto put_result = do_put(context, reader);
+  if (!put_result.has_value()) {
+    return put_result.error();
+  }
+  return ::arrow::Status::OK();
+}
+
 tl::expected<HeaderMiddleware*, std::string>
 FlightHandler::get_header_middleware(const ::arrow::flight::ServerCallContext& context) {
   auto* header_middleware = context.GetMiddleware(std::string{HeaderMiddlewareKey.data(), HeaderMiddlewareKey.size()});
@@ -152,7 +164,7 @@ FlightHandler::get_flight_info(const ServerCallContext& context, const FlightDes
 }
 
 tl::expected<std::unique_ptr<FlightInfo>, ::arrow::Status>
-FlightHandler::get_flight_info_for_path(const ServerCallContext& context, const FlightDescriptor& request,
+FlightHandler::get_flight_info_for_path(const ServerCallContext&, const FlightDescriptor& request,
                                         std::string bucket, std::string object) {
 
   // Create the ticket
@@ -181,7 +193,7 @@ FlightHandler::get_flight_info_for_path(const ServerCallContext& context, const 
 
 tl::expected<std::unique_ptr<FlightInfo>, ::arrow::Status>
 FlightHandler::get_flight_info_for_cmd(const ServerCallContext& context, const FlightDescriptor& request,
-                                       std::string bucket, std::string object) {
+                                       std::string, std::string) {
 
   // Parse the cmd object
   auto expected_cmd_object = CmdObject::deserialize(request.cmd);
@@ -191,17 +203,19 @@ FlightHandler::get_flight_info_for_cmd(const ServerCallContext& context, const F
   auto cmd_object = expected_cmd_object.value();
 
   switch(cmd_object->type()->id()) {
-    case CmdTypeId::SelectObjectContent: {
+    case CmdTypeId::SELECT_OBJECT_CONTENT: {
       auto select_object_content_cmd = std::static_pointer_cast<SelectObjectContentCmd>(cmd_object);
       return get_flight_info_for_select_object_content_cmd(context, request, select_object_content_cmd);
     }
+    default: {
+      return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed,
+                                                 fmt::format("Unknown cmd type: '{}'", cmd_object->type()->name())));
+    }
   }
-
-  return tl::make_unexpected(MakeFlightError(FlightStatusCode::Internal, "Internal error"));
 }
 
 tl::expected<std::unique_ptr<FlightInfo>, ::arrow::Status> FlightHandler::get_flight_info_for_select_object_content_cmd(
-  const ServerCallContext& context, const FlightDescriptor& request,
+  const ServerCallContext&, const FlightDescriptor& request,
   const std::shared_ptr<SelectObjectContentCmd>& select_object_content_cmd) {
 
   // Create the ticket
@@ -259,8 +273,8 @@ tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::
 }
 
 tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status>
-FlightHandler::do_get_get_object(const ServerCallContext& context,
-                                 const std::shared_ptr<GetObjectTicket>& get_object_ticket) {
+FlightHandler::do_get_get_object(const ServerCallContext&,
+                                 const std::shared_ptr<GetObjectTicket>&) {
   // TODO: currently just return a toy table
   auto schema = ::arrow::schema({
                                         {field("f0", ::arrow::int32())},
@@ -281,7 +295,7 @@ FlightHandler::do_get_get_object(const ServerCallContext& context,
 }
 
 tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::do_get_select_object_content(
-  const ServerCallContext& context, const std::shared_ptr<SelectObjectContentTicket>& select_object_content_ticket) {
+  const ServerCallContext&, const std::shared_ptr<SelectObjectContentTicket>& select_object_content_ticket) {
 
   // query id
   auto query_id = select_object_content_ticket->query_id();
@@ -292,29 +306,41 @@ tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::
   if (!exp_physical_plan.has_value()) {
     return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed, exp_physical_plan.error()));
   }
+  auto physical_plan = *exp_physical_plan;
+
+  // wait for bitmaps ready if required
+  for (const auto &op_it: physical_plan->getPhysicalOps()) {
+    auto op = op_it.second;
+
+    // for each filter with bitmap pushdown enabled, wait until its bitmap is ready
+    if (op->getType() == POpType::FILTER) {
+      auto typedOp = std::static_pointer_cast<filter::FilterPOp>(op);
+      if (!typedOp->isBitmapPushdownEnabled()) {
+        continue;
+      }
+
+      // wait for bitmap ready
+      auto bitmap_key = BitmapCache::generateKey(query_id, typedOp->name());
+      auto bitmap = get_bitmap_from_cache(bitmap_key, true);
+      typedOp->setBitmap(bitmap);
+    }
+  }
 
   // execute the query plan
   auto execution = std::make_shared<fpdb::executor::Execution>(query_id,
                                                                actor_system_,
                                                                std::vector<::caf::node_id>{},
                                                                nullptr,
-                                                               *exp_physical_plan,
+                                                               physical_plan,
                                                                false);
 
   // get query result
   auto table = execution->execute()->table();
 
-  // buffer bitmaps
-  for (const auto &bitmapIt: execution->getBitmaps()) {
-    auto key = BitmapCache::generateKey(query_id, bitmapIt.first);
-    bitmap_cache_->produceBitmap(key, bitmapIt.second);
-
-    get_bitmap_mutex_.lock();
-    auto cvIt = get_bitmap_cvs_.find(key);
-    if (cvIt != get_bitmap_cvs_.end()) {
-      cvIt->second->notify_one();
-    }
-    get_bitmap_mutex_.unlock();
+  // buffer bitmaps generated at storage side
+  for (const auto &bitmap_it: execution->getBitmaps()) {
+    auto bitmap_key = BitmapCache::generateKey(query_id, bitmap_it.first);
+    put_bitmap_into_cache(bitmap_key, bitmap_it.second, true, false);
   }
 
   // make record batch stream, need to specially handle when num_rows = 0
@@ -346,16 +372,20 @@ tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::
 }
 
 tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::do_get_get_bitmap(
-        const ServerCallContext& context,const std::shared_ptr<GetBitmapTicket>& get_bitmap_ticket) {
+        const ServerCallContext&,const std::shared_ptr<GetBitmapTicket>& get_bitmap_ticket) {
 
   // get bitmap from bitmap cache
   auto query_id = get_bitmap_ticket->query_id();
   auto op = get_bitmap_ticket->op();
-  auto key = BitmapCache::generateKey(query_id, op);
-  auto bitmap = do_get_get_bitmap_from_bitmap_cache(key);
+  auto bitmap_key = BitmapCache::generateKey(query_id, op);
+  auto bitmap = get_bitmap_from_cache(bitmap_key, false);
+  if (!bitmap.has_value()) {
+    return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed,
+                                               fmt::format("Storage bitmap with key '{}' is not valid", bitmap_key)));
+  }
 
   // make recordBatch from bitmap
-  auto exp_record_batch = ArrowSerializer::bitmap_to_recordBatch(bitmap);
+  auto exp_record_batch = ArrowSerializer::bitmap_to_recordBatch(*bitmap);
   if (!exp_record_batch .has_value()) {
     return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed, exp_record_batch .error()));
   }
@@ -365,20 +395,113 @@ tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::
   return std::make_unique<::arrow::flight::RecordBatchStream>(*rb_reader);
 }
 
-std::vector<int64_t> FlightHandler::do_get_get_bitmap_from_bitmap_cache(const std::string &key) {
-  std::unique_lock lock(get_bitmap_mutex_);
+tl::expected<void, ::arrow::Status> FlightHandler::do_put(const ServerCallContext& context,
+                                                          const std::unique_ptr<FlightMessageReader> &reader) {
+  switch(reader->descriptor().type) {
+    case FlightDescriptor::CMD: {
+      return do_put_for_cmd(context, reader);
+    }
+    default: {
+      return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed,
+                                                 fmt::format("FlightDescriptor type '{}' not supported for DoPut",
+                                                             reader->descriptor().type)));
+    }
+  }
+}
 
-  tl::expected<std::vector<int64_t>, std::string> exp_bitmap;
+tl::expected<void, ::arrow::Status>
+FlightHandler::do_put_for_cmd(const ServerCallContext& context,
+                              const std::unique_ptr<FlightMessageReader> &reader) {
+  // Parse the cmd object
+  auto expected_cmd_object = CmdObject::deserialize(reader->descriptor().cmd);
+  if(!expected_cmd_object.has_value()) {
+    return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed, expected_cmd_object.error()));
+  }
+  auto cmd_object = expected_cmd_object.value();
+
+  switch(cmd_object->type()->id()) {
+    case CmdTypeId::PUT_BITMAP: {
+      auto put_bitmap_cmd = std::static_pointer_cast<PutBitmapCmd>(cmd_object);
+      return do_put_put_bitmap(context, put_bitmap_cmd, reader);
+    }
+    default: {
+      return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed,
+                                                 fmt::format("Cmd type '{}' not supported for DoPut",
+                                                             cmd_object->type()->name())));;
+    }
+  }
+}
+
+tl::expected<void, ::arrow::Status>
+FlightHandler::do_put_put_bitmap(const ServerCallContext&,
+                                 const std::shared_ptr<PutBitmapCmd>& put_bitmap_cmd,
+                                 const std::unique_ptr<FlightMessageReader> &reader) {
+  // bitmap key
+  auto bitmap_key = BitmapCache::generateKey(put_bitmap_cmd->query_id(), put_bitmap_cmd->op());
+  auto valid = put_bitmap_cmd->valid();
+
+  // bitmap
+  ::arrow::RecordBatchVector recordBatches;
+  auto status = reader->ReadAll(&recordBatches);
+  if (!status.ok()) {
+    return tl::make_unexpected(status);
+  }
+
+  if (recordBatches.size() != 1) {
+    return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed,
+                                               "Bitmap recordBatch stream should only contain one recordBatch"));
+  }
+  auto exp_bitmap = ArrowSerializer::recordBatch_to_bitmap(recordBatches[0]);
+  if (!exp_bitmap.has_value()) {
+    return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed, exp_bitmap.error()));
+  }
+
+  // put bitmap
+  put_bitmap_into_cache(bitmap_key, *exp_bitmap, valid, true);
+
+  return {};
+}
+
+std::optional<std::vector<int64_t>> FlightHandler::get_bitmap_from_cache(const std::string &key, bool is_compute_side) {
+  // get corresponding vars
+  auto &bitmap_cache = is_compute_side ? compute_bitmap_cache_ : storage_bitmap_cache_;
+  auto &bitmap_mutex = is_compute_side ? compute_bitmap_mutex_ : storage_bitmap_mutex_;
+  auto &bitmap_cvs = is_compute_side ? compute_bitmap_cvs_ : storage_bitmap_cvs_;
+
+  // get bitmap until it's ready
+  std::unique_lock lock(bitmap_mutex);
+
+  tl::expected<std::optional<std::vector<int64_t>>, std::string> exp_bitmap;
   auto cv = std::make_shared<std::condition_variable_any>();
-  get_bitmap_cvs_[key] = cv;
+  bitmap_cvs[key] = cv;
 
   cv->wait(lock, [&] {
-    exp_bitmap = bitmap_cache_->consumeBitmap(key);
+    exp_bitmap = bitmap_cache->consumeBitmap(key);
     return exp_bitmap.has_value();
   });
 
-  get_bitmap_cvs_.erase(key);
+  bitmap_cvs.erase(key);
   return *exp_bitmap;
+}
+
+void FlightHandler::put_bitmap_into_cache(const std::string &key,
+                                          const std::vector<int64_t> &bitmap,
+                                          bool valid,
+                                          bool is_compute_side) {
+  // get corresponding vars
+  auto &bitmap_cache = is_compute_side ? compute_bitmap_cache_ : storage_bitmap_cache_;
+  auto &bitmap_mutex = is_compute_side ? compute_bitmap_mutex_ : storage_bitmap_mutex_;
+  auto &bitmap_cvs = is_compute_side ? compute_bitmap_cvs_ : storage_bitmap_cvs_;
+
+  // put bitmap
+  bitmap_cache->produceBitmap(key, bitmap, valid);
+
+  bitmap_mutex.lock();
+  auto cvIt = bitmap_cvs.find(key);
+  if (cvIt != bitmap_cvs.end()) {
+    cvIt->second->notify_one();
+  }
+  bitmap_mutex.unlock();
 }
 
 } // namespace fpdb::store::server::flight

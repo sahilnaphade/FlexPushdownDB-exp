@@ -92,8 +92,9 @@ private:
 
   void sendTuples();
   void sendSegmentWeight();
-  void sendBitmap();
-  void fetchBitmapFromFPDBStore();
+  void sendBitmapToRoot();
+  void putBitmapToFPDBStore();
+  void getBitmapFromFPDBStore();
 
   void checkApplicability(const std::shared_ptr<fpdb::tuple::TupleSet>& tupleSet);
   bool isComputeSide();

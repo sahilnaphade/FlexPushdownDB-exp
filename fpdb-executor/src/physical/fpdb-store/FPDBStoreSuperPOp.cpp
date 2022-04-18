@@ -38,9 +38,6 @@ void FPDBStoreSuperPOp::onReceive(const Envelope &envelope) {
   } else if (message.type() == MessageType::BLOOM_FILTER) {
     auto bloomFilterMessage = dynamic_cast<const BloomFilterMessage &>(message);
     this->onBloomFilter(bloomFilterMessage);
-  } else if (message.type() == MessageType::BITMAP) {
-    auto bitmapMessage = dynamic_cast<const BitmapMessage &>(message);
-    this->onBitmap(bitmapMessage);
   } else if (message.type() == MessageType::COMPLETE) {
     // noop
   } else {
@@ -126,46 +123,6 @@ void FPDBStoreSuperPOp::onBloomFilter(const BloomFilterMessage &msg) {
   }
 }
 
-void FPDBStoreSuperPOp::onBitmap(const BitmapMessage &msg) {
-  auto bitmap = msg.getBitmap();
-  auto receiver = msg.getReceiverInFPDBStoreSuper();
-  if (!receiver.has_value()) {
-    ctx()->notifyError(fmt::format("ReceiverInFPDBStoreSuper in bitmapMessage sent to FPDBStoreSuperPOp is not set, "
-                                   "message is from '{}'", msg.sender()));
-  }
-  bitmapReceivedOps_.emplace(*receiver);
-
-  // get receiver op
-  auto expReceiverOp = subPlan_->getPhysicalOp(*receiver);
-  if (!expReceiverOp.has_value()) {
-    ctx()->notifyError(expReceiverOp.error());
-  }
-  auto receiverOp = *expReceiverOp;
-
-  // set bitmap for receiver op
-  switch (receiverOp->getType()) {
-    case FILTER: {
-      auto typedOp = std::static_pointer_cast<filter::FilterPOp>(receiverOp);
-      typedOp->setBitmap(bitmap);
-      break;
-    }
-    case BLOOM_FILTER_USE: {
-      ctx()->notifyError("Bitmap pushdown for BloomFilterUsePOp not implemented");
-      break;
-    }
-    default: {
-      ctx()->notifyError(fmt::format("Bitmap pushdown is only applicable for FilterPOp and BloomFilterUsePOp, "
-                                     "but got '{}'", receiverOp->getTypeString()));
-      break;
-    }
-  }
-
-  // try to process
-  if (readyToProcess()) {
-    processAtStore();
-  }
-}
-
 bool FPDBStoreSuperPOp::readyToProcess() {
   // check if waiting for scan message, specifically in hybrid mode
   if (waitForScanMessage_) {
@@ -180,17 +137,6 @@ bool FPDBStoreSuperPOp::readyToProcess() {
     if (op->getType() == POpType::BLOOM_FILTER_USE) {
       auto typedOp = std::static_pointer_cast<bloomfilter::BloomFilterUsePOp>(op);
       if (!typedOp->receivedBloomFilter()) {
-        return false;
-      }
-    }
-
-    // check if for each filter with bitmap pushdown enabled, if it's already received bitmap message
-    else if (op->getType() == POpType::FILTER) {
-      auto typedOp = std::static_pointer_cast<filter::FilterPOp>(op);
-      if (!typedOp->isBitmapPushdownEnabled()) {
-        continue;
-      }
-      if (bitmapReceivedOps_.find(op->name()) == bitmapReceivedOps_.end()) {
         return false;
       }
     }

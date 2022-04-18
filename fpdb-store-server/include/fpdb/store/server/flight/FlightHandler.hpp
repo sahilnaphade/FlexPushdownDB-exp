@@ -12,11 +12,11 @@
 #include "condition_variable"
 
 #include "fpdb/store/server/flight/SelectObjectContentCmd.hpp"
-#include "fpdb/store/server/flight/SelectObjectContentTicket.hpp"
+#include "fpdb/store/server/flight/PutBitmapCmd.hpp"
 #include "fpdb/store/server/flight/GetObjectTicket.hpp"
+#include "fpdb/store/server/flight/SelectObjectContentTicket.hpp"
 #include "fpdb/store/server/flight/GetBitmapTicket.hpp"
 #include "fpdb/store/server/flight/HeaderMiddleware.hpp"
-#include "fpdb/store/server/flight/TicketObject.hpp"
 #include "fpdb/store/server/caf/ActorManager.hpp"
 #include "fpdb/store/server/cache/BitmapCache.hpp"
 
@@ -90,6 +90,17 @@ public:
    */
   ::arrow::Status DoGet(const ServerCallContext& context, const Ticket& request,
                         std::unique_ptr<FlightDataStream>* stream) override;
+
+  /**
+   *
+   * @param context
+   * @param reader
+   * @param writer
+   * @return
+   */
+  ::arrow::Status DoPut(const ServerCallContext& context,
+                        std::unique_ptr<FlightMessageReader> reader,
+                        std::unique_ptr<FlightMetadataWriter> writer) override;
 
 private:
   /**
@@ -193,16 +204,65 @@ private:
   do_get_get_bitmap(const ServerCallContext& context,
                     const std::shared_ptr<GetBitmapTicket>& get_bitmap_ticket);
 
-  std::vector<int64_t> do_get_get_bitmap_from_bitmap_cache(const std::string &key);
+  /**
+   *
+   * @param context
+   * @param reader
+   * @return
+   */
+  tl::expected<void, ::arrow::Status> do_put(const ServerCallContext& context,
+                                             const std::unique_ptr<FlightMessageReader> &reader);
+
+  /**
+   *
+   * @param context
+   * @param reader
+   * @return
+   */
+  tl::expected<void, ::arrow::Status> do_put_for_cmd(const ServerCallContext& context,
+                                                     const std::unique_ptr<FlightMessageReader> &reader);
+
+  /**
+   *
+   * @param context
+   * @param query_id
+   * @param op
+   * @param reader
+   * @return
+   */
+  tl::expected<void, ::arrow::Status> do_put_put_bitmap(const ServerCallContext& context,
+                                                        const std::shared_ptr<PutBitmapCmd>& put_bitmap_cmd,
+                                                        const std::unique_ptr<FlightMessageReader> &reader);
+
+  /**
+   *
+   * @param key
+   * @param isComputeSide
+   * @return
+   */
+  std::optional<std::vector<int64_t>> get_bitmap_from_cache(const std::string &key,
+                                                            bool is_compute_side);
+
+  /**
+   *
+   * @param key
+   * @param bitmap
+   * @param valid
+   * @param is_compute_side
+   */
+  void put_bitmap_into_cache(const std::string &key,
+                             const std::vector<int64_t> &bitmap,
+                             bool valid,
+                             bool is_compute_side);
 
   ::arrow::flight::Location location_;
   std::string store_root_path_;
   std::shared_ptr<::caf::actor_system> actor_system_;
 
-  // for bitmap constructed during execution
-  std::shared_ptr<BitmapCache> bitmap_cache_;
-  std::mutex get_bitmap_mutex_;
-  std::unordered_map<std::string, std::shared_ptr<std::condition_variable_any>> get_bitmap_cvs_;
+  // bitmap cache from compute side and storage side respectively
+  std::shared_ptr<BitmapCache> compute_bitmap_cache_, storage_bitmap_cache_;
+  std::mutex compute_bitmap_mutex_, storage_bitmap_mutex_;
+  std::unordered_map<std::string, std::shared_ptr<std::condition_variable_any>> compute_bitmap_cvs_, storage_bitmap_cvs_;
 };
 
 } // namespace fpdb::store::server::flight
