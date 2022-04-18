@@ -28,7 +28,7 @@ TEST_CASE ("bitmap-pushdown-bench-tpch-fpdb-store-diff-node-compute-bitmap" * do
   // predicates with "and" that makes specified selectivity
   std::cout << fmt::format("Selectivity: {}", SELECTIVITY_BITMAP_PUSHDOWN_BENCH) << std::endl;
   std::string selectivityPred = fmt::format("l_discount < {}", 0.1 * SELECTIVITY_BITMAP_PUSHDOWN_BENCH);
-  std::vector<std::string> allPredicates{"selectivityPred",
+  std::vector<std::string> allPredicates{selectivityPred,
                                          "l_quantity >= 0",
                                          "l_shipdate <= date '1998-12-31'",
                                          "l_commitdate <= date '1998-12-31'",
