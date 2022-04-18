@@ -2,8 +2,8 @@
 // Created by Yifei Yang on 11/30/21.
 //
 
-#ifndef FPDB_FPDB_MAIN_TEST_TESTUTIL_H
-#define FPDB_FPDB_MAIN_TEST_TESTUTIL_H
+#ifndef FPDB_FPDB_MAIN_TEST_BASE_TESTUTIL_H
+#define FPDB_FPDB_MAIN_TEST_BASE_TESTUTIL_H
 
 #include <fpdb/main/ActorSystemConfig.h>
 #include <fpdb/executor/Executor.h>
@@ -108,4 +108,4 @@ private:
 
 }
 
-#endif //FPDB_FPDB_MAIN_TEST_TESTUTIL_H
+#endif //FPDB_FPDB_MAIN_TEST_BASE_TESTUTIL_H

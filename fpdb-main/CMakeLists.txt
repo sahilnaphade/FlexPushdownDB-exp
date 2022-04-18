@@ -5,7 +5,7 @@ project(fpdb-main VERSION "${PROJECT_VERSION}" LANGUAGES C CXX)
 # Targets
 #-----------------------------------------------------------------------------------------------------------------------
 
-# fpdb-main-client
+# fpdb-main
 add_library(fpdb-main
         src/ExecConfig.cpp include/fpdb/main/ExecConfig.h
         include/fpdb/main/ActorSystemConfig.h
@@ -15,7 +15,6 @@ add_library(fpdb-main
 target_include_directories(fpdb-main PUBLIC include)
 
 target_link_libraries(fpdb-main PUBLIC fpdb-executor)
-target_link_libraries(fpdb-main PUBLIC fpdb-store-server-static)
 target_link_libraries(fpdb-main PUBLIC fpdb-util)
 
 
@@ -40,21 +39,21 @@ add_dependencies(fpdb-main-server resources)
 #-----------------------------------------------------------------------------------------------------------------------
 
 add_executable(fpdb-main-test
-        test/Globals.h
-        test/TestUtil.cpp test/TestUtil.h
-        test/MainTest.cpp
+        test-base/Globals.h
+        test-base/TestUtil.cpp test-base/TestUtil.h
+        test-base/MainTest.cpp
         test/SSBTest.cpp
         test/TPCHTest.cpp
         test/TPCHDistTest.cpp
         test/TPCHFPDBStoreSameNodeTest.cpp
-        test/TPCHFPDBStoreDiffNodeTest.cpp
-        test/BytesReadTest.cpp
         test/CachingOnlyTest.cpp
         test/HybridTest.cpp
-        test/BitmapPushdownTest.cpp
-        test/BitmapPushdownBench.cpp)
+        test/BitmapPushdownTest.cpp)
+
+target_include_directories(fpdb-main-test PRIVATE test-base)
 
 target_link_libraries(fpdb-main-test PRIVATE fpdb-main)
+target_link_libraries(fpdb-main-test PRIVATE fpdb-store-server-static)
 target_link_libraries(fpdb-main-test PRIVATE doctest::doctest)
 
 add_dependencies(fpdb-main-test resources)
@@ -64,3 +63,24 @@ add_custom_command(
         COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${CMAKE_CURRENT_SOURCE_DIR}/test-resources
         ${CMAKE_CURRENT_BINARY_DIR}/test-resources)
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+# Bench
+#-----------------------------------------------------------------------------------------------------------------------
+
+add_executable(fpdb-main-bench
+        test-base/Globals.h
+        test-base/TestUtil.cpp test-base/TestUtil.h
+        test-base/MainTest.cpp
+        bench/TPCHBench.cpp
+        bench/TPCHDistBench.cpp
+        bench/TPCHFPDBStoreDiffNodeBench.cpp
+        bench/BytesReadBench.cpp
+        bench/BitmapPushdownBench.cpp)
+
+target_include_directories(fpdb-main-bench PRIVATE test-base)
+
+target_link_libraries(fpdb-main-bench PRIVATE fpdb-main)
+target_link_libraries(fpdb-main-bench PRIVATE fpdb-store-client-static)
+target_link_libraries(fpdb-main-bench PRIVATE doctest::doctest)

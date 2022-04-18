@@ -19,7 +19,7 @@ namespace fpdb::main::test {
 
 #define SKIP_SUITE false
 
-TEST_SUITE ("bytes-read" * doctest::skip(SKIP_SUITE)) {
+TEST_SUITE ("bytes-read-bench" * doctest::skip(SKIP_SUITE)) {
 
 constexpr std::string_view bytesReadTestQueryFileNameBase = "bytes_read_test_{}.sql";
 
