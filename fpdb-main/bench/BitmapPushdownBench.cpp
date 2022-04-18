@@ -18,14 +18,17 @@ namespace fpdb::main::test {
 TEST_SUITE ("bitmap-pushdown-bench" * doctest::skip(SKIP_SUITE)) {
 
 int SF_BITMAP_PUSHDOWN_BENCH = 10;
+double SELECTIVITY_BITMAP_PUSHDOWN_BENCH = 0.2;
 
 TEST_CASE ("bitmap-pushdown-bench-tpch-fpdb-store-diff-node-compute-bitmap" * doctest::skip(false || SKIP_SUITE)) {
   std::vector<bool> enableBitMapPushdownConfigs = {true, false};
   std::string cachingQueryFileName = "caching.sql";
   std::string testQueryFileNameBase = "test_{}.sql";
 
-  // predicates with "and" that makes ~20% selectivity
-  std::vector<std::string> allPredicates{"l_discount <= 0.01",
+  // predicates with "and" that makes specified selectivity
+  std::cout << fmt::format("Selectivity: {}", SELECTIVITY_BITMAP_PUSHDOWN_BENCH) << std::endl;
+  std::string selectivityPred = fmt::format("l_discount < {}", 0.1 * SELECTIVITY_BITMAP_PUSHDOWN_BENCH);
+  std::vector<std::string> allPredicates{"selectivityPred",
                                          "l_quantity >= 0",
                                          "l_shipdate <= date '1998-12-31'",
                                          "l_commitdate <= date '1998-12-31'",
@@ -86,7 +89,9 @@ TEST_CASE ("bitmap-pushdown-bench-tpch-fpdb-store-diff-node-storage-bitmap" * do
   std::string cachingQueryFileName = "caching.sql";
   std::string testQueryFileNameBase = "test_{}.sql";
 
-  // predicates with "and" that makes ~20% selectivity
+  // predicate that makes specified selectivity
+  std::cout << fmt::format("Selectivity: {}", SELECTIVITY_BITMAP_PUSHDOWN_BENCH) << std::endl;
+  std::string selectivityPred = fmt::format("l_discount < {}", 0.1 * SELECTIVITY_BITMAP_PUSHDOWN_BENCH);
   std::vector<std::string> projectColumns{"l_returnflag",
                                           "l_linestatus",
                                           "l_quantity",
@@ -113,7 +118,7 @@ TEST_CASE ("bitmap-pushdown-bench-tpch-fpdb-store-diff-node-storage-bitmap" * do
                                           "from\n"
                                           "    lineitem\n"
                                           "where\n"
-                                          "    l_discount <= 0.01\n", fmt::join(cachedProjectColumns, ", "));
+                                          "    {}\n", fmt::join(cachedProjectColumns, ", "), selectivityPred);
       std::string testQueryFileName = fmt::format(testQueryFileNameBase, projectColumnNum);
       TestUtil::writeQueryToFile(cachingQueryFileName, cachingQuery);
       TestUtil::writeQueryToFile(testQueryFileName, testQuery);
