@@ -66,6 +66,11 @@ POpActor::POpActor(::caf::actor_config &cfg, std::shared_ptr<PhysicalOp> opBehav
         const auto &bufferedMsg = self->messageBuffer_.front();
         self->on_regular_message(bufferedMsg);
         self->messageBuffer_.pop();
+
+        // if running_ turns to false, we should not continue processing rest messages in buffer
+        if (!self->running_) {
+          break;
+        }
 		  }
 
 		} else if (msg.message().type() == MessageType::STOP) {
