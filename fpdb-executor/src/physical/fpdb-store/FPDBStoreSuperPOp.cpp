@@ -6,9 +6,11 @@
 #include <fpdb/executor/physical/bloomfilter/BloomFilterUsePOp.h>
 #include <fpdb/executor/physical/filter/FilterPOp.h>
 #include <fpdb/executor/physical/serialization/PhysicalPlanSerializer.h>
+#include <fpdb/executor/physical/Globals.h>
 #include <fpdb/executor/message/DebugMetricsMessage.h>
 #include <fpdb/executor/metrics/Globals.h>
 #include <fpdb/store/server/flight/SelectObjectContentTicket.hpp>
+#include <fpdb/store/server/flight/ClearBitmapCmd.hpp>
 #include <arrow/flight/api.h>
 #include <unordered_map>
 
@@ -205,9 +207,45 @@ void FPDBStoreSuperPOp::processAtStore() {
 }
 
 void FPDBStoreSuperPOp::processEmpty() {
-  // send an empty tupleSet and complete
+  // send an empty tupleSet
   std::shared_ptr<Message> tupleSetMessage = std::make_shared<TupleSetMessage>(TupleSet::makeWithEmptyTable(), name_);
   ctx()->tell(tupleSetMessage);
+
+  // need to clear bitmaps cached at storage if bitmap pushdown is enabled for some ops
+  // make flight client and connect
+  makeDoPutFlightClient(host_, port_);
+
+  for (const auto &opIt: subPlan_->getPhysicalOps()) {
+    auto op = opIt.second;
+
+    // clear bitmap cached at storage for each FilterPOp
+    if (op->getType() == POpType::FILTER) {
+      auto typedOp = std::static_pointer_cast<filter::FilterPOp>(op);
+      if (!typedOp->isBitmapPushdownEnabled()) {
+        continue;
+      }
+
+      // send request to store
+      auto cmdObj = ClearBitmapCmd::make(queryId_, typedOp->getBitmapWrapper()->mirrorOp_, true);
+      auto expCmd = cmdObj->serialize(false);
+      if (!expCmd.has_value()) {
+        ctx()->notifyError(expCmd.error());
+      }
+      auto descriptor = ::arrow::flight::FlightDescriptor::Command(*expCmd);
+      std::unique_ptr<arrow::flight::FlightStreamWriter> writer;
+      std::unique_ptr<arrow::flight::FlightMetadataReader> metadataReader;
+      auto status = (*DoPutFlightClient)->DoPut(descriptor, nullptr, &writer, &metadataReader);
+      if (!status.ok()) {
+        ctx()->notifyError(status.message());
+      }
+      status = writer->Close();
+      if (!status.ok()) {
+        ctx()->notifyError(status.message());
+      }
+    }
+  }
+
+  // complete
   ctx()->notifyComplete();
 }
 

@@ -30,4 +30,8 @@ std::shared_ptr<CmdType> CmdType::put_bitmap() {
   return std::make_shared<CmdType>(CmdTypeId::PUT_BITMAP, PutBitmapCmdTypeName.data());
 }
 
+std::shared_ptr<CmdType> CmdType::clear_bitmap() {
+  return std::make_shared<CmdType>(CmdTypeId::CLEAR_BITMAP, ClearBitmapCmdTypeName.data());
+}
+
 } // namespace fpdb::store::server::flight

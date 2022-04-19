@@ -13,7 +13,8 @@ namespace fpdb::store::server::flight {
 enum class CmdTypeId {
   GET_OBJECT,
   SELECT_OBJECT_CONTENT,
-  PUT_BITMAP
+  PUT_BITMAP,
+  CLEAR_BITMAP
 };
 
 class CmdType {
@@ -29,6 +30,8 @@ public:
   static std::shared_ptr<CmdType> select_object_content();
 
   static std::shared_ptr<CmdType> put_bitmap();
+
+  static std::shared_ptr<CmdType> clear_bitmap();
 
 private:
   CmdTypeId id_;

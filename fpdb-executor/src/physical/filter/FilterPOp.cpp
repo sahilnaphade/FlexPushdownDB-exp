@@ -547,7 +547,7 @@ void FilterPOp::putBitmapToFPDBStore() {
   }
   auto recordBatch = *expRecordBatch;
 
-  auto cmdObj = PutBitmapCmd::make(queryId_, bitmapWrapper_->mirrorOp_, valid);
+  auto cmdObj = PutBitmapCmd::make(queryId_, name_, valid);
   auto expCmd = cmdObj->serialize(false);
   if (!expCmd.has_value()) {
     ctx()->notifyError(expCmd.error());
@@ -572,6 +572,8 @@ void FilterPOp::putBitmapToFPDBStore() {
   if (!status.ok()) {
     ctx()->notifyError(status.message());
   }
+
+  bitmapWrapper_->isBitmapSent_ = true;
 }
 
 void FilterPOp::getBitmapFromFPDBStore() {

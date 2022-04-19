@@ -16,15 +16,17 @@ static constexpr std::string_view QueryIdJSONName = "query_id";
 static constexpr std::string_view QueryPlanJSONName = "query_plan";
 static constexpr std::string_view OpJSONName = "op";
 static constexpr std::string_view ValidJSONName = "valid";
+static constexpr std::string_view IsComputeSideJsonName = "is_compute_side";
 
-static constexpr std::string_view GetObjectCmdTypeName = "get-object";
-static constexpr std::string_view SelectObjectContentCmdTypeName = "select-object-content";
-static constexpr std::string_view PutBitmapCmdTypeName = "put-bitmap";
-static constexpr std::string_view GetObjectTicketTypeName = "get-object";
-static constexpr std::string_view SelectObjectContentTicketTypeName = "select-object-content";
-static constexpr std::string_view GetBitmapTicketTypeName = "get-bitmap";
+static constexpr std::string_view GetObjectCmdTypeName = "get_object";
+static constexpr std::string_view SelectObjectContentCmdTypeName = "select_object_content";
+static constexpr std::string_view PutBitmapCmdTypeName = "put_bitmap";
+static constexpr std::string_view ClearBitmapCmdTypeName = "clear_bitmap";
+static constexpr std::string_view GetObjectTicketTypeName = "get_object";
+static constexpr std::string_view SelectObjectContentTicketTypeName = "select_object_content";
+static constexpr std::string_view GetBitmapTicketTypeName = "get_bitmap";
 
-static constexpr std::string_view HeaderMiddlewareKey = "header-middleware";
+static constexpr std::string_view HeaderMiddlewareKey = "header_middleware";
 static constexpr std::string_view BucketHeaderKey = "bucket";
 static constexpr std::string_view ObjectHeaderKey = "object";
 

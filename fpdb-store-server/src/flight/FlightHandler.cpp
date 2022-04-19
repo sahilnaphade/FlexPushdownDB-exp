@@ -320,7 +320,7 @@ tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::
       }
 
       // wait for bitmap ready
-      auto bitmap_key = BitmapCache::generateKey(query_id, typedOp->name());
+      auto bitmap_key = BitmapCache::generateKey(query_id, typedOp->getBitmapWrapper()->mirrorOp_);
       auto bitmap = get_bitmap_from_cache(bitmap_key, true);
       typedOp->setBitmap(bitmap);
     }
@@ -424,6 +424,10 @@ FlightHandler::do_put_for_cmd(const ServerCallContext& context,
       auto put_bitmap_cmd = std::static_pointer_cast<PutBitmapCmd>(cmd_object);
       return do_put_put_bitmap(context, put_bitmap_cmd, reader);
     }
+    case CmdTypeId::CLEAR_BITMAP: {
+      auto clear_bitmap_cmd = std::static_pointer_cast<ClearBitmapCmd>(cmd_object);
+      return do_put_clear_bitmap(context, clear_bitmap_cmd);
+    }
     default: {
       return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed,
                                                  fmt::format("Cmd type '{}' not supported for DoPut",
@@ -458,6 +462,18 @@ FlightHandler::do_put_put_bitmap(const ServerCallContext&,
 
   // put bitmap
   put_bitmap_into_cache(bitmap_key, *exp_bitmap, valid, true);
+
+  return {};
+}
+
+tl::expected<void, ::arrow::Status>
+FlightHandler::do_put_clear_bitmap(const ServerCallContext&,
+                                   const std::shared_ptr<ClearBitmapCmd>& clear_bitmap_cmd) {
+  // bitmap key
+  auto bitmap_key = BitmapCache::generateKey(clear_bitmap_cmd->query_id(), clear_bitmap_cmd->op());
+
+  // just consume the bitmap
+  get_bitmap_from_cache(bitmap_key, clear_bitmap_cmd->is_compute_side());
 
   return {};
 }

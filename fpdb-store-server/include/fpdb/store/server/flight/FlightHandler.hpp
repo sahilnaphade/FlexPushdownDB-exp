@@ -13,6 +13,7 @@
 
 #include "fpdb/store/server/flight/SelectObjectContentCmd.hpp"
 #include "fpdb/store/server/flight/PutBitmapCmd.hpp"
+#include "fpdb/store/server/flight/ClearBitmapCmd.hpp"
 #include "fpdb/store/server/flight/GetObjectTicket.hpp"
 #include "fpdb/store/server/flight/SelectObjectContentTicket.hpp"
 #include "fpdb/store/server/flight/GetBitmapTicket.hpp"
@@ -233,6 +234,15 @@ private:
   tl::expected<void, ::arrow::Status> do_put_put_bitmap(const ServerCallContext& context,
                                                         const std::shared_ptr<PutBitmapCmd>& put_bitmap_cmd,
                                                         const std::unique_ptr<FlightMessageReader> &reader);
+
+  /**
+   *
+   * @param context
+   * @param clear_bitmap_cmd
+   * @return
+   */
+  tl::expected<void, ::arrow::Status> do_put_clear_bitmap(const ServerCallContext& context,
+                                                          const std::shared_ptr<ClearBitmapCmd>& clear_bitmap_cmd);
 
   /**
    *
