@@ -101,6 +101,9 @@ Compiler needed:
 
 
 ## To Do
+### Refactoring
+- Use a single flight client instead of creating one for each request
+
 ### Performance
 - Replace CAF built-in communication by Flight
 - Optimize Group Operator
