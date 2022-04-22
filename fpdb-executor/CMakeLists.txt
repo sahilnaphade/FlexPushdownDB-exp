@@ -72,7 +72,10 @@ add_library(fpdb-executor STATIC
         src/physical/file/FileScanPOp2.cpp include/fpdb/executor/physical/file/FileScanPOp2.h
         src/physical/filter/FilterPOp.cpp include/fpdb/executor/physical/filter/FilterPOp.h
         src/physical/group/GroupPOp.cpp include/fpdb/executor/physical/group/GroupPOp.h
+        include/fpdb/executor/physical/group/GroupKernelType.h
+        src/physical/group/GroupAbstractKernel.cpp include/fpdb/executor/physical/group/GroupAbstractKernel.h
         src/physical/group/GroupKernel.cpp include/fpdb/executor/physical/group/GroupKernel.h
+        src/physical/group/GroupArrowKernel.cpp include/fpdb/executor/physical/group/GroupArrowKernel.h
         src/physical/join/hashjoin/HashJoinBuildPOp.cpp include/fpdb/executor/physical/join/hashjoin/HashJoinBuildPOp.h
         src/physical/join/hashjoin/HashJoinProbePOp.cpp include/fpdb/executor/physical/join/hashjoin/HashJoinProbePOp.h
         src/physical/join/hashjoin/HashJoinBuildKernel.cpp include/fpdb/executor/physical/join/hashjoin/HashJoinBuildKernel.h
@@ -117,6 +120,7 @@ add_library(fpdb-executor STATIC
         include/fpdb/executor/caf-serialization/CAFAggregateFunctionSerializer.h
         include/fpdb/executor/caf-serialization/CAFHashJoinProbeAbstractKernelSerializer.h
         include/fpdb/executor/caf-serialization/CAFFileScanKernelSerializer.h
+        include/fpdb/executor/caf-serialization/CAFGroupAbstractKernelSerializer.h
 #        serialization
         src/physical/serialization/PhysicalPlanSerializer.cpp include/fpdb/executor/physical/serialization/PhysicalPlanSerializer.h
         src/physical/serialization/PhysicalPlanDeserializer.cpp include/fpdb/executor/physical/serialization/PhysicalPlanDeserializer.h
@@ -141,6 +145,24 @@ target_link_libraries(fpdb-executor PUBLIC graphviz_neato_layout_shared)
 target_link_libraries(fpdb-executor PUBLIC primesieve_static)
 target_link_libraries(fpdb-executor PRIVATE fpdb-store-server-file)
 target_link_libraries(fpdb-executor PRIVATE fpdb-store-server-flight-api)
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+# Microbenchmark
+#-----------------------------------------------------------------------------------------------------------------------
+
+add_executable(fpdb-executor-bench
+        bench/Globals.h
+        bench/MainBenchmark.cpp
+        bench/GroupBenchmark.cpp)
+
+target_include_directories(fpdb-executor-bench PRIVATE include)
+
+target_link_libraries(fpdb-executor-bench spdlog::spdlog)
+target_link_libraries(fpdb-executor-bench doctest::doctest)
+target_link_libraries(fpdb-executor-bench nanobench::nanobench)
+target_link_libraries(fpdb-executor-bench fpdb-executor)
+
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Diagnostics

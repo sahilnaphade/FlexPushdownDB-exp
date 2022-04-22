@@ -14,12 +14,11 @@ using namespace fpdb::util;
 
 namespace fpdb::executor::physical::group {
 
-GroupKernel::GroupKernel(const vector<string>& columnNames,
-                           vector<shared_ptr<AggregateFunction>> aggregateFunctions) :
-	groupColumnNames_(ColumnName::canonicalize(columnNames)),
-	aggregateFunctions_(move(aggregateFunctions)) {}
+GroupKernel::GroupKernel(const vector<string> &groupColumnNames,
+                         const vector<shared_ptr<AggregateFunction>> &aggregateFunctions) :
+  GroupAbstractKernel(GroupKernelType::GROUP_KERNEL, groupColumnNames, aggregateFunctions) {}
 
-tl::expected<void, string> GroupKernel::group(const TupleSet &tupleSet) {
+tl::expected<void, string> GroupKernel::group(const std::shared_ptr<TupleSet> &tupleSet) {
 
   // Cache or validate the input schema
   auto expectedCacheResult = cache(tupleSet);
@@ -27,9 +26,9 @@ tl::expected<void, string> GroupKernel::group(const TupleSet &tupleSet) {
 	  return expectedCacheResult;
 
   // Check the tuple set is defined
-  if (!tupleSet.valid())
+  if (!tupleSet->valid())
 	  return tl::make_unexpected("Tuple set is undefined");
-  auto table = tupleSet.table();
+  auto table = tupleSet->table();
 
   // Group the tupleSet into appenders
   auto groupedArraysResult = groupTable(*table);
@@ -84,11 +83,11 @@ vector<string> GroupKernel::getAggregateColumnNames() {
   return aggregateColumnNames;
 }
 
-tl::expected<void, string> GroupKernel::cache(const TupleSet &tupleSet) {
+tl::expected<void, string> GroupKernel::cache(const std::shared_ptr<TupleSet> &tupleSet) {
 
-  if(!tupleSet.valid())
+  if(!tupleSet->valid())
 	return tl::make_unexpected(fmt::format("Input tuple set table is undefined"));
-  auto table = tupleSet.table();
+  auto table = tupleSet->table();
 
   if (!inputSchema_.has_value()) {
     // Canonicalize and cache the schema

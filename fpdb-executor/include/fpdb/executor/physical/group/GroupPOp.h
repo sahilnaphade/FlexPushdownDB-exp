@@ -5,7 +5,7 @@
 #ifndef FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_GROUP_GROUPPOP_H
 #define FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_GROUP_GROUPPOP_H
 
-#include <fpdb/executor/physical/group/GroupKernel.h>
+#include <fpdb/executor/physical/group/GroupAbstractKernel.h>
 #include <fpdb/executor/physical/PhysicalOp.h>
 #include <fpdb/executor/physical/aggregate/function/AggregateFunction.h>
 #include <fpdb/executor/message/CompleteMessage.h>
@@ -33,6 +33,8 @@ namespace fpdb::executor::physical::group {
 class GroupPOp : public PhysicalOp {
 
 public:
+  static constexpr GroupKernelType KERNEL_TYPE = GroupKernelType::GROUP_KERNEL;
+
   GroupPOp(const string &name,
            const vector<string> &projectColumnNames,
            int nodeId,
@@ -51,7 +53,7 @@ private:
   void onTupleSet(const TupleSetMessage &msg);
   void onComplete(const CompleteMessage &msg);
 
-  GroupKernel kernel_;
+  std::shared_ptr<GroupAbstractKernel> kernel_;
 
 // caf inspect
 public:

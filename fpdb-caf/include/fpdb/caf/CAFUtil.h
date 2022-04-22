@@ -41,6 +41,7 @@ public:
   inline static constexpr ::caf::type_id_t PhysicalPlan_first_custom_type_id = ::caf::first_custom_type_id + 2600;
   inline static constexpr ::caf::type_id_t BloomFilter_first_custom_type_id = ::caf::first_custom_type_id + 2700;
   inline static constexpr ::caf::type_id_t ObjStoreConnector_first_custom_type_id = ::caf::first_custom_type_id + 2800;
+  inline static constexpr ::caf::type_id_t GroupAbstractKernel_first_custom_type_id = ::caf::first_custom_type_id + 2900;
 
 };
 

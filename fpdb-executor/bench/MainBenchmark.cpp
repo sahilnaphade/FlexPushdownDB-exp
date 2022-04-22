@@ -10,8 +10,6 @@
 #define ANKERL_NANOBENCH_IMPLEMENT
 #include <nanobench.h>
 
-backward::SignalHandling sh;
-
 /**
  * Returns the name of the current test case
  *
@@ -28,7 +26,7 @@ const char* getCurrentTestName() { return doctest::detail::g_cs->currentTest->m_
  */
 int main(int argc, char **argv) {
 
-  spdlog::set_level(spdlog::level::debug);
+  spdlog::set_level(spdlog::level::off);
   spdlog::set_pattern("[%H:%M:%S.%e] [thread %t] [%! (%s:%#)] [%l]  %v");
 
   doctest::Context context;

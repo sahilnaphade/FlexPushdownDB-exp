@@ -3,6 +3,7 @@
 //
 
 #include <fpdb/executor/physical/group/GroupPOp.h>
+#include <fpdb/executor/physical/group/GroupKernel.h>
 
 using namespace fpdb::tuple;
 
@@ -13,8 +14,16 @@ GroupPOp::GroupPOp(const string &name,
                    int nodeId,
                    const vector<string> &groupColumnNames,
                    const vector<shared_ptr<aggregate::AggregateFunction>> &aggregateFunctions) :
-	PhysicalOp(name, GROUP, projectColumnNames, nodeId),
-  kernel_(groupColumnNames, aggregateFunctions) {
+	PhysicalOp(name, GROUP, projectColumnNames, nodeId) {
+  switch (KERNEL_TYPE) {
+    case GroupKernelType::GROUP_KERNEL: {
+      kernel_ = std::make_shared<GroupKernel>(groupColumnNames, aggregateFunctions);
+      break;
+    }
+    default: {
+      throw std::runtime_error("Unknown group kernel type");
+    }
+  }
 }
 
 std::string GroupPOp::getTypeString() const {
@@ -41,7 +50,7 @@ void GroupPOp::onStart() {
 
 void GroupPOp::onTupleSet(const TupleSetMessage &message) {
   const auto &tupleSet = message.tuples();
-  auto expectedGroupResult = kernel_.group(*tupleSet);
+  auto expectedGroupResult = kernel_->group(tupleSet);
   if(!expectedGroupResult)
     ctx()->notifyError(expectedGroupResult.error());
 }
@@ -49,7 +58,7 @@ void GroupPOp::onTupleSet(const TupleSetMessage &message) {
 void GroupPOp::onComplete(const CompleteMessage &) {
   if (!ctx()->isComplete() && this->ctx()->operatorMap().allComplete(POpRelationshipType::Producer)) {
 
-    auto expectedGroupedTupleSet = kernel_.finalise();
+    auto expectedGroupedTupleSet = kernel_->finalise();
     if (!expectedGroupedTupleSet)
       ctx()->notifyError(expectedGroupedTupleSet.error());
 
@@ -67,7 +76,7 @@ void GroupPOp::onComplete(const CompleteMessage &) {
 }
 
 void GroupPOp::clear() {
-  kernel_.clear();
+  kernel_->clear();
 }
 
 }

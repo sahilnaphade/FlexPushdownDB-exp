@@ -98,23 +98,23 @@ target_link_libraries(fpdb-tuple-test fmt::fmt)
 
 
 #-----------------------------------------------------------------------------------------------------------------------
-# Benchmark
+# Microbenchmark
 #-----------------------------------------------------------------------------------------------------------------------
 
-add_executable(fpdb-tuple-benchmark
+add_executable(fpdb-tuple-bench
         bench/Globals.h
         bench/Main.cpp
         bench/ArrayAppenderBench.cpp)
 
 
-target_include_directories(fpdb-tuple-benchmark PRIVATE include)
+target_include_directories(fpdb-tuple-bench PRIVATE include)
 
-target_link_libraries(fpdb-tuple-benchmark spdlog::spdlog)
-target_link_libraries(fpdb-tuple-benchmark doctest::doctest)
-target_link_libraries(fpdb-tuple-benchmark nanobench::nanobench)
-target_link_libraries(fpdb-tuple-benchmark fmt::fmt)
-target_link_libraries(fpdb-tuple-benchmark fpdb-tuple)
-target_link_libraries(fpdb-tuple-benchmark Backward::Backward)
+target_link_libraries(fpdb-tuple-bench spdlog::spdlog)
+target_link_libraries(fpdb-tuple-bench doctest::doctest)
+target_link_libraries(fpdb-tuple-bench nanobench::nanobench)
+target_link_libraries(fpdb-tuple-bench fmt::fmt)
+target_link_libraries(fpdb-tuple-bench fpdb-tuple)
+target_link_libraries(fpdb-tuple-bench Backward::Backward)
 
 
 #-----------------------------------------------------------------------------------------------------------------------

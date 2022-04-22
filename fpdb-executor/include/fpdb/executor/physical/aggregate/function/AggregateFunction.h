@@ -65,11 +65,12 @@ public:
 
   tl::expected<void, string> compile(const shared_ptr<arrow::Schema> &schema);
 
-protected:
   /**
    * Used to evaluate input tupleSet using expression_
    */
   tl::expected<shared_ptr<arrow::ChunkedArray>, string> evaluateExpr(const shared_ptr<TupleSet> &tupleSet);
+
+protected:
   void cacheInputSchema(const shared_ptr<arrow::Schema> &schema);
   void buildAndCacheProjector();
 
