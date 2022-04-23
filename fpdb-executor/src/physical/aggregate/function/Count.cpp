@@ -20,6 +20,10 @@ std::string Count::getTypeString() const {
 }
 
 shared_ptr<arrow::DataType> Count::returnType() const {
+  return defaultReturnType();
+}
+
+shared_ptr<arrow::DataType> Count::defaultReturnType() {
   return arrow::int64();
 }
 
@@ -82,6 +86,20 @@ Count::finalize(const vector<shared_ptr<AggregateResult>> &aggregateResults) {
     return tl::make_unexpected(expFinalResultScalar.status().message());
   }
   return (*expFinalResultScalar).scalar();
+}
+
+std::vector<std::tuple<arrow::compute::internal::Aggregate, arrow::FieldRef, std::string,
+std::shared_ptr<arrow::Field>>> Count::getArrowAggregateSignatures() {
+  using aco = arrow::compute::CountOptions;
+  static auto countOptions = (expression_ != nullptr) ? aco(aco::ONLY_VALID) : aco(aco::ALL);
+  std::tuple<arrow::compute::internal::Aggregate, arrow::FieldRef, std::string, std::shared_ptr<arrow::Field>>
+          aggregateSignature{
+          {"hash_count", &countOptions},
+          getAggregateInputColumnName(),
+          outputColumnName_,
+          arrow::field(outputColumnName_, returnType())
+  };
+  return {aggregateSignature};
 }
 
 }

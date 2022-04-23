@@ -3,12 +3,8 @@
 //
 
 #include <fpdb/executor/physical/aggregate/function/AvgReduce.h>
-#include <fpdb/executor/physical/aggregate/function/AggregateFunctionType.h>
-#include <fpdb/plan/prephysical/AggregatePrePFunction.h>
 #include <arrow/compute/api_aggregate.h>
 #include <arrow/compute/cast.h>
-
-using namespace fpdb::plan::prephysical;
 
 namespace fpdb::executor::physical::aggregate {
 
@@ -21,8 +17,7 @@ std::string AvgReduce::getTypeString() const {
 }
 
 set<string> AvgReduce::involvedColumnNames() const {
-  return {AggregatePrePFunction::AVG_PARALLEL_SUM_COLUMN_PREFIX + outputColumnName_,
-          AggregatePrePFunction::AVG_PARALLEL_COUNT_COLUMN_PREFIX + outputColumnName_};
+  return {getIntermediateSumColumnName(), getIntermediateCountColumnName()};
 }
 
 tl::expected<shared_ptr<arrow::Scalar>, string> AvgReduce::computeComplete(const shared_ptr<TupleSet> &tupleSet) {
@@ -49,7 +44,7 @@ tl::expected<shared_ptr<arrow::Scalar>, string> AvgReduce::computeComplete(const
   const auto &avgScalar = (*expAvgScalar).scalar();
 
   // cast to float64 to avoid implicit cast at downstream
-  const auto &expCastScalar = arrow::compute::Cast(avgScalar, arrow::float64());
+  const auto &expCastScalar = arrow::compute::Cast(avgScalar, returnType());
   if (!expCastScalar.ok()) {
     return tl::make_unexpected(expCastScalar.status().message());
   }
@@ -58,8 +53,7 @@ tl::expected<shared_ptr<arrow::Scalar>, string> AvgReduce::computeComplete(const
 
 tl::expected<shared_ptr<AggregateResult>, string> AvgReduce::computePartial(const shared_ptr<TupleSet> &tupleSet) {
   // compute sum
-  const auto &sumInputColumn = tupleSet->table()->GetColumnByName(
-          AggregatePrePFunction::AVG_PARALLEL_SUM_COLUMN_PREFIX + outputColumnName_);
+  const auto &sumInputColumn = tupleSet->table()->GetColumnByName(getIntermediateSumColumnName());
   if (!sumInputColumn) {
     return tl::make_unexpected(fmt::format("AVG_PARALLEL_SUM_COLUMN for {} not exist", outputColumnName_));
   }
@@ -71,8 +65,7 @@ tl::expected<shared_ptr<AggregateResult>, string> AvgReduce::computePartial(cons
   const auto &sumScalar = (*expSumDatum).scalar();
 
   // compute count
-  const auto &countInputColumn = tupleSet->table()->GetColumnByName(
-          AggregatePrePFunction::AVG_PARALLEL_COUNT_COLUMN_PREFIX + outputColumnName_);
+  const auto &countInputColumn = tupleSet->table()->GetColumnByName(getIntermediateCountColumnName());
   if (!countInputColumn) {
     return tl::make_unexpected(fmt::format("AVG_PARALLEL_COUNT_COLUMN for {} not exist", outputColumnName_));
   }

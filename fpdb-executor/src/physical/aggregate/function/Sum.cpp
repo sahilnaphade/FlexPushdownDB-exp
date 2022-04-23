@@ -60,4 +60,17 @@ Sum::finalize(const vector<shared_ptr<AggregateResult>> &aggregateResults) {
   return (*expFinalResultScalar).scalar();
 }
 
+std::vector<std::tuple<arrow::compute::internal::Aggregate, arrow::FieldRef, std::string,
+std::shared_ptr<arrow::Field>>> Sum::getArrowAggregateSignatures() {
+  static auto defaultScalarAggregateOptions = arrow::compute::ScalarAggregateOptions::Defaults();
+  std::tuple<arrow::compute::internal::Aggregate, arrow::FieldRef, std::string, std::shared_ptr<arrow::Field>>
+          aggregateSignature{
+          {"hash_sum", &defaultScalarAggregateOptions},
+          getAggregateInputColumnName(),
+          outputColumnName_,
+          arrow::field(outputColumnName_, returnType())
+  };
+  return {aggregateSignature};
+}
+
 }

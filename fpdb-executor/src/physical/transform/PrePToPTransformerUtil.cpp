@@ -77,10 +77,10 @@ PrePToPTransformerUtil::transformAggFunction(const string &outputColumnName,
     case plan::prephysical::AVG: {
       if (hasReduceOp) {
         auto sumFunc = make_shared<aggregate::Sum>(
-                AggregatePrePFunction::AVG_PARALLEL_SUM_COLUMN_PREFIX + outputColumnName,
+                AggregatePrePFunction::AVG_INTERMEDIATE_SUM_COLUMN_PREFIX + outputColumnName,
                 prePFunction->getExpression());
         auto countFunc = make_shared<aggregate::Count>(
-                AggregatePrePFunction::AVG_PARALLEL_COUNT_COLUMN_PREFIX + outputColumnName,
+                AggregatePrePFunction::AVG_INTERMEDIATE_COUNT_COLUMN_PREFIX + outputColumnName,
                 prePFunction->getExpression());
         return {sumFunc, countFunc};
       } else {

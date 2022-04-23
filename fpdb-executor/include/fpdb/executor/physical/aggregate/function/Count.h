@@ -20,6 +20,7 @@ public:
 
   std::string getTypeString() const override;
   shared_ptr<arrow::DataType> returnType() const override;
+  static shared_ptr<arrow::DataType> defaultReturnType();
   set<string> involvedColumnNames() const override;
 
   tl::expected<shared_ptr<arrow::Scalar>, string> computeComplete(const shared_ptr<TupleSet> &tupleSet) override;
@@ -27,6 +28,9 @@ public:
 
   tl::expected<shared_ptr<arrow::Scalar>, string>
   finalize(const vector<shared_ptr<AggregateResult>> &aggregateResults) override;
+
+  std::vector<std::tuple<arrow::compute::internal::Aggregate, arrow::FieldRef, std::string,
+  std::shared_ptr<arrow::Field>>> getArrowAggregateSignatures() override;
 
 private:
   constexpr static const char *const COUNT_RESULT_KEY = "COUNT";

@@ -7,8 +7,19 @@
 
 #include <fpdb/executor/physical/group/GroupAbstractKernel.h>
 #include <arrow/compute/exec/options.h>
+#include <arrow/util/async_generator.h>
 
 namespace fpdb::executor::physical::group {
+
+struct GroupArrowExecPlanSuite {
+  std::shared_ptr<arrow::compute::ExecContext> execContext_;
+  std::shared_ptr<arrow::compute::ExecPlan> execPlan_;
+  arrow::compute::ExecNode* dummyNode_;
+  arrow::compute::ExecNode* aggregateNode_;
+  arrow::compute::ExecNode* sinkNode_;
+  std::shared_ptr<arrow::AsyncGenerator<arrow::util::optional<arrow::compute::ExecBatch>>> sinkGen_;
+  int numInputBatches_;
+};
 
 class GroupArrowKernel: public GroupAbstractKernel{
 
@@ -21,16 +32,20 @@ public:
   void clear() override;
 
 private:
-  static constexpr std::string_view AGGREGATE_COLUMN_PREFIX = "AGG_COLUMN_";
-
   tl::expected<std::shared_ptr<TupleSet>, std::string> evaluateExpr(const std::shared_ptr<TupleSet> &tupleSet);
-  tl::expected<void, std::string> prepareGroup(const std::shared_ptr<TupleSet> &tupleSet);
-  tl::expected<std::shared_ptr<TupleSet>, std::string> doGroup(const std::shared_ptr<TupleSet> &tupleSet);
-  std::string getAggregateColumnName(int functionId);
+  tl::expected<void, std::string> prepareGroup(const std::shared_ptr<arrow::Schema> &schema);
+  tl::expected<void, std::string> makeArrowExecPlan(const std::shared_ptr<arrow::Schema> &schema);
+  tl::expected<void, std::string> doGroup(const std::shared_ptr<TupleSet> &tupleSet);
 
-  std::optional<std::shared_ptr<arrow::Schema>> outputSchema_;
+  tl::expected<std::pair<arrow::FieldVector, arrow::ChunkedArrayVector>, std::string>
+  getGroupColumns(const std::shared_ptr<TupleSet> &tupleSet);
+  tl::expected<std::shared_ptr<TupleSet>, std::string> finalizeAvg(const std::shared_ptr<TupleSet> &tupleSet);
+  bool isPrepared() const;
+
+  std::optional<std::shared_ptr<arrow::Schema>> outputSchema_;  // for Avg, outputSchema refers to the one before making
+                                                                // division between sum and count column
   std::optional<arrow::compute::AggregateNodeOptions> aggregateNodeOptions_;
-  std::vector<std::shared_ptr<TupleSet>> groupResults_;
+  std::optional<GroupArrowExecPlanSuite> arrowExecPlanSuite_;
 
 };
 

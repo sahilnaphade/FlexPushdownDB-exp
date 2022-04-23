@@ -31,6 +31,9 @@ public:
   tl::expected<shared_ptr<arrow::Scalar>, string>
   finalize(const vector<shared_ptr<AggregateResult>> &aggregateResults) override;
 
+  std::vector<std::tuple<arrow::compute::internal::Aggregate, arrow::FieldRef, std::string,
+  std::shared_ptr<arrow::Field>>> getArrowAggregateSignatures() override;
+
 private:
   constexpr static const char *const MIN_RESULT_KEY = "MIN";
   constexpr static const char *const MAX_RESULT_KEY = "MAX";

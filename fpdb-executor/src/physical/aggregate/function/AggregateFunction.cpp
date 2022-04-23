@@ -196,4 +196,8 @@ AggregateFunction::buildFinalizeInputArray(const vector<shared_ptr<AggregateResu
   return expArray.ValueOrDie();
 }
 
+std::string AggregateFunction::getAggregateInputColumnName() const {
+  return AGGREGATE_INPUT_COLUMN_PREFIX.data() + outputColumnName_;
+}
+
 }

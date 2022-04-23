@@ -15,7 +15,7 @@ namespace fpdb::executor::physical {
  * Default number of bytes for S3 conversion.
  * Default number of bytes when doing a S3 range scan.
  */
-inline constexpr int DefaultBufferSize = 10000;
+inline constexpr int DefaultBufferSize = 100000;
 inline constexpr int DefaultS3ConversionBufferSize = 128 * 1024;
 // FIXME: temporary fix of "parseChunkSize < payload size" issue on Airmettle Select
 inline constexpr int DefaultS3ConversionBufferSizeAirmettleSelect = 16 * 1024 * 1024;

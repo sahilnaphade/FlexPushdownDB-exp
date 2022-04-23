@@ -212,8 +212,8 @@ PrePToPTransformer::transformAggregate(const shared_ptr<AggregatePrePOp> &aggreg
       const auto prePFunction = aggregatePrePOp->getFunctions()[i];
       const auto aggOutputColumnName = aggregatePrePOp->getAggOutputColumnNames()[i];
       if (prePFunction->getType() == AggregatePrePFunctionType::AVG) {
-        parallelAggProjectColumnNames.emplace_back(AggregatePrePFunction::AVG_PARALLEL_SUM_COLUMN_PREFIX + aggOutputColumnName);
-        parallelAggProjectColumnNames.emplace_back(AggregatePrePFunction::AVG_PARALLEL_COUNT_COLUMN_PREFIX + aggOutputColumnName);
+        parallelAggProjectColumnNames.emplace_back(AggregatePrePFunction::AVG_INTERMEDIATE_SUM_COLUMN_PREFIX + aggOutputColumnName);
+        parallelAggProjectColumnNames.emplace_back(AggregatePrePFunction::AVG_INTERMEDIATE_COUNT_COLUMN_PREFIX + aggOutputColumnName);
       } else {
         parallelAggProjectColumnNames.emplace_back(aggOutputColumnName);
       }

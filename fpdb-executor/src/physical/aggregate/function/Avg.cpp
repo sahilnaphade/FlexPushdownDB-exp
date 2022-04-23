@@ -32,7 +32,7 @@ tl::expected<shared_ptr<arrow::Scalar>, string> Avg::computeComplete(const share
   const auto &avgScalar = (*expResultDatum).scalar();
 
   // cast to float64 to avoid implicit cast at downstream
-  const auto &expCastScalar = arrow::compute::Cast(avgScalar, arrow::float64());
+  const auto &expCastScalar = arrow::compute::Cast(avgScalar, returnType());
   if (!expCastScalar.ok()) {
     return tl::make_unexpected(expCastScalar.status().message());
   }

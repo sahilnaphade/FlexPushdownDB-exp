@@ -23,13 +23,22 @@ public:
   AvgBase& operator=(const AvgBase&) = default;
 
   shared_ptr<arrow::DataType> returnType() const override;
+  static shared_ptr<arrow::DataType> defaultReturnType();
 
   tl::expected<shared_ptr<arrow::Scalar>, string>
   finalize(const vector<shared_ptr<AggregateResult>> &aggregateResults) override;
 
+  std::vector<std::tuple<arrow::compute::internal::Aggregate, arrow::FieldRef, std::string,
+  std::shared_ptr<arrow::Field>>> getArrowAggregateSignatures() override;
+
+  tl::expected<shared_ptr<arrow::ChunkedArray>, std::string> finalize(const shared_ptr<TupleSet> &tupleSet);
+
 protected:
   constexpr static const char *const SUM_RESULT_KEY = "SUM";
   constexpr static const char *const COUNT_RESULT_KEY = "COUNT";
+
+  std::string getIntermediateSumColumnName() const;
+  std::string getIntermediateCountColumnName() const;
 
 };
 

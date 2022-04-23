@@ -27,6 +27,7 @@ add_library(fpdb-tuple STATIC
         src/FileFormat.cpp include/fpdb/tuple/FileFormat.h
         include/fpdb/tuple/FileFormatType.h
         src/util/Util.cpp include/fpdb/tuple/util/Util.h
+        include/fpdb/tuple/util/DummyNode.h
         src/csv/CSVParser.cpp include/fpdb/tuple/csv/CSVParser.h
         src/csv/CSVFormat.cpp include/fpdb/tuple/csv/CSVFormat.h
         src/csv/CSVReader.cpp include/fpdb/tuple/csv/CSVReader.h

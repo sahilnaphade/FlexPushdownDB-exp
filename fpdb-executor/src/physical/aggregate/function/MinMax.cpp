@@ -78,4 +78,18 @@ MinMax::finalize(const vector<shared_ptr<AggregateResult>> &aggregateResults) {
   return minMaxScalar;
 }
 
+std::vector<std::tuple<arrow::compute::internal::Aggregate, arrow::FieldRef, std::string,
+std::shared_ptr<arrow::Field>>> MinMax::getArrowAggregateSignatures() {
+  static auto defaultScalarAggregateOptions = arrow::compute::ScalarAggregateOptions::Defaults();
+  std::string arrowFunctionName = isMin_ ? "hash_min" : "hash_max";
+  std::tuple<arrow::compute::internal::Aggregate, arrow::FieldRef, std::string, std::shared_ptr<arrow::Field>>
+          aggregateSignature{
+          {arrowFunctionName, &defaultScalarAggregateOptions},
+          getAggregateInputColumnName(),
+          outputColumnName_,
+          arrow::field(outputColumnName_, returnType())
+  };
+  return {aggregateSignature};
+}
+
 }

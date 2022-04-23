@@ -10,6 +10,7 @@
 #include <fpdb/expression/Projector.h>
 #include <fpdb/expression/gandiva/Expression.h>
 #include <fpdb/tuple/TupleSet.h>
+#include <arrow/compute/exec/options.h>
 #include <nlohmann/json.hpp>
 #include <memory>
 
@@ -63,12 +64,26 @@ public:
   virtual tl::expected<shared_ptr<arrow::Scalar>, string>
   finalize(const vector<shared_ptr<AggregateResult>> &aggregateResults) = 0;
 
+  /**
+   * Get aggregate signatures used by arrow execution engine, in the format of <aggregate, target, name, output field>,
+   * for the first three, see details in arrow::compute::AggregateNodeOptions
+   * @return
+   */
+  virtual std::vector<std::tuple<arrow::compute::internal::Aggregate, arrow::FieldRef, std::string,
+  std::shared_ptr<arrow::Field>>> getArrowAggregateSignatures() = 0;
+
   tl::expected<void, string> compile(const shared_ptr<arrow::Schema> &schema);
 
   /**
    * Used to evaluate input tupleSet using expression_
    */
   tl::expected<shared_ptr<arrow::ChunkedArray>, string> evaluateExpr(const shared_ptr<TupleSet> &tupleSet);
+
+  /**
+   * Give the evaluated column a name, for using arrow execution engine
+   */
+  static constexpr std::string_view AGGREGATE_INPUT_COLUMN_PREFIX = "AGG_INPUT_";
+  std::string getAggregateInputColumnName() const;
 
 protected:
   void cacheInputSchema(const shared_ptr<arrow::Schema> &schema);
@@ -112,7 +127,6 @@ protected:
    * Data type of aggregate input column (after evaluating the expression)
    */
   shared_ptr<arrow::DataType> aggColumnDataType_;
-
 };
 
 }
