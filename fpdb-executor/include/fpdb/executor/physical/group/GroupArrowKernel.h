@@ -33,14 +33,12 @@ public:
 
 private:
   tl::expected<std::shared_ptr<TupleSet>, std::string> evaluateExpr(const std::shared_ptr<TupleSet> &tupleSet);
-  tl::expected<void, std::string> prepareGroup(const std::shared_ptr<arrow::Schema> &schema);
-  tl::expected<void, std::string> makeArrowExecPlan(const std::shared_ptr<arrow::Schema> &schema);
   tl::expected<void, std::string> doGroup(const std::shared_ptr<TupleSet> &tupleSet);
-
+  tl::expected<std::shared_ptr<TupleSet>, std::string> finalizeAvg(const std::shared_ptr<TupleSet> &tupleSet);
+  tl::expected<void, std::string> makeOutputSchema(const std::shared_ptr<arrow::Schema> &schema);
+  tl::expected<void, std::string> makeArrowExecPlan(const std::shared_ptr<arrow::Schema> &schema);
   tl::expected<std::pair<arrow::FieldVector, arrow::ChunkedArrayVector>, std::string>
   getGroupColumns(const std::shared_ptr<TupleSet> &tupleSet);
-  tl::expected<std::shared_ptr<TupleSet>, std::string> finalizeAvg(const std::shared_ptr<TupleSet> &tupleSet);
-  bool isPrepared() const;
 
   std::optional<std::shared_ptr<arrow::Schema>> outputSchema_;  // for Avg, outputSchema refers to the one before making
                                                                 // division between sum and count column

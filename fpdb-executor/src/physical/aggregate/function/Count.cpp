@@ -90,8 +90,9 @@ Count::finalize(const vector<shared_ptr<AggregateResult>> &aggregateResults) {
 
 std::vector<std::tuple<arrow::compute::internal::Aggregate, arrow::FieldRef, std::string,
 std::shared_ptr<arrow::Field>>> Count::getArrowAggregateSignatures() {
-  using aco = arrow::compute::CountOptions;
-  static auto countOptions = (expression_ != nullptr) ? aco(aco::ONLY_VALID) : aco(aco::ALL);
+  static auto countOnlyValidOptions = arrow::compute::CountOptions(arrow::compute::CountOptions::ONLY_VALID);
+  static auto countAllOptions = arrow::compute::CountOptions(arrow::compute::CountOptions::ALL);
+  auto& countOptions = (expression_ != nullptr) ? countOnlyValidOptions : countAllOptions;
   std::tuple<arrow::compute::internal::Aggregate, arrow::FieldRef, std::string, std::shared_ptr<arrow::Field>>
           aggregateSignature{
           {"hash_count", &countOptions},

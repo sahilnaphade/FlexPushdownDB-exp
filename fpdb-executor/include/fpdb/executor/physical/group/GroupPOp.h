@@ -33,7 +33,7 @@ namespace fpdb::executor::physical::group {
 class GroupPOp : public PhysicalOp {
 
 public:
-  static constexpr GroupKernelType KERNEL_TYPE = GroupKernelType::GROUP_KERNEL;
+  static constexpr GroupKernelType KERNEL_TYPE = GroupKernelType::GROUP_ARROW_KERNEL;
 
   GroupPOp(const string &name,
            const vector<string> &projectColumnNames,

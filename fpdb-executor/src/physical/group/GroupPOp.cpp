@@ -4,6 +4,7 @@
 
 #include <fpdb/executor/physical/group/GroupPOp.h>
 #include <fpdb/executor/physical/group/GroupKernel.h>
+#include <fpdb/executor/physical/group/GroupArrowKernel.h>
 
 using namespace fpdb::tuple;
 
@@ -18,6 +19,10 @@ GroupPOp::GroupPOp(const string &name,
   switch (KERNEL_TYPE) {
     case GroupKernelType::GROUP_KERNEL: {
       kernel_ = std::make_shared<GroupKernel>(groupColumnNames, aggregateFunctions);
+      break;
+    }
+    case GroupKernelType::GROUP_ARROW_KERNEL: {
+      kernel_ = std::make_shared<GroupArrowKernel>(groupColumnNames, aggregateFunctions);
       break;
     }
     default: {

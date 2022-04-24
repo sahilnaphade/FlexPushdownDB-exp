@@ -82,10 +82,10 @@ std::shared_ptr<arrow::Field>>> AvgBase::getArrowAggregateSignatures() {
           intermediateSumColumnName,
           arrow::field(intermediateSumColumnName, aggColumnDataType_)
   };
-  static auto countOptions = arrow::compute::CountOptions::Defaults();
+  static auto defaultCountOptions = arrow::compute::CountOptions::Defaults();
   std::tuple<arrow::compute::internal::Aggregate, arrow::FieldRef, std::string, std::shared_ptr<arrow::Field>>
           countAggregateSignature{
-          {"hash_count", &countOptions},
+          {"hash_count", &defaultCountOptions},
           aggregateInputColumnName,
           intermediateCountColumnName,
           arrow::field(intermediateCountColumnName, Count::defaultReturnType())
