@@ -85,6 +85,7 @@ add_library(fpdb-executor STATIC
         src/physical/join/hashjoin/HashJoinPredicate.cpp include/fpdb/executor/physical/join/hashjoin/HashJoinPredicate.h
         src/physical/join/hashjoin/RecordBatchHashJoiner.cpp include/fpdb/executor/physical/join/hashjoin/RecordBatchHashJoiner.h
         src/physical/join/hashjoin/RecordBatchHashSemiJoiner.cpp include/fpdb/executor/physical/join/hashjoin/RecordBatchHashSemiJoiner.h
+        src/physical/join/hashjoin/HashJoinArrowKernel.cpp include/fpdb/executor/physical/join/hashjoin/HashJoinArrowKernel.h
         src/physical/join/nestedloopjoin/NestedLoopJoinPOp.cpp include/fpdb/executor/physical/join/nestedloopjoin/NestedLoopJoinPOp.h
         src/physical/join/nestedloopjoin/NestedLoopJoinKernel.cpp include/fpdb/executor/physical/join/nestedloopjoin/NestedLoopJoinKernel.h
         src/physical/join/nestedloopjoin/RecordBatchNestedLoopJoiner.cpp include/fpdb/executor/physical/join/nestedloopjoin/RecordBatchNestedLoopJoiner.h
@@ -154,7 +155,8 @@ target_link_libraries(fpdb-executor PRIVATE fpdb-store-server-flight-api)
 add_executable(fpdb-executor-bench
         bench/Globals.h
         bench/MainBenchmark.cpp
-        bench/GroupBenchmark.cpp)
+        bench/GroupBenchmark.cpp
+        bench/HashJoinBenchmark.cpp)
 
 target_include_directories(fpdb-executor-bench PRIVATE include)
 
