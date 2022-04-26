@@ -22,27 +22,27 @@ std::shared_ptr<HashJoinArrowKernel> HashJoinArrowKernel::make(const HashJoinPre
 }
 
 tl::expected<std::shared_ptr<TupleSet>, std::string> HashJoinArrowKernel::join(
-        const std::shared_ptr<TupleSet> &leftTupleSet, const std::shared_ptr<TupleSet> &rightTupleSet) {
+        const std::shared_ptr<TupleSet> &buildTupleSet, const std::shared_ptr<TupleSet> &probeTupleSet) {
   // prepare schema and keys
-  std::vector<arrow::FieldRef> leftJoinKeys, rightJoinKeys;
+  std::vector<arrow::FieldRef> buildJoinKeys, probeJoinKeys;
   for (const auto &leftColumn: pred_.getLeftColumnNames()) {
-    leftJoinKeys.emplace_back(leftColumn);
+    buildJoinKeys.emplace_back(leftColumn);
   }
   for (const auto &rightColumn: pred_.getRightColumnNames()) {
-    rightJoinKeys.emplace_back(rightColumn);
+    probeJoinKeys.emplace_back(rightColumn);
   }
 
-  std::vector<arrow::FieldRef> leftOutputKeys, rightOutputKeys;
+  std::vector<arrow::FieldRef> buildOutputKeys, probeOutputKeys;
   arrow::FieldVector outputFields;
-  for (const auto &field: leftTupleSet->schema()->fields()) {
+  for (const auto &field: buildTupleSet->schema()->fields()) {
     if (neededColumnNames_.find(field->name()) != neededColumnNames_.end()) {
-      leftOutputKeys.emplace_back(field->name());
+      buildOutputKeys.emplace_back(field->name());
       outputFields.emplace_back(field);
     }
   }
-  for (const auto &field: rightTupleSet->schema()->fields()) {
+  for (const auto &field: probeTupleSet->schema()->fields()) {
     if (neededColumnNames_.find(field->name()) != neededColumnNames_.end()) {
-      rightOutputKeys.emplace_back(field->name());
+      probeOutputKeys.emplace_back(field->name());
       outputFields.emplace_back(field);
     }
   }
@@ -58,27 +58,26 @@ tl::expected<std::shared_ptr<TupleSet>, std::string> HashJoinArrowKernel::join(
   auto execPlan = *expExecPlan;
   execPlan->exec_context()->set_use_threads(false);
 
-  // two dummy nodes at the beginning
-  auto expLeftDummyNode = arrow::compute::DummyNode::Make(execPlan.get(), leftTupleSet->schema());
-  if (!expLeftDummyNode.ok()) {
-    return tl::make_unexpected(expLeftDummyNode.status().message());
+  // two dummy input nodes at the beginning
+  auto expBuildInputNode = arrow::compute::DummyNode::Make(execPlan.get(), buildTupleSet->schema());
+  if (!expBuildInputNode.ok()) {
+    return tl::make_unexpected(expBuildInputNode.status().message());
   }
-  auto leftDummyNode = *expLeftDummyNode;
+  auto buildInputNode = *expBuildInputNode;
 
-  auto expRightDummyNode = arrow::compute::DummyNode::Make(execPlan.get(), rightTupleSet->schema());
-  if (!expRightDummyNode.ok()) {
-    return tl::make_unexpected(expRightDummyNode.status().message());
+  auto expProbeInputNode = arrow::compute::DummyNode::Make(execPlan.get(), probeTupleSet->schema());
+  if (!expProbeInputNode.ok()) {
+    return tl::make_unexpected(expProbeInputNode.status().message());
   }
-  auto rightDummyNode = *expRightDummyNode;
+  auto probeInputNode = *expProbeInputNode;
 
-  // hash join node
+  // hash join node, note arrow's impl builds hashtable using right table and probes using left table
   arrow::compute::HashJoinNodeOptions hashJoinNodeOptions{
           arrow::compute::JoinType::INNER,
-          leftJoinKeys, rightJoinKeys,
-          leftOutputKeys, rightOutputKeys,
-          "l_", "r_"
+          probeJoinKeys, buildJoinKeys,
+          probeOutputKeys, buildOutputKeys
   };
-  auto expHashJoinNode = arrow::compute::MakeExecNode("hashjoin", execPlan.get(), {leftDummyNode, rightDummyNode},
+  auto expHashJoinNode = arrow::compute::MakeExecNode("hashjoin", execPlan.get(), {probeInputNode, buildInputNode},
                                                        hashJoinNodeOptions);
   if (!expHashJoinNode.ok()) {
     return tl::make_unexpected(expHashJoinNode.status().message());
@@ -104,8 +103,8 @@ tl::expected<std::shared_ptr<TupleSet>, std::string> HashJoinArrowKernel::join(
     return tl::make_unexpected(status.message());
   }
 
-  // supply left input batches
-  auto reader = std::make_shared<arrow::TableBatchReader>(*leftTupleSet->table());
+  // supply input batches to build side
+  auto reader = std::make_shared<arrow::TableBatchReader>(*buildTupleSet->table());
   auto recordBatchReadResult = reader->Next();
   reader->set_chunksize(DefaultChunkSize);
   if (!recordBatchReadResult.ok()) {
@@ -113,11 +112,11 @@ tl::expected<std::shared_ptr<TupleSet>, std::string> HashJoinArrowKernel::join(
   }
   auto recordBatch = *recordBatchReadResult;
 
-  int numLeftInputBatches = 0;
+  int numBuildInputBatches = 0;
   while (recordBatch) {
-    ++numLeftInputBatches;
+    ++numBuildInputBatches;
     arrow::compute::ExecBatch execBatch(*recordBatch);
-    hashJoinNode->InputReceived(leftDummyNode, execBatch);
+    hashJoinNode->InputReceived(buildInputNode, execBatch);
 
     // next batch
     recordBatchReadResult = reader->Next();
@@ -125,10 +124,10 @@ tl::expected<std::shared_ptr<TupleSet>, std::string> HashJoinArrowKernel::join(
       return tl::make_unexpected(recordBatchReadResult.status().message());
     recordBatch = *recordBatchReadResult;
   }
-  hashJoinNode->InputFinished(leftDummyNode, numLeftInputBatches);
+  hashJoinNode->InputFinished(buildInputNode, numBuildInputBatches);
 
-  // supply right input batches
-  reader = std::make_shared<arrow::TableBatchReader>(*rightTupleSet->table());
+  // supply batches to probe side
+  reader = std::make_shared<arrow::TableBatchReader>(*probeTupleSet->table());
   recordBatchReadResult = reader->Next();
   reader->set_chunksize(DefaultChunkSize);
   if (!recordBatchReadResult.ok()) {
@@ -136,11 +135,11 @@ tl::expected<std::shared_ptr<TupleSet>, std::string> HashJoinArrowKernel::join(
   }
   recordBatch = *recordBatchReadResult;
 
-  int numRightInputBatches = 0;
+  int numProbeInputBatches = 0;
   while (recordBatch) {
-    ++numRightInputBatches;
+    ++numProbeInputBatches;
     arrow::compute::ExecBatch execBatch(*recordBatch);
-    hashJoinNode->InputReceived(rightDummyNode, execBatch);
+    hashJoinNode->InputReceived(probeInputNode, execBatch);
 
     // next batch
     recordBatchReadResult = reader->Next();
@@ -148,7 +147,7 @@ tl::expected<std::shared_ptr<TupleSet>, std::string> HashJoinArrowKernel::join(
       return tl::make_unexpected(recordBatchReadResult.status().message());
     recordBatch = *recordBatchReadResult;
   }
-  hashJoinNode->InputFinished(rightDummyNode, numRightInputBatches);
+  hashJoinNode->InputFinished(probeInputNode, numProbeInputBatches);
 
   // collect result table from sink node
   auto sinkReader = arrow::compute::MakeGeneratorReader(outputSchema,

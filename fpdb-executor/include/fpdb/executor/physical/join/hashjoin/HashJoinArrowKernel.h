@@ -28,19 +28,19 @@ public:
                                                    const std::set<std::string> &neededColumnNames,
                                                    JoinType joinType);
 
-  tl::expected<std::shared_ptr<TupleSet>, std::string> join(const std::shared_ptr<TupleSet> &leftTupleSet,
-                                                            const std::shared_ptr<TupleSet> &rightTupleSet);
+  tl::expected<std::shared_ptr<TupleSet>, std::string> join(const std::shared_ptr<TupleSet> &buildTupleSet,
+                                                            const std::shared_ptr<TupleSet> &probeTupleSet);
 
-  tl::expected<void, std::string> joinLeftTupleSet(const std::shared_ptr<TupleSet> &tupleSet);
-  tl::expected<void, std::string> joinRightTupleSet(const std::shared_ptr<TupleSet> &tupleSet);
+  tl::expected<void, std::string> joinBuildTupleSet(const std::shared_ptr<TupleSet> &tupleSet);
+  tl::expected<void, std::string> joinProbeTupleSet(const std::shared_ptr<TupleSet> &tupleSet);
 
 private:
   HashJoinPredicate pred_;
   std::set<std::string> neededColumnNames_;
   JoinType joinType_;
 
-  std::optional<std::shared_ptr<TupleSet>> leftTupleSet_;
-  std::optional<std::shared_ptr<TupleSet>> rightTupleSet_;
+  std::optional<std::shared_ptr<TupleSet>> buildTupleSet_;
+  std::optional<std::shared_ptr<TupleSet>> probeTupleSet_;
 
 };
 
