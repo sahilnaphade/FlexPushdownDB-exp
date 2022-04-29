@@ -1,8 +1,9 @@
 include(GNUInstallDirs)
 
-# Arrow
-set(ARROW_VERSION "apache-arrow-6.0.0")
-set(ARROW_GIT_URL "https://github.com/apache/arrow.git")
+# This repo is forked from Arrow repo, with a fix for exec engine that sticks it into a fixed thread index
+# in serial execution
+set(ARROW_VERSION "release-6.0.0-for-fpdb")
+set(ARROW_GIT_URL "https://github.com/Yifei-yang7/arrow.git")
 
 
 include(ExternalProject)

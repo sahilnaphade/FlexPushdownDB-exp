@@ -3,9 +3,9 @@
 //
 
 #include <random>
-#include "fpdb/tuple/Sample.h"
+#include <fpdb/tuple/util/Sample.h>
 
-using namespace fpdb::tuple;
+namespace fpdb::tuple::util {
 
 std::shared_ptr<Column> Sample::sample3String() {
 
@@ -101,4 +101,6 @@ std::shared_ptr<TupleSet> Sample::sampleCxRString(int numCols, int numRows, cons
   auto tupleSet = TupleSet::make(arrowSchema, columns);
 
   return tupleSet;
+}
+
 }

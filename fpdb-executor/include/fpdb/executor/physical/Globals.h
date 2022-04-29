@@ -45,6 +45,8 @@ inline constexpr int variableSleepRetryTimeMS = 15;
  */
 inline bool USE_BLOOM_FILTER = true;
 inline bool ENABLE_FPDB_STORE_BITMAP_PUSHDOWN = false;
+inline bool USE_ARROW_GROUP_BY_IMPL = true;
+inline bool USE_ARROW_HASH_JOIN_IMPL = true;
 
 /**
  * If we create a client for each DoPut() request, some of them will be blocked at Connect() for ~10s,

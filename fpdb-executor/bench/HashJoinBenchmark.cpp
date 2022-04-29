@@ -9,10 +9,10 @@
 #include <fpdb/executor/physical/join/hashjoin/HashJoinBuildKernel.h>
 #include <fpdb/executor/physical/join/hashjoin/HashJoinProbeKernel.h>
 #include <fpdb/executor/physical/join/hashjoin/HashJoinArrowKernel.h>
-#include <fpdb/tuple/Sample.h>
+#include <fpdb/tuple/util/Sample.h>
 
 using namespace fpdb::executor::physical::join;
-using namespace fpdb::tuple;
+using namespace fpdb::tuple::util;
 
 #define SKIP_SUITE false
 
@@ -47,6 +47,8 @@ void run(const std::shared_ptr<TupleSet> &leftTupleSet, const std::shared_ptr<Tu
             if (!result.has_value()) {
               throw std::runtime_error(result.error());
             }
+
+            // output
             auto expOutputTupleSet = probeKernel->getBuffer();
             if (!expOutputTupleSet.has_value()) {
               throw std::runtime_error("No hash join result buffered yet");
@@ -63,9 +65,25 @@ void run(const std::shared_ptr<TupleSet> &leftTupleSet, const std::shared_ptr<Tu
 
             auto kernel = HashJoinArrowKernel::make(HashJoinPredicate(leftColumnNames, rightColumnNames),
                                                     neededColumnNames, JoinType::INNER);
-            auto expOutputTupleSet = kernel->join(leftTupleSet, rightTupleSet);
+
+            // build
+            auto res = kernel.joinBuildTupleSet(leftTupleSet);
+            if (!res.has_value()) {
+              throw std::runtime_error(res.error());
+            }
+            kernel.finalizeInput(true);
+
+            // probe
+            res = kernel.joinProbeTupleSet(rightTupleSet);
+            if (!res.has_value()) {
+              throw std::runtime_error(res.error());
+            }
+            kernel.finalizeInput(false);
+
+            // output
+            auto expOutputTupleSet = kernel.getOutputBuffer();
             if (!expOutputTupleSet.has_value()) {
-              throw std::runtime_error(expOutputTupleSet.error());
+              throw std::runtime_error("No hash join result buffered yet");
             }
             outputTupleSet = *expOutputTupleSet;
 

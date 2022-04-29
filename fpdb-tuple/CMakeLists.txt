@@ -13,7 +13,6 @@ add_library(fpdb-tuple STATIC
         src/TupleSetShowOptions.cpp include/fpdb/tuple/TupleSetShowOptions.h
         src/ColumnName.cpp include/fpdb/tuple/ColumnName.h
         src/ColumnBuilder.cpp include/fpdb/tuple/ColumnBuilder.h
-        src/Sample.cpp include/fpdb/tuple/Sample.h
         src/ArrayAppender.cpp include/fpdb/tuple/ArrayAppender.h
         src/ArrayAppenderWrapper.cpp include/fpdb/tuple/ArrayAppenderWrapper.h
         src/ArrayHasher.cpp include/fpdb/tuple/ArrayHasher.h
@@ -27,7 +26,7 @@ add_library(fpdb-tuple STATIC
         src/FileFormat.cpp include/fpdb/tuple/FileFormat.h
         include/fpdb/tuple/FileFormatType.h
         src/util/Util.cpp include/fpdb/tuple/util/Util.h
-        include/fpdb/tuple/util/DummyNode.h
+        src/util/Sample.cpp include/fpdb/tuple/util/Sample.h
         src/csv/CSVParser.cpp include/fpdb/tuple/csv/CSVParser.h
         src/csv/CSVFormat.cpp include/fpdb/tuple/csv/CSVFormat.h
         src/csv/CSVReader.cpp include/fpdb/tuple/csv/CSVReader.h
@@ -48,6 +47,8 @@ add_library(fpdb-tuple STATIC
         src/arrow/CSVToArrowSIMDStreamParser.cpp include/fpdb/tuple/arrow/CSVToArrowSIMDStreamParser.h
         src/arrow/SIMDParserHelpers.cpp include/fpdb/tuple/arrow/SIMDParserHelpers.h
         src/arrow/CSVToArrowSIMDChunkParser.cpp include/fpdb/tuple/arrow/CSVToArrowSIMDChunkParser.h
+        src/arrow/exec/DummyNode.cpp include/fpdb/tuple/arrow/exec/DummyNode.h
+        src/arrow/exec/BufferedSinkNode.cpp include/fpdb/tuple/arrow/exec/BufferedSinkNode.h
         src/serialization/ArrowSerializer.cpp include/fpdb/tuple/serialization/ArrowSerializer.h
         include/fpdb/tuple/caf-serialization/CAFTupleKeyElementSerializer.h
         include/fpdb/tuple/caf-serialization/CAFFileFormatSerializer.h)

@@ -2,15 +2,15 @@
 // Created by matt on 22/5/20.
 //
 
-#ifndef FPDB_FPDB_TUPLE_INCLUDE_FPDB_TUPLE_SAMPLE_H
-#define FPDB_FPDB_TUPLE_INCLUDE_FPDB_TUPLE_SAMPLE_H
+#ifndef FPDB_FPDB_TUPLE_INCLUDE_FPDB_TUPLE_UTIL_SAMPLE_H
+#define FPDB_FPDB_TUPLE_INCLUDE_FPDB_TUPLE_UTIL_SAMPLE_H
 
 #include <memory>
 #include <random>
 
-#include "TupleSet.h"
+#include <fpdb/tuple/TupleSet.h>
 
-namespace fpdb::tuple {
+namespace fpdb::tuple::util {
 
 /**
  * Pre built sample tuple sets, useful for testing
@@ -97,4 +97,4 @@ public:
 
 }
 
-#endif //FPDB_FPDB_TUPLE_INCLUDE_FPDB_TUPLE_SAMPLE_H
+#endif //FPDB_FPDB_TUPLE_INCLUDE_FPDB_TUPLE_UTIL_SAMPLE_H

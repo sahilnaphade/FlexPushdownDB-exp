@@ -22,4 +22,17 @@ Util::makeEmptyArray(const std::shared_ptr<arrow::DataType> &type) {
   return *expArray;
 }
 
+tl::expected<std::shared_ptr<arrow::RecordBatch>, std::string>
+Util::makeEmptyRecordBatch(const std::shared_ptr<arrow::Schema> &schema) {
+  arrow::ArrayVector arrayVec;
+  for (const auto &field: schema->fields()) {
+    auto expArray = makeEmptyArray(field->type());
+    if (!expArray) {
+      return tl::make_unexpected(expArray.error());
+    }
+    arrayVec.emplace_back(*expArray);
+  }
+  return arrow::RecordBatch::Make(schema, 0, arrayVec);
+}
+
 }

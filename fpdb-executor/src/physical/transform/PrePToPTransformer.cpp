@@ -13,6 +13,7 @@
 #include <fpdb/executor/physical/filter/FilterPOp.h>
 #include <fpdb/executor/physical/join/hashjoin/HashJoinBuildPOp.h>
 #include <fpdb/executor/physical/join/hashjoin/HashJoinProbePOp.h>
+#include <fpdb/executor/physical/join/hashjoin/HashJoinArrowPOp.h>
 #include <fpdb/executor/physical/join/hashjoin/HashJoinPredicate.h>
 #include <fpdb/executor/physical/join/nestedloopjoin/NestedLoopJoinPOp.h>
 #include <fpdb/executor/physical/shuffle/ShufflePOp.h>
@@ -427,24 +428,6 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
   join::HashJoinPredicate hashJoinPredicate(leftColumnNames, rightColumnNames);
   const auto &hashJoinPredicateStr = hashJoinPredicate.toString();
 
-  vector<shared_ptr<PhysicalOp>> hashJoinBuildPOps, hashJoinProbePOps;
-  for (int i = 0; i < parallelDegree_ * numNodes_; ++i) {
-    hashJoinBuildPOps.emplace_back(make_shared<join::HashJoinBuildPOp>(
-            fmt::format("HashJoinBuild[{}]-{}-{}", prePOpId, hashJoinPredicateStr, i),
-            projectColumnNames,
-            i % numNodes_,
-            leftColumnNames));
-    hashJoinProbePOps.emplace_back(make_shared<join::HashJoinProbePOp>(
-            fmt::format("HashJoinProbe[{}]-{}-{}", prePOpId, hashJoinPredicateStr, i),
-            projectColumnNames,
-            i % numNodes_,
-            hashJoinPredicate,
-            joinType));
-  }
-  allPOps.insert(allPOps.end(), hashJoinBuildPOps.begin(), hashJoinBuildPOps.end());
-  allPOps.insert(allPOps.end(), hashJoinProbePOps.begin(), hashJoinProbePOps.end());
-  PrePToPTransformerUtil::connectOneToOne(hashJoinBuildPOps, hashJoinProbePOps);
-
   // if using bloom filter, and bloom filter cannot be used before right join
   if (USE_BLOOM_FILTER &&
     (joinType == JoinType::INNER || joinType == JoinType::LEFT || joinType == JoinType::SEMI)) {
@@ -544,10 +527,55 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
     }
   }
 
+  // hash join operators, if use arrow's impl, we make hashJoinArrowPOps,
+  // otherwise we make hashJoinBuildPOps and hashJoinProbePOps
+  vector<shared_ptr<PhysicalOp>> hashJoinBuildPOps, hashJoinProbePOps;
+  vector<shared_ptr<PhysicalOp>> hashJoinArrowPOps;
+  if (USE_ARROW_HASH_JOIN_IMPL) {
+    for (int i = 0; i < parallelDegree_ * numNodes_; ++i) {
+      hashJoinArrowPOps.emplace_back(make_shared<join::HashJoinArrowPOp>(
+              fmt::format("HashJoinArrow[{}]-{}-{}", prePOpId, hashJoinPredicateStr, i),
+              projectColumnNames,
+              i % numNodes_,
+              hashJoinPredicate,
+              joinType));
+    }
+    allPOps.insert(allPOps.end(), hashJoinArrowPOps.begin(), hashJoinArrowPOps.end());
+  } else {
+    for (int i = 0; i < parallelDegree_ * numNodes_; ++i) {
+      hashJoinBuildPOps.emplace_back(make_shared<join::HashJoinBuildPOp>(
+              fmt::format("HashJoinBuild[{}]-{}-{}", prePOpId, hashJoinPredicateStr, i),
+              projectColumnNames,
+              i % numNodes_,
+              leftColumnNames));
+      hashJoinProbePOps.emplace_back(make_shared<join::HashJoinProbePOp>(
+              fmt::format("HashJoinProbe[{}]-{}-{}", prePOpId, hashJoinPredicateStr, i),
+              projectColumnNames,
+              i % numNodes_,
+              hashJoinPredicate,
+              joinType));
+    }
+    allPOps.insert(allPOps.end(), hashJoinBuildPOps.begin(), hashJoinBuildPOps.end());
+    allPOps.insert(allPOps.end(), hashJoinProbePOps.begin(), hashJoinProbePOps.end());
+    PrePToPTransformerUtil::connectOneToOne(hashJoinBuildPOps, hashJoinProbePOps);
+  }
+
   // if num > 1, then we need shuffle operators
   if (parallelDegree_ * numNodes_ == 1) {
-    PrePToPTransformerUtil::connectManyToOne(upLeftConnPOps, hashJoinBuildPOps[0]);
-    PrePToPTransformerUtil::connectManyToOne(upRightConnPOps, hashJoinProbePOps[0]);
+    // connect to upstream
+    if (USE_ARROW_HASH_JOIN_IMPL) {
+      for (const auto &upLeftConnPOp: upLeftConnPOps) {
+        upLeftConnPOp->produce(hashJoinArrowPOps[0]);
+        static_pointer_cast<join::HashJoinArrowPOp>(hashJoinArrowPOps[0])->addBuildProducer(upLeftConnPOp);
+      }
+      for (const auto &upRightConnPOp: upRightConnPOps) {
+        upRightConnPOp->produce(hashJoinArrowPOps[0]);
+        static_pointer_cast<join::HashJoinArrowPOp>(hashJoinArrowPOps[0])->addProbeProducer(upRightConnPOp);
+      }
+    } else {
+      PrePToPTransformerUtil::connectManyToOne(upLeftConnPOps, hashJoinBuildPOps[0]);
+      PrePToPTransformerUtil::connectManyToOne(upRightConnPOps, hashJoinProbePOps[0]);
+    }
   } else {
     vector<shared_ptr<PhysicalOp>> shuffleLeftPOps, shuffleRightPOps;
     for (const auto &upLeftConnPOp: upLeftConnPOps) {
@@ -564,19 +592,34 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
               upRightConnPOp->getNodeId(),
               rightColumnNames));
     }
-    PrePToPTransformerUtil::connectManyToMany(shuffleLeftPOps, hashJoinBuildPOps);
-    PrePToPTransformerUtil::connectManyToMany(shuffleRightPOps, hashJoinProbePOps);
     allPOps.insert(allPOps.end(), shuffleLeftPOps.begin(), shuffleLeftPOps.end());
     allPOps.insert(allPOps.end(), shuffleRightPOps.begin(), shuffleRightPOps.end());
 
     // connect to upstream
     PrePToPTransformerUtil::connectOneToOne(upLeftConnPOps, shuffleLeftPOps);
     PrePToPTransformerUtil::connectOneToOne(upRightConnPOps, shuffleRightPOps);
+
+    // connect to downstream
+    if (USE_ARROW_HASH_JOIN_IMPL) {
+      for (const auto &hashJoinArrowPOp: hashJoinArrowPOps) {
+        for (const auto &shuffleLeftPOp: shuffleLeftPOps) {
+          shuffleLeftPOp->produce(hashJoinArrowPOp);
+          static_pointer_cast<join::HashJoinArrowPOp>(hashJoinArrowPOp)->addBuildProducer(shuffleLeftPOp);
+        }
+        for (const auto &shuffleRightPOp: shuffleRightPOps) {
+          shuffleRightPOp->produce(hashJoinArrowPOp);
+          static_pointer_cast<join::HashJoinArrowPOp>(hashJoinArrowPOp)->addProbeProducer(shuffleRightPOp);
+        }
+      }
+    } else {
+      PrePToPTransformerUtil::connectManyToMany(shuffleLeftPOps, hashJoinBuildPOps);
+      PrePToPTransformerUtil::connectManyToMany(shuffleRightPOps, hashJoinProbePOps);
+    }
   }
 
   // add and return
   PrePToPTransformerUtil::addPhysicalOps(allPOps, physicalOps_);
-  return hashJoinProbePOps;
+  return USE_ARROW_HASH_JOIN_IMPL ? hashJoinArrowPOps : hashJoinProbePOps;
 }
 
 vector<shared_ptr<PhysicalOp>>

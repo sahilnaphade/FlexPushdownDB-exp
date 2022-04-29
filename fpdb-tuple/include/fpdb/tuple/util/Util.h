@@ -16,6 +16,9 @@ public:
   static tl::expected<std::shared_ptr<arrow::Array>, std::string>
   makeEmptyArray(const std::shared_ptr<arrow::DataType> &type);
 
+  static tl::expected<std::shared_ptr<arrow::RecordBatch>, std::string>
+  makeEmptyRecordBatch(const std::shared_ptr<arrow::Schema> &schema);
+
 };
 
 }

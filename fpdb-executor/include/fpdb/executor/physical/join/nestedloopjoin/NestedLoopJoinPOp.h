@@ -47,8 +47,8 @@ private:
   void send(bool force);
   void sendEmpty();
 
-  set<string> leftProducerNames_;
-  set<string> rightProducerName_;
+  set<string> leftProducers_;
+  set<string> rightProducers_;
 
   NestedLoopJoinKernel kernel_;
   bool sentResult = false;
@@ -67,8 +67,8 @@ public:
                                f.field("consumers", op.consumers_),
                                f.field("bloomFilterCreatePrepareConsumer", op.bloomFilterCreatePrepareConsumer_),
                                f.field("isSeparated", op.isSeparated_),
-                               f.field("leftProducerNames", op.leftProducerNames_),
-                               f.field("rightProducerName", op.rightProducerName_),
+                               f.field("leftProducers", op.leftProducers_),
+                               f.field("rightProducers", op.rightProducers_),
                                f.field("kernel", op.kernel_));
   }
 };

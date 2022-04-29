@@ -91,9 +91,9 @@ void NestedLoopJoinPOp::onTupleSet(const TupleSetMessage &message) {
 
   // incremental join immediately
   tl::expected<void, string> result;
-  if (leftProducerNames_.find(sender) != leftProducerNames_.end()) {
+  if (leftProducers_.find(sender) != leftProducers_.end()) {
     result = kernel_.joinIncomingLeft(tupleSet);
-  } else if (rightProducerName_.find(sender) != rightProducerName_.end()) {
+  } else if (rightProducers_.find(sender) != rightProducers_.end()) {
     result = kernel_.joinIncomingRight(tupleSet);
   } else {
     ctx()->notifyError(fmt::format("Unknown sender '{}', neither left nor right producer", sender));
@@ -107,12 +107,12 @@ void NestedLoopJoinPOp::onTupleSet(const TupleSetMessage &message) {
 }
 
 void NestedLoopJoinPOp::addLeftProducer(const shared_ptr<PhysicalOp> &leftProducer) {
-  leftProducerNames_.emplace(leftProducer->name());
+  leftProducers_.emplace(leftProducer->name());
   consume(leftProducer);
 }
 
 void NestedLoopJoinPOp::addRightProducer(const shared_ptr<PhysicalOp> &rightProducer) {
-  rightProducerName_.emplace(rightProducer->name());
+  rightProducers_.emplace(rightProducer->name());
   consume(rightProducer);
 }
 

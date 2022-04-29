@@ -12,12 +12,12 @@
 #include <fpdb/expression/gandiva/Cast.h>
 #include <fpdb/expression/gandiva/Column.h>
 #include <fpdb/tuple/TupleSet.h>
-#include <fpdb/tuple/Sample.h>
+#include <fpdb/tuple/util/Sample.h>
 
 using namespace fpdb::executor::physical::group;
 using namespace fpdb::executor::physical::aggregate;
 using namespace fpdb::expression::gandiva;
-using namespace fpdb::tuple;
+using namespace fpdb::tuple::util;
 
 #define SKIP_SUITE false
 

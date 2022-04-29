@@ -4,7 +4,7 @@
 
 #include <fpdb/executor/physical/group/GroupArrowKernel.h>
 #include <fpdb/executor/physical/aggregate/function/AvgBase.h>
-#include <fpdb/tuple/util/DummyNode.h>
+#include <fpdb/tuple/arrow/exec/DummyNode.h>
 #include <arrow/compute/exec/exec_plan.h>
 
 namespace fpdb::executor::physical::group {
@@ -159,7 +159,7 @@ GroupArrowKernel::finalizeAvg(const std::shared_ptr<TupleSet> &tupleSet) {
       outputColumns.emplace_back(aggregateColumn);
     }
 
-      // is an Avg or AvgReduce function
+    // is an Avg or AvgReduce function
     else {
       auto avgFunction = std::static_pointer_cast<AvgBase>(function);
       outputFields.emplace_back(arrow::field(avgFunction->getOutputColumnName(), avgFunction->returnType()));
@@ -224,8 +224,7 @@ tl::expected<void, std::string> GroupArrowKernel::makeArrowExecPlan(const std::s
   }
 
   // initialize
-  auto execContext = std::make_shared<arrow::compute::ExecContext>(arrow::default_memory_pool(),
-                                                                   arrow::internal::GetCpuThreadPool());
+  auto execContext = std::make_shared<arrow::compute::ExecContext>(arrow::default_memory_pool());
 
   // exec plan
   auto expExecPlan = arrow::compute::ExecPlan::Make(execContext.get());
@@ -233,7 +232,6 @@ tl::expected<void, std::string> GroupArrowKernel::makeArrowExecPlan(const std::s
     return tl::make_unexpected(expExecPlan.status().message());
   }
   auto execPlan = *expExecPlan;
-  execPlan->exec_context()->set_use_threads(false);
 
   // dummy node at the beginning
   auto expDummyNode = arrow::compute::DummyNode::Make(execPlan.get(), schema);

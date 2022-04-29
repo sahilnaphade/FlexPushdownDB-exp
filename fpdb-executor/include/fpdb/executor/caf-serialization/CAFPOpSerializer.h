@@ -15,6 +15,7 @@
 #include <fpdb/executor/physical/group/GroupPOp.h>
 #include <fpdb/executor/physical/join/hashjoin/HashJoinBuildPOp.h>
 #include <fpdb/executor/physical/join/hashjoin/HashJoinProbePOp.h>
+#include <fpdb/executor/physical/join/hashjoin/HashJoinArrowPOp.h>
 #include <fpdb/executor/physical/join/nestedloopjoin/NestedLoopJoinPOp.h>
 #include <fpdb/executor/physical/limitsort/LimitSortPOp.h>
 #include <fpdb/executor/physical/merge/MergePOp.h>
@@ -49,6 +50,7 @@ CAF_ADD_TYPE_ID(POp, (filter::FilterPOp))
 CAF_ADD_TYPE_ID(POp, (fpdb::executor::physical::group::GroupPOp))
 CAF_ADD_TYPE_ID(POp, (join::HashJoinBuildPOp))
 CAF_ADD_TYPE_ID(POp, (join::HashJoinProbePOp))
+CAF_ADD_TYPE_ID(POp, (join::HashJoinArrowPOp))
 CAF_ADD_TYPE_ID(POp, (join::NestedLoopJoinPOp))
 CAF_ADD_TYPE_ID(POp, (limitsort::LimitSortPOp))
 CAF_ADD_TYPE_ID(POp, (merge::MergePOp))
@@ -87,6 +89,7 @@ struct variant_inspector_traits<POpPtr> {
           type_id_v<fpdb::executor::physical::group::GroupPOp>,
           type_id_v<join::HashJoinBuildPOp>,
           type_id_v<join::HashJoinProbePOp>,
+          type_id_v<join::HashJoinArrowPOp>,
           type_id_v<join::NestedLoopJoinPOp>,
           type_id_v<limitsort::LimitSortPOp>,
           type_id_v<merge::MergePOp>,
@@ -127,36 +130,38 @@ struct variant_inspector_traits<POpPtr> {
       return 8;
     else if (x->getType() == POpType::HASH_JOIN_PROBE)
       return 9;
-    else if (x->getType() == POpType::NESTED_LOOP_JOIN)
+    else if (x->getType() == POpType::HASH_JOIN_ARROW)
       return 10;
-    else if (x->getType() == POpType::LIMIT_SORT)
+    else if (x->getType() == POpType::NESTED_LOOP_JOIN)
       return 11;
-    else if (x->getType() == POpType::MERGE)
+    else if (x->getType() == POpType::LIMIT_SORT)
       return 12;
-    else if (x->getType() == POpType::PROJECT)
+    else if (x->getType() == POpType::MERGE)
       return 13;
-    else if (x->getType() == POpType::S3_GET)
+    else if (x->getType() == POpType::PROJECT)
       return 14;
-    else if (x->getType() == POpType::S3_SELECT)
+    else if (x->getType() == POpType::S3_GET)
       return 15;
-    else if (x->getType() == POpType::SHUFFLE)
+    else if (x->getType() == POpType::S3_SELECT)
       return 16;
-    else if (x->getType() == POpType::SORT)
+    else if (x->getType() == POpType::SHUFFLE)
       return 17;
-    else if (x->getType() == POpType::SPLIT)
+    else if (x->getType() == POpType::SORT)
       return 18;
-    else if (x->getType() == POpType::BLOOM_FILTER_CREATE)
+    else if (x->getType() == POpType::SPLIT)
       return 19;
-    else if (x->getType() == POpType::BLOOM_FILTER_CREATE_PREPARE)
+    else if (x->getType() == POpType::BLOOM_FILTER_CREATE)
       return 20;
-    else if (x->getType() == POpType::BLOOM_FILTER_CREATE_MERGE)
+    else if (x->getType() == POpType::BLOOM_FILTER_CREATE_PREPARE)
       return 21;
-    else if (x->getType() == POpType::BLOOM_FILTER_USE)
+    else if (x->getType() == POpType::BLOOM_FILTER_CREATE_MERGE)
       return 22;
-    else if (x->getType() == POpType::FPDB_STORE_FILE_SCAN)
+    else if (x->getType() == POpType::BLOOM_FILTER_USE)
       return 23;
-    else if (x->getType() == POpType::FPDB_STORE_SUPER)
+    else if (x->getType() == POpType::FPDB_STORE_FILE_SCAN)
       return 24;
+    else if (x->getType() == POpType::FPDB_STORE_SUPER)
+      return 25;
     else
       return -1;
   }
@@ -184,36 +189,38 @@ struct variant_inspector_traits<POpPtr> {
       case 9:
         return f(dynamic_cast<join::HashJoinProbePOp &>(*x));
       case 10:
-        return f(dynamic_cast<join::NestedLoopJoinPOp &>(*x));
+        return f(dynamic_cast<join::HashJoinArrowPOp &>(*x));
       case 11:
-        return f(dynamic_cast<limitsort::LimitSortPOp &>(*x));
+        return f(dynamic_cast<join::NestedLoopJoinPOp &>(*x));
       case 12:
-        return f(dynamic_cast<merge::MergePOp &>(*x));
+        return f(dynamic_cast<limitsort::LimitSortPOp &>(*x));
       case 13:
-        return f(dynamic_cast<project::ProjectPOp &>(*x));
+        return f(dynamic_cast<merge::MergePOp &>(*x));
       case 14:
-        return f(dynamic_cast<fpdb::executor::physical::s3::S3GetPOp &>(*x));
-//      case 15:
-//        return f(dynamic_cast<fpdb::executor::physical::s3::S3SelectPOp &>(*x));
+        return f(dynamic_cast<project::ProjectPOp &>(*x));
       case 15:
-        return f(dynamic_cast<fpdb::executor::physical::s3::SelectPOp &>(*x));
+        return f(dynamic_cast<fpdb::executor::physical::s3::S3GetPOp &>(*x));
+//      case 16:
+//        return f(dynamic_cast<fpdb::executor::physical::s3::S3SelectPOp &>(*x));
       case 16:
-        return f(dynamic_cast<shuffle::ShufflePOp &>(*x));
+        return f(dynamic_cast<fpdb::executor::physical::s3::SelectPOp &>(*x));
       case 17:
-        return f(dynamic_cast<sort::SortPOp &>(*x));
+        return f(dynamic_cast<shuffle::ShufflePOp &>(*x));
       case 18:
-        return f(dynamic_cast<split::SplitPOp &>(*x));
+        return f(dynamic_cast<sort::SortPOp &>(*x));
       case 19:
-        return f(dynamic_cast<bloomfilter::BloomFilterCreatePOp &>(*x));
+        return f(dynamic_cast<split::SplitPOp &>(*x));
       case 20:
-        return f(dynamic_cast<bloomfilter::BloomFilterCreatePreparePOp &>(*x));
+        return f(dynamic_cast<bloomfilter::BloomFilterCreatePOp &>(*x));
       case 21:
-        return f(dynamic_cast<bloomfilter::BloomFilterCreateMergePOp &>(*x));
+        return f(dynamic_cast<bloomfilter::BloomFilterCreatePreparePOp &>(*x));
       case 22:
-        return f(dynamic_cast<bloomfilter::BloomFilterUsePOp &>(*x));
+        return f(dynamic_cast<bloomfilter::BloomFilterCreateMergePOp &>(*x));
       case 23:
-        return f(dynamic_cast<fpdb_store::FPDBStoreFileScanPOp &>(*x));
+        return f(dynamic_cast<bloomfilter::BloomFilterUsePOp &>(*x));
       case 24:
+        return f(dynamic_cast<fpdb_store::FPDBStoreFileScanPOp &>(*x));
+      case 25:
         return f(dynamic_cast<fpdb_store::FPDBStoreSuperPOp &>(*x));
       default: {
         none_t dummy;
@@ -285,6 +292,11 @@ struct variant_inspector_traits<POpPtr> {
       }
       case type_id_v<join::HashJoinProbePOp>: {
         auto tmp = join::HashJoinProbePOp{};
+        continuation(tmp);
+        return true;
+      }
+      case type_id_v<join::HashJoinArrowPOp>: {
+        auto tmp = join::HashJoinArrowPOp{};
         continuation(tmp);
         return true;
       }
