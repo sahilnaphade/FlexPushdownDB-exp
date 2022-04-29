@@ -71,6 +71,9 @@ Compiler needed:
 5. Run tests `./fpdb-main-test -ts=<test-suite> -tc=<test-case>`, available test suites are `ssb-sf1-single_node-no-parallel`, `tpch-sf0.01-single_node-no-parallel`, `tpch-sf0.01-single_node-parallel`, `tpch-sf0.01-distributed`.
 6. When finished, stop the system `~/FPDB-build/resources/script/stop.sh`.
 
+#### Note:
+1. On large tests, check "ulimit -n", make sure the output number is high enough, otherwise it may throw "Too many open files" exception.
+
 
 ## System Configurations
 
