@@ -55,7 +55,7 @@ tl::expected<shared_ptr<AggregateResult>, string> AvgReduce::computePartial(cons
   // compute sum
   const auto &sumInputColumn = tupleSet->table()->GetColumnByName(getIntermediateSumColumnName());
   if (!sumInputColumn) {
-    return tl::make_unexpected(fmt::format("AVG_PARALLEL_SUM_COLUMN for {} not exist", outputColumnName_));
+    return tl::make_unexpected(fmt::format("AVG_INTERMEDIATE_SUM_COLUMN for {} not exist", outputColumnName_));
   }
   aggColumnDataType_ = sumInputColumn->type();
   const auto &expSumDatum = arrow::compute::Sum(sumInputColumn);
@@ -67,7 +67,7 @@ tl::expected<shared_ptr<AggregateResult>, string> AvgReduce::computePartial(cons
   // compute count
   const auto &countInputColumn = tupleSet->table()->GetColumnByName(getIntermediateCountColumnName());
   if (!countInputColumn) {
-    return tl::make_unexpected(fmt::format("AVG_PARALLEL_COUNT_COLUMN for {} not exist", outputColumnName_));
+    return tl::make_unexpected(fmt::format("AVG_INTERMEDIATE_COUNT_COLUMN for {} not exist", outputColumnName_));
   }
   const auto &expCountDatum = arrow::compute::Sum(countInputColumn);
   if (!expCountDatum.ok()) {

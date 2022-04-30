@@ -216,12 +216,11 @@ tl::expected<void, std::string> TupleSet::append(const std::shared_ptr<TupleSet>
 }
 
 tl::expected<std::shared_ptr<Column>, std::string> TupleSet::getColumnByName(const std::string &name) const {
-  auto canonicalColumnName = ColumnName::canonicalize(name);
-  auto columnArray = table_->GetColumnByName(canonicalColumnName);
+  auto columnArray = table_->GetColumnByName(name);
   if (columnArray == nullptr) {
-    return tl::make_unexpected("Column '" + canonicalColumnName + "' does not exist");
+    return tl::make_unexpected("Column '" + name + "' does not exist");
   } else {
-    auto column = Column::make(canonicalColumnName, columnArray);
+    auto column = Column::make(name, columnArray);
     return column;
   }
 }

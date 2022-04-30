@@ -131,8 +131,7 @@ shared_ptr<TupleSet> AggregatePOp::finalize() {
   }
 
   // Make tupleSet
-  const auto &table = arrow::Table::Make(schema, columns);
-  const shared_ptr<TupleSet> &aggregatedTuples = TupleSet::make(table);
+  auto aggregatedTuples = TupleSet::make(schema, columns);
 
   // Project using projectColumnNames
   auto expProjectTupleSet = aggregatedTuples->projectExist(getProjectColumnNames());
