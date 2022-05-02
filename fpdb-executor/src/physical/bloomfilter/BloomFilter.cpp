@@ -83,6 +83,14 @@ bool BloomFilter::contains(int64_t key) {
   return true;
 }
 
+const std::vector<int64_t> BloomFilter::getBitArray() const {
+  return bitArray_;
+}
+
+void BloomFilter::setBitArray(const std::vector<int64_t> &bitArray) {
+  bitArray_ = bitArray;
+};
+
 tl::expected<void, std::string> BloomFilter::merge(const std::shared_ptr<BloomFilter> &other) {
   // check
   if (capacity_ != other->capacity_) {
@@ -118,7 +126,7 @@ tl::expected<void, std::string> BloomFilter::merge(const std::shared_ptr<BloomFi
   }
   jObj.emplace("hashFunctions", hashFunctionsJArr);
 
-  jObj.emplace("bitArray", bitArray_);
+  // serialization of bitArray is done via arrow's array in a separate request
 
   return jObj;
 }
@@ -157,12 +165,9 @@ tl::expected<std::shared_ptr<BloomFilter>, std::string> BloomFilter::fromJson(co
     hashFunctions.emplace_back(*expHashFunction);
   }
 
-  if (!jObj.contains("bitArray")) {
-    return tl::make_unexpected(fmt::format("BitArray not specified in bloom filter JSON '{}'", jObj));
-  }
-  std::vector<int64_t> bitArray = jObj["bitArray"].get<std::vector<int64_t>>();
+  // deserialization of bitArray is done via arrow's array in a separate request
 
-  return make(capacity, falsePositiveRate, numHashFunctions, numBits, hashFunctions, bitArray);
+  return make(capacity, falsePositiveRate, numHashFunctions, numBits, hashFunctions, {});
 }
 
 int64_t BloomFilter::calculateNumHashFunctions() const {

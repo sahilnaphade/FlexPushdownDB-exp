@@ -540,7 +540,7 @@ void FilterPOp::putBitmapToFPDBStore() {
   }
   auto recordBatch = *expRecordBatch;
 
-  auto cmdObj = PutBitmapCmd::make(queryId_, name_, valid);
+  auto cmdObj = PutBitmapCmd::make(BitmapType::FILTER_COMPUTE, queryId_, name_, valid);
   auto expCmd = cmdObj->serialize(false);
   if (!expCmd.has_value()) {
     ctx()->notifyError(expCmd.error());

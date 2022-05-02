@@ -18,6 +18,7 @@
 #include "fpdb/store/server/flight/SelectObjectContentTicket.hpp"
 #include "fpdb/store/server/flight/GetBitmapTicket.hpp"
 #include "fpdb/store/server/flight/HeaderMiddleware.hpp"
+#include "fpdb/store/server/flight/BitmapType.h"
 #include "fpdb/store/server/caf/ActorManager.hpp"
 #include "fpdb/store/server/cache/BitmapCache.hpp"
 
@@ -247,32 +248,42 @@ private:
   /**
    *
    * @param key
-   * @param isComputeSide
+   * @param bitmap_type
    * @return
    */
   std::optional<std::vector<int64_t>> get_bitmap_from_cache(const std::string &key,
-                                                            bool is_compute_side);
+                                                            BitmapType bitmap_type);
 
   /**
    *
    * @param key
    * @param bitmap
+   * @param bitmap_type
    * @param valid
-   * @param is_compute_side
    */
   void put_bitmap_into_cache(const std::string &key,
                              const std::vector<int64_t> &bitmap,
-                             bool valid,
-                             bool is_compute_side);
+                             BitmapType bitmap_type,
+                             bool valid);
+
+  /**
+   * init bitmap caches, as well as mutex and cond_var used for them
+   */
+  void init_bitmap_cache();
 
   ::arrow::flight::Location location_;
   std::string store_root_path_;
   std::shared_ptr<::caf::actor_system> actor_system_;
 
-  // bitmap cache from compute side and storage side respectively
-  std::shared_ptr<BitmapCache> compute_bitmap_cache_, storage_bitmap_cache_;
-  std::mutex compute_bitmap_mutex_, storage_bitmap_mutex_;
-  std::unordered_map<std::string, std::shared_ptr<std::condition_variable_any>> compute_bitmap_cvs_, storage_bitmap_cvs_;
+  // bitmap caches for different bitmap types
+  std::unordered_map<BitmapType, std::shared_ptr<BitmapCache>> bitmap_cache_map;
+  std::unordered_map<BitmapType, std::shared_ptr<std::mutex>> bitmap_mutex_map;
+  std::unordered_map<BitmapType,
+          std::unordered_map<std::string, std::shared_ptr<std::condition_variable_any>>> bitmap_cvs_map;
+
+//  std::shared_ptr<BitmapCache> compute_bitmap_cache_, storage_bitmap_cache_;
+//  std::mutex compute_bitmap_mutex_, storage_bitmap_mutex_;
+//  std::unordered_map<std::string, std::shared_ptr<std::condition_variable_any>> compute_bitmap_cvs_, storage_bitmap_cvs_;
 };
 
 } // namespace fpdb::store::server::flight

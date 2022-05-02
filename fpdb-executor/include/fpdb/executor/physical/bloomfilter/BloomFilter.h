@@ -45,6 +45,9 @@ public:
   void add(int64_t key);
   bool contains(int64_t key);
 
+  const std::vector<int64_t> getBitArray() const;
+  void setBitArray(const std::vector<int64_t> &bitArray);
+
   /**
    * Merge another bloom filter into this
    * @param other

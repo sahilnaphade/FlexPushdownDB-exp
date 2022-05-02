@@ -8,14 +8,20 @@
 
 namespace fpdb::store::server::flight {
 
-PutBitmapCmd::PutBitmapCmd(long query_id, const std::string &op, bool valid):
+PutBitmapCmd::PutBitmapCmd(BitmapType bitmap_type, long query_id, const std::string &op, bool valid):
   CmdObject(CmdType::put_bitmap()),
+  bitmap_type_(bitmap_type),
   query_id_(query_id),
   op_(op),
   valid_(valid) {}
 
-std::shared_ptr<PutBitmapCmd> PutBitmapCmd::make(long query_id, const std::string &op, bool valid) {
-  return std::make_shared<PutBitmapCmd>(query_id, op, valid);
+std::shared_ptr<PutBitmapCmd> PutBitmapCmd::make(BitmapType bitmap_type, long query_id,
+                                                 const std::string &op, bool valid) {
+  return std::make_shared<PutBitmapCmd>(bitmap_type, query_id, op, valid);
+}
+
+BitmapType PutBitmapCmd::bitmap_type() const {
+  return bitmap_type_;
 }
 
 long PutBitmapCmd::query_id() const {
@@ -33,6 +39,7 @@ bool PutBitmapCmd::valid() const {
 tl::expected<std::string, std::string> PutBitmapCmd::serialize(bool pretty) {
   nlohmann::json value;
   value.emplace(TypeJSONName.data(), type()->name());
+  value.emplace(BitmapTypeName.data(), bitmap_type_);
   value.emplace(QueryIdJSONName.data(), query_id_);
   value.emplace(OpJSONName.data(), op_);
   value.emplace(ValidJSONName.data(), valid_);
@@ -40,6 +47,11 @@ tl::expected<std::string, std::string> PutBitmapCmd::serialize(bool pretty) {
 }
 
 tl::expected<std::shared_ptr<PutBitmapCmd>, std::string> PutBitmapCmd::from_json(const nlohmann::json& jObj) {
+  if (!jObj.contains(BitmapTypeName.data())) {
+    return tl::make_unexpected(fmt::format("Bitmap type name not specified in PutBitmapCmd JSON '{}'", jObj));
+  }
+  auto bitmap_type = jObj[BitmapTypeName.data()].get<BitmapType>();
+
   if (!jObj.contains(QueryIdJSONName.data())) {
     return tl::make_unexpected(fmt::format("Query id not specified in PutBitmapCmd JSON '{}'", jObj));
   }
@@ -55,7 +67,7 @@ tl::expected<std::shared_ptr<PutBitmapCmd>, std::string> PutBitmapCmd::from_json
   }
   auto valid = jObj[ValidJSONName.data()].get<bool>();
 
-  return PutBitmapCmd::make(query_id, op, valid);
+  return PutBitmapCmd::make(bitmap_type, query_id, op, valid);
 }
 
 }

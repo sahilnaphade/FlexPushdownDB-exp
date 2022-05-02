@@ -179,7 +179,7 @@ PhysicalPlanSerializer::serializeBloomFilterUsePOp(const std::shared_ptr<bloomfi
 
   auto bloomFilter = bloomFilterUsePOp->getBloomFilter();
   if (!bloomFilter.has_value()) {
-    return tl::make_unexpected("Bloom filter not set in BloomFilterUsePOp");
+    return tl::make_unexpected(fmt::format("Bloom filter not set in BloomFilterUsePOp: '{}'", bloomFilterUsePOp->name()));
   }
   jObj.emplace("bloomFilter", (*bloomFilter)->toJson());
 

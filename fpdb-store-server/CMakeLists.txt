@@ -55,6 +55,7 @@ add_library(fpdb-store-server-flight-api STATIC
         src/flight/CmdType.cpp include/fpdb/store/server/flight/CmdType.hpp
         src/flight/CmdObject.cpp include/fpdb/store/server/flight/CmdObject.hpp
         src/flight/SelectObjectContentCmd.cpp include/fpdb/store/server/flight/SelectObjectContentCmd.hpp
+        include/fpdb/store/server/flight/BitmapType.h
         src/flight/PutBitmapCmd.cpp include/fpdb/store/server/flight/PutBitmapCmd.hpp
         src/flight/ClearBitmapCmd.cpp include/fpdb/store/server/flight/ClearBitmapCmd.hpp
         src/flight/TicketType.cpp include/fpdb/store/server/flight/TicketType.hpp
@@ -89,6 +90,7 @@ add_library(fpdb-store-server-objlib OBJECT
         src/flight/CmdType.cpp include/fpdb/store/server/flight/CmdType.hpp
         src/flight/CmdObject.cpp include/fpdb/store/server/flight/CmdObject.hpp
         src/flight/SelectObjectContentCmd.cpp include/fpdb/store/server/flight/SelectObjectContentCmd.hpp
+        include/fpdb/store/server/flight/BitmapType.h
         src/flight/PutBitmapCmd.cpp include/fpdb/store/server/flight/PutBitmapCmd.hpp
         src/flight/ClearBitmapCmd.cpp include/fpdb/store/server/flight/ClearBitmapCmd.hpp
         src/flight/TicketType.cpp include/fpdb/store/server/flight/TicketType.hpp

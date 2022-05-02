@@ -16,7 +16,7 @@ static constexpr std::string_view QueryIdJSONName = "query_id";
 static constexpr std::string_view QueryPlanJSONName = "query_plan";
 static constexpr std::string_view OpJSONName = "op";
 static constexpr std::string_view ValidJSONName = "valid";
-static constexpr std::string_view IsComputeSideJsonName = "is_compute_side";
+static constexpr std::string_view BitmapTypeName = "bitmap_type";
 
 static constexpr std::string_view GetObjectCmdTypeName = "get_object";
 static constexpr std::string_view SelectObjectContentCmdTypeName = "select_object_content";

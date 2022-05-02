@@ -47,6 +47,7 @@ private:
   void processAtStore();
   void processEmpty();
   tl::expected<std::string, std::string> serialize(bool pretty);
+  void putBloomFilterBitmapToStore();
 
   std::shared_ptr<PhysicalPlan> subPlan_;
   std::string host_;

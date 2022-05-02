@@ -6,16 +6,18 @@
 #define FPDB_FPDB_STORE_SERVER_INCLUDE_FPDB_STORE_SERVER_FLIGHT_CLEARBITMAPCMD_HPP
 
 #include "fpdb/store/server/flight/CmdObject.hpp"
+#include "fpdb/store/server/flight/BitmapType.h"
 
 namespace fpdb::store::server::flight {
 
 class ClearBitmapCmd : public CmdObject {
 
 public:
-  ClearBitmapCmd(long query_id, const std::string &op, bool is_compute_side);
+  ClearBitmapCmd(BitmapType bitmap_type, long query_id, const std::string &op);
 
-  static std::shared_ptr<ClearBitmapCmd> make(long query_id, const std::string &op, bool is_compute_side);
+  static std::shared_ptr<ClearBitmapCmd> make(BitmapType bitmap_type, long query_id, const std::string &op);
 
+  BitmapType bitmap_type() const;
   long query_id() const;
   const std::string& op() const;
   bool is_compute_side() const;
@@ -24,9 +26,9 @@ public:
   static tl::expected<std::shared_ptr<ClearBitmapCmd>, std::string> from_json(const nlohmann::json& jObj);
 
 private:
+  BitmapType bitmap_type_;
   long query_id_;
   std::string op_;
-  bool is_compute_side_;
 
 };
 
