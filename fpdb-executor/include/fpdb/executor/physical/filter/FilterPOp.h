@@ -63,12 +63,12 @@ private:
   /**
    * A buffer of received tuples not yet filtered
    */
-  std::shared_ptr<fpdb::tuple::TupleSet> received_;
+  std::optional<std::shared_ptr<fpdb::tuple::TupleSet>> received_;
 
   /**
    * A buffer of filtered tuples not yet sent
    */
-  std::shared_ptr<fpdb::tuple::TupleSet> filtered_;
+  std::optional<std::shared_ptr<fpdb::tuple::TupleSet>> filtered_;
 
   void onStart();
   void onTupleSet(const TupleSetMessage& Message);
@@ -138,8 +138,6 @@ public:
                                f.field("bloomFilterCreatePrepareConsumer", op.bloomFilterCreatePrepareConsumer_),
                                f.field("isSeparated", op.isSeparated_),
                                f.field("predicate", op.predicate_),
-                               f.field("received", op.received_),
-                               f.field("filtered", op.filtered_),
                                f.field("table", op.table_),
                                f.field("weightedSegmentKeys", op.weightedSegmentKeys_),
                                f.field("bitmapWrapper", op.bitmapWrapper_));

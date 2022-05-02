@@ -33,8 +33,6 @@ FilterPOp::FilterPOp(std::string name,
                std::vector<std::shared_ptr<SegmentKey>> weightedSegmentKeys) :
 	PhysicalOp(std::move(name), FILTER, std::move(projectColumnNames), nodeId),
   predicate_(std::move(predicate)),
-	received_(fpdb::tuple::TupleSet::makeWithNullTable()),
-	filtered_(fpdb::tuple::TupleSet::makeWithNullTable()),
   table_(std::move(table)),
 	weightedSegmentKeys_(std::move(weightedSegmentKeys)) {}
 
@@ -95,8 +93,6 @@ void FilterPOp::onReceive(const Envelope &Envelope) {
 }
 
 void FilterPOp::onStart() {
-  assert(received_->validate());
-  assert(filtered_->validate());
   SPDLOG_DEBUG("Starting operator  |  name: '{}'", this->name());
 }
 
@@ -111,7 +107,7 @@ void FilterPOp::onTupleSet(const TupleSetMessage &Message) {
   bufferReceived(tupleSet);
 
   // do anything only when the buffer is large enough
-  if (received_->numRows() > DefaultBufferSize) {
+  if ((*received_)->numRows() > DefaultBufferSize) {
     if (!isBitmapPushdownEnabled()) {
       onTupleSetRegular();
     } else {
@@ -168,8 +164,6 @@ void FilterPOp::onTupleSetBitmapPushdown() {
 }
 
 void FilterPOp::onComplete(const CompleteMessage&) {
-  SPDLOG_DEBUG("onComplete  |  Received buffer tupleSet - numRows: {}", received_->numRows());
-
   if (!ctx()->isComplete() && ctx()->operatorMap().allComplete(POpRelationshipType::Producer)) {
     if (!isBitmapPushdownEnabled()) {
       onCompleteRegular();
@@ -181,8 +175,13 @@ void FilterPOp::onComplete(const CompleteMessage&) {
 
 void FilterPOp::onCompleteRegular() {
   // filter the rest
-  if (received_->valid()) {
+  if (received_.has_value()) {
     onTupleSetRegular();
+
+    // if not applicable, then we already complete in the function above
+    if (!*isApplicable_) {
+      return;
+    }
   }
 
   // send segment weights if required
@@ -196,7 +195,7 @@ void FilterPOp::onCompleteRegular() {
 
 void FilterPOp::onCompleteBitmapPushdown() {
   // filter the rest
-  if (received_->valid()) {
+  if (received_.has_value()) {
     onTupleSetBitmapPushdown();
   }
 
@@ -234,26 +233,24 @@ void FilterPOp::onCompleteBitmapPushdown() {
 }
 
 void FilterPOp::bufferReceived(const std::shared_ptr<fpdb::tuple::TupleSet>& tupleSet) {
-  if (!received_->valid()) {
+  if (!received_.has_value()) {
     received_ = tupleSet;
   } else {
-    auto result = received_->append(tupleSet);
+    auto result = (*received_)->append(tupleSet);
     if (!result.has_value()) {
       ctx()->notifyError(result.error());
     }
-    assert(received_->validate());
   }
 }
 
 void FilterPOp::bufferFiltered(const std::shared_ptr<fpdb::tuple::TupleSet>& tupleSet) {
-  if (!filtered_->valid()) {
+  if (!filtered_.has_value()) {
     filtered_ = tupleSet;
   } else {
-    auto result = filtered_->append(tupleSet);
+    auto result = (*filtered_)->append(tupleSet);
     if (!result.has_value()) {
       ctx()->notifyError(result.error());
     }
-    assert(filtered_->validate());
   }
 }
 
@@ -295,10 +292,10 @@ void FilterPOp::buildFilter() {
     filter_ = Filter::make(predicate_);
 
     // input schema and output schema
-    auto inputSchema = received_->schema();
+    auto inputSchema = (*received_)->schema();
     arrow::FieldVector outputFields;
     for (const auto &projectColumnName: getProjectColumnNames()) {
-      auto outputField = received_->schema()->GetFieldByName(projectColumnName);
+      auto outputField = (*received_)->schema()->GetFieldByName(projectColumnName);
       if (outputField != nullptr) {
         outputFields.emplace_back(outputField);
       }
@@ -312,14 +309,14 @@ void FilterPOp::buildFilter() {
 void FilterPOp::filterTuplesRegular() {
   // metrics
   if (recordSpeeds) {
-    totalBytesFiltered_ += received_->size();
+    totalBytesFiltered_ += (*received_)->size();
   }
-  totalNumRows_ += received_->numRows();
-  inputBytesFiltered_ += received_->size();
+  totalNumRows_ += (*received_)->numRows();
+  inputBytesFiltered_ += (*received_)->size();
   std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now();
 
   // do filter
-  const auto &expFiltered = (*filter_)->evaluate(*received_);
+  const auto &expFiltered = (*filter_)->evaluate(**received_);
   if (!expFiltered.has_value()) {
     ctx()->notifyError(expFiltered.error());
   }
@@ -328,11 +325,10 @@ void FilterPOp::filterTuplesRegular() {
   // metrics
   std::chrono::steady_clock::time_point stopTime = std::chrono::steady_clock::now();
   filterTimeNS_ += std::chrono::duration_cast<std::chrono::nanoseconds>(stopTime - startTime).count();
-  filteredNumRows_ += filtered_->numRows();
-  outputBytesFiltered_ += filtered_->size();
+  filteredNumRows_ += (*filtered_)->numRows();
+  outputBytesFiltered_ += (*filtered_)->size();
 
-  received_->clear();
-  assert(received_->validate());
+  received_.reset();
 }
 
 void FilterPOp::filterTuplesSaveBitMap() {
@@ -340,16 +336,16 @@ void FilterPOp::filterTuplesSaveBitMap() {
 
   // metrics
   if (recordSpeeds) {
-    totalBytesFiltered_ += received_->size();
+    totalBytesFiltered_ += (*received_)->size();
   }
-  totalNumRows_ += received_->numRows();
-  inputBytesFiltered_ += received_->size();
+  totalNumRows_ += (*received_)->numRows();
+  inputBytesFiltered_ += (*received_)->size();
   std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now();
 
   // do filter
   std::shared_ptr<::arrow::RecordBatch> batch;
   std::vector<std::shared_ptr<::arrow::RecordBatch>> filteredBatches;
-  ::arrow::TableBatchReader reader(*received_->table());
+  ::arrow::TableBatchReader reader(*(*received_)->table());
 
   // Maximum chunk size Gandiva filter evaluates at a time
   reader.set_chunksize((int64_t) fpdb::tuple::DefaultChunkSize);
@@ -399,27 +395,26 @@ void FilterPOp::filterTuplesSaveBitMap() {
   // metrics
   std::chrono::steady_clock::time_point stopTime = std::chrono::steady_clock::now();
   filterTimeNS_ += std::chrono::duration_cast<std::chrono::nanoseconds>(stopTime - startTime).count();
-  filteredNumRows_ += filtered_->numRows();
-  outputBytesFiltered_ += filtered_->size();
+  filteredNumRows_ += (*filtered_)->numRows();
+  outputBytesFiltered_ += (*filtered_)->size();
 
-  received_->clear();
-  assert(received_->validate());
+  received_.reset();
 }
 
 void FilterPOp::filterTuplesUsingBitmap() {
   // metrics
   if (recordSpeeds) {
-    totalBytesFiltered_ += received_->size();
+    totalBytesFiltered_ += (*received_)->size();
   }
-  totalNumRows_ += received_->numRows();
-  inputBytesFiltered_ += received_->size();
+  totalNumRows_ += (*received_)->numRows();
+  inputBytesFiltered_ += (*received_)->size();
   std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now();
 
   // do filter
   int64_t rowOffset = 0;
   std::shared_ptr<::arrow::RecordBatch> batch;
   std::vector<std::shared_ptr<::arrow::RecordBatch>> filteredBatches;
-  ::arrow::TableBatchReader reader(*received_->table());
+  ::arrow::TableBatchReader reader(*(*received_)->table());
 
   // Maximum chunk size Gandiva filter evaluates at a time
   reader.set_chunksize((int64_t) fpdb::tuple::DefaultChunkSize);
@@ -464,21 +459,19 @@ void FilterPOp::filterTuplesUsingBitmap() {
   // metrics
   std::chrono::steady_clock::time_point stopTime = std::chrono::steady_clock::now();
   filterTimeNS_ += std::chrono::duration_cast<std::chrono::nanoseconds>(stopTime - startTime).count();
-  filteredNumRows_ += filtered_->numRows();
-  outputBytesFiltered_ += filtered_->size();
+  filteredNumRows_ += (*filtered_)->numRows();
+  outputBytesFiltered_ += (*filtered_)->size();
 
-  received_->clear();
-  assert(received_->validate());
+  received_.reset();
 }
 
 void FilterPOp::sendTuples() {
   // send, projectExist is already done during filtering
   std::shared_ptr<Message> tupleSetMessage =
-          std::make_shared<TupleSetMessage>(TupleSet::make(filtered_->table()), name());
+          std::make_shared<TupleSetMessage>(*filtered_, name());
   ctx()->tell(tupleSetMessage);
 
-  filtered_->clear();
-  assert(filtered_->validate());
+  filtered_.reset();
 }
 
 int getPredicateNum(const std::shared_ptr<Expression> &expr) {
