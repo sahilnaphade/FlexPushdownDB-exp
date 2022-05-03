@@ -11,8 +11,8 @@ tl::expected<std::shared_ptr<TupleSet>, std::string>
 BloomFilterUseKernel::filter(const std::shared_ptr<TupleSet> &tupleSet,
                              const std::shared_ptr<BloomFilter> &bloomFilter,
                              const std::vector<std::string> &columnNames) {
-  // Check empty
-  if (tupleSet->numRows() == 0) {
+  // Check
+  if (tupleSet->numRows() == 0 || !bloomFilter->valid()) {
     return tupleSet;
   }
 

@@ -3,6 +3,7 @@
 //
 
 #include <fpdb/executor/physical/bloomfilter/BloomFilter.h>
+#include <fpdb/executor/physical/Globals.h>
 #include <fmt/format.h>
 #include <cmath>
 #include <cassert>
@@ -11,19 +12,22 @@ namespace fpdb::executor::physical::bloomfilter {
 
 BloomFilter::BloomFilter(int64_t capacity, double falsePositiveRate) :
   capacity_(capacity),
-  falsePositiveRate_(falsePositiveRate) {
+  falsePositiveRate_(falsePositiveRate),
+  valid_(capacity <= BLOOM_FILTER_MAX_INPUT_SIZE) {
 
   assert(falsePositiveRate >= 0.0 && falsePositiveRate <= 1.0);
 }
 
 BloomFilter::BloomFilter(int64_t capacity,
                          double falsePositiveRate,
+                         bool valid,
                          int64_t numHashFunctions,
                          int64_t numBits,
                          const std::vector<std::shared_ptr<UniversalHashFunction>> &hashFunctions,
                          const std::vector<int64_t> &bitArray) :
   capacity_(capacity),
   falsePositiveRate_(falsePositiveRate),
+  valid_(valid),
   numHashFunctions_(numHashFunctions),
   numBits_(numBits),
   hashFunctions_(hashFunctions),
@@ -38,11 +42,13 @@ std::shared_ptr<BloomFilter> BloomFilter::make(int64_t capacity, double falsePos
 
 std::shared_ptr<BloomFilter> BloomFilter::make(int64_t capacity,
                                                double falsePositiveRate,
+                                               bool valid,
                                                int64_t numHashFunctions,
                                                int64_t numBits,
                                                const std::vector<std::shared_ptr<UniversalHashFunction>> &hashFunctions,
                                                const std::vector<int64_t> &bitArray) {
-  return std::make_shared<BloomFilter>(capacity, falsePositiveRate, numHashFunctions, numBits, hashFunctions, bitArray);
+  return std::make_shared<BloomFilter>(capacity, falsePositiveRate, valid,
+                                       numHashFunctions, numBits, hashFunctions, bitArray);
 }
 
 void BloomFilter::init() {
@@ -91,6 +97,10 @@ void BloomFilter::setBitArray(const std::vector<int64_t> &bitArray) {
   bitArray_ = bitArray;
 };
 
+bool BloomFilter::valid() const {
+  return valid_;
+}
+
 tl::expected<void, std::string> BloomFilter::merge(const std::shared_ptr<BloomFilter> &other) {
   // check
   if (capacity_ != other->capacity_) {
@@ -117,6 +127,7 @@ tl::expected<void, std::string> BloomFilter::merge(const std::shared_ptr<BloomFi
   ::nlohmann::json jObj;
   jObj.emplace("capacity", capacity_);
   jObj.emplace("falsePositiveRate", falsePositiveRate_);
+  jObj.emplace("valid", valid_);
   jObj.emplace("numHashFunctions", numHashFunctions_);
   jObj.emplace("numBits", numBits_);
 
@@ -141,6 +152,11 @@ tl::expected<std::shared_ptr<BloomFilter>, std::string> BloomFilter::fromJson(co
     return tl::make_unexpected(fmt::format("FalsePositiveRate not specified in bloom filter JSON '{}'", jObj));
   }
   double falsePositiveRate = jObj["falsePositiveRate"].get<double>();
+
+  if (!jObj.contains("valid")) {
+    return tl::make_unexpected(fmt::format("Valid not specified in bloom filter JSON '{}'", jObj));
+  }
+  bool valid = jObj["valid"].get<bool>();
 
   if (!jObj.contains("numHashFunctions")) {
     return tl::make_unexpected(fmt::format("NumHashFunctions not specified in bloom filter JSON '{}'", jObj));
@@ -167,7 +183,7 @@ tl::expected<std::shared_ptr<BloomFilter>, std::string> BloomFilter::fromJson(co
 
   // deserialization of bitArray is done via arrow's array in a separate request
 
-  return make(capacity, falsePositiveRate, numHashFunctions, numBits, hashFunctions, {});
+  return make(capacity, falsePositiveRate, valid, numHashFunctions, numBits, hashFunctions, {});
 }
 
 int64_t BloomFilter::calculateNumHashFunctions() const {

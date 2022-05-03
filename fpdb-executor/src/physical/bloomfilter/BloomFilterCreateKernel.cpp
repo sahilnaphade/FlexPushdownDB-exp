@@ -54,6 +54,9 @@ tl::expected<void, std::string> BloomFilterCreateKernel::addTupleSetToBloomFilte
   if (!bloomFilter_.has_value()) {
     return tl::make_unexpected("No bloom filter received");
   }
+  if (!(*bloomFilter_)->valid()) {
+    return {};
+  }
 
   // Make column indices
   std::vector<int> columnIndices;

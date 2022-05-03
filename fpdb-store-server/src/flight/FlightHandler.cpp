@@ -317,6 +317,17 @@ tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::
     // for each BloomFilterUsePOp, wait until its bitmap is ready
     if (op->getType() == POpType::BLOOM_FILTER_USE) {
       auto typedOp = std::static_pointer_cast<bloomfilter::BloomFilterUsePOp>(op);
+      auto bloomFilter = typedOp->getBloomFilter();
+      if (!bloomFilter.has_value()) {
+        return tl::make_unexpected(
+                MakeFlightError(FlightStatusCode::Failed,
+                                fmt::format("Bloom filter not set in BloomFilterUsePOp: '{}'", op->name())));
+      }
+
+      // skip invalid bloom filter
+      if (!(*bloomFilter)->valid()) {
+        continue;
+      }
 
       // wait for bitmap ready
       auto bitmap_key = BitmapCache::generateKey(query_id, op->name());
@@ -325,13 +336,6 @@ tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::
         return tl::make_unexpected(
                 MakeFlightError(FlightStatusCode::Failed,
                                 fmt::format("Bloom filter bitmap with key '{}' is not valid", bitmap_key)));
-      }
-
-      auto bloomFilter = typedOp->getBloomFilter();
-      if (!bloomFilter.has_value()) {
-        return tl::make_unexpected(
-                MakeFlightError(FlightStatusCode::Failed,
-                                fmt::format("Bloom filter not set in BloomFilterUsePOp: '{}'", op->name())));
       }
       (*bloomFilter)->setBitArray(*bitmap);
     }

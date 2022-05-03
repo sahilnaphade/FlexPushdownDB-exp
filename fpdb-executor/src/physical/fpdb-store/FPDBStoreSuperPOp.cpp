@@ -266,12 +266,17 @@ void FPDBStoreSuperPOp::putBloomFilterBitmapToStore() {
 
     if (op->getType() == POpType::BLOOM_FILTER_USE) {
       auto typedOp = std::static_pointer_cast<bloomfilter::BloomFilterUsePOp>(op);
-
-      // send request to store
       auto bloomFilter = typedOp->getBloomFilter();
       if (!bloomFilter.has_value()) {
         ctx()->notifyError(fmt::format("Bloom filter not set in BloomFilterUsePOp: '{}'", op->name()));
       }
+
+      // only send valid bitmap for performance
+      if (!(*bloomFilter)->valid()) {
+        continue;
+      }
+
+      // send request to store
       auto bitmap = (*bloomFilter)->getBitArray();
       auto expRecordBatch = ArrowSerializer::bitmap_to_recordBatch(bitmap);
       if (!expRecordBatch.has_value()) {

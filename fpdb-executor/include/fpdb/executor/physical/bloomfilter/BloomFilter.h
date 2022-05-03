@@ -25,12 +25,14 @@ public:
    */
   BloomFilter(int64_t capacity,
               double falsePositiveRate,
+              bool valid,
               int64_t numHashFunctions,
               int64_t numBits,
               const std::vector<std::shared_ptr<UniversalHashFunction>> &hashFunctions,
               const std::vector<int64_t> &bitArray);
   static std::shared_ptr<BloomFilter> make(int64_t capacity,
                                            double falsePositiveRate,
+                                           bool valid,
                                            int64_t numHashFunctions,
                                            int64_t numBits,
                                            const std::vector<std::shared_ptr<UniversalHashFunction>> &hashFunctions,
@@ -47,6 +49,7 @@ public:
 
   const std::vector<int64_t> getBitArray() const;
   void setBitArray(const std::vector<int64_t> &bitArray);
+  bool valid() const;
 
   /**
    * Merge another bloom filter into this
@@ -60,6 +63,8 @@ public:
 private:
   int64_t capacity_;
   double falsePositiveRate_;
+
+  bool valid_;    // whether this bloom filter will be used after runtime checking (i.e. false if input is too large)
 
   int64_t numHashFunctions_;
   int64_t numBits_;

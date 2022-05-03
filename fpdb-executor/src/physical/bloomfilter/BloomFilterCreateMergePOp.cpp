@@ -43,9 +43,11 @@ void BloomFilterCreateMergePOp::onBloomFilter(const BloomFilterMessage &msg) {
   if (!mergedBloomFilter_.has_value()) {
     mergedBloomFilter_ = bloomFilter;
   } else {
-    auto result = (*mergedBloomFilter_)->merge(bloomFilter);
-    if (!result.has_value()) {
-      ctx()->notifyError(result.error());
+    if ((*mergedBloomFilter_)->valid()) {
+      auto result = (*mergedBloomFilter_)->merge(bloomFilter);
+      if (!result.has_value()) {
+        ctx()->notifyError(result.error());
+      }
     }
   }
 }
