@@ -280,10 +280,6 @@ private:
   std::unordered_map<BitmapType, std::shared_ptr<std::mutex>> bitmap_mutex_map;
   std::unordered_map<BitmapType,
           std::unordered_map<std::string, std::shared_ptr<std::condition_variable_any>>> bitmap_cvs_map;
-
-//  std::shared_ptr<BitmapCache> compute_bitmap_cache_, storage_bitmap_cache_;
-//  std::mutex compute_bitmap_mutex_, storage_bitmap_mutex_;
-//  std::unordered_map<std::string, std::shared_ptr<std::condition_variable_any>> compute_bitmap_cvs_, storage_bitmap_cvs_;
 };
 
 } // namespace fpdb::store::server::flight
