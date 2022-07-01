@@ -12,6 +12,7 @@ add_library(fpdb-executor STATIC
         src/message/CompleteMessage.cpp include/fpdb/executor/message/CompleteMessage.h
         src/message/ScanMessage.cpp include/fpdb/executor/message/ScanMessage.h
         src/message/TupleSetMessage.cpp include/fpdb/executor/message/TupleSetMessage.h
+        src/message/TupleSetBufferMessage.cpp include/fpdb/executor/message/TupleSetBufferMessage.h
         src/message/TupleSetIndexMessage.cpp include/fpdb/executor/message/TupleSetIndexMessage.h
         src/message/TupleSetSizeMessage.cpp include/fpdb/executor/message/TupleSetSizeMessage.h
         src/message/DebugMetricsMessage.cpp include/fpdb/executor/message/DebugMetricsMessage.h
@@ -104,6 +105,7 @@ add_library(fpdb-executor STATIC
         src/physical/s3/S3CSVParser.cpp include/fpdb/executor/physical/s3/S3CSVParser.h
         src/physical/s3/S3SelectCSVParseOptions.cpp include/fpdb/executor/physical/s3/S3SelectCSVParseOptions.h
         src/physical/s3/S3SelectScanKernel.cpp include/fpdb/executor/physical/s3/S3SelectScanKernel.h
+        src/physical/s3/SelectPOp.cpp include/fpdb/executor/physical/s3/SelectPOp.h
         src/physical/fpdb-store/FPDBStoreSuperPOp.cpp include/fpdb/executor/physical/fpdb-store/FPDBStoreSuperPOp.h
         src/physical/fpdb-store/FPDBStoreFileScanPOp.cpp include/fpdb/executor/physical/fpdb-store/FPDBStoreFileScanPOp.h
         src/physical/fpdb-store/FPDBStoreSuperPOpUtil.cpp include/fpdb/executor/physical/fpdb-store/FPDBStoreSuperPOpUtil.h
@@ -134,7 +136,7 @@ add_library(fpdb-executor STATIC
 #        executor
         src/Executor.cpp include/fpdb/executor/Executor.h
         src/Execution.cpp include/fpdb/executor/Execution.h
-        include/fpdb/executor/physical/s3/SelectPOp.cpp include/fpdb/executor/physical/s3/SelectPOp.hpp)
+        src/FPDBStoreExecution.cpp include/fpdb/executor/FPDBStoreExecution.h)
 
 target_include_directories(fpdb-executor PUBLIC include)
 

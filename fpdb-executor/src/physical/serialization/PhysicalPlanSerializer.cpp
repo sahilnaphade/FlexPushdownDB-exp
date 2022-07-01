@@ -194,6 +194,23 @@ PhysicalPlanSerializer::serializeBloomFilterUsePOp(const std::shared_ptr<bloomfi
 }
 
 tl::expected<::nlohmann::json, std::string>
+PhysicalPlanSerializer::serializeShufflePOp(const std::shared_ptr<shuffle::ShufflePOp> &shufflePOp) {
+  // serialize self
+  auto jObj = serializePOpCommon(shufflePOp);
+  jObj.emplace("shuffleColumnNames", shufflePOp->getShuffleColumnNames());
+  jObj.emplace("consumerVec", shufflePOp->getConsumerVec());
+
+  // serialize producers
+  auto expProducersJObj = serializeProducers(shufflePOp);
+  if (!expProducersJObj.has_value()) {
+    return tl::make_unexpected(expProducersJObj.error());
+  }
+  jObj.emplace("inputs", *expProducersJObj);
+
+  return jObj;
+}
+
+tl::expected<::nlohmann::json, std::string>
 PhysicalPlanSerializer::serializeCollatePOp(const std::shared_ptr<collate::CollatePOp> &collatePOp) {
   // serialize self
   auto jObj = serializePOpCommon(collatePOp);

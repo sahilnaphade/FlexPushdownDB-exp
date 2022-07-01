@@ -13,6 +13,7 @@
 #include <fpdb/executor/message/DebugMetricsMessage.h>
 #include <fpdb/executor/message/ScanMessage.h>
 #include <fpdb/executor/message/TupleSetMessage.h>
+#include <fpdb/executor/message/TupleSetBufferMessage.h>
 #include <fpdb/executor/message/TupleSetIndexMessage.h>
 #include <fpdb/executor/message/TupleSetSizeMessage.h>
 #include <fpdb/executor/message/BloomFilterMessage.h>
@@ -38,6 +39,7 @@ CAF_ADD_TYPE_ID(Message, (ErrorMessage))
 CAF_ADD_TYPE_ID(Message, (DebugMetricsMessage))
 CAF_ADD_TYPE_ID(Message, (ScanMessage))
 CAF_ADD_TYPE_ID(Message, (TupleSetMessage))
+CAF_ADD_TYPE_ID(Message, (TupleSetBufferMessage))
 CAF_ADD_TYPE_ID(Message, (TupleSetIndexMessage))
 CAF_ADD_TYPE_ID(Message, (TupleSetSizeMessage))
 CAF_ADD_TYPE_ID(Message, (BloomFilterMessage))
@@ -73,6 +75,7 @@ struct variant_inspector_traits<MessagePtr> {
           type_id_v<DebugMetricsMessage>,
           type_id_v<ScanMessage>,
           type_id_v<TupleSetMessage>,
+          type_id_v<TupleSetBufferMessage>,
           type_id_v<TupleSetIndexMessage>,
           type_id_v<TupleSetSizeMessage>,
           type_id_v<BloomFilterMessage>,
@@ -97,14 +100,16 @@ struct variant_inspector_traits<MessagePtr> {
       return 6;
     else if (x->type() == MessageType::TUPLESET)
       return 7;
-    else if (x->type() == MessageType::TUPLESET_INDEX)
+    else if (x->type() == MessageType::TUPLESET_BUFFER)
       return 8;
-    else if (x->type() == MessageType::TUPLESET_SIZE)
+    else if (x->type() == MessageType::TUPLESET_INDEX)
       return 9;
-    else if (x->type() == MessageType::BLOOM_FILTER)
+    else if (x->type() == MessageType::TUPLESET_SIZE)
       return 10;
-    else if (x->type() == MessageType::BITMAP)
+    else if (x->type() == MessageType::BLOOM_FILTER)
       return 11;
+    else if (x->type() == MessageType::BITMAP)
+      return 12;
     else
       return -1;
   }
@@ -128,12 +133,14 @@ struct variant_inspector_traits<MessagePtr> {
       case 7:
         return f(dynamic_cast<TupleSetMessage &>(*x));
       case 8:
-        return f(dynamic_cast<TupleSetIndexMessage &>(*x));
+        return f(dynamic_cast<TupleSetBufferMessage &>(*x));
       case 9:
-        return f(dynamic_cast<TupleSetSizeMessage &>(*x));
+        return f(dynamic_cast<TupleSetIndexMessage &>(*x));
       case 10:
-        return f(dynamic_cast<BloomFilterMessage &>(*x));
+        return f(dynamic_cast<TupleSetSizeMessage &>(*x));
       case 11:
+        return f(dynamic_cast<BloomFilterMessage &>(*x));
+      case 12:
         return f(dynamic_cast<BitmapMessage &>(*x));
       default: {
         none_t dummy;
@@ -195,6 +202,11 @@ struct variant_inspector_traits<MessagePtr> {
       }
       case type_id_v<TupleSetMessage>: {
         auto tmp = TupleSetMessage{};
+        continuation(tmp);
+        return true;
+      }
+      case type_id_v<TupleSetBufferMessage>: {
+        auto tmp = TupleSetBufferMessage{};
         continuation(tmp);
         return true;
       }

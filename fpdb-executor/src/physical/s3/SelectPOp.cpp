@@ -2,7 +2,7 @@
 // Created by matt on 21/3/22.
 //
 
-#include "SelectPOp.hpp"
+#include <fpdb/executor/physical/s3/SelectPOp.h>
 #include <fpdb/executor/physical/Globals.h>
 #include <fpdb/executor/message/Message.h>
 #include <fpdb/tuple/csv/CSVFormat.h>

@@ -138,42 +138,42 @@ pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>> PrePToFPDBS
 }
 
 pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
-PrePToFPDBStorePTransformer::addBloomFilterUse(vector<shared_ptr<PhysicalOp>> &producers,
-                                               vector<shared_ptr<PhysicalOp>> &bloomFilterUsePOps,
-                                               const shared_ptr<Mode> &mode) {
-  // if not in a mode with pushdown, or fpdb-store does not enable bloom filter pushdown
-  if (!StoreTransformTraits::FPDBStoreStoreTransformTraits()->isSeparable(POpType::BLOOM_FILTER_USE)
-    || mode->id() == ModeId::PULL_UP || mode->id() == ModeId::CACHING_ONLY) {
-    PrePToPTransformerUtil::connectOneToOne(producers, bloomFilterUsePOps);
-    return {bloomFilterUsePOps, bloomFilterUsePOps};
+PrePToFPDBStorePTransformer::addSeparablePOp(vector<shared_ptr<PhysicalOp>> &producers,
+                                             vector<shared_ptr<PhysicalOp>> &separablePOps,
+                                             const shared_ptr<Mode> &mode) {
+  // check if not in a mode with pushdown
+  if (mode->id() == ModeId::PULL_UP || mode->id() == ModeId::CACHING_ONLY) {
+    PrePToPTransformerUtil::connectOneToOne(producers, separablePOps);
+    return {separablePOps, separablePOps};
   }
 
-  // bloom filter can be pushed
+  // currently only pushdown-only mode is supported
   if (mode->id() == ModeId::PUSHDOWN_ONLY) {
     vector<shared_ptr<PhysicalOp>> connPOps, addiPOps;
 
     for (uint i = 0; i < producers.size(); ++i) {
       auto producer = producers[i];
-      auto bloomFilterUsePOp = bloomFilterUsePOps[i];
+      auto separablePOp = separablePOps[i];
 
-      // only pushable when the producer is FPDBStoreSuperPOp
-      if (producer->getType() == POpType::FPDB_STORE_SUPER) {
+      // pushable when the operator type is enabled for pushdown, and the producer is FPDBStoreSuperPOp
+      if (StoreTransformTraits::FPDBStoreStoreTransformTraits()->isSeparable(separablePOp->getType()) &&
+          producer->getType() == POpType::FPDB_STORE_SUPER) {
         auto fpdbStoreSuperPOp = static_pointer_cast<fpdb_store::FPDBStoreSuperPOp>(producer);
-        auto res = fpdbStoreSuperPOp->getSubPlan()->addAsLast(bloomFilterUsePOp);
+        auto res = fpdbStoreSuperPOp->getSubPlan()->addAsLast(separablePOp);
         if (!res.has_value()) {
           throw runtime_error(res.error());
         }
         connPOps.emplace_back(fpdbStoreSuperPOp);
       } else {
-        PrePToPTransformerUtil::connectOneToOne(producer, bloomFilterUsePOp);
-        connPOps.emplace_back(bloomFilterUsePOp);
-        addiPOps.emplace_back(bloomFilterUsePOp);
+        PrePToPTransformerUtil::connectOneToOne(producer, separablePOp);
+        connPOps.emplace_back(separablePOp);
+        addiPOps.emplace_back(separablePOp);
       }
-    }
 
-    return {connPOps, addiPOps};
+      return {connPOps, addiPOps};
+    }
   } else {
-    throw runtime_error(fmt::format("Unsupported mode for push bloom filters to FPDB Store: {}", mode->toString()));
+    throw runtime_error("Hybrid mode for adding separablePOp to FPDBStoreSuperPOp is not implemented");
   }
 }
 

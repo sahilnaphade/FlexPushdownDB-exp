@@ -41,6 +41,8 @@ private:
 
   tl::expected<std::shared_ptr<PhysicalOp>, std::string> deserializeBloomFilterUsePOp(const ::nlohmann::json &jObj);
 
+  tl::expected<std::shared_ptr<PhysicalOp>, std::string> deserializeShufflePOp(const ::nlohmann::json &jObj);
+
   tl::expected<std::shared_ptr<PhysicalOp>, std::string> deserializeCollatePOp(const ::nlohmann::json &jObj);
 
   tl::expected<std::tuple<std::string, std::vector<std::string>, bool>, std::string>

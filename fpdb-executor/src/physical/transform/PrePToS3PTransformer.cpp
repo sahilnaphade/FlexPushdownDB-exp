@@ -7,7 +7,7 @@
 #include <fpdb/executor/physical/prune/PartitionPruner.h>
 #include <fpdb/executor/physical/s3/S3GetPOp.h>
 //#include <fpdb/executor/physical/s3/S3SelectPOp.h>
-#include <fpdb/executor/physical/s3/SelectPOp.hpp>
+#include <fpdb/executor/physical/s3/SelectPOp.h>
 #include <fpdb/executor/physical/filter/FilterPOp.h>
 #include <fpdb/executor/physical/cache/CacheLoadPOp.h>
 #include <fpdb/executor/physical/merge/MergePOp.h>

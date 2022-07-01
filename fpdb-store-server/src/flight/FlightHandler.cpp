@@ -10,7 +10,7 @@
 #include "fpdb/executor/physical/bloomfilter/BloomFilterUsePOp.h"
 #include "fpdb/executor/physical/filter/FilterPOp.h"
 #include "fpdb/executor/caf/CAFInit.h"
-#include "fpdb/executor/Execution.h"
+#include "fpdb/executor/FPDBStoreExecution.h"
 #include "fpdb/tuple/serialization/ArrowSerializer.h"
 #include "fpdb/tuple/arrow/Arrays.h"
 #include "fpdb/tuple/util/Util.h"
@@ -355,12 +355,9 @@ tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::
   }
 
   // execute the query plan
-  auto execution = std::make_shared<fpdb::executor::Execution>(query_id,
-                                                               actor_system_,
-                                                               std::vector<::caf::node_id>{},
-                                                               nullptr,
-                                                               physical_plan,
-                                                               false);
+  auto execution = std::make_shared<fpdb::executor::FPDBStoreExecution>(query_id,
+                                                                        actor_system_,
+                                                                        physical_plan);
 
   // get query result
   auto table = execution->execute()->table();

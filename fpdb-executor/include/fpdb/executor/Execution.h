@@ -37,11 +37,9 @@ public:
             bool isDistributed);
   ~Execution();
 
-  long getQueryId() const;
-  const std::unordered_map<std::string, std::vector<int64_t>> &getBitmaps();
-
   shared_ptr<TupleSet> execute();
 
+  long getQueryId() const;
   long getElapsedTime();
   shared_ptr<PhysicalOp> getPhysicalOp(const std::string &name);
   physical::s3::S3SelectScanStats getAggregateS3SelectScanStats();
@@ -54,10 +52,10 @@ public:
   string showDebugMetrics() const;
 #endif
 
-private:
+protected:
   void boot();
   void start();
-  void join();
+  virtual void join();
   void close();
 
   ::caf::actor localSpawn(const shared_ptr<PhysicalOp> &op);
@@ -79,9 +77,6 @@ private:
   // for execution time
   chrono::steady_clock::time_point startTime_;
   chrono::steady_clock::time_point stopTime_;
-
-  // for bitmap constructed at storage side
-  std::unordered_map<std::string, std::vector<int64_t>> bitmaps_;
 
   // metrics
 #if SHOW_DEBUG_METRICS == true

@@ -8,6 +8,7 @@
 #include <fpdb/executor/physical/project/ProjectPOp.h>
 #include <fpdb/executor/physical/aggregate/AggregatePOp.h>
 #include <fpdb/executor/physical/bloomfilter/BloomFilterUsePOp.h>
+#include <fpdb/executor/physical/shuffle/ShufflePOp.h>
 #include <fpdb/executor/physical/collate/CollatePOp.h>
 #include <fpdb/executor/physical/transform/PrePToPTransformerUtil.h>
 #include <fpdb/tuple/serialization/ArrowSerializer.h>
@@ -368,6 +369,48 @@ PhysicalPlanDeserializer::deserializeBloomFilterUsePOp(const ::nlohmann::json &j
   PrePToPTransformerUtil::connectManyToOne(*expProducers, bloomFilterUsePOp);
 
   return bloomFilterUsePOp;
+}
+
+tl::expected<std::shared_ptr<PhysicalOp>, std::string>
+PhysicalPlanDeserializer::deserializeShufflePOp(const ::nlohmann::json &jObj) {
+  // deserialize self
+  auto expCommonTuple = deserializePOpCommon(jObj);
+  if (!expCommonTuple.has_value()) {
+    return tl::make_unexpected(expCommonTuple.error());
+  }
+  auto commonTuple = *expCommonTuple;
+  auto name = std::get<0>(commonTuple);
+  auto projectColumnNames = std::get<1>(commonTuple);
+  auto isSeparated = std::get<2>(commonTuple);
+
+  if (!jObj.contains("shuffleColumnNames")) {
+    return tl::make_unexpected(fmt::format("ShuffleColumnNames not specified in ShufflePOp JSON '{}'", jObj));
+  }
+  auto shuffleColumnNames = jObj["shuffleColumnNames"].get<std::vector<std::string>>();
+
+  if (!jObj.contains("consumerVec")) {
+    return tl::make_unexpected(fmt::format("ConsumerVec not specified in ShufflePOp JSON '{}'", jObj));
+  }
+  auto consumerVec = jObj["consumerVec"].get<std::vector<std::string>>();
+
+  std::shared_ptr<PhysicalOp> shufflePOp = std::make_shared<shuffle::ShufflePOp>(name,
+                                                                                 projectColumnNames,
+                                                                                 0,
+                                                                                 shuffleColumnNames,
+                                                                                 consumerVec);
+  shufflePOp->setSeparated(isSeparated);
+  physicalOps_.emplace(shufflePOp->name(), shufflePOp);
+
+  // deserialize producers
+  auto expProducers = deserializeProducers(jObj);
+  if (!expProducers.has_value()) {
+    return tl::make_unexpected(expProducers.error());
+  }
+
+  // connect
+  PrePToPTransformerUtil::connectManyToOne(*expProducers, shufflePOp);
+
+  return shufflePOp;
 }
 
 tl::expected<std::shared_ptr<PhysicalOp>, std::string>

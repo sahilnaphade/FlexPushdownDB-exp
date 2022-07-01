@@ -488,9 +488,9 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
 
         switch (objCatalogueEntry->getStoreType()) {
           case obj_store::ObjStoreType::FPDB_STORE: {
-            bloomFilterAddRes = PrePToFPDBStorePTransformer::addBloomFilterUse(upRightConnPOps,
-                                                                               bloomFilterUsePOps,
-                                                                               mode_);
+            bloomFilterAddRes = PrePToFPDBStorePTransformer::addSeparablePOp(upRightConnPOps,
+                                                                             bloomFilterUsePOps,
+                                                                             mode_);
             break;
           }
           case obj_store::ObjStoreType::S3: {
@@ -577,6 +577,7 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
       PrePToPTransformerUtil::connectManyToOne(upRightConnPOps, hashJoinProbePOps[0]);
     }
   } else {
+    // TODO: continue implementing shuffle pushdown here
     vector<shared_ptr<PhysicalOp>> shuffleLeftPOps, shuffleRightPOps;
     for (const auto &upLeftConnPOp: upLeftConnPOps) {
       shuffleLeftPOps.emplace_back(make_shared<shuffle::ShufflePOp>(

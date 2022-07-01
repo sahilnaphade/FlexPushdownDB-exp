@@ -19,6 +19,15 @@ ShufflePOp::ShufflePOp(string name,
 	PhysicalOp(move(name), SHUFFLE, move(projectColumnNames), nodeId),
 	shuffleColumnNames_(move(shuffleColumnNames)) {}
 
+ShufflePOp::ShufflePOp(string name,
+                       vector<string> projectColumnNames,
+                       int nodeId,
+                       vector<string> shuffleColumnNames,
+                       vector<string> consumerVec) :
+  PhysicalOp(move(name), SHUFFLE, move(projectColumnNames), nodeId),
+  shuffleColumnNames_(move(shuffleColumnNames)),
+  consumerVec_(consumerVec) {}
+
 std::string ShufflePOp::getTypeString() const {
   return "ShufflePOp";
 }
@@ -37,6 +46,14 @@ void ShufflePOp::onReceive(const Envelope &msg) {
   }
 }
 
+const std::vector<std::string> &ShufflePOp::getShuffleColumnNames() const {
+  return shuffleColumnNames_;
+}
+
+const std::vector<std::string> &ShufflePOp::getConsumerVec() const {
+  return consumerVec_;
+}
+
 void ShufflePOp::produce(const shared_ptr<PhysicalOp> &operator_) {
   PhysicalOp::produce(operator_);
   consumerVec_.emplace_back(operator_->name());
@@ -53,6 +70,14 @@ void ShufflePOp::onComplete(const CompleteMessage &) {
       auto sendResult = send(partitionIndex, true);
       if (!sendResult)
         ctx()->notifyError(sendResult.error());
+    }
+
+    // if it's separated, it's the last op, so need to send an empty tupleSet to collatePOp
+    if (isSeparated_) {
+      shared_ptr<TupleSetMessage> tupleSetMessage = make_shared<TupleSetMessage>(TupleSet::makeWithEmptyTable(), name_);
+      for (const auto &consumer: consumerVec_) {
+        ctx()->send(tupleSetMessage, consumer);
+      }
     }
 
     ctx()->notifyComplete();
@@ -83,11 +108,21 @@ tl::expected<void, string> ShufflePOp::buffer(const shared_ptr<TupleSet> &tupleS
 
 tl::expected<void, string> ShufflePOp::send(int partitionIndex, bool force) {
   // If the tupleset is big enough, send it, then clear the buffer
-  if (buffers_[partitionIndex].has_value() && (force || buffers_[partitionIndex].value()->numRows() >= DefaultBufferSize)) {
-	shared_ptr<Message> tupleSetMessage = make_shared<TupleSetMessage>(
-	        TupleSet::make(buffers_[partitionIndex].value()->table()), name());
-	ctx()->send(tupleSetMessage, consumerVec_[partitionIndex]);
-	buffers_[partitionIndex] = nullopt;
+  if (buffers_[partitionIndex].has_value() &&
+      (force || buffers_[partitionIndex].value()->numRows() >= DefaultBufferSize)) {
+    auto tupleSet = buffers_[partitionIndex].value();
+    auto consumer = consumerVec_[partitionIndex];
+
+    if (!isSeparated_) {
+      // If at compute side, do it regularly (send tupleSet to the consumer)
+      shared_ptr<Message> tupleSetMessage = make_shared<TupleSetMessage>(tupleSet, name_);
+      ctx()->send(tupleSetMessage, consumer);
+    } else {
+      // If at storage side, send tupleSet to the root to buffer it
+      shared_ptr<Message> tupleSetBufferMessage = make_shared<TupleSetBufferMessage>(tupleSet, name_, consumer);
+      ctx()->notifyRoot(tupleSetBufferMessage);
+    }
+    buffers_[partitionIndex] = nullopt;
   }
 
   return {};

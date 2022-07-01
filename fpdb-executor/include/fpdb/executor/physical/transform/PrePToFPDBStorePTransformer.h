@@ -38,16 +38,16 @@ public:
             const shared_ptr<FPDBStoreConnector> &fpdbStoreConnector);
 
   /**
-   * Add BloomFilterUsePOp to FPDBStoreSuperPOp
-   * if producers are FPDBStoreSuperPOp and bloom filter pushdown is enabled
+   * Add each of the separable operators to the corresponding FPDBStoreSuperPOp
+   * if the producers is FPDBStoreSuperPOp and the operator type is enabled for pushdown
    * @param producers
    * @param bloomFilterUsePOps
    * @return a pair of connect physical ops (to consumers) and additional physical ops to add to plan
    */
   static pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
-  addBloomFilterUse(vector<shared_ptr<PhysicalOp>> &producers,
-                    vector<shared_ptr<PhysicalOp>> &bloomFilterUsePOps,
-                    const shared_ptr<Mode> &mode);
+  addSeparablePOp(vector<shared_ptr<PhysicalOp>> &producers,
+                  vector<shared_ptr<PhysicalOp>> &separablePOps,
+                  const shared_ptr<Mode> &mode);
 
 private:
   PrePToFPDBStorePTransformer(const shared_ptr<SeparableSuperPrePOp> &separableSuperPrePOp,

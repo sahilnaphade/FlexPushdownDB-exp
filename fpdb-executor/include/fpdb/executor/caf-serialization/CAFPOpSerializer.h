@@ -22,7 +22,7 @@
 #include <fpdb/executor/physical/project/ProjectPOp.h>
 #include <fpdb/executor/physical/s3/S3GetPOp.h>
 //#include <fpdb/executor/physical/s3/S3SelectPOp.h>
-#include <fpdb/executor/physical/s3/SelectPOp.hpp>
+#include <fpdb/executor/physical/s3/SelectPOp.h>
 #include <fpdb/executor/physical/shuffle/ShufflePOp.h>
 #include <fpdb/executor/physical/sort/SortPOp.h>
 #include <fpdb/executor/physical/split/SplitPOp.h>

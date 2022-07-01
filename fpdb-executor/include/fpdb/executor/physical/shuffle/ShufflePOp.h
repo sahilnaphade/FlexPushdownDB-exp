@@ -26,6 +26,11 @@ public:
              vector<string> projectColumnNames,
              int nodeId,
              vector<string> shuffleColumnNames);
+  ShufflePOp(string name,
+             vector<string> projectColumnNames,
+             int nodeId,
+             vector<string> shuffleColumnNames,
+             vector<string> consumerVec);
   ShufflePOp() = default;
   ShufflePOp(const ShufflePOp&) = default;
   ShufflePOp& operator=(const ShufflePOp&) = default;
@@ -37,6 +42,9 @@ public:
   void onReceive(const Envelope &msg) override;
   void clear() override;
   std::string getTypeString() const override;
+
+  const std::vector<std::string> &getShuffleColumnNames() const;
+  const std::vector<std::string> &getConsumerVec() const;
 
   /**
    * Set the producer operator

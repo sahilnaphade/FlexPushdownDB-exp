@@ -98,7 +98,8 @@ add_library(fpdb-store-server-objlib OBJECT
         src/flight/GetObjectTicket.cpp include/fpdb/store/server/flight/GetObjectTicket.hpp
         src/flight/SelectObjectContentTicket.cpp include/fpdb/store/server/flight/SelectObjectContentTicket.hpp
         src/flight/GetBitmapTicket.cpp include/fpdb/store/server/flight/GetBitmapTicket.hpp
-        src/cache/BitmapCache.cpp include/fpdb/store/server/cache/BitmapCache.hpp)
+        src/cache/BitmapCache.cpp include/fpdb/store/server/cache/BitmapCache.hpp
+        src/cache/TableCache.cpp include/fpdb/store/server/cache/TableCache.hpp)
 
 set_target_properties(fpdb-store-server-objlib PROPERTIES POSITION_INDEPENDENT_CODE ON)
 set_target_properties(fpdb-store-server-objlib PROPERTIES OUTPUT_NAME fpdb-store-server)
