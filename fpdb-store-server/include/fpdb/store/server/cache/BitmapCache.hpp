@@ -13,6 +13,8 @@
 
 namespace fpdb::store::server::cache {
 
+std::string generateKey(long queryId, const std::string &op);
+
 /**
  * A cache for constructed bitmaps during bitmap pushdown.
  * Due to that flight can only return batches of the same schema in one call, compute side needs another call for bitmap.
@@ -21,8 +23,6 @@ class BitmapCache {
 
 public:
   BitmapCache() = default;
-
-  static std::string generateKey(long queryId, const std::string &op);
 
   tl::expected<std::optional<std::vector<int64_t>>, std::string> consumeBitmap(const std::string &key);
   void produceBitmap(const std::string &key, const std::vector<int64_t> &bitmap, bool valid);

@@ -85,7 +85,6 @@ void CollatePOp::onTupleSet(const fpdb::executor::message::TupleSetMessage &mess
 }
 
 std::shared_ptr<TupleSet> CollatePOp::tuples() {
-  assert(tuples_);
   return tuples_;
 }
 

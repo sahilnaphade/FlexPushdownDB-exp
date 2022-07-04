@@ -13,7 +13,8 @@ namespace fpdb::store::server::flight {
 enum class TicketTypeId {
   GET_OBJECT,
   SELECT_OBJECT_CONTENT,
-  GET_BITMAP
+  GET_BITMAP,
+  GET_TABLE
 };
 
 class TicketType {
@@ -29,6 +30,8 @@ public:
   static std::shared_ptr<TicketType> select_object_content();
 
   static std::shared_ptr<TicketType> get_bitmap();
+
+  static std::shared_ptr<TicketType> get_table();
 
 private:
   TicketTypeId id_;

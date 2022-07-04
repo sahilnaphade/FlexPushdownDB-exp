@@ -62,7 +62,8 @@ add_library(fpdb-store-server-flight-api STATIC
         src/flight/TicketObject.cpp include/fpdb/store/server/flight/TicketObject.hpp
         src/flight/GetObjectTicket.cpp include/fpdb/store/server/flight/GetObjectTicket.hpp
         src/flight/SelectObjectContentTicket.cpp include/fpdb/store/server/flight/SelectObjectContentTicket.hpp
-        src/flight/GetBitmapTicket.cpp include/fpdb/store/server/flight/GetBitmapTicket.hpp)
+        src/flight/GetBitmapTicket.cpp include/fpdb/store/server/flight/GetBitmapTicket.hpp
+        src/flight/GetTableTicket.cpp include/fpdb/store/server/flight/GetTableTicket.hpp)
 
 target_include_directories(fpdb-store-server-flight-api PUBLIC include)
 
@@ -98,6 +99,7 @@ add_library(fpdb-store-server-objlib OBJECT
         src/flight/GetObjectTicket.cpp include/fpdb/store/server/flight/GetObjectTicket.hpp
         src/flight/SelectObjectContentTicket.cpp include/fpdb/store/server/flight/SelectObjectContentTicket.hpp
         src/flight/GetBitmapTicket.cpp include/fpdb/store/server/flight/GetBitmapTicket.hpp
+        src/flight/GetTableTicket.cpp include/fpdb/store/server/flight/GetTableTicket.hpp
         src/cache/BitmapCache.cpp include/fpdb/store/server/cache/BitmapCache.hpp
         src/cache/TableCache.cpp include/fpdb/store/server/cache/TableCache.hpp)
 

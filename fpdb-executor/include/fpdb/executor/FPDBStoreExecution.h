@@ -15,6 +15,7 @@ public:
   FPDBStoreExecution(long queryId,
                      const std::shared_ptr<::caf::actor_system> &actorSystem,
                      const std::shared_ptr<PhysicalPlan> &physicalPlan);
+  ~FPDBStoreExecution() override = default;
 
   const std::unordered_map<std::string, std::shared_ptr<TupleSet>> &getTupleSets() const;
   const std::unordered_map<std::string, std::vector<int64_t>> &getBitmaps() const;

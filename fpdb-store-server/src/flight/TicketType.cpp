@@ -22,6 +22,10 @@ std::shared_ptr<TicketType> TicketType::get_bitmap() {
   return std::make_shared<TicketType>(TicketTypeId::GET_BITMAP, GetBitmapTicketTypeName.data());
 }
 
+std::shared_ptr<TicketType> TicketType::get_table() {
+  return std::make_shared<TicketType>(TicketTypeId::GET_TABLE, GetTableTicketTypeName.data());
+}
+
 TicketTypeId TicketType::id() const {
   return id_;
 }

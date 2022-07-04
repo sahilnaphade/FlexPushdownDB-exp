@@ -14,6 +14,7 @@ add_library(fpdb-executor STATIC
         src/message/TupleSetMessage.cpp include/fpdb/executor/message/TupleSetMessage.h
         src/message/TupleSetBufferMessage.cpp include/fpdb/executor/message/TupleSetBufferMessage.h
         src/message/TupleSetIndexMessage.cpp include/fpdb/executor/message/TupleSetIndexMessage.h
+        src/message/TupleSetReadyFPDBStoreMessage.cpp include/fpdb/executor/message/TupleSetReadyFPDBStoreMessage.h
         src/message/TupleSetSizeMessage.cpp include/fpdb/executor/message/TupleSetSizeMessage.h
         src/message/DebugMetricsMessage.cpp include/fpdb/executor/message/DebugMetricsMessage.h
         src/message/ErrorMessage.cpp include/fpdb/executor/message/ErrorMessage.h

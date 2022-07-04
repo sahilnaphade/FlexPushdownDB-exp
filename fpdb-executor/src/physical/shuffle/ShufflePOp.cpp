@@ -54,6 +54,14 @@ const std::vector<std::string> &ShufflePOp::getConsumerVec() const {
   return consumerVec_;
 }
 
+void ShufflePOp::addConsumer(const std::shared_ptr<PhysicalOp> &op) {
+  consumerVec_.emplace_back(op->name());
+}
+
+void ShufflePOp::clearConsumerVec() {
+  consumerVec_.clear();
+}
+
 void ShufflePOp::produce(const shared_ptr<PhysicalOp> &operator_) {
   PhysicalOp::produce(operator_);
   consumerVec_.emplace_back(operator_->name());
@@ -71,15 +79,6 @@ void ShufflePOp::onComplete(const CompleteMessage &) {
       if (!sendResult)
         ctx()->notifyError(sendResult.error());
     }
-
-    // if it's separated, it's the last op, so need to send an empty tupleSet to collatePOp
-    if (isSeparated_) {
-      shared_ptr<TupleSetMessage> tupleSetMessage = make_shared<TupleSetMessage>(TupleSet::makeWithEmptyTable(), name_);
-      for (const auto &consumer: consumerVec_) {
-        ctx()->send(tupleSetMessage, consumer);
-      }
-    }
-
     ctx()->notifyComplete();
   }
 }

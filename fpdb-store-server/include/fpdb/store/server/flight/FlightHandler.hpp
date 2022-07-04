@@ -17,10 +17,12 @@
 #include "fpdb/store/server/flight/GetObjectTicket.hpp"
 #include "fpdb/store/server/flight/SelectObjectContentTicket.hpp"
 #include "fpdb/store/server/flight/GetBitmapTicket.hpp"
+#include "fpdb/store/server/flight/GetTableTicket.hpp"
 #include "fpdb/store/server/flight/HeaderMiddleware.hpp"
 #include "fpdb/store/server/flight/BitmapType.h"
 #include "fpdb/store/server/caf/ActorManager.hpp"
 #include "fpdb/store/server/cache/BitmapCache.hpp"
+#include "fpdb/store/server/cache/TableCache.hpp"
 
 using namespace fpdb::store::server::cache;
 using namespace ::arrow::flight;
@@ -209,6 +211,16 @@ private:
   /**
    *
    * @param context
+   * @param get_table_ticket
+   * @return
+   */
+  tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status>
+  do_get_get_table(const ServerCallContext& context,
+                   const std::shared_ptr<GetTableTicket>& get_table_ticket);
+
+  /**
+   *
+   * @param context
    * @param reader
    * @return
    */
@@ -280,6 +292,9 @@ private:
   std::unordered_map<BitmapType, std::shared_ptr<std::mutex>> bitmap_mutex_map;
   std::unordered_map<BitmapType,
           std::unordered_map<std::string, std::shared_ptr<std::condition_variable_any>>> bitmap_cvs_map;
+
+  // table cache (e.x. for shuffle result)
+  TableCache table_cache_;
 };
 
 } // namespace fpdb::store::server::flight

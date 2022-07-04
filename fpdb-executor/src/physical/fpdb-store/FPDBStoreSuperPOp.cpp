@@ -52,6 +52,18 @@ std::string FPDBStoreSuperPOp::getTypeString() const {
   return "FPDBStoreSuperPOp";
 }
 
+void FPDBStoreSuperPOp::produce(const std::shared_ptr<PhysicalOp> &op) {
+  PhysicalOp::produce(op);
+
+  // need to add op to consumerVec_ of shuffle op explicitly
+  if (shufflePOpName_.has_value()) {
+    auto expShufflePOp = subPlan_->getPhysicalOp(*shufflePOpName_);
+    if (!expShufflePOp.has_value()) {
+      std::static_pointer_cast<shuffle::ShufflePOp>(*expShufflePOp)->addConsumer(op);
+    }
+  }
+}
+
 const std::shared_ptr<PhysicalPlan> &FPDBStoreSuperPOp::getSubPlan() const {
   return subPlan_;
 }
@@ -66,6 +78,10 @@ int FPDBStoreSuperPOp::getPort() const {
 
 void FPDBStoreSuperPOp::setWaitForScanMessage(bool waitForScanMessage) {
   waitForScanMessage_ = waitForScanMessage;
+}
+
+void FPDBStoreSuperPOp::setShufflePOp(const std::shared_ptr<PhysicalOp> &op) {
+  shufflePOpName_ = op->name();
 }
 
 void FPDBStoreSuperPOp::onStart() {
@@ -189,22 +205,37 @@ void FPDBStoreSuperPOp::processAtStore() {
     ctx()->notifyError(status.message());
   }
 
-  // send output tupleSet
-  std::shared_ptr<TupleSet> tupleSet;
-  if (table->num_rows() > 0) {
-    tupleSet = TupleSet::make(table);
-  } else {
-    tupleSet = TupleSet::make(table->schema());
-  }
-  std::shared_ptr<Message> tupleSetMessage = std::make_shared<TupleSetMessage>(tupleSet, name_);
-  ctx()->tell(tupleSetMessage);
+  // if not having shuffle op, do regularly
+  if (!shufflePOpName_.has_value()) {
+    // check table
+    if (table == nullptr) {
+      ctx()->notifyError("Received null table from FPDB-Store");
+    }
 
-  // metrics
+    // send output tupleSet
+    std::shared_ptr<TupleSet> tupleSet;
+    if (table->num_rows() > 0) {
+      tupleSet = TupleSet::make(table);
+    } else {
+      tupleSet = TupleSet::make(table->schema());
+    }
+    std::shared_ptr<Message> tupleSetMessage = std::make_shared<TupleSetMessage>(tupleSet, name_);
+    ctx()->tell(tupleSetMessage);
+
+    // metrics
 #if SHOW_DEBUG_METRICS == true
-  std::shared_ptr<Message> execMetricsMsg =
-          std::make_shared<DebugMetricsMessage>(tupleSet->size(), this->name());
-  ctx()->notifyRoot(execMetricsMsg);
+    std::shared_ptr<Message> execMetricsMsg =
+            std::make_shared<DebugMetricsMessage>(tupleSet->size(), this->name());
+    ctx()->notifyRoot(execMetricsMsg);
 #endif
+  }
+
+  // if having shuffle op, send control message to consumers
+  else {
+    std::shared_ptr<Message> tupleSetReadyMessage =
+            std::make_shared<TupleSetReadyFPDBStoreMessage>(host_, port_, name_);
+    ctx()->tell(tupleSetReadyMessage);
+  }
 
   // complete
   ctx()->notifyComplete();

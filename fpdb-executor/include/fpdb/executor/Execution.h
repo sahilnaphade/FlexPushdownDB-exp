@@ -35,7 +35,7 @@ public:
             const ::caf::actor &segmentCacheActor,
             const shared_ptr<PhysicalPlan> &physicalPlan,
             bool isDistributed);
-  ~Execution();
+  virtual ~Execution();
 
   shared_ptr<TupleSet> execute();
 

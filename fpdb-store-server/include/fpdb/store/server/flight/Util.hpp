@@ -25,6 +25,7 @@ static constexpr std::string_view ClearBitmapCmdTypeName = "clear_bitmap";
 static constexpr std::string_view GetObjectTicketTypeName = "get_object";
 static constexpr std::string_view SelectObjectContentTicketTypeName = "select_object_content";
 static constexpr std::string_view GetBitmapTicketTypeName = "get_bitmap";
+static constexpr std::string_view GetTableTicketTypeName = "get_table";
 
 static constexpr std::string_view HeaderMiddlewareKey = "header_middleware";
 static constexpr std::string_view BucketHeaderKey = "bucket";

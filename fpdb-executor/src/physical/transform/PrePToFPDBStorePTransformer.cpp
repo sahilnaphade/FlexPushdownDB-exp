@@ -15,6 +15,7 @@
 #include <fpdb/executor/physical/collate/CollatePOp.h>
 #include <fpdb/executor/physical/cache/CacheLoadPOp.h>
 #include <fpdb/executor/physical/merge/MergePOp.h>
+#include <fpdb/executor/physical/shuffle/ShufflePOp.h>
 #include <fpdb/catalogue/obj-store/ObjStoreTable.h>
 
 using namespace fpdb::catalogue::obj_store;
@@ -164,14 +165,20 @@ PrePToFPDBStorePTransformer::addSeparablePOp(vector<shared_ptr<PhysicalOp>> &pro
           throw runtime_error(res.error());
         }
         connPOps.emplace_back(fpdbStoreSuperPOp);
+
+        // need to mark the shuffle op specially
+        if (separablePOp->getType() == POpType::SHUFFLE) {
+          fpdbStoreSuperPOp->setShufflePOp(separablePOp);
+          std::static_pointer_cast<shuffle::ShufflePOp>(separablePOp)->clearConsumerVec();
+        }
       } else {
         PrePToPTransformerUtil::connectOneToOne(producer, separablePOp);
         connPOps.emplace_back(separablePOp);
         addiPOps.emplace_back(separablePOp);
       }
-
-      return {connPOps, addiPOps};
     }
+
+    return {connPOps, addiPOps};
   } else {
     throw runtime_error("Hybrid mode for adding separablePOp to FPDBStoreSuperPOp is not implemented");
   }

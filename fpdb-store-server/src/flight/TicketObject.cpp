@@ -8,6 +8,7 @@
 #include "fpdb/store/server/flight/GetObjectTicket.hpp"
 #include "fpdb/store/server/flight/SelectObjectContentTicket.hpp"
 #include "fpdb/store/server/flight/GetBitmapTicket.hpp"
+#include "fpdb/store/server/flight/GetTableTicket.hpp"
 #include "fpdb/store/server/flight/Util.hpp"
 
 namespace fpdb::store::server::flight {
@@ -44,6 +45,8 @@ tl::expected<std::shared_ptr<TicketObject>, std::string> TicketObject::deseriali
     return SelectObjectContentTicket::from_json(document);
   } else if (type == GetBitmapTicketTypeName.data()) {
     return GetBitmapTicket::from_json(document);
+  } else if (type == GetTableTicketTypeName.data()) {
+    return GetTableTicket::from_json(document);
   } else {
     return tl::make_unexpected(fmt::format("Unsupported Ticket object type: '{}'", type));
   }

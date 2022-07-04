@@ -47,7 +47,18 @@ public:
   const std::vector<std::string> &getConsumerVec() const;
 
   /**
-   * Set the producer operator
+   * This only adds op to consumerVec_
+   * @param op
+   */
+  void addConsumer(const std::shared_ptr<PhysicalOp> &op);
+
+  /**
+   * Clear consumerVec_
+   */
+  void clearConsumerVec();
+
+  /**
+   * Set the producer operator, i.e. add operator_ to both consumers_(base class) and consumerVec_
    * @param operator_
    */
   void produce(const shared_ptr<PhysicalOp> &operator_) override;

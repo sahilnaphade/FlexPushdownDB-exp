@@ -510,7 +510,7 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
 
         allPOps.insert(allPOps.end(), addiPOps.begin(), addiPOps.end());
         PrePToPTransformerUtil::connectOneToMany(finalOpForBloomFilterCreate, opsForBloomFilterUse);
-        upRightConnPOps = bloomFilterAddRes.first;
+        upRightConnPOps = opsForBloomFilterUse;
         break;
       }
       case CatalogueEntryType::LOCAL_FS: {
@@ -577,7 +577,7 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
       PrePToPTransformerUtil::connectManyToOne(upRightConnPOps, hashJoinProbePOps[0]);
     }
   } else {
-    // TODO: continue implementing shuffle pushdown here
+    // create shuffle ops
     vector<shared_ptr<PhysicalOp>> shuffleLeftPOps, shuffleRightPOps;
     for (const auto &upLeftConnPOp: upLeftConnPOps) {
       shuffleLeftPOps.emplace_back(make_shared<shuffle::ShufflePOp>(
@@ -593,28 +593,52 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
               upRightConnPOp->getNodeId(),
               rightColumnNames));
     }
-    allPOps.insert(allPOps.end(), shuffleLeftPOps.begin(), shuffleLeftPOps.end());
-    allPOps.insert(allPOps.end(), shuffleRightPOps.begin(), shuffleRightPOps.end());
 
-    // connect to upstream
-    PrePToPTransformerUtil::connectOneToOne(upLeftConnPOps, shuffleLeftPOps);
-    PrePToPTransformerUtil::connectOneToOne(upRightConnPOps, shuffleRightPOps);
+    // check if we need to push shuffle to store
+    if (catalogueEntry_->getType() == CatalogueEntryType::OBJ_STORE &&
+        std::static_pointer_cast<obj_store::ObjStoreCatalogueEntry>(catalogueEntry_)->getStoreType() ==
+          obj_store::ObjStoreType::FPDB_STORE) {
+      // left, connection to upstream will be made in addSeparablePOp()
+      const auto &shuffleLeftAddRes =
+              PrePToFPDBStorePTransformer::addSeparablePOp(upLeftConnPOps, shuffleLeftPOps, mode_);
+      auto opsForShuffleLeft = shuffleLeftAddRes.first;
+      auto leftAddiOps = shuffleLeftAddRes.second;
+      allPOps.insert(allPOps.end(), leftAddiOps.begin(), leftAddiOps.end());
+      upLeftConnPOps = opsForShuffleLeft;
+
+      // right, connection to upstream will be made in addSeparablePOp()
+      const auto &shuffleRightAddRes =
+              PrePToFPDBStorePTransformer::addSeparablePOp(upRightConnPOps, shuffleRightPOps, mode_);
+      auto opsForShuffleRight = shuffleRightAddRes.first;
+      auto rightAddiOps = shuffleRightAddRes.second;
+      allPOps.insert(allPOps.end(), rightAddiOps.begin(), rightAddiOps.end());
+      upRightConnPOps = opsForShuffleRight;
+    } else {
+      allPOps.insert(allPOps.end(), shuffleLeftPOps.begin(), shuffleLeftPOps.end());
+      allPOps.insert(allPOps.end(), shuffleRightPOps.begin(), shuffleRightPOps.end());
+
+      // connect to upstream
+      PrePToPTransformerUtil::connectOneToOne(upLeftConnPOps, shuffleLeftPOps);
+      PrePToPTransformerUtil::connectOneToOne(upRightConnPOps, shuffleRightPOps);
+      upLeftConnPOps = shuffleLeftPOps;
+      upRightConnPOps = shuffleRightPOps;
+    }
 
     // connect to downstream
     if (USE_ARROW_HASH_JOIN_IMPL) {
       for (const auto &hashJoinArrowPOp: hashJoinArrowPOps) {
-        for (const auto &shuffleLeftPOp: shuffleLeftPOps) {
-          shuffleLeftPOp->produce(hashJoinArrowPOp);
-          static_pointer_cast<join::HashJoinArrowPOp>(hashJoinArrowPOp)->addBuildProducer(shuffleLeftPOp);
+        for (const auto &upLeftConnPOp: upLeftConnPOps) {
+          upLeftConnPOp->produce(hashJoinArrowPOp);
+          static_pointer_cast<join::HashJoinArrowPOp>(hashJoinArrowPOp)->addBuildProducer(upLeftConnPOp);
         }
-        for (const auto &shuffleRightPOp: shuffleRightPOps) {
-          shuffleRightPOp->produce(hashJoinArrowPOp);
-          static_pointer_cast<join::HashJoinArrowPOp>(hashJoinArrowPOp)->addProbeProducer(shuffleRightPOp);
+        for (const auto &upRightConnPOp: upRightConnPOps) {
+          upRightConnPOp->produce(hashJoinArrowPOp);
+          static_pointer_cast<join::HashJoinArrowPOp>(hashJoinArrowPOp)->addProbeProducer(upRightConnPOp);
         }
       }
     } else {
-      PrePToPTransformerUtil::connectManyToMany(shuffleLeftPOps, hashJoinBuildPOps);
-      PrePToPTransformerUtil::connectManyToMany(shuffleRightPOps, hashJoinProbePOps);
+      PrePToPTransformerUtil::connectManyToMany(upLeftConnPOps, hashJoinBuildPOps);
+      PrePToPTransformerUtil::connectManyToMany(upRightConnPOps, hashJoinProbePOps);
     }
   }
 

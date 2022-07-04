@@ -30,12 +30,14 @@ public:
   void onReceive(const Envelope &envelope) override;
   void clear() override;
   std::string getTypeString() const override;
+  void produce(const std::shared_ptr<PhysicalOp> &op) override;
 
   const std::shared_ptr<PhysicalPlan> &getSubPlan() const;
   const std::string &getHost() const;
   int getPort() const;
 
   void setWaitForScanMessage(bool waitForScanMessage);
+  void setShufflePOp(const std::shared_ptr<PhysicalOp> &op);
 
 private:
   void onStart();
@@ -54,6 +56,7 @@ private:
   int port_;
 
   bool waitForScanMessage_ = false;
+  std::optional<std::string> shufflePOpName_ = std::nullopt;
 
 // caf inspect
 public:
@@ -72,7 +75,8 @@ public:
                                f.field("subPlan", op.subPlan_),
                                f.field("host", op.host_),
                                f.field("port", op.port_),
-                               f.field("waitForScanMessage", op.waitForScanMessage_));
+                               f.field("waitForScanMessage", op.waitForScanMessage_),
+                               f.field("shufflePOpName", op.shufflePOpName_));
   }
 
 };
