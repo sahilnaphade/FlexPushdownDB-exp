@@ -8,28 +8,35 @@
 
 namespace fpdb::store::server::flight {
 
-GetTableTicket::GetTableTicket(long query_id, const std::string &op):
+GetTableTicket::GetTableTicket(long query_id, const std::string &producer, const std::string &consumer):
   TicketObject(TicketType::get_table()),
   query_id_(query_id),
-  op_(op) {}
+  producer_(producer),
+  consumer_(consumer) {}
 
-std::shared_ptr<GetTableTicket> GetTableTicket::make(long query_id, const std::string &op) {
-  return std::make_shared<GetTableTicket>(query_id, op);
+std::shared_ptr<GetTableTicket>
+GetTableTicket::make(long query_id, const std::string &producer, const std::string &consumer) {
+  return std::make_shared<GetTableTicket>(query_id, producer, consumer);
 }
 
 long GetTableTicket::query_id() const {
   return query_id_;
 }
 
-const std::string& GetTableTicket::op() const {
-  return op_;
+const std::string& GetTableTicket::producer() const {
+  return producer_;
+}
+
+const std::string& GetTableTicket::consumer() const {
+  return consumer_;
 }
 
 tl::expected<std::string, std::string> GetTableTicket::serialize(bool pretty) {
   nlohmann::json document;
   document.emplace(TypeJSONName.data(), type()->name());
   document.emplace(QueryIdJSONName.data(), query_id_);
-  document.emplace(OpJSONName.data(), op_);
+  document.emplace(ProducerJSONName.data(), producer_);
+  document.emplace(ConsumerJSONName.data(), consumer_);
   return document.dump(pretty ? 2 : -1);
 }
 
@@ -39,12 +46,17 @@ tl::expected<std::shared_ptr<GetTableTicket>, std::string> GetTableTicket::from_
   }
   auto query_id = jObj[QueryIdJSONName.data()].get<int64_t>();
 
-  if (!jObj.contains(OpJSONName.data())) {
-    return tl::make_unexpected(fmt::format("Op not specified in GetTableTicket JSON '{}'", jObj));
+  if (!jObj.contains(ProducerJSONName.data())) {
+    return tl::make_unexpected(fmt::format("Producer not specified in GetTableTicket JSON '{}'", jObj));
   }
-  auto op = jObj[OpJSONName.data()].get<std::string>();
+  auto producer = jObj[ProducerJSONName.data()].get<std::string>();
 
-  return GetTableTicket::make(query_id, op);
+  if (!jObj.contains(ConsumerJSONName.data())) {
+    return tl::make_unexpected(fmt::format("Consumer not specified in GetTableTicket JSON '{}'", jObj));
+  }
+  auto consumer = jObj[ConsumerJSONName.data()].get<std::string>();
+
+  return GetTableTicket::make(query_id, producer, consumer);
 }
 
 }

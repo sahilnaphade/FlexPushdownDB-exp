@@ -32,7 +32,8 @@ public:
 
   LocalPOpDirectory &operatorMap();
 
-  void tell(std::shared_ptr<message::Message> &msg);
+  void tell(std::shared_ptr<message::Message> &msg,
+            std::optional<std::set<std::string>> consumers = std::nullopt);    // default for all consumers
   void send(const std::shared_ptr<message::Message> &msg, const std::string &recipientId);
   void notifyComplete();
   void notifyError(const std::string &content);

@@ -54,7 +54,11 @@ const std::vector<std::string> &ShufflePOp::getConsumerVec() const {
   return consumerVec_;
 }
 
-void ShufflePOp::addConsumer(const std::shared_ptr<PhysicalOp> &op) {
+void ShufflePOp::setConsumerVec(const std::vector<std::string> &consumerVec) {
+  consumerVec_ = consumerVec;
+}
+
+void ShufflePOp::addToConsumerVec(const std::shared_ptr<PhysicalOp> &op) {
   consumerVec_.emplace_back(op->name());
 }
 
@@ -118,7 +122,7 @@ tl::expected<void, string> ShufflePOp::send(int partitionIndex, bool force) {
       ctx()->send(tupleSetMessage, consumer);
     } else {
       // If at storage side, send tupleSet to the root to buffer it
-      shared_ptr<Message> tupleSetBufferMessage = make_shared<TupleSetBufferMessage>(tupleSet, name_, consumer);
+      shared_ptr<Message> tupleSetBufferMessage = make_shared<TupleSetBufferMessage>(tupleSet, consumer, name_);
       ctx()->notifyRoot(tupleSetBufferMessage);
     }
     buffers_[partitionIndex] = nullopt;
@@ -133,7 +137,7 @@ void ShufflePOp::onTupleSet(const TupleSetMessage &message) {
   vector<shared_ptr<TupleSet>> shuffledTupleSets;
 
   // Check empty
-  if(tupleSet->numRows() == 0){
+  if (tupleSet->numRows() == 0){
     for (size_t s = 0; s < consumerVec_.size(); ++s) {
       shuffledTupleSets.emplace_back(tupleSet);
     }

@@ -159,6 +159,7 @@ PrePToFPDBStorePTransformer::addSeparablePOp(vector<shared_ptr<PhysicalOp>> &pro
       // pushable when the operator type is enabled for pushdown, and the producer is FPDBStoreSuperPOp
       if (StoreTransformTraits::FPDBStoreStoreTransformTraits()->isSeparable(separablePOp->getType()) &&
           producer->getType() == POpType::FPDB_STORE_SUPER) {
+        separablePOp->setSeparated(true);
         auto fpdbStoreSuperPOp = static_pointer_cast<fpdb_store::FPDBStoreSuperPOp>(producer);
         auto res = fpdbStoreSuperPOp->getSubPlan()->addAsLast(separablePOp);
         if (!res.has_value()) {
@@ -166,7 +167,7 @@ PrePToFPDBStorePTransformer::addSeparablePOp(vector<shared_ptr<PhysicalOp>> &pro
         }
         connPOps.emplace_back(fpdbStoreSuperPOp);
 
-        // need to mark the shuffle op specially
+        // need to handle the shuffle op specially (remove collatePOp from its consumeVec)
         if (separablePOp->getType() == POpType::SHUFFLE) {
           fpdbStoreSuperPOp->setShufflePOp(separablePOp);
           std::static_pointer_cast<shuffle::ShufflePOp>(separablePOp)->clearConsumerVec();

@@ -9,6 +9,9 @@
 
 namespace fpdb::store::server::flight {
 
+/**
+ * This class is stale, do not use it
+ */
 class SelectObjectContentCmd : public CmdObject {
 public:
   explicit SelectObjectContentCmd(std::string query_plan_string);

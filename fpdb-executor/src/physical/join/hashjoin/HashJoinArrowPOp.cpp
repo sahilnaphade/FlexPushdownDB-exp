@@ -117,6 +117,7 @@ void HashJoinArrowPOp::sendEmpty() {
   }
   std::shared_ptr<Message> tupleSetMessage = std::make_shared<TupleSetMessage>(TupleSet::make(*outputSchema), name_);
   ctx()->tell(tupleSetMessage);
+  sentResult = true;
 }
 
 void HashJoinArrowPOp::clear() {

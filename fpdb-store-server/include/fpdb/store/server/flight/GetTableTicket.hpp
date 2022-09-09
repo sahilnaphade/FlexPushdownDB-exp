@@ -11,17 +11,18 @@
 namespace fpdb::store::server::flight {
 
 /**
- * Ticket for fetching table constructed from store, e.x. shuffle results.
+ * Ticket for fetching table constructed from store, e.g. shuffle results.
  */
 class GetTableTicket : public TicketObject {
   
 public:
-  GetTableTicket(long query_id, const std::string &op);
+  GetTableTicket(long query_id, const std::string &producer, const std::string &consumer);
 
-  static std::shared_ptr<GetTableTicket> make(long query_id, const std::string &op);
+  static std::shared_ptr<GetTableTicket> make(long query_id, const std::string &producer, const std::string &consumer);
 
   long query_id() const;
-  const std::string& op() const;
+  const std::string& producer() const;
+  const std::string& consumer() const;
 
   tl::expected<std::string, std::string> serialize(bool pretty) override;
 
@@ -29,7 +30,8 @@ public:
 
 private:
   long query_id_;
-  std::string op_;
+  std::string producer_;
+  std::string consumer_;
 };
 
 }

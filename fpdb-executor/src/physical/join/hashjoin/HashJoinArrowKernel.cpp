@@ -85,15 +85,21 @@ tl::expected<void, std::string> HashJoinArrowKernel::joinProbeTupleSet(const std
 }
 
 void HashJoinArrowKernel::finalizeInput(bool isBuildSide) {
+  // make arrow exec plan if not yet, this may occur if only one side has input for outer joins
+  if (!arrowExecPlanSuite_.has_value()) {
+    makeArrowExecPlan();
+  }
+
+  // do finalize
+  if (arrowExecPlanSuite_.has_value()) {
+    doFinalizeInput(isBuildSide);
+  }
+
   // mark flag
   if (isBuildSide) {
     buildInputFinalized_ = true;
   } else {
     probeInputFinalized_ = true;
-  }
-
-  if (arrowExecPlanSuite_.has_value()) {
-    doFinalizeInput(isBuildSide);
   }
 }
 
@@ -200,7 +206,7 @@ tl::expected<void, std::string> HashJoinArrowKernel::makeArrowExecPlan() {
       return {};
     }
   } else {
-    // for inner or semi join, do not make arrow exec plan until one side has input
+    // for other joins, do not make arrow exec plan until one side has input
     if (!buildInputBuffer_.has_value() && !probeInputBuffer_.has_value()) {
       return {};
     }
@@ -290,8 +296,8 @@ HashJoinArrowKernel::consumeInput(const std::shared_ptr<TupleSet> &tupleSet, boo
 
   // read tupleSet into batches
   auto reader = std::make_shared<arrow::TableBatchReader>(*tupleSet->table());
-  auto recordBatchReadResult = reader->Next();
   reader->set_chunksize(DefaultChunkSize);
+  auto recordBatchReadResult = reader->Next();
   if (!recordBatchReadResult.ok()) {
     return tl::make_unexpected(recordBatchReadResult.status().message());
   }

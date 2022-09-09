@@ -7,6 +7,10 @@
 
 namespace fpdb::store::server::cache {
 
+std::string TableCache::generateTableKey(long queryId, const std::string &producer, const std::string &consumer) {
+  return fmt::format("{}-{}-{}", std::to_string(queryId), producer, consumer);
+}
+
 tl::expected<std::shared_ptr<arrow::Table>, std::string> TableCache::consumeTable(const std::string &key) {
   std::unique_lock lock(mutex_);
 

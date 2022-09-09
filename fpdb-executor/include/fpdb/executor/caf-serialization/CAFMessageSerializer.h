@@ -15,7 +15,7 @@
 #include <fpdb/executor/message/TupleSetMessage.h>
 #include <fpdb/executor/message/TupleSetBufferMessage.h>
 #include <fpdb/executor/message/TupleSetIndexMessage.h>
-#include <fpdb/executor/message/TupleSetReadyFPDBStoreMessage.h>
+#include <fpdb/executor/message/TupleSetReadyRemoteMessage.h>
 #include <fpdb/executor/message/TupleSetSizeMessage.h>
 #include <fpdb/executor/message/BloomFilterMessage.h>
 #include <fpdb/executor/message/BitmapMessage.h>
@@ -42,7 +42,7 @@ CAF_ADD_TYPE_ID(Message, (ScanMessage))
 CAF_ADD_TYPE_ID(Message, (TupleSetMessage))
 CAF_ADD_TYPE_ID(Message, (TupleSetBufferMessage))
 CAF_ADD_TYPE_ID(Message, (TupleSetIndexMessage))
-CAF_ADD_TYPE_ID(Message, (TupleSetReadyFPDBStoreMessage))
+CAF_ADD_TYPE_ID(Message, (TupleSetReadyRemoteMessage))
 CAF_ADD_TYPE_ID(Message, (TupleSetSizeMessage))
 CAF_ADD_TYPE_ID(Message, (BloomFilterMessage))
 CAF_ADD_TYPE_ID(Message, (BitmapMessage))
@@ -79,7 +79,7 @@ struct variant_inspector_traits<MessagePtr> {
           type_id_v<TupleSetMessage>,
           type_id_v<TupleSetBufferMessage>,
           type_id_v<TupleSetIndexMessage>,
-          type_id_v<TupleSetReadyFPDBStoreMessage>,
+          type_id_v<TupleSetReadyRemoteMessage>,
           type_id_v<TupleSetSizeMessage>,
           type_id_v<BloomFilterMessage>,
           type_id_v<BitmapMessage>
@@ -107,7 +107,7 @@ struct variant_inspector_traits<MessagePtr> {
       return 8;
     else if (x->type() == MessageType::TUPLESET_INDEX)
       return 9;
-    else if (x->type() == MessageType::TUPLESET_READY_FPDB_STORE)
+    else if (x->type() == MessageType::TUPLESET_READY_REMOTE)
       return 10;
     else if (x->type() == MessageType::TUPLESET_SIZE)
       return 11;
@@ -142,7 +142,7 @@ struct variant_inspector_traits<MessagePtr> {
       case 9:
         return f(dynamic_cast<TupleSetIndexMessage &>(*x));
       case 10:
-        return f(dynamic_cast<TupleSetReadyFPDBStoreMessage &>(*x));
+        return f(dynamic_cast<TupleSetReadyRemoteMessage &>(*x));
       case 11:
         return f(dynamic_cast<TupleSetSizeMessage &>(*x));
       case 12:
@@ -222,8 +222,8 @@ struct variant_inspector_traits<MessagePtr> {
         continuation(tmp);
         return true;
       }
-      case type_id_v<TupleSetReadyFPDBStoreMessage>: {
-        auto tmp = TupleSetReadyFPDBStoreMessage{};
+      case type_id_v<TupleSetReadyRemoteMessage>: {
+        auto tmp = TupleSetReadyRemoteMessage{};
         continuation(tmp);
         return true;
       }

@@ -13,10 +13,13 @@ static constexpr std::string_view TypeJSONName = "type";
 static constexpr std::string_view BucketJSONName = "bucket";
 static constexpr std::string_view ObjectJSONName = "object";
 static constexpr std::string_view QueryIdJSONName = "query_id";
+static constexpr std::string_view FPDBStoreSuperPOpJSONName = "fpdb_store_super_pop";
 static constexpr std::string_view QueryPlanJSONName = "query_plan";
 static constexpr std::string_view OpJSONName = "op";
 static constexpr std::string_view ValidJSONName = "valid";
 static constexpr std::string_view BitmapTypeName = "bitmap_type";
+static constexpr std::string_view ProducerJSONName = "producer";;
+static constexpr std::string_view ConsumerJSONName = "consumer";
 
 static constexpr std::string_view GetObjectCmdTypeName = "get_object";
 static constexpr std::string_view SelectObjectContentCmdTypeName = "select_object_content";

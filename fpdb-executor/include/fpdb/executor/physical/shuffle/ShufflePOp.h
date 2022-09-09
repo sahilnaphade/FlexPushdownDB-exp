@@ -45,12 +45,13 @@ public:
 
   const std::vector<std::string> &getShuffleColumnNames() const;
   const std::vector<std::string> &getConsumerVec() const;
+  void setConsumerVec(const std::vector<std::string> &consumerVec);
 
   /**
    * This only adds op to consumerVec_
    * @param op
    */
-  void addConsumer(const std::shared_ptr<PhysicalOp> &op);
+  void addToConsumerVec(const std::shared_ptr<PhysicalOp> &op);
 
   /**
    * Clear consumerVec_

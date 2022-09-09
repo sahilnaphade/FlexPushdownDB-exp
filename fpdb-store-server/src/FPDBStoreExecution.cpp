@@ -2,9 +2,10 @@
 // Created by Yifei Yang on 6/26/22.
 //
 
-#include <fpdb/executor/FPDBStoreExecution.h>
+#include <fpdb/store/server/FPDBStoreExecution.h>
+#include <fpdb/store/server/cache/TableCache.hpp>
 
-namespace fpdb::executor {
+namespace fpdb::store::server {
 
 FPDBStoreExecution::FPDBStoreExecution(long queryId,
                                        const std::shared_ptr<::caf::actor_system> &actorSystem,

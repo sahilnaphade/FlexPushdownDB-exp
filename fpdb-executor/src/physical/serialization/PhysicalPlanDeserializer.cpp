@@ -72,6 +72,8 @@ PhysicalPlanDeserializer::deserializeDfs(const ::nlohmann::json &jObj, bool isRo
     return deserializeAggregatePOp(jObj);
   } else if (type == "BloomFilterUsePOp") {
     return deserializeBloomFilterUsePOp(jObj);
+  } else if (type == "ShufflePOp") {
+    return deserializeShufflePOp(jObj);
   } else if (type == "CollatePOp") {
     return deserializeCollatePOp(jObj);
   } else {
@@ -438,8 +440,20 @@ PhysicalPlanDeserializer::deserializeCollatePOp(const ::nlohmann::json &jObj) {
     return tl::make_unexpected(expProducers.error());
   }
 
-  // connect
-  PrePToPTransformerUtil::connectManyToOne(*expProducers, collatePOp);
+  // connect, need to handle specially when producer is ShufflePOp,
+  // because collatePOp shouldn't be added to its consumerVec
+  for (const auto &producer: *expProducers) {
+    if (producer->getType() == POpType::SHUFFLE) {
+      auto shufflePOp = std::static_pointer_cast<shuffle::ShufflePOp>(producer);
+      auto consumerVec = shufflePOp->getConsumerVec();
+      shufflePOp->produce(collatePOp);
+      collatePOp->consume(shufflePOp);
+      shufflePOp->setConsumerVec(consumerVec);
+    } else {
+      producer->produce(collatePOp);
+      collatePOp->consume(producer);
+    }
+  }
 
   return collatePOp;
 }

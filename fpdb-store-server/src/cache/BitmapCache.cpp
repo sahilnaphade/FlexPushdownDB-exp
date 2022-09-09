@@ -7,7 +7,7 @@
 
 namespace fpdb::store::server::cache {
 
-std::string generateKey(long queryId, const std::string &op) {
+std::string BitmapCache::generateBitmapKey(long queryId, const std::string &op) {
   return fmt::format("{}-{}", std::to_string(queryId), op);
 }
 

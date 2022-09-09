@@ -2,14 +2,14 @@
 // Created by Yifei Yang on 6/26/22.
 //
 
-#ifndef FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_FPDBSTOREEXECUTION_H
-#define FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_FPDBSTOREEXECUTION_H
+#ifndef FPDB_FPDB_STORE_SERVER_INCLUDE_FPDB_STORE_SERVER_FPDBSTOREEXECUTION_H
+#define FPDB_FPDB_STORE_SERVER_INCLUDE_FPDB_STORE_SERVER_FPDBSTOREEXECUTION_H
 
 #include <fpdb/executor/Execution.h>
 
-namespace fpdb::executor {
+namespace fpdb::store::server {
 
-class FPDBStoreExecution: public Execution {
+class FPDBStoreExecution: public executor::Execution {
 
 public:
   FPDBStoreExecution(long queryId,
@@ -33,4 +33,4 @@ private:
 }
 
 
-#endif //FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_FPDBSTOREEXECUTION_H
+#endif //FPDB_FPDB_STORE_SERVER_INCLUDE_FPDB_STORE_SERVER_FPDBSTOREEXECUTION_H

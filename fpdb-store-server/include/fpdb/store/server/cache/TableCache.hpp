@@ -22,6 +22,8 @@ class TableCache {
 public:
   TableCache() = default;
 
+  static std::string generateTableKey(long queryId, const std::string &producer, const std::string &consumer);
+
   tl::expected<std::shared_ptr<arrow::Table>, std::string> consumeTable(const std::string &key);
   void produceTable(const std::string &key, const std::shared_ptr<arrow::Table> &table);
 

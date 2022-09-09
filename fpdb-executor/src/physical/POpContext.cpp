@@ -18,18 +18,25 @@ using namespace fpdb::executor::message;
 
 namespace fpdb::executor::physical {
 
-void POpContext::tell(std::shared_ptr<Message> &msg) {
+void POpContext::tell(std::shared_ptr<Message> &msg,
+                      std::optional<std::set<std::string>> consumers) {
   assert(this);
 
-  if(complete_)
-    notifyError(fmt::format("Cannot tell message to consumers, operator {} ('{}') is complete", this->operatorActor()->id(), this->operatorActor()->operator_()->name()));
+  if (complete_) {
+    notifyError(fmt::format("Cannot tell message to consumers, operator {} ('{}') is complete",
+                            this->operatorActor()->id(),
+                            this->operatorActor()->operator_()->name()));
+  }
 
   message::Envelope e(msg);
 
   // Send message to consumers
+  if (!consumers.has_value()) {
+    consumers = this->operatorActor()->operator_()->consumers();
+  }
   auto bloomFilterCreatePrepareConsumer = this->operatorActor()->operator_()->getBloomFilterCreatePrepareConsumer();
 
-  for (const auto& consumer: this->operatorActor()->operator_()->consumers()) {
+  for (const auto &consumer: *consumers) {
     // Skip bloomFilterCreatePrepareConsumer
     if (bloomFilterCreatePrepareConsumer.has_value() && *bloomFilterCreatePrepareConsumer == consumer) {
       continue;
@@ -144,9 +151,11 @@ POpContext::POpContext(::caf::actor rootActor, ::caf::actor segmentCacheActor):
 LocalPOpDirectory &POpContext::operatorMap() {
   return operatorMap_;
 }
+
 POpActor* POpContext::operatorActor() {
   return operatorActor_;
 }
+
 void POpContext::operatorActor(POpActor *operatorActor) {
   operatorActor_ = operatorActor;
 }

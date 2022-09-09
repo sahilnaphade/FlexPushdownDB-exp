@@ -50,6 +50,7 @@ private:
   void processEmpty();
   tl::expected<std::string, std::string> serialize(bool pretty);
   void putBloomFilterBitmapToStore();
+  std::shared_ptr<TupleSet> get_table_from_fpdb_store(const std::string &opName);
 
   std::shared_ptr<PhysicalPlan> subPlan_;
   std::string host_;

@@ -80,6 +80,7 @@ add_library(fpdb-store-server-objlib OBJECT
         src/ServerConfig.cpp include/fpdb/store/server/ServerConfig.hpp
         src/FPDBStoreServerConfig.cpp include/fpdb/store/server/FPDBStoreServerConfig.hpp
         src/SignalHandler.cpp include/fpdb/store/server/SignalHandler.hpp
+        src/FPDBStoreExecution.cpp include/fpdb/store/server/FPDBStoreExecution.h
         src/caf/ActorManager.cpp include/fpdb/store/server/caf/ActorManager.hpp
         src/caf/ServerMeta.cpp include/fpdb/store/server/caf/ServerMeta.hpp
         src/caf/AbstractActor.cpp include/fpdb/store/server/caf/AbstractActor.hpp

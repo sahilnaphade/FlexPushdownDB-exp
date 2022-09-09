@@ -10,6 +10,7 @@
 #include <fpdb/executor/message/DebugMetricsMessage.h>
 #include <fpdb/executor/metrics/Globals.h>
 #include <fpdb/store/server/flight/SelectObjectContentTicket.hpp>
+#include <fpdb/store/server/flight/GetTableTicket.hpp>
 #include <fpdb/store/server/flight/PutBitmapCmd.hpp>
 #include <fpdb/store/server/flight/ClearBitmapCmd.hpp>
 #include <arrow/flight/api.h>
@@ -59,8 +60,9 @@ void FPDBStoreSuperPOp::produce(const std::shared_ptr<PhysicalOp> &op) {
   if (shufflePOpName_.has_value()) {
     auto expShufflePOp = subPlan_->getPhysicalOp(*shufflePOpName_);
     if (!expShufflePOp.has_value()) {
-      std::static_pointer_cast<shuffle::ShufflePOp>(*expShufflePOp)->addConsumer(op);
+      ctx()->notifyError(expShufflePOp.error());
     }
+    std::static_pointer_cast<shuffle::ShufflePOp>(*expShufflePOp)->addToConsumerVec(op);
   }
 }
 
@@ -187,7 +189,7 @@ void FPDBStoreSuperPOp::processAtStore() {
   if (!expPlanString.has_value()) {
     ctx()->notifyError(expPlanString.error());
   }
-  auto ticketObj = SelectObjectContentTicket::make(queryId_, *expPlanString);
+  auto ticketObj = SelectObjectContentTicket::make(queryId_, name_, *expPlanString);
   auto expTicket = ticketObj->to_ticket(false);
   if (!expTicket.has_value()) {
     ctx()->notifyError(expTicket.error());
@@ -230,11 +232,37 @@ void FPDBStoreSuperPOp::processAtStore() {
 #endif
   }
 
-  // if having shuffle op, send control message to consumers
+  // if having shuffle op
   else {
-    std::shared_ptr<Message> tupleSetReadyMessage =
-            std::make_shared<TupleSetReadyFPDBStoreMessage>(host_, port_, name_);
-    ctx()->tell(tupleSetReadyMessage);
+    auto expShufflePOp = subPlan_->getPhysicalOp(*shufflePOpName_);
+    if (!expShufflePOp.has_value()) {
+      ctx()->notifyError(expShufflePOp.error());
+    }
+    const auto &shuffleConsumerVec = std::static_pointer_cast<shuffle::ShufflePOp>(*expShufflePOp)->getConsumerVec();
+    std::set<std::string> shuffleConsumerSet(shuffleConsumerVec.begin(), shuffleConsumerVec.end());
+
+    // send shuffled tupleSet to corresponding shuffle's consumer
+    std::vector<std::shared_ptr<TupleSet>> shuffledTupleSets;
+    for (const auto &shufflePOpConsumer: shuffleConsumerSet) {
+      auto shuffledTupleSet = get_table_from_fpdb_store(shufflePOpConsumer);
+      std::shared_ptr<Message> tupleSetMessage = std::make_shared<TupleSetMessage>(shuffledTupleSet, name_);
+      ctx()->send(tupleSetMessage, shufflePOpConsumer);
+      shuffledTupleSets.emplace_back(shuffledTupleSet);
+    }
+
+    // send the entire tupleSet to the rest consumers
+    auto expEntireTupleSet = TupleSet::concatenate(shuffledTupleSets);
+    if (!expEntireTupleSet.has_value()) {
+      ctx()->notifyError(expEntireTupleSet.error());
+    }
+    std::shared_ptr<Message> tupleSetMessage = std::make_shared<TupleSetMessage>(*expEntireTupleSet, name_);
+    std::set<std::string> restConsumers;
+    for (const auto &consumer: consumers_) {
+      if (shuffleConsumerSet.find(consumer) == shuffleConsumerSet.end()) {
+        restConsumers.emplace(consumer);
+      }
+    }
+    ctx()->tell(tupleSetMessage, restConsumers);
   }
 
   // complete
@@ -342,6 +370,47 @@ void FPDBStoreSuperPOp::putBloomFilterBitmapToStore() {
       }
     }
   }
+}
+
+std::shared_ptr<TupleSet> FPDBStoreSuperPOp::get_table_from_fpdb_store(const std::string &opName) {
+  // make flight client and connect
+  arrow::flight::Location clientLocation;
+  auto status = arrow::flight::Location::ForGrpcTcp(host_, port_, &clientLocation);
+  if (!status.ok()) {
+    ctx()->notifyError(status.message());
+  }
+
+  arrow::flight::FlightClientOptions clientOptions = arrow::flight::FlightClientOptions::Defaults();
+  std::unique_ptr<arrow::flight::FlightClient> client;
+  status = arrow::flight::FlightClient::Connect(clientLocation, clientOptions, &client);
+  if (!status.ok()) {
+    ctx()->notifyError(status.message());
+  }
+
+  // send request to store
+  auto ticketObj = fpdb::store::server::flight::GetTableTicket::make(getQueryId(), name_, opName);
+  auto expTicket = ticketObj->to_ticket(false);
+  if (!expTicket.has_value()) {
+    ctx()->notifyError(expTicket.error());
+  }
+
+  std::unique_ptr<::arrow::flight::FlightStreamReader> reader;
+  status = client->DoGet(*expTicket, &reader);
+  if (!status.ok()) {
+    ctx()->notifyError(status.message());
+  }
+
+  std::shared_ptr<::arrow::Table> table;
+  status = reader->ReadAll(&table);
+  if (!status.ok()) {
+    ctx()->notifyError(status.message());
+  }
+
+  // make tupleSetMessage and process it
+  if (table == nullptr) {
+    ctx()->notifyError("Received null table from FPDB-Store");
+  }
+  return TupleSet::make(table);
 }
 
 void FPDBStoreSuperPOp::clear() {

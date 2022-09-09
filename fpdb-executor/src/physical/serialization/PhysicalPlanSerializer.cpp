@@ -50,6 +50,8 @@ tl::expected<json, std::string> PhysicalPlanSerializer::serializeDfs(const std::
       return serializeAggregatePOp(std::static_pointer_cast<aggregate::AggregatePOp>(op));
     case POpType::BLOOM_FILTER_USE:
       return serializeBloomFilterUsePOp(std::static_pointer_cast<bloomfilter::BloomFilterUsePOp>(op));
+    case POpType::SHUFFLE:
+      return serializeShufflePOp(std::static_pointer_cast<shuffle::ShufflePOp>(op));
     case POpType::COLLATE:
       return serializeCollatePOp(std::static_pointer_cast<collate::CollatePOp>(op));
     default:
