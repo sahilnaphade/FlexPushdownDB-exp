@@ -325,11 +325,25 @@ PrePToPTransformer::transformGroup(const shared_ptr<GroupPrePOp> &groupPrePOp) {
               upConnPOp->getNodeId(),
               groupPrePOp->getGroupColumnNames()));
     }
-    PrePToPTransformerUtil::connectManyToMany(shufflePOps, groupPOps);
-    allPOps.insert(allPOps.end(), shufflePOps.begin(), shufflePOps.end());
 
-    // connect to upstream
-    PrePToPTransformerUtil::connectOneToOne(upConnPOps, shufflePOps);
+    // check if we need to push shuffle to store
+    if (catalogueEntry_->getType() == CatalogueEntryType::OBJ_STORE &&
+        std::static_pointer_cast<obj_store::ObjStoreCatalogueEntry>(catalogueEntry_)->getStoreType() ==
+          obj_store::ObjStoreType::FPDB_STORE) {
+      const auto &shuffleAddRes = PrePToFPDBStorePTransformer::addSeparablePOp(upConnPOps, shufflePOps, mode_);
+      auto opsForShuffle = shuffleAddRes.first;
+      auto addiOps = shuffleAddRes.second;
+      allPOps.insert(allPOps.end(), addiOps.begin(), addiOps.end());
+      upConnPOps = opsForShuffle;
+    } else {
+      allPOps.insert(allPOps.end(), shufflePOps.begin(), shufflePOps.end());
+      // connect to upstream
+      PrePToPTransformerUtil::connectOneToOne(upConnPOps, shufflePOps);
+      upConnPOps = shufflePOps;
+    }
+
+    // connect to downstream
+    PrePToPTransformerUtil::connectManyToMany(upConnPOps, groupPOps);
   }
 
   // add and return
