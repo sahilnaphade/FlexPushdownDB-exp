@@ -9,8 +9,7 @@ namespace fpdb::executor::physical::group {
 
 enum GroupKernelType{
   GROUP_KERNEL,
-  GROUP_ARROW_KERNEL,
-  GROUP_KERNEL2
+  GROUP_ARROW_KERNEL
 };
 
 }

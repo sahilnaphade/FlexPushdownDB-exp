@@ -26,6 +26,9 @@ class GroupArrowKernel: public GroupAbstractKernel{
 public:
   GroupArrowKernel(const std::vector<std::string> &groupColumnNames,
                    const std::vector<std::shared_ptr<AggregateFunction>> &aggregateFunctions);
+  GroupArrowKernel() = default;
+  GroupArrowKernel(const GroupArrowKernel&) = default;
+  GroupArrowKernel& operator=(const GroupArrowKernel&) = default;
 
   tl::expected<void, std::string> group(const std::shared_ptr<TupleSet> &tupleSet) override;
   tl::expected<std::shared_ptr<TupleSet>, std::string> finalise() override;
@@ -45,6 +48,13 @@ private:
   std::optional<arrow::compute::AggregateNodeOptions> aggregateNodeOptions_;
   std::optional<GroupArrowExecPlanSuite> arrowExecPlanSuite_;
 
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, GroupArrowKernel& kernel) {
+    return f.object(kernel).fields(f.field("groupColumnNames", kernel.groupColumnNames_),
+                                   f.field("aggregateFunctions", kernel.aggregateFunctions_));
+  }
 };
 
 }
