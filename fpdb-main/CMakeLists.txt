@@ -76,6 +76,7 @@ add_executable(fpdb-main-bench
         bench/TPCHBench.cpp
         bench/TPCHDistBench.cpp
         bench/TPCHFPDBStoreDiffNodeBench.cpp
+        bench/TPCHDistFPDBStoreBench.cpp
         bench/BytesReadBench.cpp
         bench/BitmapPushdownBench.cpp)
 

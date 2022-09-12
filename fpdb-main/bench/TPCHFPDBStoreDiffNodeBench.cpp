@@ -7,6 +7,8 @@
 #include "Globals.h"
 
 /**
+ * TPCH test (single compute node, single FPDB store node)
+ *
  * Start Calcite server and FPDB store server before running this
  */
 namespace fpdb::main::test {

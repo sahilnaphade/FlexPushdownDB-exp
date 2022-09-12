@@ -7,6 +7,8 @@
 #include "Globals.h"
 
 /**
+ * TPCH test (multiple compute node, S3)
+ *
  * Start Calcite server on the coordinator (locally) and CAF server on all executors (remote nodes) before running this
  * (see README for more details)
  */

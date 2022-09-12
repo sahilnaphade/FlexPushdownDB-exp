@@ -6,6 +6,8 @@
 #include "TestUtil.h"
 
 /**
+ * SSB test (single compute node, S3)
+ *
  * Start Calcite server before running this
  */
 namespace fpdb::main::test {
