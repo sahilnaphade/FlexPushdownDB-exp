@@ -6,6 +6,7 @@
 #include <fpdb/executor/message/StartMessage.h>
 #include <fpdb/executor/message/ConnectMessage.h>
 #include <fpdb/executor/message/CompleteMessage.h>
+#include <fpdb/store/server/flight/GetTableTicket.hpp>
 #include <arrow/flight/api.h>
 #include <spdlog/spdlog.h>
 #include <utility>
@@ -97,6 +98,14 @@ POpActor::POpActor(::caf::actor_config &cfg, std::shared_ptr<PhysicalOp> opBehav
 }
 
 void POpActor::on_regular_message(const fpdb::executor::message::Envelope &msg) {
+  if (msg.message().type() == MessageType::TUPLESET_READY_REMOTE) {
+    const auto &typedMessage = dynamic_cast<const TupleSetReadyRemoteMessage &>(msg.message());
+    auto tupleSet = read_table_from_fpdb_store(typedMessage.getHost(), typedMessage.getPort(), typedMessage.sender());
+    std::shared_ptr<Message> tupleSetMessage = std::make_shared<TupleSetMessage>(tupleSet, typedMessage.sender());
+    on_regular_message(Envelope(tupleSetMessage));
+    return;
+  }
+
   if (msg.message().type() == MessageType::COMPLETE) {
     auto completeMessage = dynamic_cast<const message::CompleteMessage &>(msg.message());
     auto result = opBehaviour_->ctx()->operatorMap().setComplete(msg.message().sender());
@@ -106,6 +115,50 @@ void POpActor::on_regular_message(const fpdb::executor::message::Envelope &msg) 
   }
 
   opBehaviour_->onReceive(msg);
+}
+
+std::shared_ptr<TupleSet>
+POpActor::read_table_from_fpdb_store(const std::string &host, int port, const std::string &sender) {
+  // make flight client and connect
+  arrow::flight::Location clientLocation;
+  auto status = arrow::flight::Location::ForGrpcTcp(host, port, &clientLocation);
+  if (!status.ok()) {
+    opBehaviour_->ctx()->notifyError(status.message());
+  }
+
+  arrow::flight::FlightClientOptions clientOptions = arrow::flight::FlightClientOptions::Defaults();
+  std::unique_ptr<arrow::flight::FlightClient> client;
+  status = arrow::flight::FlightClient::Connect(clientLocation, clientOptions, &client);
+  if (!status.ok()) {
+    opBehaviour_->ctx()->notifyError(status.message());
+  }
+
+  // send request to store
+  auto ticketObj = fpdb::store::server::flight::GetTableTicket::make(opBehaviour_->getQueryId(),
+                                                                     sender,
+                                                                     opBehaviour_->name());
+  auto expTicket = ticketObj->to_ticket(false);
+  if (!expTicket.has_value()) {
+    opBehaviour_->ctx()->notifyError(expTicket.error());
+  }
+
+  std::unique_ptr<::arrow::flight::FlightStreamReader> reader;
+  status = client->DoGet(*expTicket, &reader);
+  if (!status.ok()) {
+    opBehaviour_->ctx()->notifyError(status.message());
+  }
+
+  std::shared_ptr<::arrow::Table> table;
+  status = reader->ReadAll(&table);
+  if (!status.ok()) {
+    opBehaviour_->ctx()->notifyError(status.message());
+  }
+
+  // return
+  if (table == nullptr) {
+    opBehaviour_->ctx()->notifyError("Received null table from FPDB-Store");
+  }
+  return TupleSet::make(table);
 }
 
 ::caf::behavior POpActor::make_behavior() {
