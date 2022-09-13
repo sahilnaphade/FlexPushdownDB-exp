@@ -9,7 +9,7 @@ export temp_dir_name="temp"
 export pem_path="$HOME""/.aws/yifei-aws-wisc.pem"
 
 # fixed parameters
-export targets=("fpdb-main-server" "fpdb-main-test")
+export targets=("fpdb-main-server" "fpdb-main-test" "fpdb-main-bench")
 export exe_dir_name="fpdb-main"
 export calcite_jar_name="flexpushdowndb.thrift.calcite-1.0-SNAPSHOT.jar"
 export calcite_dir_name="fpdb-calcite/java"
