@@ -19,8 +19,6 @@
 #include <fpdb/executor/physical/shuffle/ShufflePOp.h>
 #include <fpdb/executor/physical/split/SplitPOp.h>
 #include <fpdb/executor/physical/bloomfilter/BloomFilterCreatePOp.h>
-#include <fpdb/executor/physical/bloomfilter/BloomFilterCreatePreparePOp.h>
-#include <fpdb/executor/physical/bloomfilter/BloomFilterCreateMergePOp.h>
 #include <fpdb/executor/physical/bloomfilter/BloomFilterUsePOp.h>
 #include <fpdb/executor/physical/collate/CollatePOp.h>
 #include <fpdb/executor/physical/transform/PrePToPTransformerUtil.h>
