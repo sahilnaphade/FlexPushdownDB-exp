@@ -18,17 +18,16 @@ namespace fpdb::executor::physical::bloomfilter {
 class BloomFilterCreateKernel {
 
 public:
-  BloomFilterCreateKernel(const std::vector<std::string> columnNames);
+  BloomFilterCreateKernel(const std::vector<std::string> columnNames, double desiredFalsePositiveRate);
   BloomFilterCreateKernel() = default;
   BloomFilterCreateKernel(const BloomFilterCreateKernel&) = default;
   BloomFilterCreateKernel& operator=(const BloomFilterCreateKernel&) = default;
   ~BloomFilterCreateKernel() = default;
   
-  static BloomFilterCreateKernel make(const std::vector<std::string> columnNames);
+  static BloomFilterCreateKernel make(const std::vector<std::string> columnNames, double desiredFalsePositiveRate);
 
-  tl::expected<void, std::string> addTupleSet(const std::shared_ptr<TupleSet> &tupleSet);
-  tl::expected<void, std::string> setBloomFilter(const std::shared_ptr<BloomFilter> &bloomFilter);
-  tl::expected<void, std::string> addTupleSetToBloomFilter();
+  tl::expected<void, std::string> bufferTupleSet(const std::shared_ptr<TupleSet> &tupleSet);
+  tl::expected<void, std::string> buildBloomFilter();
   const std::optional<std::shared_ptr<BloomFilter>> &getBloomFilter() const;
 
   void clear();
@@ -38,6 +37,7 @@ private:
                                                               const std::vector<int> &columnIndices);
 
   std::vector<std::string> columnNames_;
+  double desiredFalsePositiveRate_;
 
   std::optional<std::shared_ptr<TupleSet>> receivedTupleSet_;
   std::optional<std::shared_ptr<BloomFilter>> bloomFilter_;
@@ -46,7 +46,8 @@ private:
 public:
   template <class Inspector>
   friend bool inspect(Inspector& f, BloomFilterCreateKernel& kernel) {
-    return f.object(kernel).fields(f.field("columnNames", kernel.columnNames_));
+    return f.object(kernel).fields(f.field("columnNames", kernel.columnNames_),
+                                   f.field("desiredFalsePositiveRate", kernel.desiredFalsePositiveRate_));
   }
 };
 

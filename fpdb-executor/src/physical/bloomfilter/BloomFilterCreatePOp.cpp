@@ -9,9 +9,10 @@ namespace fpdb::executor::physical::bloomfilter {
 BloomFilterCreatePOp::BloomFilterCreatePOp(const std::string &name,
                                            const std::vector<std::string> &projectColumnNames,
                                            int nodeId,
-                                           const std::vector<std::string> &bloomFilterColumnNames):
+                                           const std::vector<std::string> &bloomFilterColumnNames,
+                                           double desiredFalsePositiveRate):
   PhysicalOp(name, BLOOM_FILTER_CREATE, projectColumnNames, nodeId),
-  kernel_(BloomFilterCreateKernel::make(bloomFilterColumnNames)) {}
+  kernel_(BloomFilterCreateKernel::make(bloomFilterColumnNames, desiredFalsePositiveRate)) {}
 
 std::string BloomFilterCreatePOp::getTypeString() const {
   return "BloomFilterCreatePOp";
@@ -25,9 +26,6 @@ void BloomFilterCreatePOp::onReceive(const Envelope &envelope) {
   } else if (msg.type() == MessageType::TUPLESET) {
     auto tupleSetMessage = dynamic_cast<const TupleSetMessage &>(msg);
     this->onTupleSet(tupleSetMessage);
-  } else if (msg.type() == MessageType::BLOOM_FILTER) {
-    auto bloomFilterMessage = dynamic_cast<const BloomFilterMessage &>(msg);
-    this->onBloomFilter(bloomFilterMessage);
   } else if (msg.type() == MessageType::COMPLETE) {
     auto completeMessage = dynamic_cast<const CompleteMessage &>(msg);
     this->onComplete(completeMessage);
@@ -36,33 +34,50 @@ void BloomFilterCreatePOp::onReceive(const Envelope &envelope) {
   }
 }
 
+void BloomFilterCreatePOp::setBloomFilterUsePOp(const std::shared_ptr<PhysicalOp> &bloomFilterUsePOp) {
+  bloomFilterUsePOp_ = bloomFilterUsePOp->name();
+  PhysicalOp::produce(bloomFilterUsePOp);
+}
+
 void BloomFilterCreatePOp::onStart() {
   SPDLOG_DEBUG("Starting operator  |  name: '{}'", this->name());
 }
 
 void BloomFilterCreatePOp::onTupleSet(const TupleSetMessage &msg) {
-  auto result = kernel_.addTupleSet(msg.tuples());
+  // add tupleSet to kernel
+  auto tupleSet = msg.tuples();
+  auto result = kernel_.bufferTupleSet(tupleSet);
   if (!result.has_value()) {
     ctx()->notifyError(result.error());
   }
-}
 
-void BloomFilterCreatePOp::onBloomFilter(const BloomFilterMessage &msg) {
-  auto result = kernel_.setBloomFilter(msg.getBloomFilter());
-  if (!result.has_value()) {
-    ctx()->notifyError(result.error());
+  // pass tupleSet to consumers except bloomFilterUsePOp_
+  std::shared_ptr<Message> tupleSetMessage = std::make_shared<TupleSetMessage>(tupleSet, name_);
+  auto consumers = consumers_;
+  if (bloomFilterUsePOp_.has_value()) {
+    consumers.erase(*bloomFilterUsePOp_);
   }
+  ctx()->tell(tupleSetMessage, consumers);
 }
 
 void BloomFilterCreatePOp::onComplete(const CompleteMessage &) {
   if (!ctx()->isComplete() && ctx()->operatorMap().allComplete(POpRelationshipType::Producer)) {
-    auto optBloomFilter = kernel_.getBloomFilter();
-    if (!optBloomFilter.has_value()) {
-      ctx()->notifyError("Bloom filter not create on complete");
+    // build and get bloom filter
+    auto res = kernel_.buildBloomFilter();
+    if (!res.has_value()) {
+      ctx()->notifyError(res.error());
+    }
+    auto bloomFilter = kernel_.getBloomFilter();
+    if (!bloomFilter.has_value()) {
+      ctx()->notifyError("Bloom filter not created on complete");
     }
 
-    std::shared_ptr<Message> bloomFilterMessage = std::make_shared<BloomFilterMessage>(*optBloomFilter, name());
-    ctx()->tell(bloomFilterMessage);
+    // send to bloomFilterUsePOp_
+    std::shared_ptr<Message> bloomFilterMessage = std::make_shared<BloomFilterMessage>(*bloomFilter, name_);
+    if (!bloomFilterUsePOp_.has_value()) {
+      ctx()->notifyError("BloomFilterUsePOp not set when creating bloom filter");
+    }
+    ctx()->send(bloomFilterMessage, *bloomFilterUsePOp_);
     ctx()->notifyComplete();
   }
 }

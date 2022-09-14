@@ -7,56 +7,43 @@
 
 namespace fpdb::executor::physical::bloomfilter {
 
-BloomFilterCreateKernel::BloomFilterCreateKernel(const std::vector<std::string> columnNames):
-  columnNames_(columnNames) {}
+BloomFilterCreateKernel::BloomFilterCreateKernel(const std::vector<std::string> columnNames,
+                                                 double desiredFalsePositiveRate):
+  columnNames_(columnNames),
+  desiredFalsePositiveRate_(desiredFalsePositiveRate) {}
 
-BloomFilterCreateKernel BloomFilterCreateKernel::make(const std::vector<std::string> columnNames) {
-  return {columnNames};
+BloomFilterCreateKernel BloomFilterCreateKernel::make(const std::vector<std::string> columnNames,
+                                                      double desiredFalsePositiveRate) {
+  return {columnNames, desiredFalsePositiveRate};
 }
 
-tl::expected<void, std::string> BloomFilterCreateKernel::addTupleSet(const std::shared_ptr<TupleSet> &tupleSet) {
+tl::expected<void, std::string> BloomFilterCreateKernel::bufferTupleSet(const std::shared_ptr<TupleSet> &tupleSet) {
   // buffer tupleSet
   if (!receivedTupleSet_.has_value()) {
     receivedTupleSet_ = tupleSet;
   }
-  else{
-    auto result = (*receivedTupleSet_)->append(tupleSet);
-    if (!result) {
-      return result;
+  else {
+    // here we should use "concatenate" instead of "append" to avoid modification on the original tupleSet,
+    // because the original one is also passed to downstream operators
+    auto expConcatenatedTupleSet = TupleSet::concatenate({(*receivedTupleSet_), tupleSet});
+    if (!expConcatenatedTupleSet.has_value()) {
+      return tl::make_unexpected(expConcatenatedTupleSet.error());
     }
+    receivedTupleSet_ = *expConcatenatedTupleSet;
   }
-
-  // build bloom filter if received
-  if (bloomFilter_.has_value()) {
-    return addTupleSetToBloomFilter();
-  }
-
   return {};
 }
 
-tl::expected<void, std::string>
-BloomFilterCreateKernel::setBloomFilter(const std::shared_ptr<BloomFilter> &bloomFilter) {
-  // copy and set bloom filter, because multiple BloomFilterCreatePOp receive the same initialized bloom filter
-  bloomFilter_ = std::make_shared<BloomFilter>(BloomFilter(*bloomFilter));
-
-  // build bloom filter if has tupleSet
-  if (receivedTupleSet_.has_value()) {
-    return addTupleSetToBloomFilter();
-  }
-
-  return {};
-}
-
-tl::expected<void, std::string> BloomFilterCreateKernel::addTupleSetToBloomFilter() {
+tl::expected<void, std::string> BloomFilterCreateKernel::buildBloomFilter() {
+  // check
   if (!receivedTupleSet_.has_value()) {
     return tl::make_unexpected("No tupleSet received");
   }
-  if (!bloomFilter_.has_value()) {
-    return tl::make_unexpected("No bloom filter received");
-  }
+  bloomFilter_ = std::make_shared<BloomFilter>((*receivedTupleSet_)->numRows(), desiredFalsePositiveRate_);
   if (!(*bloomFilter_)->valid()) {
     return {};
   }
+  (*bloomFilter_)->init();
 
   // Make column indices
   std::vector<int> columnIndices;
@@ -96,8 +83,6 @@ tl::expected<void, std::string> BloomFilterCreateKernel::addTupleSetToBloomFilte
     recordBatch = *recordBatchResult;
   }
 
-  // Clear buffer
-  receivedTupleSet_.reset();
   return {};
 }
 

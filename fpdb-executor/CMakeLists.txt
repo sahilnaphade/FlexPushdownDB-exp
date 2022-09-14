@@ -55,8 +55,6 @@ add_library(fpdb-executor STATIC
         src/physical/aggregate/function/AvgReduce.cpp include/fpdb/executor/physical/aggregate/function/AvgReduce.h
         src/physical/bloomfilter/BloomFilterCreatePOp.cpp include/fpdb/executor/physical/bloomfilter/BloomFilterCreatePOp.h
         src/physical/bloomfilter/BloomFilterCreateKernel.cpp include/fpdb/executor/physical/bloomfilter/BloomFilterCreateKernel.h
-        src/physical/bloomfilter/BloomFilterCreatePreparePOp.cpp include/fpdb/executor/physical/bloomfilter/BloomFilterCreatePreparePOp.h
-        src/physical/bloomfilter/BloomFilterCreateMergePOp.cpp include/fpdb/executor/physical/bloomfilter/BloomFilterCreateMergePOp.h
         src/physical/bloomfilter/BloomFilterUsePOp.cpp include/fpdb/executor/physical/bloomfilter/BloomFilterUsePOp.h
         src/physical/bloomfilter/BloomFilterUseKernel.cpp include/fpdb/executor/physical/bloomfilter/BloomFilterUseKernel.h
         src/physical/bloomfilter/BloomFilter.cpp include/fpdb/executor/physical/bloomfilter/BloomFilter.h

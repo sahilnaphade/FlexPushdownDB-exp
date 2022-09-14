@@ -7,7 +7,6 @@
 
 #include <fpdb/executor/physical/PhysicalOp.h>
 #include <fpdb/executor/physical/bloomfilter/BloomFilterCreateKernel.h>
-#include <fpdb/executor/message/BloomFilterMessage.h>
 
 namespace fpdb::executor::physical::bloomfilter {
 
@@ -17,7 +16,8 @@ public:
   explicit BloomFilterCreatePOp(const std::string &name,
                                 const std::vector<std::string> &projectColumnNames,
                                 int nodeId,
-                                const std::vector<std::string> &bloomFilterColumnNames);
+                                const std::vector<std::string> &bloomFilterColumnNames,
+                                double desiredFalsePositiveRate = BloomFilter::DefaultDesiredFalsePositiveRate);
   BloomFilterCreatePOp() = default;
   BloomFilterCreatePOp(const BloomFilterCreatePOp&) = default;
   BloomFilterCreatePOp& operator=(const BloomFilterCreatePOp&) = default;
@@ -27,13 +27,15 @@ public:
   void clear() override;
   std::string getTypeString() const override;
 
+  void setBloomFilterUsePOp(const std::shared_ptr<PhysicalOp> &bloomFilterUsePOp);
+
 private:
   void onStart();
   void onTupleSet(const TupleSetMessage &msg);
-  void onBloomFilter(const BloomFilterMessage &msg);
   void onComplete(const CompleteMessage &);
 
   BloomFilterCreateKernel kernel_;
+  std::optional<std::string> bloomFilterUsePOp_;
 
 // caf inspect
 public:
@@ -49,7 +51,8 @@ public:
                                f.field("consumers", op.consumers_),
                                f.field("bloomFilterCreatePrepareConsumer", op.bloomFilterCreatePrepareConsumer_),
                                f.field("isSeparated", op.isSeparated_),
-                               f.field("kernel", op.kernel_));
+                               f.field("kernel", op.kernel_),
+                               f.field("bloomFilterUsePOp", op.bloomFilterUsePOp_));
   }
 };
 
