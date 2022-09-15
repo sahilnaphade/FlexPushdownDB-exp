@@ -32,17 +32,23 @@ public:
 
   LocalPOpDirectory &operatorMap();
 
-  void tell(std::shared_ptr<message::Message> &msg,
-            std::optional<std::set<std::string>> consumers = std::nullopt);    // default for all consumers
+  void tell(const std::shared_ptr<message::Message> &msg,
+            const std::optional<std::set<std::string>> &consumers = std::nullopt);    // default for all consumers
   void send(const std::shared_ptr<message::Message> &msg, const std::string &recipientId);
   void notifyComplete();
   void notifyError(const std::string &content);
-  void notifyRoot(const std::shared_ptr<message::Message> &msg);
+  void notifyRoot(const std::shared_ptr<message::Message> &msg,
+                  const std::optional<std::string> &embeddedBloomFilterConsumer = std::nullopt);
 
   void destroyActorHandles();
   [[nodiscard]] bool isComplete() const;
 
 private:
+  // this only applies on TupleSetMessage/TupleSetBufferMessage with bloom filter set,
+  // others retain the original message
+  std::shared_ptr<message::Message> applyEmbeddedBloomFilter(const std::shared_ptr<message::Message> &msg,
+                                                             const std::string &consumer);
+
   POpActor* operatorActor_;
   LocalPOpDirectory operatorMap_;
   ::caf::actor rootActor_;

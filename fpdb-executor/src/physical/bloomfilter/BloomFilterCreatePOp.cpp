@@ -3,6 +3,10 @@
 //
 
 #include <fpdb/executor/physical/bloomfilter/BloomFilterCreatePOp.h>
+#include <fpdb/executor/physical/Globals.h>
+#include <fpdb/store/server/flight/PutBitmapCmd.hpp>
+
+using namespace fpdb::store::server::flight;
 
 namespace fpdb::executor::physical::bloomfilter {
 
@@ -34,9 +38,18 @@ void BloomFilterCreatePOp::onReceive(const Envelope &envelope) {
   }
 }
 
-void BloomFilterCreatePOp::setBloomFilterUsePOp(const std::shared_ptr<PhysicalOp> &bloomFilterUsePOp) {
-  bloomFilterUsePOp_ = bloomFilterUsePOp->name();
+void BloomFilterCreatePOp::produce(const std::shared_ptr<PhysicalOp> &op) {
+  passTupleSetConsumers_.emplace(op->name());
+  PhysicalOp::produce(op);
+}
+
+void BloomFilterCreatePOp::addBloomFilterUsePOp(const std::shared_ptr<PhysicalOp> &bloomFilterUsePOp) {
+  bloomFilterUsePOps_.emplace(bloomFilterUsePOp->name());
   PhysicalOp::produce(bloomFilterUsePOp);
+}
+
+void BloomFilterCreatePOp::setBloomFilterInfo(const fpdb_store::FPDBStoreBloomFilterCreateInfo &bloomFilterInfo) {
+  bloomFilterInfo_ = bloomFilterInfo;
 }
 
 void BloomFilterCreatePOp::onStart() {
@@ -51,13 +64,9 @@ void BloomFilterCreatePOp::onTupleSet(const TupleSetMessage &msg) {
     ctx()->notifyError(result.error());
   }
 
-  // pass tupleSet to consumers except bloomFilterUsePOp_
+  // pass tupleSet to consumers except bloomFilterUsePOps_
   std::shared_ptr<Message> tupleSetMessage = std::make_shared<TupleSetMessage>(tupleSet, name_);
-  auto consumers = consumers_;
-  if (bloomFilterUsePOp_.has_value()) {
-    consumers.erase(*bloomFilterUsePOp_);
-  }
-  ctx()->tell(tupleSetMessage, consumers);
+  ctx()->tell(tupleSetMessage, passTupleSetConsumers_);
 }
 
 void BloomFilterCreatePOp::onComplete(const CompleteMessage &) {
@@ -72,13 +81,56 @@ void BloomFilterCreatePOp::onComplete(const CompleteMessage &) {
       ctx()->notifyError("Bloom filter not created on complete");
     }
 
-    // send to bloomFilterUsePOp_
+    // send bloom filter to bloomFilterUsePOps_
     std::shared_ptr<Message> bloomFilterMessage = std::make_shared<BloomFilterMessage>(*bloomFilter, name_);
-    if (!bloomFilterUsePOp_.has_value()) {
-      ctx()->notifyError("BloomFilterUsePOp not set when creating bloom filter");
+    ctx()->tell(bloomFilterMessage, bloomFilterUsePOps_);
+
+    // send bloom filter to fpdb-store if needed
+    if (bloomFilterInfo_.has_value()) {
+      putBloomFilterToStore(*bloomFilter);
     }
-    ctx()->send(bloomFilterMessage, *bloomFilterUsePOp_);
+
     ctx()->notifyComplete();
+  }
+}
+
+void BloomFilterCreatePOp::putBloomFilterToStore(const std::shared_ptr<BloomFilter> &bloomFilter) {
+  // make flight client and connect
+  makeDoPutFlightClient(bloomFilterInfo_->host_, bloomFilterInfo_->port_);
+
+  // send request to store
+  auto bitmap = bloomFilter->getBitArray();
+  auto expRecordBatch = ArrowSerializer::bitmap_to_recordBatch(bitmap);
+  if (!expRecordBatch.has_value()) {
+    ctx()->notifyError(expRecordBatch.error());
+  }
+  auto recordBatch = *expRecordBatch;
+
+  auto cmdObj = PutBitmapCmd::make(BitmapType::BLOOM_FILTER_COMPUTE, queryId_, name_, true,
+                                   bloomFilterInfo_->numCopies_, bloomFilter->toJson());
+  auto expCmd = cmdObj->serialize(false);
+  if (!expCmd.has_value()) {
+    ctx()->notifyError(expCmd.error());
+  }
+  auto descriptor = ::arrow::flight::FlightDescriptor::Command(*expCmd);
+  std::unique_ptr<arrow::flight::FlightStreamWriter> writer;
+  std::unique_ptr<arrow::flight::FlightMetadataReader> metadataReader;
+  auto status = (*DoPutFlightClient)->DoPut(descriptor, recordBatch->schema(), &writer, &metadataReader);
+  if (!status.ok()) {
+    ctx()->notifyError(status.message());
+  }
+
+  status = writer->WriteRecordBatch(*recordBatch);
+  if (!status.ok()) {
+    ctx()->notifyError(status.message());
+  }
+  status = writer->DoneWriting();
+  if (!status.ok()) {
+    ctx()->notifyError(status.message());
+  }
+  status = writer->Close();
+  if (!status.ok()) {
+    ctx()->notifyError(status.message());
   }
 }
 

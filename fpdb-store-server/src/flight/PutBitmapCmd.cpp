@@ -8,16 +8,22 @@
 
 namespace fpdb::store::server::flight {
 
-PutBitmapCmd::PutBitmapCmd(BitmapType bitmap_type, long query_id, const std::string &op, bool valid):
+PutBitmapCmd::PutBitmapCmd(BitmapType bitmap_type, long query_id, const std::string &op, bool valid,
+                           const std::optional<int> &num_copies,
+                           const std::optional<nlohmann::json> &bloom_filter):
   CmdObject(CmdType::put_bitmap()),
   bitmap_type_(bitmap_type),
   query_id_(query_id),
   op_(op),
-  valid_(valid) {}
+  valid_(valid),
+  num_copies_(num_copies),
+  bloom_filter_(bloom_filter) {}
 
-std::shared_ptr<PutBitmapCmd> PutBitmapCmd::make(BitmapType bitmap_type, long query_id,
-                                                 const std::string &op, bool valid) {
-  return std::make_shared<PutBitmapCmd>(bitmap_type, query_id, op, valid);
+std::shared_ptr<PutBitmapCmd>
+PutBitmapCmd::make(BitmapType bitmap_type, long query_id, const std::string &op, bool valid,
+                   const std::optional<int> &num_copies,
+                   const std::optional<nlohmann::json> &bloom_filter) {
+  return std::make_shared<PutBitmapCmd>(bitmap_type, query_id, op, valid, num_copies, bloom_filter);
 }
 
 BitmapType PutBitmapCmd::bitmap_type() const {
@@ -36,21 +42,35 @@ bool PutBitmapCmd::valid() const {
   return valid_;
 }
 
+const std::optional<int> &PutBitmapCmd::num_copies() const {
+  return num_copies_;
+}
+
+const std::optional<nlohmann::json> &PutBitmapCmd::bloom_filter() const {
+  return bloom_filter_;
+}
+
 tl::expected<std::string, std::string> PutBitmapCmd::serialize(bool pretty) {
   nlohmann::json value;
   value.emplace(TypeJSONName.data(), type()->name());
-  value.emplace(BitmapTypeName.data(), bitmap_type_);
+  value.emplace(BitmapTypeJSONName.data(), bitmap_type_);
   value.emplace(QueryIdJSONName.data(), query_id_);
   value.emplace(OpJSONName.data(), op_);
   value.emplace(ValidJSONName.data(), valid_);
+  if (num_copies_.has_value()) {
+    value.emplace(NumCopiesJSONName.data(), *num_copies_);
+  }
+  if (bloom_filter_.has_value()) {
+    value.emplace(BloomFilterJSONName.data(), *bloom_filter_);
+  }
   return value.dump(pretty ? 2 : -1);
 }
 
 tl::expected<std::shared_ptr<PutBitmapCmd>, std::string> PutBitmapCmd::from_json(const nlohmann::json& jObj) {
-  if (!jObj.contains(BitmapTypeName.data())) {
+  if (!jObj.contains(BitmapTypeJSONName.data())) {
     return tl::make_unexpected(fmt::format("Bitmap type name not specified in PutBitmapCmd JSON '{}'", jObj));
   }
-  auto bitmap_type = jObj[BitmapTypeName.data()].get<BitmapType>();
+  auto bitmap_type = jObj[BitmapTypeJSONName.data()].get<BitmapType>();
 
   if (!jObj.contains(QueryIdJSONName.data())) {
     return tl::make_unexpected(fmt::format("Query id not specified in PutBitmapCmd JSON '{}'", jObj));
@@ -67,7 +87,16 @@ tl::expected<std::shared_ptr<PutBitmapCmd>, std::string> PutBitmapCmd::from_json
   }
   auto valid = jObj[ValidJSONName.data()].get<bool>();
 
-  return PutBitmapCmd::make(bitmap_type, query_id, op, valid);
+  std::optional<int> num_copies = std::nullopt;
+  if (jObj.contains(NumCopiesJSONName.data())) {
+    num_copies = jObj[NumCopiesJSONName.data()].get<int>();
+  }
+  std::optional<nlohmann::json> bloom_filter = std::nullopt;
+  if (jObj.contains(BloomFilterJSONName.data())) {
+    bloom_filter = jObj[BloomFilterJSONName.data()].get<nlohmann::json>();
+  }
+
+  return PutBitmapCmd::make(bitmap_type, query_id, op, valid, num_copies, bloom_filter);
 }
 
 }

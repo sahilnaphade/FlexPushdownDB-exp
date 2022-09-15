@@ -7,6 +7,7 @@
 
 #include <fpdb/executor/physical/PhysicalOp.h>
 #include <fpdb/executor/physical/bloomfilter/BloomFilterCreateKernel.h>
+#include <fpdb/executor/physical/fpdb-store/FPDBStoreBloomFilterInfo.h>
 
 namespace fpdb::executor::physical::bloomfilter {
 
@@ -26,16 +27,23 @@ public:
   void onReceive(const Envelope &envelope) override;
   void clear() override;
   std::string getTypeString() const override;
+  void produce(const std::shared_ptr<PhysicalOp> &op) override;
 
-  void setBloomFilterUsePOp(const std::shared_ptr<PhysicalOp> &bloomFilterUsePOp);
+  void addBloomFilterUsePOp(const std::shared_ptr<PhysicalOp> &bloomFilterUsePOp);
+  void setBloomFilterInfo(const fpdb_store::FPDBStoreBloomFilterCreateInfo &bloomFilterInfo);
 
 private:
   void onStart();
   void onTupleSet(const TupleSetMessage &msg);
   void onComplete(const CompleteMessage &);
+  void putBloomFilterToStore(const std::shared_ptr<BloomFilter> &bloomFilter);
 
   BloomFilterCreateKernel kernel_;
-  std::optional<std::string> bloomFilterUsePOp_;
+  std::set<std::string> bloomFilterUsePOps_;
+  std::set<std::string> passTupleSetConsumers_;
+
+  // set only when pushing down bloom filter
+  std::optional<fpdb_store::FPDBStoreBloomFilterCreateInfo> bloomFilterInfo_;
 
 // caf inspect
 public:
@@ -49,10 +57,12 @@ public:
                                f.field("opContext", op.opContext_),
                                f.field("producers", op.producers_),
                                f.field("consumers", op.consumers_),
-                               f.field("bloomFilterCreatePrepareConsumer", op.bloomFilterCreatePrepareConsumer_),
+                               f.field("consumerToBloomFilterInfo", op.consumerToBloomFilterInfo_),
                                f.field("isSeparated", op.isSeparated_),
                                f.field("kernel", op.kernel_),
-                               f.field("bloomFilterUsePOp", op.bloomFilterUsePOp_));
+                               f.field("bloomFilterUsePOps", op.bloomFilterUsePOps_),
+                               f.field("passTupleSetConsumers", op.passTupleSetConsumers_),
+                               f.field("bloomFilterInfo", op.bloomFilterInfo_));
   }
 };
 

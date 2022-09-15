@@ -66,12 +66,19 @@ void PhysicalOp::clearConnections() {
   consumers_.clear();
 }
 
-void PhysicalOp::setBloomFilterCreatePrepareConsumer(const std::shared_ptr<PhysicalOp> &op) {
-  bloomFilterCreatePrepareConsumer_ = op->name();
-  consumers_.emplace(op->name());
+void PhysicalOp::addConsumerToBloomFilterInfo(const std::string &consumer,
+                                              const std::string &bloomFilterCreatePOp,
+                                              const std::vector<std::string> &columnNames) {
+  consumerToBloomFilterInfo_[consumer] =
+          std::make_shared<fpdb_store::FPDBStoreBloomFilterUseInfo>(bloomFilterCreatePOp, columnNames);
 }
 
-std::set<std::string>PhysicalOp::consumers() {
+void PhysicalOp::setConsumerToBloomFilterInfo(const std::unordered_map<std::string,
+        std::shared_ptr<fpdb_store::FPDBStoreBloomFilterUseInfo>> &consumerToBloomFilterInfo) {
+  consumerToBloomFilterInfo_ = consumerToBloomFilterInfo;
+}
+
+std::set<std::string> PhysicalOp::consumers() {
   return consumers_;
 }
 
@@ -79,8 +86,9 @@ std::set<std::string> PhysicalOp::producers() {
   return producers_;
 }
 
-const std::optional<std::string> PhysicalOp::getBloomFilterCreatePrepareConsumer() const {
-  return bloomFilterCreatePrepareConsumer_;
+const std::unordered_map<std::string, std::shared_ptr<fpdb_store::FPDBStoreBloomFilterUseInfo>>&
+PhysicalOp::getConsumerToBloomFilterInfo() const {
+  return consumerToBloomFilterInfo_;
 }
 
 std::shared_ptr<POpContext> PhysicalOp::ctx() {

@@ -33,17 +33,17 @@ const std::string& ClearBitmapCmd::op() const {
 tl::expected<std::string, std::string> ClearBitmapCmd::serialize(bool pretty) {
   nlohmann::json value;
   value.emplace(TypeJSONName.data(), type()->name());
-  value.emplace(BitmapTypeName.data(), bitmap_type_);
+  value.emplace(BitmapTypeJSONName.data(), bitmap_type_);
   value.emplace(QueryIdJSONName.data(), query_id_);
   value.emplace(OpJSONName.data(), op_);
   return value.dump(pretty ? 2 : -1);
 }
 
 tl::expected<std::shared_ptr<ClearBitmapCmd>, std::string> ClearBitmapCmd::from_json(const nlohmann::json& jObj) {
-  if (!jObj.contains(BitmapTypeName.data())) {
+  if (!jObj.contains(BitmapTypeJSONName.data())) {
     return tl::make_unexpected(fmt::format("Bitmap type name not specified in ClearBitmapCmd JSON '{}'", jObj));
   }
-  auto bitmap_type = jObj[BitmapTypeName.data()].get<BitmapType>();
+  auto bitmap_type = jObj[BitmapTypeJSONName.data()].get<BitmapType>();
 
   if (!jObj.contains(QueryIdJSONName.data())) {
     return tl::make_unexpected(fmt::format("Query id not specified in ClearBitmapCmd JSON '{}'", jObj));

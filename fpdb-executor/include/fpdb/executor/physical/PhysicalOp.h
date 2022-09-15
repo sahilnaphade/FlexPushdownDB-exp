@@ -10,6 +10,7 @@
 #include <fpdb/executor/physical/POpType.h>
 #include <fpdb/executor/message/Message.h>
 #include <fpdb/executor/message/Envelope.h>
+#include <fpdb/executor/physical/fpdb-store/FPDBStoreBloomFilterInfo.h>
 #include <caf/all.hpp>
 #include <string>
 #include <memory>
@@ -41,7 +42,8 @@ public:
   long getQueryId() const;
   std::set<std::string> producers();
   std::set<std::string> consumers();
-  const std::optional<std::string> getBloomFilterCreatePrepareConsumer() const;
+  const std::unordered_map<std::string, std::shared_ptr<fpdb_store::FPDBStoreBloomFilterUseInfo>>&
+          getConsumerToBloomFilterInfo() const;
   std::shared_ptr<POpContext> ctx();
 
   // setters
@@ -55,7 +57,11 @@ public:
   virtual void reProduce(const std::string &oldOp, const std::string &newOp);
   virtual void reConsume(const std::string &oldOp, const std::string &newOp);
   void clearConnections();
-  void setBloomFilterCreatePrepareConsumer(const std::shared_ptr<PhysicalOp> &op);
+  void addConsumerToBloomFilterInfo(const std::string &consumer,
+                                    const std::string &bloomFilterCreatePOp,
+                                    const std::vector<std::string> &columnNames);
+  void setConsumerToBloomFilterInfo(const std::unordered_map<std::string,
+          std::shared_ptr<fpdb_store::FPDBStoreBloomFilterUseInfo>> &consumerToBloomFilterInfo);
   void create(const std::shared_ptr<POpContext>& ctx);
   bool isSeparated() const;
   void setSeparated(bool isSeparated);
@@ -74,8 +80,9 @@ protected:
   std::set<std::string> producers_;
   std::set<std::string> consumers_;
 
-  // for bloom filter
-  std::optional<std::string> bloomFilterCreatePrepareConsumer_;
+  // bloom filter pushdown is embedded into the producer of BloomFilterUsePOp at storage side,
+  // because we don't create BloomFilterUsePOp at storage side
+  std::unordered_map<std::string, std::shared_ptr<fpdb_store::FPDBStoreBloomFilterUseInfo>> consumerToBloomFilterInfo_;
 
   // whether this operator is used in hybrid execution
   bool isSeparated_;

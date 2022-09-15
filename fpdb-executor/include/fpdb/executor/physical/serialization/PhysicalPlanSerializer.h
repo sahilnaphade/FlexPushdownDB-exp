@@ -50,9 +50,6 @@ private:
   serializeAggregatePOp(const std::shared_ptr<aggregate::AggregatePOp> &aggregatePOp);
 
   tl::expected<::nlohmann::json, std::string>
-  serializeBloomFilterUsePOp(const std::shared_ptr<bloomfilter::BloomFilterUsePOp> &bloomFilterUsePOp);
-
-  tl::expected<::nlohmann::json, std::string>
   serializeShufflePOp(const std::shared_ptr<shuffle::ShufflePOp> &shufflePOp);
 
   tl::expected<::nlohmann::json, std::string>

@@ -136,7 +136,7 @@ public:
                                f.field("opContext", op.opContext_),
                                f.field("producers", op.producers_),
                                f.field("consumers", op.consumers_),
-                               f.field("bloomFilterCreatePrepareConsumer", op.bloomFilterCreatePrepareConsumer_),
+                               f.field("consumerToBloomFilterInfo", op.consumerToBloomFilterInfo_),
                                f.field("isSeparated", op.isSeparated_),
                                f.field("exprs", op.exprs_),
                                f.field("exprNames", op.exprNames_),

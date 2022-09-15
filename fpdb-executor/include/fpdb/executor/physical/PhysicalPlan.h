@@ -25,9 +25,12 @@ public:
 
   const unordered_map<string, shared_ptr<PhysicalOp>> &getPhysicalOps() const;
   tl::expected<shared_ptr<PhysicalOp>, string> getPhysicalOp(const string &name) const;
-  tl::expected<void, string> addAsLast(shared_ptr<PhysicalOp> &op);
   tl::expected<shared_ptr<PhysicalOp>, string> getRootPOp() const;
   tl::expected<void, string> renamePOp(const string oldName, const string newName);
+
+  // last op here ignores root collate
+  tl::expected<shared_ptr<PhysicalOp>, string> getLast();
+  tl::expected<void, string> addAsLast(shared_ptr<PhysicalOp> &op);
 
 private:
   unordered_map<string, shared_ptr<PhysicalOp>> physicalOps_;

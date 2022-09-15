@@ -3,7 +3,6 @@
 //
 
 #include <fpdb/executor/physical/fpdb-store/FPDBStoreSuperPOp.h>
-#include <fpdb/executor/physical/bloomfilter/BloomFilterUsePOp.h>
 #include <fpdb/executor/physical/filter/FilterPOp.h>
 #include <fpdb/executor/physical/serialization/PhysicalPlanSerializer.h>
 #include <fpdb/executor/physical/Globals.h>
@@ -11,7 +10,6 @@
 #include <fpdb/executor/metrics/Globals.h>
 #include <fpdb/store/server/flight/SelectObjectContentTicket.hpp>
 #include <fpdb/store/server/flight/GetTableTicket.hpp>
-#include <fpdb/store/server/flight/PutBitmapCmd.hpp>
 #include <fpdb/store/server/flight/ClearBitmapCmd.hpp>
 #include <arrow/flight/api.h>
 #include <unordered_map>
@@ -149,20 +147,6 @@ bool FPDBStoreSuperPOp::readyToProcess() {
   if (waitForScanMessage_) {
     return false;
   }
-
-  // check op in subPlan
-  for (const auto &opIt: subPlan_->getPhysicalOps()) {
-    auto op = opIt.second;
-
-    // check if for each BloomFilterUsePOp, the bloom filter is set
-    if (op->getType() == POpType::BLOOM_FILTER_USE) {
-      auto typedOp = std::static_pointer_cast<bloomfilter::BloomFilterUsePOp>(op);
-      if (!typedOp->receivedBloomFilter()) {
-        return false;
-      }
-    }
-  }
-
   return true;
 }
 
@@ -180,9 +164,6 @@ void FPDBStoreSuperPOp::processAtStore() {
   if (!status.ok()) {
     ctx()->notifyError(status.message());
   }
-
-  // put bloom bitmap to store if any, before sending pushdown request
-  putBloomFilterBitmapToStore();
 
   // send request to store
   auto expPlanString = serialize(false);
@@ -298,62 +279,6 @@ void FPDBStoreSuperPOp::processEmpty() {
 
 tl::expected<std::string, std::string> FPDBStoreSuperPOp::serialize(bool pretty) {
   return PhysicalPlanSerializer::serialize(subPlan_, pretty);
-}
-
-void FPDBStoreSuperPOp::putBloomFilterBitmapToStore() {
-  // make flight client and connect
-  makeDoPutFlightClient(host_, port_);
-
-  for (const auto &opIt: subPlan_->getPhysicalOps()) {
-    auto op = opIt.second;
-
-    if (op->getType() == POpType::BLOOM_FILTER_USE) {
-      auto typedOp = std::static_pointer_cast<bloomfilter::BloomFilterUsePOp>(op);
-      auto bloomFilter = typedOp->getBloomFilter();
-      if (!bloomFilter.has_value()) {
-        ctx()->notifyError(fmt::format("Bloom filter not set in BloomFilterUsePOp: '{}'", op->name()));
-      }
-
-      // only send valid bitmap for performance
-      if (!(*bloomFilter)->valid()) {
-        continue;
-      }
-
-      // send request to store
-      auto bitmap = (*bloomFilter)->getBitArray();
-      auto expRecordBatch = ArrowSerializer::bitmap_to_recordBatch(bitmap);
-      if (!expRecordBatch.has_value()) {
-        ctx()->notifyError(expRecordBatch.error());
-      }
-      auto recordBatch = *expRecordBatch;
-
-      auto cmdObj = PutBitmapCmd::make(BitmapType::BLOOM_FILTER_COMPUTE, queryId_, op->name(), true);
-      auto expCmd = cmdObj->serialize(false);
-      if (!expCmd.has_value()) {
-        ctx()->notifyError(expCmd.error());
-      }
-      auto descriptor = ::arrow::flight::FlightDescriptor::Command(*expCmd);
-      std::unique_ptr<arrow::flight::FlightStreamWriter> writer;
-      std::unique_ptr<arrow::flight::FlightMetadataReader> metadataReader;
-      auto status = (*DoPutFlightClient)->DoPut(descriptor, recordBatch->schema(), &writer, &metadataReader);
-      if (!status.ok()) {
-        ctx()->notifyError(status.message());
-      }
-
-      status = writer->WriteRecordBatch(*recordBatch);
-      if (!status.ok()) {
-        ctx()->notifyError(status.message());
-      }
-      status = writer->DoneWriting();
-      if (!status.ok()) {
-        ctx()->notifyError(status.message());
-      }
-      status = writer->Close();
-      if (!status.ok()) {
-        ctx()->notifyError(status.message());
-      }
-    }
-  }
 }
 
 void FPDBStoreSuperPOp::clear() {

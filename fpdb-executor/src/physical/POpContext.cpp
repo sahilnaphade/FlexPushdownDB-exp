@@ -3,6 +3,7 @@
 //
 
 #include <fpdb/executor/physical/POpContext.h>
+#include <fpdb/executor/physical/bloomfilter/BloomFilterUseKernel.h>
 #include <fpdb/executor/cache/SegmentCacheActor.h>
 #include <fpdb/executor/message/Message.h>
 #include <fpdb/executor/message/CompleteMessage.h>
@@ -18,8 +19,8 @@ using namespace fpdb::executor::message;
 
 namespace fpdb::executor::physical {
 
-void POpContext::tell(std::shared_ptr<Message> &msg,
-                      std::optional<std::set<std::string>> consumers) {
+void POpContext::tell(const std::shared_ptr<Message> &msg,
+                      const std::optional<std::set<std::string>> &consumers) {
   assert(this);
 
   if (complete_) {
@@ -28,32 +29,15 @@ void POpContext::tell(std::shared_ptr<Message> &msg,
                             this->operatorActor()->operator_()->name()));
   }
 
-  message::Envelope e(msg);
-
   // Send message to consumers
-  if (!consumers.has_value()) {
-    consumers = this->operatorActor()->operator_()->consumers();
-  }
-  auto bloomFilterCreatePrepareConsumer = this->operatorActor()->operator_()->getBloomFilterCreatePrepareConsumer();
-
-  for (const auto &consumer: *consumers) {
-    // Skip bloomFilterCreatePrepareConsumer
-    if (bloomFilterCreatePrepareConsumer.has_value() && *bloomFilterCreatePrepareConsumer == consumer) {
-      continue;
-    }
-
+  auto &finalConsumers = consumers.has_value() ? *consumers : this->operatorActor()->operator_()->consumers();
+  for (const auto &consumer: finalConsumers) {
     ::caf::actor actorHandle = operatorMap_.get(consumer).value().getActor();
-    operatorActor_->anon_send(actorHandle, e);
-  }
 
-  // Send tupleSet size to bloomFilterCreatePrepareConsumer if it's a tupleSet
-  if (msg->type() == MessageType::TUPLESET && bloomFilterCreatePrepareConsumer.has_value()) {
-    int64_t numRows = std::static_pointer_cast<TupleSetMessage>(msg)->tuples()->numRows();
-    std::shared_ptr<Message> tupleSetSizeMessage = std::make_shared<TupleSetSizeMessage>(numRows, msg->sender());
-    message::Envelope tupleSetSizeEnv(tupleSetSizeMessage);
+    // apply embedded bloom filter
+    auto appliedMsg = applyEmbeddedBloomFilter(msg, consumer);
 
-    ::caf::actor actorHandle = operatorMap_.get(*bloomFilterCreatePrepareConsumer).value().getActor();
-    operatorActor_->anon_send(actorHandle, tupleSetSizeEnv);
+    operatorActor_->anon_send(actorHandle, Envelope(appliedMsg));
   }
 }
 
@@ -84,9 +68,13 @@ void POpContext::send(const std::shared_ptr<message::Message> &msg, const std::s
   }
 
   auto expectedOperator = operatorMap_.get(recipientId);
-  if(expectedOperator.has_value()){
+  if (expectedOperator.has_value()){
     auto recipientOperator = expectedOperator.value();
-    operatorActor_->anon_send(recipientOperator.getActor(), e);
+
+    // apply embedded bloom filter
+    auto appliedMsg = applyEmbeddedBloomFilter(msg, recipientId);
+
+    operatorActor_->anon_send(recipientOperator.getActor(), Envelope(appliedMsg));
   } else{
   	notifyError(fmt::format("Actor with id '{}' not found", recipientId));
   }
@@ -137,8 +125,12 @@ void POpContext::notifyError(const std::string &content) {
  * Send msg to the root actor
  * @param msg
  */
-void POpContext::notifyRoot(const std::shared_ptr<message::Message> &msg) {
-  message::Envelope e(msg);
+void POpContext::notifyRoot(const std::shared_ptr<message::Message> &msg,
+                            const std::optional<std::string> &embeddedBloomFilterConsumer) {
+  // apply embedded bloom filter if needed
+  auto finalMsg = embeddedBloomFilterConsumer.has_value() ?
+                  applyEmbeddedBloomFilter(msg, *embeddedBloomFilterConsumer) : msg;
+  message::Envelope e(finalMsg);
   operatorActor_->anon_send(rootActor_, e);
 }
 
@@ -168,6 +160,50 @@ void POpContext::destroyActorHandles() {
   operatorMap_.destroyActorHandles();
   destroy(rootActor_);
   destroy(segmentCacheActor_);
+}
+
+std::shared_ptr<message::Message> POpContext::applyEmbeddedBloomFilter(const std::shared_ptr<message::Message> &msg,
+                                                                       const std::string &consumer) {
+  // check if applicable
+  if (msg->type() != MessageType::TUPLESET && msg->type() != MessageType::TUPLESET_BUFFER) {
+    return msg;
+  }
+
+  auto consumerToBloomFilterInfo = operatorActor_->operator_()->getConsumerToBloomFilterInfo();
+  if (consumerToBloomFilterInfo.empty()) {
+    return msg;
+  }
+  auto bloomFilterInfoIt = consumerToBloomFilterInfo.find(consumer);
+  if (bloomFilterInfoIt == consumerToBloomFilterInfo.end()) {
+    return msg;
+  }
+  const auto &bloomFilterInfo = bloomFilterInfoIt->second;
+  if (!bloomFilterInfo->bloomFilter_.has_value()) {
+    return msg;
+  }
+
+  // apply bloom filter to the tupleSet
+  std::shared_ptr<TupleSet> tupleSet;
+  if (msg->type() == MessageType::TUPLESET) {
+    tupleSet = std::static_pointer_cast<TupleSetMessage>(msg)->tuples();
+  } else {
+    tupleSet = std::static_pointer_cast<TupleSetBufferMessage>(msg)->tuples();
+  }
+  auto expFilteredTupleSet = bloomfilter::BloomFilterUseKernel::filter(tupleSet,
+                                                                       *bloomFilterInfo->bloomFilter_,
+                                                                       bloomFilterInfo->columnNames_);
+  if (!expFilteredTupleSet.has_value()) {
+    notifyError((expFilteredTupleSet.error()));
+  }
+
+  // return message with filtered tupleSet
+  if (msg->type() == MessageType::TUPLESET) {
+    return std::make_shared<TupleSetMessage>(*expFilteredTupleSet, msg->sender());
+  } else {
+    return std::make_shared<TupleSetBufferMessage>(*expFilteredTupleSet,
+                                                   std::static_pointer_cast<TupleSetBufferMessage>(msg)->getConsumer(),
+                                                   msg->sender());
+  }
 }
 
 } // namespace

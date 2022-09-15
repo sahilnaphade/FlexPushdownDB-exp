@@ -109,6 +109,7 @@ add_library(fpdb-executor STATIC
         src/physical/fpdb-store/FPDBStoreFileScanPOp.cpp include/fpdb/executor/physical/fpdb-store/FPDBStoreFileScanPOp.h
         src/physical/fpdb-store/FPDBStoreSuperPOpUtil.cpp include/fpdb/executor/physical/fpdb-store/FPDBStoreSuperPOpUtil.h
         src/physical/fpdb-store/FPDBStoreFilterBitmapWrapper.cpp include/fpdb/executor/physical/fpdb-store/FPDBStoreFilterBitmapWrapper.h
+        src/physical/fpdb-store/FPDBStoreBloomFilterInfo.cpp include/fpdb/executor/physical/fpdb-store/FPDBStoreBloomFilterInfo.h
 #        physical plan
         src/physical/PhysicalPlan.cpp include/fpdb/executor/physical/PhysicalPlan.h
         src/physical/prune/PartitionPruner.cpp include/fpdb/executor/physical/prune/PartitionPruner.h

@@ -320,34 +320,18 @@ tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::
   for (const auto &op_it: physical_plan->getPhysicalOps()) {
     auto op = op_it.second;
 
-    // for each BloomFilterUsePOp, wait until its bitmap is ready
-    if (op->getType() == POpType::BLOOM_FILTER_USE) {
-      auto typedOp = std::static_pointer_cast<bloomfilter::BloomFilterUsePOp>(op);
-      auto bloomFilter = typedOp->getBloomFilter();
-      if (!bloomFilter.has_value()) {
-        return tl::make_unexpected(
-                MakeFlightError(FlightStatusCode::Failed,
-                                fmt::format("Bloom filter not set in BloomFilterUsePOp: '{}'", op->name())));
-      }
-
-      // skip invalid bloom filter
-      if (!(*bloomFilter)->valid()) {
-        continue;
-      }
-
-      // wait for bitmap ready
-      auto bitmap_key = cache::BitmapCache::generateBitmapKey(query_id, op->name());
-      auto bitmap = get_bitmap_from_cache(bitmap_key, BitmapType::BLOOM_FILTER_COMPUTE);
-      if (!bitmap.has_value()) {
-        return tl::make_unexpected(
-                MakeFlightError(FlightStatusCode::Failed,
-                                fmt::format("Bloom filter bitmap with key '{}' is not valid", bitmap_key)));
-      }
-      (*bloomFilter)->setBitArray(*bitmap);
+    // for each op, wait until its embedded bloom filters are ready, if any
+    const auto &consumerToBloomFilterInfo = op->getConsumerToBloomFilterInfo();
+    for (const auto &consumerToBloomFilterIt: consumerToBloomFilterInfo) {
+      auto bloomFilterInfo = consumerToBloomFilterIt.second;
+      auto bloomFilterKey = cache::BloomFilterCache::generateBloomFilterKey(query_id,
+                                                                            bloomFilterInfo->bloomFilterCreatePOp_);
+      bloomFilterInfo->bloomFilter_ = get_bloom_filter_from_cache(bloomFilterKey);
+      int a = 1;
     }
 
     // for each filter with bitmap pushdown enabled, wait until its bitmap is ready
-    else if (op->getType() == POpType::FILTER) {
+    if (op->getType() == POpType::FILTER) {
       auto typedOp = std::static_pointer_cast<filter::FilterPOp>(op);
       if (!typedOp->isBitmapPushdownEnabled()) {
         continue;
@@ -478,9 +462,8 @@ tl::expected<void, ::arrow::Status>
 FlightHandler::do_put_put_bitmap(const ServerCallContext&,
                                  const std::shared_ptr<PutBitmapCmd>& put_bitmap_cmd,
                                  const std::unique_ptr<FlightMessageReader> &reader) {
-  // bitmap key
-  auto bitmap_key = cache::BitmapCache::generateBitmapKey(put_bitmap_cmd->query_id(), put_bitmap_cmd->op());
-  auto valid = put_bitmap_cmd->valid();
+  // bitmap type
+  auto bitmap_type = put_bitmap_cmd->bitmap_type();
 
   // bitmap
   ::arrow::RecordBatchVector recordBatches;
@@ -488,7 +471,6 @@ FlightHandler::do_put_put_bitmap(const ServerCallContext&,
   if (!status.ok()) {
     return tl::make_unexpected(status);
   }
-
   if (recordBatches.size() != 1) {
     return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed,
                                                "Bitmap recordBatch stream should only contain one recordBatch"));
@@ -498,8 +480,40 @@ FlightHandler::do_put_put_bitmap(const ServerCallContext&,
     return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed, exp_bitmap.error()));
   }
 
-  // put bitmap
-  put_bitmap_into_cache(bitmap_key, *exp_bitmap, put_bitmap_cmd->bitmap_type(), valid);
+  // treat filter bitmap and bloom filter bitmap separately
+  if (bitmap_type == BitmapType::BLOOM_FILTER_COMPUTE) {
+    // num copies and bloom filter
+    auto num_copies = put_bitmap_cmd->num_copies();
+    if (!num_copies.has_value()) {
+      return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed,
+                                                 "Num copies not set when putting bloom filter bitmap"));
+    }
+    auto bloom_filter_jobj = put_bitmap_cmd->bloom_filter();
+    if (!bloom_filter_jobj.has_value()) {
+      return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed,
+                                                 "Bloom filter not set when putting bloom filter bitmap"));
+    }
+    auto exp_bloom_filter = BloomFilter::fromJson(*bloom_filter_jobj);
+    if (!exp_bloom_filter.has_value()) {
+      return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed, exp_bloom_filter.error()));
+    }
+    auto bloom_filter = *exp_bloom_filter;
+    bloom_filter->setBitArray(*exp_bitmap);
+
+    // bloom filter key
+    auto bloom_filter_key =
+            cache::BloomFilterCache::generateBloomFilterKey(put_bitmap_cmd->query_id(), put_bitmap_cmd->op());
+
+    // put bloom filter
+    put_bloom_filter_into_cache(bloom_filter_key, bloom_filter, *num_copies);
+  } else {
+    // bitmap key
+    auto bitmap_key = cache::BitmapCache::generateBitmapKey(put_bitmap_cmd->query_id(), put_bitmap_cmd->op());
+    auto valid = put_bitmap_cmd->valid();
+
+    // put bitmap
+    put_bitmap_into_cache(bitmap_key, *exp_bitmap, put_bitmap_cmd->bitmap_type(), valid);
+  }
 
   return {};
 }
@@ -519,9 +533,9 @@ FlightHandler::do_put_clear_bitmap(const ServerCallContext&,
 std::optional<std::vector<int64_t>> FlightHandler::get_bitmap_from_cache(const std::string &key,
                                                                          BitmapType bitmap_type) {
   // get corresponding vars
-  auto& bitmap_cache = bitmap_cache_map[bitmap_type];
-  auto& bitmap_mutex = bitmap_mutex_map[bitmap_type];
-  auto& bitmap_cvs = bitmap_cvs_map[bitmap_type];
+  auto& bitmap_cache = bitmap_cache_map_[bitmap_type];
+  auto& bitmap_mutex = bitmap_mutex_map_[bitmap_type];
+  auto& bitmap_cvs = bitmap_cvs_map_[bitmap_type];
 
   // get bitmap until it's ready
   std::unique_lock lock(*bitmap_mutex);
@@ -539,14 +553,41 @@ std::optional<std::vector<int64_t>> FlightHandler::get_bitmap_from_cache(const s
   return *exp_bitmap;
 }
 
+std::shared_ptr<BloomFilter> FlightHandler::get_bloom_filter_from_cache(const std::string &key) {
+  // get corresponding vars
+  auto& bitmap_mutex = bitmap_mutex_map_[BitmapType::BLOOM_FILTER_COMPUTE];
+  auto& bitmap_cvs = bitmap_cvs_map_[BitmapType::BLOOM_FILTER_COMPUTE];
+
+  // get bloom filter until it's ready
+  std::unique_lock lock(*bitmap_mutex);
+
+  tl::expected<std::shared_ptr<BloomFilter>, std::string> exp_bloom_filter;
+  std::shared_ptr<std::condition_variable_any> cv;
+  auto cvIt = bitmap_cvs.find(key);
+  if (cvIt != bitmap_cvs.end()) {
+    cv = cvIt->second;
+  } else {
+    cv = std::make_shared<std::condition_variable_any>();
+    bitmap_cvs[key] = cv;
+  }
+
+  cv->wait(lock, [&] {
+    exp_bloom_filter = bloom_filter_cache_.consumeBloomFilter(key);
+    return exp_bloom_filter.has_value();
+  });
+
+  bitmap_cvs.erase(key);
+  return *exp_bloom_filter;
+}
+
 void FlightHandler::put_bitmap_into_cache(const std::string &key,
                                           const std::vector<int64_t> &bitmap,
                                           BitmapType bitmap_type,
                                           bool valid) {
   // get corresponding vars
-  auto& bitmap_cache = bitmap_cache_map[bitmap_type];
-  auto& bitmap_mutex = bitmap_mutex_map[bitmap_type];
-  auto& bitmap_cvs = bitmap_cvs_map[bitmap_type];
+  auto& bitmap_cache = bitmap_cache_map_[bitmap_type];
+  auto& bitmap_mutex = bitmap_mutex_map_[bitmap_type];
+  auto& bitmap_cvs = bitmap_cvs_map_[bitmap_type];
 
   // put bitmap
   bitmap_cache->produceBitmap(key, bitmap, valid);
@@ -559,13 +600,33 @@ void FlightHandler::put_bitmap_into_cache(const std::string &key,
   bitmap_mutex->unlock();
 }
 
+void FlightHandler::put_bloom_filter_into_cache(const std::string &key,
+                                                const std::shared_ptr<BloomFilter> &bloom_filter,
+                                                int num_copies) {
+  // get corresponding vars
+  auto& bitmap_mutex = bitmap_mutex_map_[BitmapType::BLOOM_FILTER_COMPUTE];
+  auto& bitmap_cvs = bitmap_cvs_map_[BitmapType::BLOOM_FILTER_COMPUTE];
+
+  // put bloom filter
+  bloom_filter_cache_.produceBloomFilter(key, bloom_filter, num_copies);
+
+  bitmap_mutex->lock();
+  auto cvIt = bitmap_cvs.find(key);
+  if (cvIt != bitmap_cvs.end()) {
+    cvIt->second->notify_all();
+  }
+  bitmap_mutex->unlock();
+}
+
 void FlightHandler::init_bitmap_cache() {
   auto bitmap_types = {BitmapType::FILTER_COMPUTE, BitmapType::FILTER_STORAGE, BitmapType::BLOOM_FILTER_COMPUTE};
 
   for (auto bitmap_type: bitmap_types) {
-    bitmap_cache_map[bitmap_type] = std::make_shared<BitmapCache>();
-    bitmap_mutex_map[bitmap_type] = std::make_shared<std::mutex>();
-    bitmap_cvs_map[bitmap_type] = std::unordered_map<std::string, std::shared_ptr<std::condition_variable_any>>();
+    if (bitmap_type != BitmapType::BLOOM_FILTER_COMPUTE) {
+      bitmap_cache_map_[bitmap_type] = std::make_shared<BitmapCache>();
+    }
+    bitmap_mutex_map_[bitmap_type] = std::make_shared<std::mutex>();
+    bitmap_cvs_map_[bitmap_type] = std::unordered_map<std::string, std::shared_ptr<std::condition_variable_any>>();
   }
 }
 

@@ -25,34 +25,6 @@ tl::expected<shared_ptr<PhysicalOp>, string> PhysicalPlan::getPhysicalOp(const s
   }
 }
 
-tl::expected<void, string> PhysicalPlan::addAsLast(shared_ptr<PhysicalOp> &op) {
-  // check exist
-  if (physicalOps_.find(op->name()) != physicalOps_.end()) {
-    return tl::make_unexpected(fmt::format("Operator '{}' already exists in the physical plan", op->name()));
-  }
-
-  // find root
-  auto expRootPOp = getRootPOp();
-  if (!expRootPOp.has_value()) {
-    return tl::make_unexpected(expRootPOp.error());
-  }
-  auto rootPOp = *expRootPOp;
-
-  // add before root
-  std::vector<std::shared_ptr<PhysicalOp>> rootProducers;
-  for (const auto &producerName: rootPOp->producers()) {
-    auto producer = physicalOps_.find(producerName)->second;
-    rootProducers.emplace_back(producer);
-    producer->unProduce(rootPOp);
-    rootPOp->unConsume(producer);
-  }
-  PrePToPTransformerUtil::connectManyToOne(rootProducers, op);
-  PrePToPTransformerUtil::connectOneToOne(op, rootPOp);
-  
-  physicalOps_.emplace(op->name(), op);
-  return {};
-}
-
 tl::expected<shared_ptr<PhysicalOp>, string> PhysicalPlan::getRootPOp() const {
   auto rootPOpIt = physicalOps_.find(rootPOpName_);
   if (rootPOpIt != physicalOps_.end()) {
@@ -98,6 +70,46 @@ tl::expected<void, string> PhysicalPlan::renamePOp(const string oldName, const s
     consumerOp->reConsume(oldName, newName);
   }
 
+  return {};
+}
+
+tl::expected<shared_ptr<PhysicalOp>, string> PhysicalPlan::getLast() {
+  auto expRootOp = getRootPOp();
+  if (!expRootOp.has_value()) {
+    return tl::make_unexpected(expRootOp.error());
+  }
+  auto rootOpProducers = (*expRootOp)->producers();
+  if (rootOpProducers.size() != 1) {
+    return tl::make_unexpected("root op does not have exactly 1 producer");
+  }
+  return getPhysicalOp(*rootOpProducers.begin());
+}
+
+tl::expected<void, string> PhysicalPlan::addAsLast(shared_ptr<PhysicalOp> &op) {
+  // check exist
+  if (physicalOps_.find(op->name()) != physicalOps_.end()) {
+    return tl::make_unexpected(fmt::format("Operator '{}' already exists in the physical plan", op->name()));
+  }
+
+  // find root
+  auto expRootPOp = getRootPOp();
+  if (!expRootPOp.has_value()) {
+    return tl::make_unexpected(expRootPOp.error());
+  }
+  auto rootPOp = *expRootPOp;
+
+  // add before root
+  std::vector<std::shared_ptr<PhysicalOp>> rootProducers;
+  for (const auto &producerName: rootPOp->producers()) {
+    auto producer = physicalOps_.find(producerName)->second;
+    rootProducers.emplace_back(producer);
+    producer->unProduce(rootPOp);
+    rootPOp->unConsume(producer);
+  }
+  PrePToPTransformerUtil::connectManyToOne(rootProducers, op);
+  PrePToPTransformerUtil::connectOneToOne(op, rootPOp);
+
+  physicalOps_.emplace(op->name(), op);
   return {};
 }
 

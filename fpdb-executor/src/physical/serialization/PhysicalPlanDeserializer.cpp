@@ -70,8 +70,6 @@ PhysicalPlanDeserializer::deserializeDfs(const ::nlohmann::json &jObj, bool isRo
     return deserializeProjectPOp(jObj);
   } else if (type == "AggregatePOp") {
     return deserializeAggregatePOp(jObj);
-  } else if (type == "BloomFilterUsePOp") {
-    return deserializeBloomFilterUsePOp(jObj);
   } else if (type == "ShufflePOp") {
     return deserializeShufflePOp(jObj);
   } else if (type == "CollatePOp") {
@@ -110,6 +108,7 @@ PhysicalPlanDeserializer::deserializeFPDBStoreFileScanPOp(const ::nlohmann::json
   auto name = std::get<0>(commonTuple);
   auto projectColumnNames = std::get<1>(commonTuple);
   auto isSeparated = std::get<2>(commonTuple);
+  auto consumerToBloomFilterInfo = std::get<3>(commonTuple);
 
   if (!jObj.contains("bucket")) {
     return tl::make_unexpected(fmt::format("Bucket not specified in FileScanPOp JSON '{}'", jObj));
@@ -165,6 +164,7 @@ PhysicalPlanDeserializer::deserializeFPDBStoreFileScanPOp(const ::nlohmann::json
                                                                                                     fileSize,
                                                                                                     byteRange);
   storeFileScanPOp->setSeparated(isSeparated);
+  storeFileScanPOp->setConsumerToBloomFilterInfo(consumerToBloomFilterInfo);
   physicalOps_.emplace(storeFileScanPOp->name(), storeFileScanPOp);
   
   // deserialize producers
@@ -190,6 +190,7 @@ PhysicalPlanDeserializer::deserializeFilterPOp(const ::nlohmann::json &jObj) {
   auto name = std::get<0>(commonTuple);
   auto projectColumnNames = std::get<1>(commonTuple);
   auto isSeparated = std::get<2>(commonTuple);
+  auto consumerToBloomFilterInfo = std::get<3>(commonTuple);
 
   if (!jObj.contains("predicate")) {
     return tl::make_unexpected(fmt::format("Predicate not specified in FilterPOp JSON '{}'", jObj));
@@ -205,6 +206,7 @@ PhysicalPlanDeserializer::deserializeFilterPOp(const ::nlohmann::json &jObj) {
                                                                               0,
                                                                               predicate);
   filterPOp->setSeparated(isSeparated);
+  filterPOp->setConsumerToBloomFilterInfo(consumerToBloomFilterInfo);
   physicalOps_.emplace(filterPOp->name(), filterPOp);
 
   if (jObj.contains("bitmapWrapper")) {
@@ -238,6 +240,7 @@ PhysicalPlanDeserializer::deserializeProjectPOp(const ::nlohmann::json &jObj) {
   auto name = std::get<0>(commonTuple);
   auto projectColumnNames = std::get<1>(commonTuple);
   auto isSeparated = std::get<2>(commonTuple);
+  auto consumerToBloomFilterInfo = std::get<3>(commonTuple);
 
   if (!jObj.contains("exprs")) {
     return tl::make_unexpected(fmt::format("Exprs not specified in ProjectPOp JSON '{}'", jObj));
@@ -269,6 +272,7 @@ PhysicalPlanDeserializer::deserializeProjectPOp(const ::nlohmann::json &jObj) {
                                                                                  exprNames,
                                                                                  projectColumnPairs);
   projectPOp->setSeparated(isSeparated);
+  projectPOp->setConsumerToBloomFilterInfo(consumerToBloomFilterInfo);
   physicalOps_.emplace(projectPOp->name(), projectPOp);
 
   // deserialize producers
@@ -294,6 +298,7 @@ PhysicalPlanDeserializer::deserializeAggregatePOp(const ::nlohmann::json &jObj) 
   auto name = std::get<0>(commonTuple);
   auto projectColumnNames = std::get<1>(commonTuple);
   auto isSeparated = std::get<2>(commonTuple);
+  auto consumerToBloomFilterInfo = std::get<3>(commonTuple);
 
   if (!jObj.contains("functions")) {
     return tl::make_unexpected(fmt::format("Aggregate functions not specified in AggregatePOp JSON '{}'", jObj));
@@ -313,6 +318,7 @@ PhysicalPlanDeserializer::deserializeAggregatePOp(const ::nlohmann::json &jObj) 
                                                                                        0,
                                                                                        functions);
   aggregatePOp->setSeparated(isSeparated);
+  aggregatePOp->setConsumerToBloomFilterInfo(consumerToBloomFilterInfo);
   physicalOps_.emplace(aggregatePOp->name(), aggregatePOp);
 
   // deserialize producers
@@ -328,52 +334,6 @@ PhysicalPlanDeserializer::deserializeAggregatePOp(const ::nlohmann::json &jObj) 
 }
 
 tl::expected<std::shared_ptr<PhysicalOp>, std::string>
-PhysicalPlanDeserializer::deserializeBloomFilterUsePOp(const ::nlohmann::json &jObj) {
-  // deserialize self
-  auto expCommonTuple = deserializePOpCommon(jObj);
-  if (!expCommonTuple.has_value()) {
-    return tl::make_unexpected(expCommonTuple.error());
-  }
-  auto commonTuple = *expCommonTuple;
-  auto name = std::get<0>(commonTuple);
-  auto projectColumnNames = std::get<1>(commonTuple);
-  auto isSeparated = std::get<2>(commonTuple);
-
-  if (!jObj.contains("bloomFilterColumnNames")) {
-    return tl::make_unexpected(fmt::format("BloomFilterColumnNames not specified in BloomFilterUsePOp JSON '{}'", jObj));
-  }
-  auto bloomFilterColumnNames = jObj["bloomFilterColumnNames"].get<std::vector<std::string>>();
-
-  if (!jObj.contains("bloomFilter")) {
-    return tl::make_unexpected(fmt::format("BloomFilter not specified in BloomFilterUsePOp JSON '{}'", jObj));
-  }
-  auto expBloomFilter = BloomFilter::fromJson(jObj["bloomFilter"]);
-  if (!expBloomFilter.has_value()) {
-    return tl::make_unexpected(expBloomFilter.error());
-  }
-  auto bloomFilter = *expBloomFilter;
-
-  std::shared_ptr<PhysicalOp> bloomFilterUsePOp = std::make_shared<bloomfilter::BloomFilterUsePOp>(name,
-                                                                                                   projectColumnNames,
-                                                                                                   0,
-                                                                                                   bloomFilterColumnNames,
-                                                                                                   bloomFilter);
-  bloomFilterUsePOp->setSeparated(isSeparated);
-  physicalOps_.emplace(bloomFilterUsePOp->name(), bloomFilterUsePOp);
-
-  // deserialize producers
-  auto expProducers = deserializeProducers(jObj);
-  if (!expProducers.has_value()) {
-    return tl::make_unexpected(expProducers.error());
-  }
-
-  // connect
-  PrePToPTransformerUtil::connectManyToOne(*expProducers, bloomFilterUsePOp);
-
-  return bloomFilterUsePOp;
-}
-
-tl::expected<std::shared_ptr<PhysicalOp>, std::string>
 PhysicalPlanDeserializer::deserializeShufflePOp(const ::nlohmann::json &jObj) {
   // deserialize self
   auto expCommonTuple = deserializePOpCommon(jObj);
@@ -384,6 +344,7 @@ PhysicalPlanDeserializer::deserializeShufflePOp(const ::nlohmann::json &jObj) {
   auto name = std::get<0>(commonTuple);
   auto projectColumnNames = std::get<1>(commonTuple);
   auto isSeparated = std::get<2>(commonTuple);
+  auto consumerToBloomFilterInfo = std::get<3>(commonTuple);
 
   if (!jObj.contains("shuffleColumnNames")) {
     return tl::make_unexpected(fmt::format("ShuffleColumnNames not specified in ShufflePOp JSON '{}'", jObj));
@@ -401,6 +362,7 @@ PhysicalPlanDeserializer::deserializeShufflePOp(const ::nlohmann::json &jObj) {
                                                                                  shuffleColumnNames,
                                                                                  consumerVec);
   shufflePOp->setSeparated(isSeparated);
+  shufflePOp->setConsumerToBloomFilterInfo(consumerToBloomFilterInfo);
   physicalOps_.emplace(shufflePOp->name(), shufflePOp);
 
   // deserialize producers
@@ -426,12 +388,14 @@ PhysicalPlanDeserializer::deserializeCollatePOp(const ::nlohmann::json &jObj) {
   auto name = std::get<0>(commonTuple);
   auto projectColumnNames = std::get<1>(commonTuple);
   auto isSeparated = std::get<2>(commonTuple);
+  auto consumerToBloomFilterInfo = std::get<3>(commonTuple);
 
   std::shared_ptr<PhysicalOp> collatePOp = std::make_shared<fpdb::executor::physical::collate::CollatePOp>(
           name,
           projectColumnNames,
           0);
   collatePOp->setSeparated(isSeparated);
+  collatePOp->setConsumerToBloomFilterInfo(consumerToBloomFilterInfo);
   physicalOps_.emplace(collatePOp->name(), collatePOp);
 
   // deserialize producers
@@ -458,7 +422,11 @@ PhysicalPlanDeserializer::deserializeCollatePOp(const ::nlohmann::json &jObj) {
   return collatePOp;
 }
 
-tl::expected<std::tuple<std::string, std::vector<std::string>, bool>, std::string>
+tl::expected<std::tuple<std::string,
+                        std::vector<std::string>,
+                        bool,
+                        std::unordered_map<std::string, std::shared_ptr<fpdb_store::FPDBStoreBloomFilterUseInfo>>>,
+             std::string>
 PhysicalPlanDeserializer::deserializePOpCommon(const ::nlohmann::json &jObj) {
   if (!jObj.contains("name")) {
     return tl::make_unexpected(fmt::format("Name not specified in physical operator JSON '{}'", jObj));
@@ -475,7 +443,24 @@ PhysicalPlanDeserializer::deserializePOpCommon(const ::nlohmann::json &jObj) {
   }
   auto isSeparated = jObj["isSeparated"].get<bool>();
 
-  return std::tuple<std::string, std::vector<std::string>, bool>{name, projectColumnNames, isSeparated};
+  if (!jObj.contains("consumerToBloomFilterInfo")) {
+    return tl::make_unexpected(
+            fmt::format("ConsumerToBloomFilterInfo not specified in physical operator JSON '{}'", jObj));
+  }
+  std::unordered_map<std::string, std::shared_ptr<fpdb_store::FPDBStoreBloomFilterUseInfo>> consumerToBloomFilterInfo;
+  const auto &consumerToBloomFilterInfoJMap =
+          jObj["consumerToBloomFilterInfo"].get<std::unordered_map<std::string, json>>();
+  for (const auto &consumerToBloomFilterInfoJIt: consumerToBloomFilterInfoJMap) {
+    auto expBloomFilterInfo = fpdb_store::FPDBStoreBloomFilterUseInfo::fromJson(consumerToBloomFilterInfoJIt.second);
+    if (!expBloomFilterInfo.has_value()) {
+      return tl::make_unexpected(expBloomFilterInfo.error());
+    }
+    consumerToBloomFilterInfo.emplace(consumerToBloomFilterInfoJIt.first, *expBloomFilterInfo);
+  }
+
+  return std::tuple<std::string, std::vector<std::string>, bool,
+                    std::unordered_map<std::string, std::shared_ptr<fpdb_store::FPDBStoreBloomFilterUseInfo>>>
+                    {name, projectColumnNames, isSeparated, consumerToBloomFilterInfo};
 }
 
 }

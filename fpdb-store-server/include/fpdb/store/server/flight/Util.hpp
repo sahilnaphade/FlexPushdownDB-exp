@@ -17,7 +17,9 @@ static constexpr std::string_view FPDBStoreSuperPOpJSONName = "fpdb_store_super_
 static constexpr std::string_view QueryPlanJSONName = "query_plan";
 static constexpr std::string_view OpJSONName = "op";
 static constexpr std::string_view ValidJSONName = "valid";
-static constexpr std::string_view BitmapTypeName = "bitmap_type";
+static constexpr std::string_view BitmapTypeJSONName = "bitmap_type";
+static constexpr std::string_view NumCopiesJSONName = "num_copies";
+static constexpr std::string_view BloomFilterJSONName = "bloom_filter";
 static constexpr std::string_view ProducerJSONName = "producer";;
 static constexpr std::string_view ConsumerJSONName = "consumer";
 

@@ -48,8 +48,6 @@ tl::expected<json, std::string> PhysicalPlanSerializer::serializeDfs(const std::
       return serializeProjectPOp(std::static_pointer_cast<project::ProjectPOp>(op));
     case POpType::AGGREGATE:
       return serializeAggregatePOp(std::static_pointer_cast<aggregate::AggregatePOp>(op));
-    case POpType::BLOOM_FILTER_USE:
-      return serializeBloomFilterUsePOp(std::static_pointer_cast<bloomfilter::BloomFilterUsePOp>(op));
     case POpType::SHUFFLE:
       return serializeShufflePOp(std::static_pointer_cast<shuffle::ShufflePOp>(op));
     case POpType::COLLATE:
@@ -174,28 +172,6 @@ PhysicalPlanSerializer::serializeAggregatePOp(const std::shared_ptr<aggregate::A
 }
 
 tl::expected<::nlohmann::json, std::string>
-PhysicalPlanSerializer::serializeBloomFilterUsePOp(const std::shared_ptr<bloomfilter::BloomFilterUsePOp> &bloomFilterUsePOp) {
-  // serialize self
-  auto jObj = serializePOpCommon(bloomFilterUsePOp);
-  jObj.emplace("bloomFilterColumnNames", bloomFilterUsePOp->getBloomFilterColumnNames());
-
-  auto bloomFilter = bloomFilterUsePOp->getBloomFilter();
-  if (!bloomFilter.has_value()) {
-    return tl::make_unexpected(fmt::format("Bloom filter not set in BloomFilterUsePOp: '{}'", bloomFilterUsePOp->name()));
-  }
-  jObj.emplace("bloomFilter", (*bloomFilter)->toJson());
-
-  // serialize producers
-  auto expProducersJObj = serializeProducers(bloomFilterUsePOp);
-  if (!expProducersJObj.has_value()) {
-    return tl::make_unexpected(expProducersJObj.error());
-  }
-  jObj.emplace("inputs", *expProducersJObj);
-
-  return jObj;
-}
-
-tl::expected<::nlohmann::json, std::string>
 PhysicalPlanSerializer::serializeShufflePOp(const std::shared_ptr<shuffle::ShufflePOp> &shufflePOp) {
   // serialize self
   auto jObj = serializePOpCommon(shufflePOp);
@@ -233,6 +209,14 @@ PhysicalPlanSerializer::serializeCollatePOp(const std::shared_ptr<collate::Colla
   jObj.emplace("name", op->name());
   jObj.emplace("projectColumnNames", op->getProjectColumnNames());
   jObj.emplace("isSeparated", op->isSeparated());
+
+  std::unordered_map<std::string, json> consumerToBloomFilterInfoJMap;
+  for (const auto &consumerToBloomFilterInfoIt: op->getConsumerToBloomFilterInfo()) {
+    consumerToBloomFilterInfoJMap.emplace(consumerToBloomFilterInfoIt.first,
+                                          consumerToBloomFilterInfoIt.second->toJson());
+  }
+  jObj.emplace("consumerToBloomFilterInfo", consumerToBloomFilterInfoJMap);
+
   return jObj;
 }
 

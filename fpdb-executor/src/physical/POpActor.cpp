@@ -6,6 +6,7 @@
 #include <fpdb/executor/message/StartMessage.h>
 #include <fpdb/executor/message/ConnectMessage.h>
 #include <fpdb/executor/message/CompleteMessage.h>
+#include <fpdb/executor/metrics/Globals.h>
 #include <fpdb/store/server/flight/GetTableTicket.hpp>
 #include <arrow/flight/api.h>
 #include <spdlog/spdlog.h>
@@ -101,6 +102,14 @@ void POpActor::on_regular_message(const fpdb::executor::message::Envelope &msg) 
   if (msg.message().type() == MessageType::TUPLESET_READY_REMOTE) {
     const auto &typedMessage = dynamic_cast<const TupleSetReadyRemoteMessage &>(msg.message());
     auto tupleSet = read_table_from_fpdb_store(typedMessage.getHost(), typedMessage.getPort(), typedMessage.sender());
+
+    // metrics
+#if SHOW_DEBUG_METRICS == true
+    std::shared_ptr<Message> execMetricsMsg =
+            std::make_shared<DebugMetricsMessage>(tupleSet->size(), opBehaviour_->name());
+    opBehaviour_->ctx()->notifyRoot(execMetricsMsg);
+#endif
+
     std::shared_ptr<Message> tupleSetMessage = std::make_shared<TupleSetMessage>(tupleSet, typedMessage.sender());
     on_regular_message(Envelope(tupleSetMessage));
     return;

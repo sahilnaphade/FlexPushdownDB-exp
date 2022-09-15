@@ -22,6 +22,7 @@
 #include "fpdb/store/server/flight/BitmapType.h"
 #include "fpdb/store/server/caf/ActorManager.hpp"
 #include "fpdb/store/server/cache/BitmapCache.hpp"
+#include "fpdb/store/server/cache/BloomFilterCache.hpp"
 #include "fpdb/store/server/cache/TableCache.hpp"
 
 using namespace fpdb::store::server::cache;
@@ -269,6 +270,13 @@ private:
   /**
    *
    * @param key
+   * @return
+   */
+  std::shared_ptr<BloomFilter> get_bloom_filter_from_cache(const std::string &key);
+
+  /**
+   *
+   * @param key
    * @param bitmap
    * @param bitmap_type
    * @param valid
@@ -277,6 +285,16 @@ private:
                              const std::vector<int64_t> &bitmap,
                              BitmapType bitmap_type,
                              bool valid);
+
+  /**
+   *
+   * @param key
+   * @param bloom_filter
+   * @param num_copies
+   */
+  void put_bloom_filter_into_cache(const std::string &key,
+                                   const std::shared_ptr<BloomFilter> &bloom_filter,
+                                   int num_copies);
 
   /**
    * init bitmap caches, as well as mutex and cond_var used for them
@@ -295,14 +313,19 @@ private:
   std::string store_root_path_;
   std::shared_ptr<::caf::actor_system> actor_system_;
 
-  // bitmap caches for different bitmap types
-  std::unordered_map<BitmapType, std::shared_ptr<BitmapCache>> bitmap_cache_map;
-  std::unordered_map<BitmapType, std::shared_ptr<std::mutex>> bitmap_mutex_map;
-  std::unordered_map<BitmapType,
-          std::unordered_map<std::string, std::shared_ptr<std::condition_variable_any>>> bitmap_cvs_map;
+  // bitmap caches for FILTER_COMPUTE and FILTER_STORAGE
+  std::unordered_map<BitmapType, std::shared_ptr<BitmapCache>> bitmap_cache_map_;
+
+  // bloom filter cache
+  BloomFilterCache bloom_filter_cache_;
 
   // table cache (e.x. for shuffle result)
   TableCache table_cache_;
+
+  // mutex and cv for bitmap caches and bloom filter cache
+  std::unordered_map<BitmapType, std::shared_ptr<std::mutex>> bitmap_mutex_map_;
+  std::unordered_map<BitmapType,
+          std::unordered_map<std::string, std::shared_ptr<std::condition_variable_any>>> bitmap_cvs_map_;
 };
 
 } // namespace fpdb::store::server::flight

@@ -123,7 +123,7 @@ tl::expected<void, string> ShufflePOp::send(int partitionIndex, bool force) {
     } else {
       // If at storage side, send tupleSet to the root to buffer it
       shared_ptr<Message> tupleSetBufferMessage = make_shared<TupleSetBufferMessage>(tupleSet, consumer, name_);
-      ctx()->notifyRoot(tupleSetBufferMessage);
+      ctx()->notifyRoot(tupleSetBufferMessage, consumer);
     }
     buffers_[partitionIndex] = nullopt;
   }
