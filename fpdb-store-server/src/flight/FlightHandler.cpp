@@ -327,7 +327,6 @@ tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::
       auto bloomFilterKey = cache::BloomFilterCache::generateBloomFilterKey(query_id,
                                                                             bloomFilterInfo->bloomFilterCreatePOp_);
       bloomFilterInfo->bloomFilter_ = get_bloom_filter_from_cache(bloomFilterKey);
-      int a = 1;
     }
 
     // for each filter with bitmap pushdown enabled, wait until its bitmap is ready

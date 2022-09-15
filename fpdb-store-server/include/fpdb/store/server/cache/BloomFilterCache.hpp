@@ -30,8 +30,9 @@ public:
   void produceBloomFilter(const std::string &key, const std::shared_ptr<BloomFilter> &bloomFilter, int num_copies);
 
 private:
-  std::unordered_map<std::string, std::shared_ptr<BloomFilter>> bloom_filters_;
-  std::unordered_map<std::string, int> counters_;   // when reaching 0, the corresponding bloom filter will be deleted
+  // bloom filter is in the form of <bloom filter, counter>,
+  // when the counter reaches 0, the bloom filter will be deleted
+  std::unordered_map<std::string, std::pair<std::shared_ptr<BloomFilter>, int>> bloom_filters_;
   std::shared_mutex mutex_;
 
 };

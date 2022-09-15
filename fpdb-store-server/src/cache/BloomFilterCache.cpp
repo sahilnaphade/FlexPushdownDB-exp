@@ -14,19 +14,11 @@ std::string BloomFilterCache::generateBloomFilterKey(long queryId, const std::st
 tl::expected<std::shared_ptr<BloomFilter>, std::string> BloomFilterCache::consumeBloomFilter(const std::string &key) {
   std::unique_lock lock(mutex_);
 
-  auto bloomFilterIt = bloom_filters_.find(key);
+  const auto &bloomFilterIt = bloom_filters_.find(key);
   if (bloomFilterIt != bloom_filters_.end()) {
-    auto bloomFilter = bloomFilterIt->second;
-    auto countIt = counters_.find(key);
-    if (countIt == counters_.end()) {
-      return tl::make_unexpected(fmt::format("Counter with key '{}' not found in the bloom filter cache", key));
-    }
-    int count = countIt->second - 1;
-    if (count <= 0) {
+    auto bloomFilter = bloomFilterIt->second.first;
+    if (--bloomFilterIt->second.second <= 0) {
       bloom_filters_.erase(bloomFilterIt);
-      counters_.erase(countIt);
-    } else {
-      counters_[key] = count;
     }
     return bloomFilter;
   } else {
@@ -38,8 +30,7 @@ void BloomFilterCache::produceBloomFilter(
         const std::string &key, const std::shared_ptr<BloomFilter> &bloomFilter, int num_copies) {
   std::unique_lock lock(mutex_);
 
-  bloom_filters_[key] = bloomFilter;
-  counters_[key] = num_copies;
+  bloom_filters_[key] = {bloomFilter, num_copies};
 }
 
 }
