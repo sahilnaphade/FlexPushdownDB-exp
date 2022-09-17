@@ -15,24 +15,16 @@ do
   check_or_add_to_known_hosts "$node_ip"
 done
 
-# download data on each storage node, for downloading each dir, nodes can do in parallel
-for data_relative_dir in "${data_relative_dirs[@]}"
+# download data on each storage node in parallel
+pids=()
+for node_ip in "${node_ips[@]}"
 do
-  printf "Downloading data for dir: %s\n\n" "$data_relative_dir"
+  run_command "$pem_path" "$node_ip" "$this_file_dir""/prepare_data_from_s3.sh" "${data_relative_dirs[@]}" "&"
+  pids[${#pids[@]}]=$!
+done
 
-  # download in parallel
-  pids=()
-  for node_ip in "${node_ips[@]}"
-  do
-    printf "  Downloading data for node: %s\n" "$node_ip"
-    run_command "$pem_path" "$node_ip" "$this_file_dir""/prepare_data_from_s3.sh" "$data_relative_dir" "&"
-    pids[${#pids[@]}]=$!
-  done
-
-  # wait
-  for pid in "${pids[@]}"
-  do
-      wait $pid
-  done
-  printf "Downloaded data for dir: %s\n\n" "$data_relative_dir"
+# wait
+for pid in "${pids[@]}"
+do
+    wait $pid
 done

@@ -3,7 +3,7 @@
 # need aws credentials already set
 
 # input parameters
-data_relative_dirs=$1       # e.g. ("tpch-sf10")
+data_relative_dirs=("$@")       # can take multiple dirs, e.g. ("tpch-sf0.01" "tpch-sf10)
 
 # configurable parameters
 bucket="flexpushdowndb"
