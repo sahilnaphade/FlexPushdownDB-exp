@@ -1,8 +1,10 @@
 # start server on the current node
 
 # import util
-util_path=$(dirname "$0")"/util.sh"
-source "$util_path"
+util_param_path=$(dirname "$0")"/util_param.sh"
+source "$util_param_path"
+util_func_path=$(dirname "$0")"/util_func.sh"
+source "$util_func_path"
 
 # export lib paths to LD_LIBRARY_PATH
 lib_deploy_dir="$deploy_dir""/libs"

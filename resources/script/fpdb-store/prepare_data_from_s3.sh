@@ -2,9 +2,11 @@
 # including mounting the nvme-ssd storage and downloading data from S3
 # need aws credentials already set
 
+# input parameters
+data_relative_dirs=$1       # e.g. ("tpch-sf10")
+
 # configurable parameters
 bucket="flexpushdowndb"
-data_relative_dirs=("tpch-sf10")
 mount_point="/fpdb-store"
 storage_name="/dev/nvme1n1"
 temp_dir="$HOME""/""temp"

@@ -1,8 +1,10 @@
 # stop the system on all cluster nodes
 
 # import util
-util_path=$(dirname "$0")"/util.sh"
-source "$util_path"
+util_param_path=$(dirname "$0")"/util_param.sh"
+source "$util_param_path"
+util_func_path=$(dirname "$0")"/util_func.sh"
+source "$util_func_path"
 
 # stop calcite server on master
 echo "Stopping calcite server on master node..."
