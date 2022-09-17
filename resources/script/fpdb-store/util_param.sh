@@ -19,5 +19,3 @@ do
   node_ips+=("$line")
 done < "$node_ips_path"
 export node_ips
-
-echo $script_dir
