@@ -1,5 +1,6 @@
 {
   "schemaName": "tpch-sf10/csv",
+  "numNodes": 2,
   "objectToNode": {
     "nation.tbl": 0,
     "region.tbl": 1,

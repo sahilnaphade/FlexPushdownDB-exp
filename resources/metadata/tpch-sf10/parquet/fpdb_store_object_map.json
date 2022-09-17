@@ -1,5 +1,6 @@
 {
   "schemaName": "tpch-sf10/parquet",
+  "numNodes": 2,
   "objectToNode": {
     "nation.parquet": 0,
     "region.parquet": 1,

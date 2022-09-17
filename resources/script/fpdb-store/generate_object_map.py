@@ -2,7 +2,7 @@ import os
 import json
 
 # configurable parameters
-schema = "tpch-sf10/parquet"
+schema = "tpch-sf10/csv"
 type_ = "round_robin"
 object_map_file_name = "fpdb_store_object_map.json"
 
@@ -49,6 +49,7 @@ def generate_object_map_round_robin():
     # write object map to json file
     dict_to_file = {
         "schemaName": schema,
+        "numNodes": num_nodes,
         "objectToNode": object_map
     }
     object_map_path = os.path.join(schema_path, object_map_file_name)
