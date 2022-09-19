@@ -28,10 +28,12 @@ public:
   tl::expected<shared_ptr<arrow::Scalar>, string>
   finalize(const vector<shared_ptr<AggregateResult>> &aggregateResults) override;
 
-  std::vector<std::tuple<arrow::compute::internal::Aggregate, arrow::FieldRef, std::string,
-  std::shared_ptr<arrow::Field>>> getArrowAggregateSignatures() override;
-
   tl::expected<shared_ptr<arrow::ChunkedArray>, std::string> finalize(const shared_ptr<TupleSet> &tupleSet);
+
+  tl::expected<pair<shared_ptr<arrow::Field>, shared_ptr<arrow::ChunkedArray>>, std::string>
+  getIntermediateSumColumn(const shared_ptr<TupleSet> &tupleSet) const;
+  tl::expected<pair<shared_ptr<arrow::Field>, shared_ptr<arrow::ChunkedArray>>, std::string>
+  getIntermediateCountColumn(const shared_ptr<TupleSet> &tupleSet) const;
 
 protected:
   constexpr static const char *const SUM_RESULT_KEY = "SUM";

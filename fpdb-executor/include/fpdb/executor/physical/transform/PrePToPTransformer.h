@@ -70,6 +70,10 @@ private:
 
   vector<shared_ptr<PhysicalOp>> transformGroup(const shared_ptr<GroupPrePOp> &groupPrePOp);
 
+  vector<shared_ptr<PhysicalOp>> transformGroupOnePhase(const shared_ptr<GroupPrePOp> &groupPrePOp);
+
+  vector<shared_ptr<PhysicalOp>> transformGroupTwoPhase(const shared_ptr<GroupPrePOp> &groupPrePOp);
+
   vector<shared_ptr<PhysicalOp>> transformProject(const shared_ptr<ProjectPrePOp> &projectPrePOp);
 
   vector<shared_ptr<PhysicalOp>> transformFilter(const shared_ptr<FilterPrePOp> &filterPrePOp);

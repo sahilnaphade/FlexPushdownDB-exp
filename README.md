@@ -109,7 +109,4 @@ Compiler needed:
 
 ### Performance
 - Replace CAF built-in communication by Flight
-- Optimize Group Operator
-  1) optimize internally [done]
-  2) add back the change of moving shuffle before to after parallel group
   

@@ -68,39 +68,6 @@ AvgBase::finalize(const vector<shared_ptr<AggregateResult>> &aggregateResults) {
   return (*expCastScalar).scalar();
 }
 
-std::vector<std::tuple<arrow::compute::internal::Aggregate, arrow::FieldRef, std::string,
-std::shared_ptr<arrow::Field>>> AvgBase::getArrowAggregateSignatures() {
-  static auto defaultScalarAggregateOptions = arrow::compute::ScalarAggregateOptions::Defaults();
-  auto aggregateInputColumnName = getAggregateInputColumnName();
-  auto intermediateSumColumnName = getIntermediateSumColumnName();
-  auto intermediateCountColumnName = getIntermediateCountColumnName();
-
-  std::tuple<arrow::compute::internal::Aggregate, arrow::FieldRef, std::string, std::shared_ptr<arrow::Field>>
-          sumAggregateSignature{
-          {"hash_sum", &defaultScalarAggregateOptions},
-          aggregateInputColumnName,
-          intermediateSumColumnName,
-          arrow::field(intermediateSumColumnName, aggColumnDataType_)
-  };
-  static auto defaultCountOptions = arrow::compute::CountOptions::Defaults();
-  std::tuple<arrow::compute::internal::Aggregate, arrow::FieldRef, std::string, std::shared_ptr<arrow::Field>>
-          countAggregateSignature{
-          {"hash_count", &defaultCountOptions},
-          aggregateInputColumnName,
-          intermediateCountColumnName,
-          arrow::field(intermediateCountColumnName, Count::defaultReturnType())
-  };
-  return {sumAggregateSignature, countAggregateSignature};
-}
-
-std::string AvgBase::getIntermediateSumColumnName() const {
-  return AggregatePrePFunction::AVG_INTERMEDIATE_SUM_COLUMN_PREFIX + outputColumnName_;
-}
-
-std::string AvgBase::getIntermediateCountColumnName() const {
-  return AggregatePrePFunction::AVG_INTERMEDIATE_COUNT_COLUMN_PREFIX + outputColumnName_;
-}
-
 tl::expected<shared_ptr<arrow::ChunkedArray>, std::string> AvgBase::finalize(const shared_ptr<TupleSet> &tupleSet) {
   // intermediate sum column
   auto intermediateSumColumn = tupleSet->table()->GetColumnByName(getIntermediateSumColumnName());
@@ -129,6 +96,36 @@ tl::expected<shared_ptr<arrow::ChunkedArray>, std::string> AvgBase::finalize(con
     return tl::make_unexpected(expCastAvgColumn.status().message());
   }
   return (*expCastAvgColumn).chunked_array();
+}
+
+tl::expected<pair<shared_ptr<arrow::Field>, shared_ptr<arrow::ChunkedArray>>, std::string>
+AvgBase::getIntermediateSumColumn(const shared_ptr<TupleSet> &tupleSet) const {
+  auto expColumn = tupleSet->getColumnByName(getIntermediateSumColumnName());
+  if (!expColumn.has_value()) {
+    return tl::make_unexpected(expColumn.error());
+  }
+  auto column = *expColumn;
+  return make_pair(make_shared<arrow::Field>(column->getName(), column->type()),
+                   column->getArrowArray());
+}
+
+tl::expected<pair<shared_ptr<arrow::Field>, shared_ptr<arrow::ChunkedArray>>, std::string>
+AvgBase::getIntermediateCountColumn(const shared_ptr<TupleSet> &tupleSet) const {
+  auto expColumn = tupleSet->getColumnByName(getIntermediateCountColumnName());
+  if (!expColumn.has_value()) {
+    return tl::make_unexpected(expColumn.error());
+  }
+  auto column = *expColumn;
+  return make_pair(make_shared<arrow::Field>(column->getName(), column->type()),
+                   column->getArrowArray());
+}
+
+std::string AvgBase::getIntermediateSumColumnName() const {
+  return AggregatePrePFunction::AVG_INTERMEDIATE_SUM_COLUMN_PREFIX + outputColumnName_;
+}
+
+std::string AvgBase::getIntermediateCountColumnName() const {
+  return AggregatePrePFunction::AVG_INTERMEDIATE_COUNT_COLUMN_PREFIX + outputColumnName_;
 }
 
 }

@@ -23,6 +23,9 @@ public:
   tl::expected<shared_ptr<arrow::Scalar>, string> computeComplete(const shared_ptr<TupleSet> &tupleSet) override;
   tl::expected<shared_ptr<AggregateResult>, string> computePartial(const shared_ptr<TupleSet> &tupleSet) override;
 
+  std::vector<std::tuple<arrow::compute::internal::Aggregate, arrow::FieldRef, std::string,
+  std::shared_ptr<arrow::Field>>> getArrowAggregateSignatures() override;
+
 // caf inspect
 public:
   template <class Inspector>

@@ -3,7 +3,7 @@
 //
 
 #include <fpdb/executor/physical/group/GroupArrowKernel.h>
-#include <fpdb/executor/physical/aggregate/function/AvgBase.h>
+#include <fpdb/executor/physical/aggregate/function/AvgReduce.h>
 #include <fpdb/tuple/arrow/exec/DummyNode.h>
 #include <arrow/compute/exec/exec_plan.h>
 
@@ -80,21 +80,45 @@ GroupArrowKernel::evaluateExpr(const std::shared_ptr<TupleSet> &tupleSet) {
   // aggregate columns
   for (uint i = 0; i < aggregateFunctions_.size(); ++i) {
     auto function = aggregateFunctions_[i];
-    std::shared_ptr<arrow::ChunkedArray> outputColumn;
 
-    // need to specially handel count(*) because it has no expr
-    if (function->getType() == AggregateFunctionType::COUNT && function->getExpression() == nullptr) {
-      outputColumn = tupleSet->table()->column(0);
-    } else {
-      auto expOutputColumn = function->evaluateExpr(tupleSet);
-      if (!expOutputColumn.has_value()) {
-        return tl::make_unexpected(expOutputColumn.error());
+    // for AVG_REDUCE, just return the original tupleSet
+    // because all columns are needed and there is no expr
+    // need to specially handle AVG_REDUCE because it has two aggregate columns and no expr
+    if (function->getType() == AggregateFunctionType::AVG_REDUCE) {
+      auto avgFunction = std::static_pointer_cast<AvgReduce>(function);
+      // intermediate sum column
+      auto expIntermediateSumColumn = avgFunction->getIntermediateSumColumn(tupleSet);
+      if (!expIntermediateSumColumn.has_value()) {
+        return tl::make_unexpected(expIntermediateSumColumn.error());
       }
-      outputColumn = *expOutputColumn;
+      outputFields.emplace_back((*expIntermediateSumColumn).first);
+      outputColumns.emplace_back((*expIntermediateSumColumn).second);
+      // intermediate count column
+      auto expIntermediateCountColumn = avgFunction->getIntermediateCountColumn(tupleSet);
+      if (!expIntermediateCountColumn.has_value()) {
+        return tl::make_unexpected(expIntermediateCountColumn.error());
+      }
+      outputFields.emplace_back((*expIntermediateCountColumn).first);
+      outputColumns.emplace_back((*expIntermediateCountColumn).second);
+      // need to set explicitly
+      avgFunction->setAggColumnDataType(tupleSet);
     }
 
-    outputColumns.emplace_back(outputColumn);
-    outputFields.emplace_back(arrow::field(function->getAggregateInputColumnName(), outputColumn->type()));
+    else {
+      std::shared_ptr<arrow::ChunkedArray> outputColumn;
+      // need to specially handel count(*) because it has no expr
+      if (function->getType() == AggregateFunctionType::COUNT && function->getExpression() == nullptr) {
+        outputColumn = tupleSet->table()->column(0);
+      } else {
+        auto expOutputColumn = function->evaluateExpr(tupleSet);
+        if (!expOutputColumn.has_value()) {
+          return tl::make_unexpected(expOutputColumn.error());
+        }
+        outputColumn = *expOutputColumn;
+      }
+      outputColumns.emplace_back(outputColumn);
+      outputFields.emplace_back(arrow::field(function->getAggregateInputColumnName(), outputColumn->type()));
+    }
   }
 
   return TupleSet::make(arrow::schema(outputFields), outputColumns);

@@ -4,6 +4,7 @@
 
 #include <fpdb/executor/physical/aggregate/function/Avg.h>
 #include <fpdb/executor/physical/aggregate/function/AggregateFunctionType.h>
+#include <fpdb/executor/physical/aggregate/function/Count.h>
 #include <arrow/compute/api_aggregate.h>
 #include <arrow/compute/cast.h>
 
@@ -66,6 +67,31 @@ tl::expected<shared_ptr<AggregateResult>, string> Avg::computePartial(const shar
   aggregateResult->put(SUM_RESULT_KEY, sumScalar);
   aggregateResult->put(COUNT_RESULT_KEY, countScalar);
   return aggregateResult;
+}
+
+std::vector<std::tuple<arrow::compute::internal::Aggregate, arrow::FieldRef, std::string,
+std::shared_ptr<arrow::Field>>> Avg::getArrowAggregateSignatures() {
+  static auto defaultScalarAggregateOptions = arrow::compute::ScalarAggregateOptions::Defaults();
+  static auto defaultCountOptions = arrow::compute::CountOptions::Defaults();
+  auto aggregateInputColumnName = getAggregateInputColumnName();
+  auto intermediateSumColumnName = getIntermediateSumColumnName();
+  auto intermediateCountColumnName = getIntermediateCountColumnName();
+
+  std::tuple<arrow::compute::internal::Aggregate, arrow::FieldRef, std::string, std::shared_ptr<arrow::Field>>
+          sumAggregateSignature{
+          {"hash_sum", &defaultScalarAggregateOptions},
+          aggregateInputColumnName,
+          intermediateSumColumnName,
+          arrow::field(intermediateSumColumnName, aggColumnDataType_)
+  };
+  std::tuple<arrow::compute::internal::Aggregate, arrow::FieldRef, std::string, std::shared_ptr<arrow::Field>>
+          countAggregateSignature{
+          {"hash_count", &defaultCountOptions},
+          aggregateInputColumnName,
+          intermediateCountColumnName,
+          arrow::field(intermediateCountColumnName, Count::defaultReturnType())
+  };
+  return {sumAggregateSignature, countAggregateSignature};
 }
 
 }

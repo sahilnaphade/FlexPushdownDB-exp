@@ -3,6 +3,7 @@
 //
 
 #include <fpdb/executor/physical/aggregate/function/AvgReduce.h>
+#include <fpdb/executor/physical/aggregate/function/Count.h>
 #include <arrow/compute/api_aggregate.h>
 #include <arrow/compute/cast.h>
 
@@ -80,6 +81,35 @@ tl::expected<shared_ptr<AggregateResult>, string> AvgReduce::computePartial(cons
   aggregateResult->put(SUM_RESULT_KEY, sumScalar);
   aggregateResult->put(COUNT_RESULT_KEY, countScalar);
   return aggregateResult;
+}
+
+std::vector<std::tuple<arrow::compute::internal::Aggregate, arrow::FieldRef, std::string,
+std::shared_ptr<arrow::Field>>> AvgReduce::getArrowAggregateSignatures() {
+  static auto defaultScalarAggregateOptions = arrow::compute::ScalarAggregateOptions::Defaults();
+  auto intermediateSumColumnName = getIntermediateSumColumnName();
+  auto intermediateCountColumnName = getIntermediateCountColumnName();
+
+  std::tuple<arrow::compute::internal::Aggregate, arrow::FieldRef, std::string, std::shared_ptr<arrow::Field>>
+          sumAggregateSignature{
+          {"hash_sum", &defaultScalarAggregateOptions},
+          intermediateSumColumnName,
+          intermediateSumColumnName,
+          arrow::field(intermediateSumColumnName, aggColumnDataType_)
+  };
+  std::tuple<arrow::compute::internal::Aggregate, arrow::FieldRef, std::string, std::shared_ptr<arrow::Field>>
+          countAggregateSignature{
+          {"hash_sum", &defaultScalarAggregateOptions},
+          intermediateCountColumnName,
+          intermediateCountColumnName,
+          arrow::field(intermediateCountColumnName, Count::defaultReturnType())
+  };
+  return {sumAggregateSignature, countAggregateSignature};
+}
+
+void AvgReduce::setAggColumnDataType(const std::shared_ptr<TupleSet> &tupleSet) {
+  if (aggColumnDataType_ == nullptr) {
+    aggColumnDataType_ = tupleSet->schema()->GetFieldByName(getIntermediateSumColumnName())->type();
+  }
 }
 
 }
