@@ -45,6 +45,9 @@ public:
 
   GroupKernelType getType() const;
 
+  ::nlohmann::json toJson() const;
+  static tl::expected<std::shared_ptr<GroupAbstractKernel>, std::string> fromJson(const nlohmann::json &jObj);
+
 protected:
   GroupKernelType type_;
   std::vector<std::string> groupColumnNames_;

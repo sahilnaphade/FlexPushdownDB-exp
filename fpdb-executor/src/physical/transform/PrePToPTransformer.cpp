@@ -415,29 +415,53 @@ PrePToPTransformer::transformGroupTwoPhase(const shared_ptr<GroupPrePOp> &groupP
                                                         groupPrePOp->getGroupColumnNames(),
                                                         aggFunctions));
   }
-  allPOps.insert(allPOps.end(), groupPOps.begin(), groupPOps.end());
+
+  // check if we need to push phase 1 to store
+  if (catalogueEntry_->getType() == CatalogueEntryType::OBJ_STORE &&
+      std::static_pointer_cast<obj_store::ObjStoreCatalogueEntry>(catalogueEntry_)->getStoreType() ==
+        obj_store::ObjStoreType::FPDB_STORE) {
+    const auto &groupAddRes = PrePToFPDBStorePTransformer::addSeparablePOp(upConnPOps, groupPOps, mode_);
+    auto opsForGroup = groupAddRes.first;
+    auto addiOps = groupAddRes.second;
+    allPOps.insert(allPOps.end(), addiOps.begin(), addiOps.end());
+    upConnPOps = opsForGroup;
+  } else {
+    allPOps.insert(allPOps.end(), groupPOps.begin(), groupPOps.end());
+    // connect to upstream
+    PrePToPTransformerUtil::connectOneToOne(upConnPOps, groupPOps);
+    upConnPOps = groupPOps;
+  }
 
   // if num > 1, then we need make a shuffle stage after parallel group ops and then add parallel group reduce ops
   if (!isParallel) {
-    // connect to upstream
-    PrePToPTransformerUtil::connectManyToOne(upConnPOps, groupPOps[0]);
     selfConnDownPOps = groupPOps;
   } else {
-    // connect to upstream
-    PrePToPTransformerUtil::connectOneToOne(upConnPOps, groupPOps);
-
     // shuffle ops
     vector<shared_ptr<PhysicalOp>> shufflePOps;
-    shufflePOps.reserve(groupPOps.size());
-    for (const auto &groupPOp: groupPOps) {
+    shufflePOps.reserve(upConnPOps.size());
+    for (const auto &upConnPOp: upConnPOps) {
       shufflePOps.emplace_back(make_shared<shuffle::ShufflePOp>(
-              fmt::format("Shuffle[{}]-{}", prePOpId, groupPOp->name()),
-              groupPOp->getProjectColumnNames(),
-              groupPOp->getNodeId(),
+              fmt::format("Shuffle[{}]-{}", prePOpId, upConnPOp->name()),
+              upConnPOp->getProjectColumnNames(),
+              upConnPOp->getNodeId(),
               groupPrePOp->getGroupColumnNames()));
     }
-    allPOps.insert(allPOps.end(), shufflePOps.begin(), shufflePOps.end());
-    PrePToPTransformerUtil::connectOneToOne(groupPOps, shufflePOps);
+
+    // check if we need to push shuffle to store
+    if (catalogueEntry_->getType() == CatalogueEntryType::OBJ_STORE &&
+        std::static_pointer_cast<obj_store::ObjStoreCatalogueEntry>(catalogueEntry_)->getStoreType() ==
+        obj_store::ObjStoreType::FPDB_STORE) {
+      const auto &shuffleAddRes = PrePToFPDBStorePTransformer::addSeparablePOp(upConnPOps, shufflePOps, mode_);
+      auto opsForShuffle = shuffleAddRes.first;
+      auto addiOps = shuffleAddRes.second;
+      allPOps.insert(allPOps.end(), addiOps.begin(), addiOps.end());
+      upConnPOps = opsForShuffle;
+    } else {
+      allPOps.insert(allPOps.end(), shufflePOps.begin(), shufflePOps.end());
+      // connect to upstream
+      PrePToPTransformerUtil::connectOneToOne(upConnPOps, shufflePOps);
+      upConnPOps = shufflePOps;
+    }
 
     // phase 2: parallel group reduce ops
     vector<shared_ptr<PhysicalOp>> groupReducePOps;
@@ -460,7 +484,7 @@ PrePToPTransformer::transformGroupTwoPhase(const shared_ptr<GroupPrePOp> &groupP
               aggReduceFunctions));
     }
     allPOps.insert(allPOps.end(), groupReducePOps.begin(), groupReducePOps.end());
-    PrePToPTransformerUtil::connectManyToMany(shufflePOps, groupReducePOps);
+    PrePToPTransformerUtil::connectManyToMany(upConnPOps, groupReducePOps);
     selfConnDownPOps = groupReducePOps;
   }
 

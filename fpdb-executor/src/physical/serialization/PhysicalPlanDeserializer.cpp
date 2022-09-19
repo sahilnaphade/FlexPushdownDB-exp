@@ -9,6 +9,7 @@
 #include <fpdb/executor/physical/aggregate/AggregatePOp.h>
 #include <fpdb/executor/physical/bloomfilter/BloomFilterUsePOp.h>
 #include <fpdb/executor/physical/shuffle/ShufflePOp.h>
+#include <fpdb/executor/physical/group/GroupPOp.h>
 #include <fpdb/executor/physical/collate/CollatePOp.h>
 #include <fpdb/executor/physical/transform/PrePToPTransformerUtil.h>
 #include <fpdb/tuple/serialization/ArrowSerializer.h>
@@ -72,6 +73,8 @@ PhysicalPlanDeserializer::deserializeDfs(const ::nlohmann::json &jObj, bool isRo
     return deserializeAggregatePOp(jObj);
   } else if (type == "ShufflePOp") {
     return deserializeShufflePOp(jObj);
+  } else if (type == "GroupPOp") {
+    return deserializeGroupPOp(jObj);
   } else if (type == "CollatePOp") {
     return deserializeCollatePOp(jObj);
   } else {
@@ -375,6 +378,47 @@ PhysicalPlanDeserializer::deserializeShufflePOp(const ::nlohmann::json &jObj) {
   PrePToPTransformerUtil::connectManyToOne(*expProducers, shufflePOp);
 
   return shufflePOp;
+}
+
+tl::expected<std::shared_ptr<PhysicalOp>, std::string>
+PhysicalPlanDeserializer::deserializeGroupPOp(const ::nlohmann::json &jObj) {
+  // deserialize self
+  auto expCommonTuple = deserializePOpCommon(jObj);
+  if (!expCommonTuple.has_value()) {
+    return tl::make_unexpected(expCommonTuple.error());
+  }
+  auto commonTuple = *expCommonTuple;
+  auto name = std::get<0>(commonTuple);
+  auto projectColumnNames = std::get<1>(commonTuple);
+  auto isSeparated = std::get<2>(commonTuple);
+  auto consumerToBloomFilterInfo = std::get<3>(commonTuple);
+
+  if (!jObj.contains("kernel")) {
+    return tl::make_unexpected(fmt::format("Kernel not specified in GroupPOp JSON '{}'", jObj));
+  }
+  auto expKernel = group::GroupAbstractKernel::fromJson(jObj["kernel"]);
+  if (!expKernel.has_value()) {
+    return tl::make_unexpected(expKernel.error());
+  }
+
+  std::shared_ptr<PhysicalOp> groupPOp = std::make_shared<group::GroupPOp>(name,
+                                                                           projectColumnNames,
+                                                                           0,
+                                                                           *expKernel);
+  groupPOp->setSeparated(isSeparated);
+  groupPOp->setConsumerToBloomFilterInfo(consumerToBloomFilterInfo);
+  physicalOps_.emplace(groupPOp->name(), groupPOp);
+
+  // deserialize producers
+  auto expProducers = deserializeProducers(jObj);
+  if (!expProducers.has_value()) {
+    return tl::make_unexpected(expProducers.error());
+  }
+
+  // connect
+  PrePToPTransformerUtil::connectManyToOne(*expProducers, groupPOp);
+
+  return groupPOp;
 }
 
 tl::expected<std::shared_ptr<PhysicalOp>, std::string>

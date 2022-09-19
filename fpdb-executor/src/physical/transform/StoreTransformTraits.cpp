@@ -18,7 +18,9 @@ std::shared_ptr<StoreTransformTraits> StoreTransformTraits::S3StoreTransformTrai
 }
 
 std::shared_ptr<StoreTransformTraits> StoreTransformTraits::FPDBStoreStoreTransformTraits() {
-  return std::make_shared<StoreTransformTraits>(std::set<POpType>{SHUFFLE, BLOOM_FILTER_USE},
+  return std::make_shared<StoreTransformTraits>(std::set<POpType>{GROUP,
+                                                                  SHUFFLE,
+                                                                  BLOOM_FILTER_USE},
                                                 ENABLE_FPDB_STORE_BITMAP_PUSHDOWN);
 }
 

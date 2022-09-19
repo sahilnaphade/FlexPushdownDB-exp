@@ -12,6 +12,7 @@
 #include <fpdb/executor/physical/aggregate/AggregatePOp.h>
 #include <fpdb/executor/physical/bloomfilter/BloomFilterUsePOp.h>
 #include <fpdb/executor/physical/shuffle/ShufflePOp.h>
+#include <fpdb/executor/physical/group/GroupPOp.h>
 #include <fpdb/executor/physical/collate/CollatePOp.h>
 #include <tl/expected.hpp>
 #include <nlohmann/json.hpp>
@@ -51,6 +52,9 @@ private:
 
   tl::expected<::nlohmann::json, std::string>
   serializeShufflePOp(const std::shared_ptr<shuffle::ShufflePOp> &shufflePOp);
+
+  tl::expected<::nlohmann::json, std::string>
+  serializeGroupPOp(const std::shared_ptr<group::GroupPOp> &groupPOp);
 
   tl::expected<::nlohmann::json, std::string>
   serializeCollatePOp(const std::shared_ptr<collate::CollatePOp> &collatePOp);

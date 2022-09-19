@@ -39,6 +39,8 @@ private:
 
   tl::expected<std::shared_ptr<PhysicalOp>, std::string> deserializeAggregatePOp(const ::nlohmann::json &jObj);
 
+  tl::expected<std::shared_ptr<PhysicalOp>, std::string> deserializeGroupPOp(const ::nlohmann::json &jObj);
+
   tl::expected<std::shared_ptr<PhysicalOp>, std::string> deserializeShufflePOp(const ::nlohmann::json &jObj);
 
   tl::expected<std::shared_ptr<PhysicalOp>, std::string> deserializeCollatePOp(const ::nlohmann::json &jObj);

@@ -38,6 +38,10 @@ public:
            int nodeId,
            const vector<string> &groupColumnNames,
            const vector<shared_ptr<aggregate::AggregateFunction>> &aggregateFunctions);
+  GroupPOp(const string &name,
+           const vector<string> &projectColumnNames,
+           int nodeId,
+           const std::shared_ptr<GroupAbstractKernel> &kernel);
   GroupPOp() = default;
   GroupPOp(const GroupPOp&) = default;
   GroupPOp& operator=(const GroupPOp&) = default;
@@ -45,6 +49,8 @@ public:
   void onReceive(const Envelope &msg) override;
   void clear() override;
   std::string getTypeString() const override;
+
+  const std::shared_ptr<GroupAbstractKernel> &getKernel() const;
 
 private:
   void onStart();

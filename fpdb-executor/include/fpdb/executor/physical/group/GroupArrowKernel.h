@@ -52,7 +52,8 @@ private:
 public:
   template <class Inspector>
   friend bool inspect(Inspector& f, GroupArrowKernel& kernel) {
-    return f.object(kernel).fields(f.field("groupColumnNames", kernel.groupColumnNames_),
+    return f.object(kernel).fields(f.field("type", kernel.type_),
+                                   f.field("groupColumnNames", kernel.groupColumnNames_),
                                    f.field("aggregateFunctions", kernel.aggregateFunctions_));
   }
 };

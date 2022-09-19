@@ -167,10 +167,21 @@ PrePToFPDBStorePTransformer::addSeparablePOp(vector<shared_ptr<PhysicalOp>> &pro
         }
         connPOps.emplace_back(fpdbStoreSuperPOp);
 
-        // need to handle the shuffle op specially (remove collatePOp from its consumeVec)
+        // need to handle shuffle op specially (remove collatePOp from its consumeVec)
         if (separablePOp->getType() == POpType::SHUFFLE) {
           fpdbStoreSuperPOp->setShufflePOp(separablePOp);
           std::static_pointer_cast<shuffle::ShufflePOp>(separablePOp)->clearConsumerVec();
+        }
+
+        // need to handle group op specially
+        // (set projectColumnNames for both fpdbStoreSuperPOp and root op of the subPlan)
+        else if (separablePOp->getType() == POpType::GROUP) {
+          auto expRootOp = fpdbStoreSuperPOp->getSubPlan()->getRootPOp();
+          if (!expRootOp.has_value()) {
+            throw runtime_error(expRootOp.error());
+          }
+          (*expRootOp)->setProjectColumnNames(separablePOp->getProjectColumnNames());
+          fpdbStoreSuperPOp->setProjectColumnNames(separablePOp->getProjectColumnNames());
         }
       } else {
         PrePToPTransformerUtil::connectOneToOne(producer, separablePOp);

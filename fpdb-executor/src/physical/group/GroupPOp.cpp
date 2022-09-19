@@ -24,8 +24,19 @@ GroupPOp::GroupPOp(const string &name,
   }
 }
 
+GroupPOp::GroupPOp(const string &name,
+                   const vector<string> &projectColumnNames,
+                   int nodeId,
+                   const std::shared_ptr<GroupAbstractKernel> &kernel) :
+  PhysicalOp(name, GROUP, projectColumnNames, nodeId),
+  kernel_(kernel) {}
+
 std::string GroupPOp::getTypeString() const {
   return "GroupPOp";
+}
+
+const std::shared_ptr<GroupAbstractKernel> &GroupPOp::getKernel() const {
+  return kernel_;
 }
 
 void GroupPOp::onReceive(const Envelope &msg) {

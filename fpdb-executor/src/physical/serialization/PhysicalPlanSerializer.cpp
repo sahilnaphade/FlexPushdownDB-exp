@@ -50,6 +50,8 @@ tl::expected<json, std::string> PhysicalPlanSerializer::serializeDfs(const std::
       return serializeAggregatePOp(std::static_pointer_cast<aggregate::AggregatePOp>(op));
     case POpType::SHUFFLE:
       return serializeShufflePOp(std::static_pointer_cast<shuffle::ShufflePOp>(op));
+    case POpType::GROUP:
+      return serializeGroupPOp(std::static_pointer_cast<group::GroupPOp>(op));
     case POpType::COLLATE:
       return serializeCollatePOp(std::static_pointer_cast<collate::CollatePOp>(op));
     default:
@@ -180,6 +182,22 @@ PhysicalPlanSerializer::serializeShufflePOp(const std::shared_ptr<shuffle::Shuff
 
   // serialize producers
   auto expProducersJObj = serializeProducers(shufflePOp);
+  if (!expProducersJObj.has_value()) {
+    return tl::make_unexpected(expProducersJObj.error());
+  }
+  jObj.emplace("inputs", *expProducersJObj);
+
+  return jObj;
+}
+
+tl::expected<::nlohmann::json, std::string>
+PhysicalPlanSerializer::serializeGroupPOp(const std::shared_ptr<group::GroupPOp> &groupPOp) {
+  // serialize self
+  auto jObj = serializePOpCommon(groupPOp);
+  jObj.emplace("kernel", groupPOp->getKernel()->toJson());
+
+  // serialize producers
+  auto expProducersJObj = serializeProducers(groupPOp);
   if (!expProducersJObj.has_value()) {
     return tl::make_unexpected(expProducersJObj.error());
   }
