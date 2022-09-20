@@ -434,7 +434,7 @@ PrePToPTransformer::transformGroupTwoPhase(const shared_ptr<GroupPrePOp> &groupP
 
   // if num > 1, then we need make a shuffle stage after parallel group ops and then add parallel group reduce ops
   if (!isParallel) {
-    selfConnDownPOps = groupPOps;
+    selfConnDownPOps = upConnPOps;
   } else {
     // shuffle ops
     vector<shared_ptr<PhysicalOp>> shufflePOps;

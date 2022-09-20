@@ -7,7 +7,6 @@
 
 #include <fpdb/tuple/serialization/ArrowSerializer.h>
 #include <fpdb/caf/CAFUtil.h>
-#include <arrow/visitor_inline.h>
 #include <arrow/scalar.h>
 #include <tl/expected.hpp>
 #include <memory>
