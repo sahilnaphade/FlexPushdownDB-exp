@@ -17,7 +17,8 @@ public:
   /**
    * Serialization and deserialization methods of arrow::Table.
    */
-  static std::shared_ptr<arrow::Table> bytes_to_table(const std::vector<std::uint8_t>& bytes_vec);
+  static std::shared_ptr<arrow::Table> bytes_to_table(const std::vector<std::uint8_t>& bytes_vec,
+                                                      bool copy_view = true);
   static std::vector<std::uint8_t> table_to_bytes(const std::shared_ptr<arrow::Table>& table);
 
   /**

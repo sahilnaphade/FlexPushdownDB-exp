@@ -9,7 +9,8 @@
 
 namespace fpdb::tuple {
 
-std::shared_ptr<arrow::Table> ArrowSerializer::bytes_to_table(const std::vector<std::uint8_t>& bytes_vec) {
+std::shared_ptr<arrow::Table> ArrowSerializer::bytes_to_table(const std::vector<std::uint8_t>& bytes_vec,
+                                                              bool copy_view) {
   if (bytes_vec.empty()) {
     return nullptr;
   }
@@ -18,12 +19,15 @@ std::shared_ptr<arrow::Table> ArrowSerializer::bytes_to_table(const std::vector<
 
   // Create a view over the given byte vector, but then get a copy because the vector ref eventually disappears
   auto buffer_view = ::arrow::Buffer::Wrap(bytes_vec);
-  auto maybe_buffer = buffer_view->CopySlice(0, buffer_view->size(), arrow::default_memory_pool());
-  if (!maybe_buffer.ok())
-    throw std::runtime_error(fmt::format("Error converting bytes to Arrow table  |  error: {}", maybe_buffer.status().message()));
+  if (copy_view) {
+    auto maybe_buffer = buffer_view->CopySlice(0, buffer_view->size(), arrow::default_memory_pool());
+    if (!maybe_buffer.ok())
+      throw std::runtime_error(fmt::format("Error converting bytes to Arrow table  |  error: {}", maybe_buffer.status().message()));
+    buffer_view = *maybe_buffer;
+  }
 
   // Get a reader over the buffer
-  auto buffer_reader = std::make_shared<::arrow::io::BufferReader>(*maybe_buffer);
+  auto buffer_reader = std::make_shared<::arrow::io::BufferReader>(buffer_view);
 
   // Get a record batch reader over that
   auto maybe_reader = arrow::ipc::RecordBatchStreamReader::Open(buffer_reader);

@@ -172,8 +172,8 @@ POpActor::read_table_from_fpdb_store(const std::string &host, int port, const st
   // in GroupArrowKernel (at arrow::util::CheckAlignment).
   // Here is a temp fix that recreates the table by a round of serialization and deserialization.
   if (opBehaviour_->name().substr(0, 5) == "Group") {
-    auto bytes = ArrowSerializer::table_to_bytes(table);
-    table = ArrowSerializer::bytes_to_table(bytes);
+    const auto &bytes = ArrowSerializer::table_to_bytes(table);
+    table = ArrowSerializer::bytes_to_table(bytes, false);
   }
 
   return TupleSet::make(table);
