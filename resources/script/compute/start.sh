@@ -1,9 +1,10 @@
-# start the system on all cluster nodes
+# start the system on all compute cluster nodes
 
 # import util
-util_param_path=$(dirname "$0")"/util_param.sh"
+this_dir=$(dirname "$0")
+util_param_path=$(dirname "$this_dir")"/util_param.sh"
 source "$util_param_path"
-util_func_path=$(dirname "$0")"/util_func.sh"
+util_func_path=$(dirname "$this_dir")"/util_func.sh"
 source "$util_func_path"
 
 # start calcite server on master
@@ -19,11 +20,11 @@ echo "done"
 # start server on each slave node
 echo "Starting server on slave nodes..."
 
-for slave_ip in "${slave_ips[@]}"
+for node_ip in "${compute_ips[@]}"
 do
-  echo -n "  Starting ""$slave_ip""... "
-  check_or_add_to_known_hosts "$slave_ip"
-  run_command "$pem_path" "$slave_ip" "$deploy_dir""/resources/script/start_node.sh"
+  echo -n "  Starting ""$node_ip""... "
+  check_or_add_to_known_hosts "$node_ip"
+  run_command "$pem_path" "$node_ip" "$deploy_dir""/resources/script/compute/start_node.sh"
   echo "  done"
 done
 

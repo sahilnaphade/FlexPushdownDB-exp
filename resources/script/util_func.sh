@@ -1,4 +1,4 @@
-
+# common functions
 # catch ctrl_c
 trap ctrl_c INT
 function ctrl_c() {

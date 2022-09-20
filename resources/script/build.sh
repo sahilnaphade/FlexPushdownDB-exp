@@ -38,6 +38,7 @@ mv "$calcite_config_dir""/exec.conf" "$calcite_config_dir""/exec.conf.backup"
 cp "$calcite_config_dir""/exec.conf.ec2" "$calcite_config_dir""/exec.conf"
 
 # build targets
+targets=("${compute_targets[@]}" "${fpdb_store_targets[@]}")
 for target in "${targets[@]}"
 do
   cmake --build . --target "${target}" -- -j "${build_parallel}"
