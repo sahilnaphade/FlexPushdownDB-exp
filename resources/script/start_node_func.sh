@@ -9,7 +9,7 @@ function start_node() {
   # export lib paths to LD_LIBRARY_PATH
   lib_deploy_dir="$deploy_dir""/libs"
   export LD_LIBRARY_PATH="$lib_deploy_dir"/aws-cpp-sdk_ep/install/lib:"$lib_deploy_dir"/caf_ep/install/lib:\
-  "$lib_deploy_dir"/graphviz_ep/install/lib:"$lib_deploy_dir"/graphviz_ep/install/lib/graphviz
+"$lib_deploy_dir"/graphviz_ep/install/lib:"$lib_deploy_dir"/graphviz_ep/install/lib/graphviz
 
   # start server
   if [ "${is_compute}" = true ]; then

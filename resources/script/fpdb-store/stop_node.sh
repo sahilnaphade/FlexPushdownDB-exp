@@ -7,7 +7,7 @@ util_param_path=$(pwd)"/util_param.sh"
 source "$util_param_path"
 util_func_path=$(pwd)"/util_func.sh"
 source "$util_func_path"
-start_node_func_path=$(pwd)"/start_node_func.sh"
+start_node_func_path=$(pwd)"/stop_node_func.sh"
 source "$start_node_func_path"
 popd > /dev/null
 
