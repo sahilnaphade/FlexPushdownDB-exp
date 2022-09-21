@@ -2,9 +2,9 @@
 
 # import util
 pushd "$(dirname "$0")" > /dev/null
-util_param_path=$(dirname "$0")"/util_param.sh"
+util_param_path=$(pwd)"/util_param.sh"
 source "$util_param_path"
-util_func_path=$(dirname "$0")"/util_func.sh"
+util_func_path=$(pwd)"/util_func.sh"
 source "$util_func_path"
 
 # make build directory
