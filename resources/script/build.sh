@@ -1,12 +1,11 @@
 # script to build the system locally
 
 # import util
+pushd "$(dirname "$0")" > /dev/null
 util_param_path=$(dirname "$0")"/util_param.sh"
 source "$util_param_path"
 util_func_path=$(dirname "$0")"/util_func.sh"
 source "$util_func_path"
-
-pushd "$(dirname "$0")" > /dev/null
 
 # make build directory
 if [ "${clean}" = true ]; then

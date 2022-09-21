@@ -1,4 +1,6 @@
 # parameters used by all system scripts
+# need to cd into the parent directory before importing this
+
 # configurable parameters
 export install_dependency=false
 export clean=false
@@ -19,12 +21,8 @@ export calcite_jar_name="flexpushdowndb.thrift.calcite-1.0-SNAPSHOT.jar"
 export calcite_dir_name="fpdb-calcite/java"
 export calcite_pid_name="calcite-server.pid"
 
-# get script path
-pushd "$(dirname "$0")" > /dev/null
-script_dir=$(pwd)
-popd > /dev/null
-
 # directories
+script_dir=$(pwd)
 resource_dir="$(dirname "${script_dir}")"
 root_dir="$(dirname "${resource_dir}")"
 build_dir="${root_dir}"/"${build_dir_name}"
