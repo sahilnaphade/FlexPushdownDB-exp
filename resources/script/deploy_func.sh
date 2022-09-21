@@ -1,11 +1,6 @@
 # Script to spread built package to all cluster nodes
 
-# import util
-util_param_path=$(dirname "$0")"/util_param.sh"
-source "$util_param_path"
-util_func_path=$(dirname "$0")"/util_func.sh"
-source "$util_func_path"
-
+# Need to import util by the caller first
 # $1: true for compute, false for fpdb-store
 function deploy() {
   # input params

@@ -1,8 +1,17 @@
 # Script to spread built package to all compute cluster nodes
 
+# get script path
+pushd "$(dirname "$0")" > /dev/null
+this_dir=$(pwd)
+script_dir=$(dirname "$this_dir")
+popd > /dev/null
+
 # import
-this_dir=$(dirname "$0")
-deploy_func_path=$(dirname "$this_dir")"/deploy_func.sh"
+util_param_path="$script_dir""/util_param.sh"
+source "$util_param_path"
+util_func_path="$script_dir""/util_func.sh"
+source "$util_func_path"
+deploy_func_path="$script_dir""/deploy_func.sh"
 source "$deploy_func_path"
 
 # call deploy()
