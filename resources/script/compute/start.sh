@@ -1,11 +1,13 @@
 # start the system on all compute cluster nodes
 
-# import util
-this_dir=$(dirname "$0")
-util_param_path=$(dirname "$this_dir")"/util_param.sh"
+# import
+pushd "$(dirname "$0")" > /dev/null
+cd ..
+util_param_path=$(pwd)"/util_param.sh"
 source "$util_param_path"
-util_func_path=$(dirname "$this_dir")"/util_func.sh"
+util_func_path=$(pwd)"/util_func.sh"
 source "$util_func_path"
+popd > /dev/null
 
 # start calcite server on master
 echo "Starting calcite server on master node..."
