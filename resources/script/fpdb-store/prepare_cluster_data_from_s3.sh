@@ -1,4 +1,5 @@
 # download data from s3 on all storage nodes
+# run deploy.sh before running this
 
 # import util
 pushd "$(dirname "$0")" > /dev/null
