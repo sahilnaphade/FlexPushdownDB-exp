@@ -4,7 +4,6 @@
 
 #include <fpdb/catalogue/obj-store/ObjStoreCatalogueEntryReader.h>
 #include <fpdb/catalogue/obj-store/s3/S3Connector.h>
-#include <fpdb/catalogue/obj-store/fpdb-store/FPDBStoreConnector.h>
 #include <fpdb/store/server/file/RemoteFileReaderBuilder.h>
 #include <fpdb/tuple/csv/CSVFormat.h>
 #include <fpdb/tuple/parquet/ParquetFormat.h>
@@ -38,7 +37,8 @@ ObjStoreCatalogueEntryReader::readCatalogueEntry(const shared_ptr<Catalogue> &ca
     }
     case ObjStoreType::FPDB_STORE: {
       auto fpdbStoreConnector = static_pointer_cast<FPDBStoreConnector>(objStoreConnector);
-      readFPDBStorePartitionSize(catalogueEntry, fpdbStoreConnector->getHost(), fpdbStoreConnector->getFileServicePort());
+      readFPDBStoreObjectMap(catalogueEntry, schemaName);
+      readFPDBStorePartitionSize(catalogueEntry, fpdbStoreConnector);
       break;
     }
     default: {
@@ -250,17 +250,43 @@ void ObjStoreCatalogueEntryReader::readS3PartitionSize(const shared_ptr<ObjStore
   }
 }
 
-void ObjStoreCatalogueEntryReader::readFPDBStorePartitionSize(const shared_ptr<ObjStoreCatalogueEntry> &catalogueEntry,
-                                                              const string &host,
-                                                              int port) {
-  vector<shared_ptr<ObjStorePartition>> allPartitions;
+void ObjStoreCatalogueEntryReader::readFPDBStoreObjectMap(const shared_ptr<ObjStoreCatalogueEntry> &catalogueEntry,
+                                                          const string &schemaName) {
+  // read object map
+  auto metadataPath = catalogueEntry->getCatalogue().lock()->getMetadataPath().append(schemaName);
+  if (!filesystem::exists(metadataPath)) {
+    throw runtime_error(fmt::format("Metadata not found for schema: {}", schemaName));
+  }
+  unordered_map<string, int> objectMap;
+  auto objectMapJObj = json::parse(readFile(metadataPath.append("fpdb_store_object_map.json")));
+  for (const auto &objectEntryJObj: objectMapJObj["objectMap"].get<vector<json>>()) {
+    auto object = schemaName + objectEntryJObj["object"].get<string>();
+    auto nodeId = objectEntryJObj["nodeId"].get<int>();
+    objectMap.emplace(object, nodeId);
+  }
+
+  // set node id for each object
   for (const auto &table: catalogueEntry->getTables()) {
     for (const auto &partition: table->getObjStorePartitions()) {
+      partition->setNodeId(objectMap.find(partition->getObject())->second);
+    }
+  }
+}
+
+void ObjStoreCatalogueEntryReader::readFPDBStorePartitionSize(const shared_ptr<ObjStoreCatalogueEntry> &catalogueEntry,
+                                                              const shared_ptr<FPDBStoreConnector> &connector) {
+  int port = connector->getFileServicePort();
+  for (const auto &table: catalogueEntry->getTables()) {
+    for (const auto &partition: table->getObjStorePartitions()) {
+      auto nodeId = partition->getNodeId();
+      if (!nodeId.has_value()) {
+        throw runtime_error(fmt::format("Node id not set for FPDB store object: {}", partition->getObject()));
+      }
       auto reader = RemoteFileReaderBuilder::make(table->getFormat(),
                                                   table->getSchema(),
                                                   partition->getBucket(),
                                                   partition->getObject(),
-                                                  host,
+                                                  connector->getHost(*nodeId),
                                                   port);
       auto expPartitionSize = reader->getFileSize();
       if (!expPartitionSize.has_value()) {

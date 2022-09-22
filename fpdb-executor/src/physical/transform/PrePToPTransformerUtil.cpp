@@ -147,6 +147,45 @@ shared_ptr<PhysicalPlan> PrePToPTransformerUtil::rootOpToPlan(const shared_ptr<P
   return make_shared<PhysicalPlan>(ops, rootOp->name());
 }
 
+pair<shared_ptr<PhysicalPlan>, std::string> PrePToPTransformerUtil::rootOpToPlanAndHost(
+        const shared_ptr<PhysicalOp> &rootOp,
+        const unordered_map<string, shared_ptr<PhysicalOp>> &opMap,
+        const unordered_map<std::string, std::string> &objectToHost) {
+  // collect operators in the subtree of the rootOp
+  unordered_map<string, shared_ptr<PhysicalOp>> ops;
+  std::optional<std::string> host = std::nullopt;
+  queue<shared_ptr<PhysicalOp>> pendOpQueue;
+  ops.emplace(rootOp->name(), rootOp);
+  pendOpQueue.push(rootOp);
+
+  while (!pendOpQueue.empty()) {
+    auto op = pendOpQueue.front();
+    if (op->getType() == POpType::FPDB_STORE_FILE_SCAN) {
+      auto typedOp = static_pointer_cast<fpdb_store::FPDBStoreFileScanPOp>(op);
+      auto objectIt = objectToHost.find(typedOp->getObject());
+      if (objectIt != objectToHost.end()) {
+        host = objectIt->second;
+      }
+    }
+    for (const auto &producerName: op->producers()) {
+      auto producerIt = opMap.find(producerName);
+      if (producerIt == opMap.end()) {
+        throw runtime_error(fmt::format("Producer '{}' not found in opMap when making physical plan from root op",
+                                        producerName));
+      }
+      auto producer = producerIt->second;
+      ops.emplace(producer->name(), producer);
+      pendOpQueue.push(producer);
+    }
+    pendOpQueue.pop();
+  }
+
+  if (!host.has_value()) {
+    throw runtime_error("Host of the sub-plan of the FPDBStoreSuperPOp is unknown");
+  }
+  return {make_shared<PhysicalPlan>(ops, rootOp->name()), *host};
+}
+
 void PrePToPTransformerUtil::addPhysicalOps(const vector<shared_ptr<PhysicalOp>> &newOps,
                                             unordered_map<string, shared_ptr<PhysicalOp>> &ops) {
   for (const auto &newOp: newOps) {

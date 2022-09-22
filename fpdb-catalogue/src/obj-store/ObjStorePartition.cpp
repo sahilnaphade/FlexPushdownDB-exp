@@ -28,6 +28,10 @@ const string &ObjStorePartition::getObject() const {
   return s3Object_;
 }
 
+const std::optional<int> &ObjStorePartition::getNodeId() const {
+  return nodeId_;
+}
+
 string ObjStorePartition::toString() {
   return "s3://" + s3Bucket_ + "/" + s3Object_;
 }
@@ -38,11 +42,10 @@ size_t ObjStorePartition::hash() {
 
 bool ObjStorePartition::equalTo(shared_ptr<Partition> other) {
   auto typedOther = static_pointer_cast<const ObjStorePartition>(other);
-  if(!typedOther){
-	return false;
-  }
-  else{
-	return this->operator==(*typedOther);
+  if (!typedOther) {
+	  return false;
+  } else{
+	  return this->operator==(*typedOther);
   }
 }
 
@@ -52,6 +55,10 @@ CatalogueEntryType ObjStorePartition::getCatalogueEntryType() {
 
 bool ObjStorePartition::operator==(const ObjStorePartition &other) {
   return s3Bucket_ == other.s3Bucket_ && s3Object_ == other.s3Object_;
+}
+
+void ObjStorePartition::setNodeId(int nodeId) {
+  nodeId_ = nodeId;
 }
 
 }

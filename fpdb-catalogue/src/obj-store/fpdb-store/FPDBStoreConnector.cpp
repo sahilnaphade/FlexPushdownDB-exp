@@ -3,19 +3,27 @@
 //
 
 #include <fpdb/catalogue/obj-store/fpdb-store/FPDBStoreConnector.h>
+#include <fmt/format.h>
 
 namespace fpdb::catalogue::obj_store {
 
-FPDBStoreConnector::FPDBStoreConnector(const std::string &host,
+FPDBStoreConnector::FPDBStoreConnector(const std::vector<std::string> &hosts,
                                        int fileServicePort,
                                        int flightPort):
   ObjStoreConnector(ObjStoreType::FPDB_STORE),
-  host_(host),
+  hosts_(hosts),
   fileServicePort_(fileServicePort),
   flightPort_(flightPort) {}
 
-const std::string &FPDBStoreConnector::getHost() const {
-  return host_;
+const std::vector<std::string> &FPDBStoreConnector::getHosts() const {
+  return hosts_;
+}
+
+const std::string &FPDBStoreConnector::getHost(int id) const {
+  if (id >= (int) hosts_.size()) {
+    throw std::runtime_error(fmt::format("Invalid host id '{}', num hosts: '{}'", id, hosts_.size()));
+  }
+  return hosts_[id];
 }
 
 int FPDBStoreConnector::getFileServicePort() const {

@@ -28,8 +28,9 @@ public:
   ObjStorePartition(const ObjStorePartition&) = default;
   ObjStorePartition& operator=(const ObjStorePartition&) = default;
 
-  [[nodiscard]] const string &getBucket() const;
-  [[nodiscard]] const string &getObject() const;
+  const string &getBucket() const;
+  const string &getObject() const;
+  const std::optional<int> &getNodeId() const;
 
   string toString() override;
   size_t hash() override;
@@ -38,9 +39,12 @@ public:
 
   bool operator==(const ObjStorePartition& other);
 
+  void setNodeId(int nodeId);
+
 private:
   string s3Bucket_;
   string s3Object_;
+  std::optional<int> nodeId_;
 
 // caf inspect
 public:

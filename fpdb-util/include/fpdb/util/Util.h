@@ -31,10 +31,11 @@ namespace fpdb::util {
   unordered_map<string, string> readConfig(const string &fileName);
 
   /**
-   * Read ip of all remote nodes from "cluster_ip"
+   * Read ip of all remote nodes
+   * @param isCompute
    * @return
    */
-  vector<string> readRemoteIps();
+  vector<string> readRemoteIps(bool isCompute = true);
 
   /**
    * Parsing bool string

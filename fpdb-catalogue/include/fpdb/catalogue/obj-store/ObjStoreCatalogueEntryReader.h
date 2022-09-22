@@ -6,7 +6,7 @@
 #define FPDB_FPDB_CATALOGUE_INCLUDE_FPDB_CATALOGUE_OBJ_STORE_OBJSTORECATALOGUEENTRYREADER_H
 
 #include <fpdb/catalogue/obj-store/ObjStoreCatalogueEntry.h>
-#include <fpdb/catalogue/obj-store/ObjStoreConnector.h>
+#include <fpdb/catalogue/obj-store/fpdb-store/FPDBStoreConnector.h>
 #include <fpdb/catalogue/Catalogue.h>
 #include <fpdb/tuple/FileFormat.h>
 #include <fpdb/tuple/Scalar.h>
@@ -53,9 +53,11 @@ private:
   static void readS3PartitionSize(const shared_ptr<ObjStoreCatalogueEntry> &catalogueEntry,
                                   const shared_ptr<S3Client> &s3Client);
 
+  static void readFPDBStoreObjectMap(const shared_ptr<ObjStoreCatalogueEntry> &catalogueEntry,
+                                     const string &schemaName);
+
   static void readFPDBStorePartitionSize(const shared_ptr<ObjStoreCatalogueEntry> &catalogueEntry,
-                                         const string &host,
-                                         int port);
+                                         const shared_ptr<FPDBStoreConnector> &connector);
 
   static shared_ptr<arrow::DataType> strToDataType(const string &str);
 

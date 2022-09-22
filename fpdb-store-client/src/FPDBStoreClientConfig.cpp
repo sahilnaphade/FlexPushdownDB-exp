@@ -10,23 +10,23 @@ using namespace fpdb::util;
 
 namespace fpdb::store::client {
 
-FPDBStoreClientConfig::FPDBStoreClientConfig(const std::string &host,
+FPDBStoreClientConfig::FPDBStoreClientConfig(const std::vector<std::string> &hosts,
                                              int fileServicePort,
                                              int flightPort):
-  host_(host),
+  hosts_(hosts),
   fileServicePort_(fileServicePort),
   flightPort_(flightPort) {}
 
 std::shared_ptr<FPDBStoreClientConfig> FPDBStoreClientConfig::parseFPDBStoreClientConfig() {
   std::unordered_map<string, string> configMap = readConfig("fpdb-store.conf");
-  auto host = configMap["HOST"];
   auto fileServicePort = std::stoi(configMap["FILE_SERVICE_PORT"]);
   auto flightPort = std::stoi(configMap["FLIGHT_PORT"]);
-  return std::make_shared<FPDBStoreClientConfig>(host, fileServicePort, flightPort);
+  const auto &hosts = readRemoteIps(false);
+  return std::make_shared<FPDBStoreClientConfig>(hosts, fileServicePort, flightPort);
 }
 
-const std::string &FPDBStoreClientConfig::getHost() const {
-  return host_;
+const std::vector<std::string> &FPDBStoreClientConfig::getHosts() const {
+  return hosts_;
 }
 
 int FPDBStoreClientConfig::getFileServicePort() const {

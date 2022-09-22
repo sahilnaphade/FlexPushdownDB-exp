@@ -69,22 +69,25 @@ unordered_map<string, string> fpdb::util::readConfig(const string &fileName) {
   return configMap;
 }
 
-vector<string> fpdb::util::readRemoteIps() {
+vector<string> fpdb::util::readRemoteIps(bool isCompute) {
+  // read cluster ips
+  string clusterIpFileName = isCompute ? "cluster_ips" : "fpdb-store_ips";
+  string clusterIpFilePath = filesystem::current_path()
+          .parent_path()
+          .append("resources/config")
+          .append(clusterIpFileName)
+          .string();
+  auto clusterIps = readFileByLine(clusterIpFilePath);
+
+  // need to remove local ip if it is for the compute cluster
+  if (isCompute == false) {
+    return clusterIps;
+  }
   auto expLocalIp = getLocalIp();
   if (!expLocalIp) {
     throw runtime_error(expLocalIp.error());
   }
-  const auto &localIp = *expLocalIp;
-
-  // read cluster ips
-  string clusterIpFilePath = filesystem::current_path()
-          .parent_path()
-          .append("resources/config/cluster_ips")
-          .string();
-  auto clusterIps = readFileByLine(clusterIpFilePath);
-
-  // remove local ip
-  auto localIpIt = std::find(clusterIps.begin(), clusterIps.end(), localIp);
+  auto localIpIt = std::find(clusterIps.begin(), clusterIps.end(), *expLocalIp);
   if (localIpIt != clusterIps.end()) {
     clusterIps.erase(localIpIt);
   }

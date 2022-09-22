@@ -8,6 +8,7 @@
 #include <fpdb/executor/physical/PhysicalOp.h>
 #include <fpdb/executor/physical/PhysicalPlan.h>
 #include <fpdb/executor/physical/aggregate/function/AggregateFunction.h>
+#include <fpdb/executor/physical/fpdb-store/FPDBStoreFileScanPOp.h>
 #include <fpdb/plan/prephysical/AggregatePrePFunction.h>
 #include <unordered_map>
 
@@ -56,6 +57,19 @@ public:
    */
   static shared_ptr<PhysicalPlan> rootOpToPlan(const shared_ptr<PhysicalOp> &rootOp,
                                                const unordered_map<string, shared_ptr<PhysicalOp>> &opMap);
+
+  /**
+   * Make a physical plan from the root physical operator, also extract the host that plan is sent to
+   * The plan should be a sub-plan of FPDBStoreSuperPOp
+   * @param rootOp
+   * @param opMap
+   * @param fpdbStoreFileScanToHost
+   * @return
+   */
+  static pair<shared_ptr<PhysicalPlan>, std::string> rootOpToPlanAndHost(
+          const shared_ptr<PhysicalOp> &rootOp,
+          const unordered_map<string, shared_ptr<PhysicalOp>> &opMap,
+          const unordered_map<std::string, std::string> &objectToHost);
 
   /**
    * Add physical operators to existing ones

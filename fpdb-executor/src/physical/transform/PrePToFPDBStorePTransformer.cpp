@@ -7,7 +7,6 @@
 #include <fpdb/executor/physical/transform/StoreTransformTraits.h>
 #include <fpdb/executor/physical/prune/PartitionPruner.h>
 #include <fpdb/executor/physical/file/RemoteFileScanPOp.h>
-#include <fpdb/executor/physical/fpdb-store/FPDBStoreFileScanPOp.h>
 #include <fpdb/executor/physical/fpdb-store/FPDBStoreSuperPOpUtil.h>
 #include <fpdb/executor/physical/project/ProjectPOp.h>
 #include <fpdb/executor/physical/filter/FilterPOp.h>
@@ -104,13 +103,15 @@ pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>> PrePToFPDBS
 
       vector<shared_ptr<PhysicalOp>> fpdbStoreSuperPOps;
       for (uint i = 0; i < collatePOps.size(); ++i) {
-        auto subPlan = PrePToPTransformerUtil::rootOpToPlan(collatePOps[i], opMap);
+        auto rootOpToPlanAndHostRes = PrePToPTransformerUtil::rootOpToPlanAndHost(collatePOps[i], opMap, objectToHost_);
+        const auto &subPlan = rootOpToPlanAndHostRes.first;
+        const auto &host = rootOpToPlanAndHostRes.second;
         fpdbStoreSuperPOps.emplace_back(make_shared<fpdb_store::FPDBStoreSuperPOp>(
                 fmt::format("FPDBStoreSuper[{}]-{}", rootPrePOp->getId(), i),
                 collatePOps[i]->getProjectColumnNames(),
                 collatePOps[i]->getNodeId(),
                 subPlan,
-                fpdbStoreConnector_->getHost(),
+                host,
                 fpdbStoreConnector_->getFlightPort()));
       }
 
@@ -301,7 +302,7 @@ PrePToFPDBStorePTransformer::transformPushdownOnlyToHybrid(const vector<shared_p
                                                                      kernel->getFormat(),
                                                                      kernel->getSchema(),
                                                                      fileSize,
-                                                                     fpdbStoreConnector_->getHost(),
+                                                                     typedFPDBStoreSuperPOp->getHost(),
                                                                      fpdbStoreConnector_->getFileServicePort(),
                                                                      nullopt,
                                                                      false,
@@ -514,6 +515,10 @@ PrePToFPDBStorePTransformer::transformFilterableScanPullup(const shared_ptr<Filt
     const auto &predicate = partitionPredicateIt.second;
     const auto &bucket = partition->getBucket();
     const auto &object = partition->getObject();
+    const auto &fpdbStoreNodeId = partition->getNodeId();
+    if (!fpdbStoreNodeId.has_value()) {
+      throw runtime_error(fmt::format("Node id not set for FPDB store object: {}", partition->getObject()));
+    }
 
     // project column names and its union with project column names
     vector<string> predicateColumnNames;
@@ -532,7 +537,7 @@ PrePToFPDBStorePTransformer::transformFilterableScanPullup(const shared_ptr<Filt
                                                                table->getFormat(),
                                                                table->getSchema(),
                                                                partition->getNumBytes(),
-                                                               fpdbStoreConnector_->getHost(),
+                                                               fpdbStoreConnector_->getHost(*fpdbStoreNodeId),
                                                                fpdbStoreConnector_->getFileServicePort());
     scanPOps.emplace_back(scanPOp);
 
@@ -580,6 +585,10 @@ PrePToFPDBStorePTransformer::transformFilterableScanPushdownOnly(const shared_pt
     const auto &predicate = partitionPredicateIt.second;
     const auto &bucket = partition->getBucket();
     const auto &object = partition->getObject();
+    const auto &fpdbStoreNodeId = partition->getNodeId();
+    if (!fpdbStoreNodeId.has_value()) {
+      throw runtime_error(fmt::format("Node id not set for FPDB store object: {}", partition->getObject()));
+    }
 
     // project column names and its union with project column names
     vector<string> predicateColumnNames;
@@ -599,6 +608,7 @@ PrePToFPDBStorePTransformer::transformFilterableScanPushdownOnly(const shared_pt
                                                                         table->getSchema(),
                                                                         partition->getNumBytes());
     scanPOps.emplace_back(scanPOp);
+    objectToHost_.emplace(object, fpdbStoreConnector_->getHost(*fpdbStoreNodeId));
 
     // filter
     if (predicate) {
@@ -643,6 +653,10 @@ PrePToFPDBStorePTransformer::transformFilterableScanCachingOnly(const shared_ptr
     const auto &predicate = partitionPredicateIt.second;
     const auto &bucket = partition->getBucket();
     const auto &object = partition->getObject();
+    const auto &fpdbStoreNodeId = partition->getNodeId();
+    if (!fpdbStoreNodeId.has_value()) {
+      throw runtime_error(fmt::format("Node id not set for FPDB store object: {}", partition->getObject()));
+    }
     pair<long, long> scanRange{0, partition->getNumBytes()};
 
     // project column names and its union with project column names
@@ -683,7 +697,7 @@ PrePToFPDBStorePTransformer::transformFilterableScanCachingOnly(const shared_ptr
                                                                table->getFormat(),
                                                                table->getSchema(),
                                                                partition->getNumBytes(),
-                                                               fpdbStoreConnector_->getHost(),
+                                                               fpdbStoreConnector_->getHost(*fpdbStoreNodeId),
                                                                fpdbStoreConnector_->getFileServicePort(),
                                                                nullopt,
                                                                false,

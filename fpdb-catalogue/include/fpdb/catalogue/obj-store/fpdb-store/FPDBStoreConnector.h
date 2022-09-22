@@ -7,13 +7,14 @@
 
 #include <fpdb/catalogue/obj-store/ObjStoreConnector.h>
 #include <string>
+#include <vector>
 
 namespace fpdb::catalogue::obj_store {
 
 class FPDBStoreConnector: public ObjStoreConnector {
 
 public:
-  FPDBStoreConnector(const std::string &host,
+  FPDBStoreConnector(const std::vector<std::string> &hosts,
                      int fileServicePort,
                      int flightPort);
   FPDBStoreConnector() = default;
@@ -21,12 +22,13 @@ public:
   FPDBStoreConnector& operator=(const FPDBStoreConnector&) = default;
   ~FPDBStoreConnector() = default;
 
-  const std::string &getHost() const;
+  const std::vector<std::string> &getHosts() const;
+  const std::string &getHost(int id) const;
   int getFileServicePort() const;
   int getFlightPort() const;
 
 private:
-  std::string host_;
+  std::vector<std::string> hosts_;
   int fileServicePort_;
   int flightPort_;
 
@@ -35,7 +37,7 @@ public:
   template <class Inspector>
   friend bool inspect(Inspector& f, FPDBStoreConnector& conn) {
     return f.object(conn).fields(f.field("storeType", conn.storeType_),
-                                 f.field("host", conn.host_),
+                                 f.field("hosts", conn.hosts_),
                                  f.field("fileServicePort", conn.fileServicePort_),
                                  f.field("flightPort", conn.flightPort_));
   }

@@ -35,22 +35,30 @@ def generate_object_map_round_robin():
         format_ = "tbl"
 
     # make object map
-    object_map = {}
+    object_map = []
     single_partition_table_id = 0
     for table in partition_map:
         num_partitions = partition_map[table]
         if num_partitions == 1:
-            object_map[table + "." + format_] = single_partition_table_id % num_nodes
+            object_entry = {
+                "object": table + "." + format_,
+                "nodeId": single_partition_table_id % num_nodes
+            }
+            object_map.append(object_entry)
             single_partition_table_id += 1
         else:
             for i in range(num_partitions):
-                object_map[table + "_sharded/" + table + "." + format_ + "." + str(i)] = i % num_nodes
+                object_entry = {
+                    "object": table + "_sharded/" + table + "." + format_ + "." + str(i),
+                    "nodeId": i % num_nodes
+                }
+                object_map.append(object_entry)
 
     # write object map to json file
     dict_to_file = {
         "schemaName": schema,
         "numNodes": num_nodes,
-        "objectToNode": object_map
+        "objectMap": object_map
     }
     object_map_path = os.path.join(schema_path, object_map_file_name)
     with open(object_map_path, 'w') as json_file:

@@ -142,7 +142,7 @@ void TestUtil::makeObjStoreConnector() {
     }
     case ObjStoreType::FPDB_STORE: {
       auto fpdbStoreClientConfig = FPDBStoreClientConfig::parseFPDBStoreClientConfig();
-      objStoreConnector_ = make_shared<FPDBStoreConnector>(fpdbStoreClientConfig->getHost(),
+      objStoreConnector_ = make_shared<FPDBStoreConnector>(fpdbStoreClientConfig->getHosts(),
                                                            fpdbStoreClientConfig->getFileServicePort(),
                                                            fpdbStoreClientConfig->getFlightPort());
       return;

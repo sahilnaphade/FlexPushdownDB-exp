@@ -7,6 +7,7 @@
 
 #include <fpdb/executor/physical/PhysicalOp.h>
 #include <fpdb/executor/physical/fpdb-store/FPDBStoreSuperPOp.h>
+#include <fpdb/executor/physical/fpdb-store/FPDBStoreFileScanPOp.h>
 #include <fpdb/plan/prephysical/separable/SeparableSuperPrePOp.h>
 #include <fpdb/plan/prephysical/FilterableScanPrePOp.h>
 #include <fpdb/plan/prephysical/FilterPrePOp.h>
@@ -111,6 +112,9 @@ private:
   std::shared_ptr<Mode> mode_;
   int numNodes_;
   std::shared_ptr<FPDBStoreConnector> fpdbStoreConnector_;
+
+  // temp variables
+  unordered_map<std::string, std::string> objectToHost_;
 
 };
 
