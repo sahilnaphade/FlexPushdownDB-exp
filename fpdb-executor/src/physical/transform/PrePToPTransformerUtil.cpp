@@ -8,6 +8,8 @@
 #include <fpdb/executor/physical/aggregate/function/MinMax.h>
 #include <fpdb/executor/physical/aggregate/function/Avg.h>
 #include <fpdb/executor/physical/aggregate/function/AvgReduce.h>
+#include <fpdb/executor/physical/fpdb-store/FPDBStoreFileScanPOp.h>
+#include <fpdb/executor/physical/fpdb-store/FPDBStoreSuperPOp.h>
 #include <fpdb/expression/gandiva/Column.h>
 #include <queue>
 
@@ -194,6 +196,19 @@ void PrePToPTransformerUtil::addPhysicalOps(const vector<shared_ptr<PhysicalOp>>
     }
     ops.emplace(newOp->name(), newOp);
   }
+}
+
+unordered_map<string, int>
+PrePToPTransformerUtil::getHostToNumOps(const vector<shared_ptr<PhysicalOp>> &fpdbStoreSuperPOps) {
+  unordered_map<string, int> hostToNumOps;
+  for (const auto &fpdbStoreSuperPOp: fpdbStoreSuperPOps) {
+    if (fpdbStoreSuperPOp->getType() != POpType::FPDB_STORE_SUPER) {
+      throw runtime_error("GetHostToNumOps should only be called with a vector of FPDBStoreSuperPOp");
+    }
+    auto host = static_pointer_cast<fpdb_store::FPDBStoreSuperPOp>(fpdbStoreSuperPOp)->getHost();
+    hostToNumOps[host]++;
+  }
+  return hostToNumOps;
 }
   
 }

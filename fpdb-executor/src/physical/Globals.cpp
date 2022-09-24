@@ -6,13 +6,16 @@
 
 namespace fpdb::executor::physical {
 
-void makeDoPutFlightClient(const std::string &host, int port) {
+arrow::flight::FlightClient* makeDoPutFlightClient(const std::string &host, int port) {
   std::lock_guard<std::mutex> g(DoPutFlightClientLock);
 
-  if (DoPutFlightClient.has_value()) {
-    return;
+  // check if already made before
+  auto clientIt = DoPutFlightClients.find(host);
+  if (clientIt != DoPutFlightClients.end()) {
+    return clientIt->second.get();
   }
 
+  // if not made yet, make one and save
   arrow::flight::Location clientLocation;
   auto status = arrow::flight::Location::ForGrpcTcp(host, port, &clientLocation);
   if (!status.ok()) {
@@ -26,11 +29,13 @@ void makeDoPutFlightClient(const std::string &host, int port) {
     throw std::runtime_error(status.message());
   }
 
-  DoPutFlightClient = std::move(client);
+  auto clientRawPtr = client.get();
+  DoPutFlightClients[host] = std::move(client);
+  return clientRawPtr;
 }
 
 void clearGlobal() {
-  DoPutFlightClient.reset();
+  DoPutFlightClients.clear();
 }
 
 }

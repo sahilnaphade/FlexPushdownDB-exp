@@ -15,18 +15,15 @@ namespace fpdb::executor::physical::fpdb_store {
  * Information needed to send bloom filter to fpdb-store
  */
 struct FPDBStoreBloomFilterCreateInfo {
-  // num copies to consume (each bloom filter is consumed by multiple shuffle ops at storage side)
-  int numCopies_;
-
-  // used to connect to store flight
-  std::string host_;
+  // used to connect to store flight, here denoted as <host, num copies>
+  // num copies -> num copies to consume (each bloom filter is consumed by multiple shuffle ops at storage side)
+  std::unordered_map<std::string, int> hosts_;
   int port_;
 
   // caf inspect
   template <class Inspector>
   friend bool inspect(Inspector& f, FPDBStoreBloomFilterCreateInfo& info) {
-    return f.object(info).fields(f.field("numCopies", info.numCopies_),
-                                 f.field("host", info.host_),
+    return f.object(info).fields(f.field("hosts", info.hosts_),
                                  f.field("port", info.port_));
   }
 };

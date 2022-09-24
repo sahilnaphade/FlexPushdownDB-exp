@@ -8,7 +8,6 @@
 #include <fpdb/executor/physical/PhysicalOp.h>
 #include <fpdb/executor/physical/PhysicalPlan.h>
 #include <fpdb/executor/physical/aggregate/function/AggregateFunction.h>
-#include <fpdb/executor/physical/fpdb-store/FPDBStoreFileScanPOp.h>
 #include <fpdb/plan/prephysical/AggregatePrePFunction.h>
 #include <unordered_map>
 
@@ -78,6 +77,13 @@ public:
    */
   static void addPhysicalOps(const vector<shared_ptr<PhysicalOp>> &newOps,
                              unordered_map<string, shared_ptr<PhysicalOp>> &ops);
+
+  /**
+   * Get a map of <host, num ops>
+   * @param fpdbStoreSuperPOps
+   * @return
+   */
+  static unordered_map<string, int> getHostToNumOps(const vector<shared_ptr<PhysicalOp>> &fpdbStoreSuperPOps);
 
 };
 

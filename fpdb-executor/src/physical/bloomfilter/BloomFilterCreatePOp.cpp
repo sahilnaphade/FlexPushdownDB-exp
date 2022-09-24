@@ -95,10 +95,7 @@ void BloomFilterCreatePOp::onComplete(const CompleteMessage &) {
 }
 
 void BloomFilterCreatePOp::putBloomFilterToStore(const std::shared_ptr<BloomFilter> &bloomFilter) {
-  // make flight client and connect
-  makeDoPutFlightClient(bloomFilterInfo_->host_, bloomFilterInfo_->port_);
-
-  // send request to store
+  // bitmap to record batch
   auto bitmap = bloomFilter->getBitArray();
   auto expRecordBatch = ArrowSerializer::bitmap_to_recordBatch(bitmap);
   if (!expRecordBatch.has_value()) {
@@ -106,31 +103,40 @@ void BloomFilterCreatePOp::putBloomFilterToStore(const std::shared_ptr<BloomFilt
   }
   auto recordBatch = *expRecordBatch;
 
-  auto cmdObj = PutBitmapCmd::make(BitmapType::BLOOM_FILTER_COMPUTE, queryId_, name_, true,
-                                   bloomFilterInfo_->numCopies_, bloomFilter->toJson());
-  auto expCmd = cmdObj->serialize(false);
-  if (!expCmd.has_value()) {
-    ctx()->notifyError(expCmd.error());
-  }
-  auto descriptor = ::arrow::flight::FlightDescriptor::Command(*expCmd);
-  std::unique_ptr<arrow::flight::FlightStreamWriter> writer;
-  std::unique_ptr<arrow::flight::FlightMetadataReader> metadataReader;
-  auto status = (*DoPutFlightClient)->DoPut(descriptor, recordBatch->schema(), &writer, &metadataReader);
-  if (!status.ok()) {
-    ctx()->notifyError(status.message());
-  }
+  // send request to all hosts
+  for (const auto &hostIt: bloomFilterInfo_->hosts_) {
+    // make flight client and connect
+    auto client = makeDoPutFlightClient(hostIt.first, bloomFilterInfo_->port_);
 
-  status = writer->WriteRecordBatch(*recordBatch);
-  if (!status.ok()) {
-    ctx()->notifyError(status.message());
-  }
-  status = writer->DoneWriting();
-  if (!status.ok()) {
-    ctx()->notifyError(status.message());
-  }
-  status = writer->Close();
-  if (!status.ok()) {
-    ctx()->notifyError(status.message());
+    // make flight descriptor
+    auto cmdObj = PutBitmapCmd::make(BitmapType::BLOOM_FILTER_COMPUTE, queryId_, name_, true,
+                                     hostIt.second, bloomFilter->toJson());
+    auto expCmd = cmdObj->serialize(false);
+    if (!expCmd.has_value()) {
+      ctx()->notifyError(expCmd.error());
+    }
+    auto descriptor = ::arrow::flight::FlightDescriptor::Command(*expCmd);
+
+    // send to host
+    std::unique_ptr<arrow::flight::FlightStreamWriter> writer;
+    std::unique_ptr<arrow::flight::FlightMetadataReader> metadataReader;
+    auto status = client->DoPut(descriptor, recordBatch->schema(), &writer, &metadataReader);
+    if (!status.ok()) {
+      ctx()->notifyError(status.message());
+    }
+
+    status = writer->WriteRecordBatch(*recordBatch);
+    if (!status.ok()) {
+      ctx()->notifyError(status.message());
+    }
+    status = writer->DoneWriting();
+    if (!status.ok()) {
+      ctx()->notifyError(status.message());
+    }
+    status = writer->Close();
+    if (!status.ok()) {
+      ctx()->notifyError(status.message());
+    }
   }
 }
 

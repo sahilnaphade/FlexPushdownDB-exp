@@ -529,7 +529,7 @@ void FilterPOp::putBitmapToFPDBStore() {
   }
 
   // make flight client and connect
-  makeDoPutFlightClient(bitmapWrapper_->host_, bitmapWrapper_->port_);
+  auto client = makeDoPutFlightClient(bitmapWrapper_->host_, bitmapWrapper_->port_);
 
   // send request to store
   bool valid = isBitmapSet();
@@ -548,7 +548,7 @@ void FilterPOp::putBitmapToFPDBStore() {
   auto descriptor = ::arrow::flight::FlightDescriptor::Command(*expCmd);
   std::unique_ptr<arrow::flight::FlightStreamWriter> writer;
   std::unique_ptr<arrow::flight::FlightMetadataReader> metadataReader;
-  auto status = (*DoPutFlightClient)->DoPut(descriptor, recordBatch->schema(), &writer, &metadataReader);
+  auto status = client->DoPut(descriptor, recordBatch->schema(), &writer, &metadataReader);
   if (!status.ok()) {
     ctx()->notifyError(status.message());
   }

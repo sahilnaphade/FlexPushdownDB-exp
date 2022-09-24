@@ -241,7 +241,7 @@ void FPDBStoreSuperPOp::processEmpty() {
 
   // need to clear bitmaps cached at storage if bitmap pushdown is enabled for some ops
   // make flight client and connect
-  makeDoPutFlightClient(host_, port_);
+  auto client = makeDoPutFlightClient(host_, port_);
 
   for (const auto &opIt: subPlan_->getPhysicalOps()) {
     auto op = opIt.second;
@@ -262,7 +262,7 @@ void FPDBStoreSuperPOp::processEmpty() {
       auto descriptor = ::arrow::flight::FlightDescriptor::Command(*expCmd);
       std::unique_ptr<arrow::flight::FlightStreamWriter> writer;
       std::unique_ptr<arrow::flight::FlightMetadataReader> metadataReader;
-      auto status = (*DoPutFlightClient)->DoPut(descriptor, nullptr, &writer, &metadataReader);
+      auto status = client->DoPut(descriptor, nullptr, &writer, &metadataReader);
       if (!status.ok()) {
         ctx()->notifyError(status.message());
       }

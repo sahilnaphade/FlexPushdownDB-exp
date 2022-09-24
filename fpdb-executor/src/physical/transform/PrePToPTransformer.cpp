@@ -682,8 +682,7 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
         // set bloom filter create info
         auto fpdbStoreConnector = static_pointer_cast<FPDBStoreConnector>(objStoreConnector_);
         static_pointer_cast<bloomfilter::BloomFilterCreatePOp>(bloomFilterCreatePOp)->setBloomFilterInfo(
-                FPDBStoreBloomFilterCreateInfo{(int) upRightConnPOps.size(),
-                                               fpdbStoreConnector->getHost(0),    // TODO: send to all hosts
+                FPDBStoreBloomFilterCreateInfo{PrePToPTransformerUtil::getHostToNumOps(upRightConnPOps),
                                                fpdbStoreConnector->getFlightPort()});
 
         // set bloom filter use info (embedded bloom filter) to last sub op inside upConnRightPOps
@@ -840,8 +839,7 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
         auto fpdbStoreConnector = static_pointer_cast<FPDBStoreConnector>(objStoreConnector_);
         for (const auto &bloomFilterCreatePOp: bloomFilterCreatePOps) {
           static_pointer_cast<bloomfilter::BloomFilterCreatePOp>(bloomFilterCreatePOp)->setBloomFilterInfo(
-                  FPDBStoreBloomFilterCreateInfo{(int) upRightConnPOps.size(),
-                                                 fpdbStoreConnector->getHost(0),    // TODO: send to all hosts
+                  FPDBStoreBloomFilterCreateInfo{PrePToPTransformerUtil::getHostToNumOps(upRightConnPOps),
                                                  fpdbStoreConnector->getFlightPort()});
         }
 
