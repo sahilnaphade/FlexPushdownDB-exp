@@ -7,6 +7,9 @@ source "$util_param_path"
 util_func_path=$(pwd)"/util_func.sh"
 source "$util_func_path"
 
+# stop the system first in case not yet
+./stop.sh
+
 # storage
 if [ "${use_fpdb_store}" = true ]; then
   echo "[Start FPDB store]"
