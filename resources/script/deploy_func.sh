@@ -57,9 +57,9 @@ function deploy() {
   echo "Sending built files to cluster nodes..."
 
   if [ "${is_compute}" = true ]; then
-    node_ips="$compute_ips"
+    node_ips=("${compute_ips[@]}")
   else
-    node_ips="$fpdb_store_ips"
+    node_ips=("${fpdb_store_ips[@]}")
   fi
   for node_ip in "${node_ips[@]}"
   do
