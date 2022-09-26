@@ -23,7 +23,7 @@ done
 pids=()
 for node_ip in "${fpdb_store_ips[@]}"
 do
-  run_command "$pem_path" "$node_ip" "$deploy_dir""/resources/script/fpdb-store/prepare_data_from_s3.sh" "${data_relative_dirs[@]}" "&"
+  run_command "$pem_path" "$node_ip" "$deploy_dir""/resources/script/fpdb-store/prepare_data_from_s3.sh" "${data_relative_dirs[@]}" &
   pids[${#pids[@]}]=$!
 done
 
