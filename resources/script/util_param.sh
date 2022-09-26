@@ -9,6 +9,7 @@ export build_dir_name="build"
 export deploy_dir_name="FPDB-build"
 export temp_dir_name="temp"
 export pem_path="$HOME""/.aws/yifei-aws-wisc.pem"
+export use_fpdb_store=true
 
 # fixed parameters
 export compute_targets=("fpdb-main-server" "fpdb-main-test" "fpdb-main-bench")
