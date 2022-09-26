@@ -9,6 +9,7 @@ source "$util_func_path"
 
 # stop the system first in case not yet
 ./stop.sh
+printf "\n"
 
 # storage
 if [ "${use_fpdb_store}" = true ]; then
