@@ -84,6 +84,12 @@ void FPDBStoreSuperPOp::setShufflePOp(const std::shared_ptr<PhysicalOp> &op) {
   shufflePOpName_ = op->name();
 }
 
+void FPDBStoreSuperPOp::addFPDBStoreBloomFilterProducer(
+        const std::shared_ptr<PhysicalOp> &fpdbStoreBloomFilterProducer) {
+  ++numBloomFiltersExpected_;
+  PhysicalOp::consume(fpdbStoreBloomFilterProducer);
+}
+
 void FPDBStoreSuperPOp::onStart() {
   SPDLOG_DEBUG("Starting operator  |  name: '{}'", this->name());
 
@@ -119,22 +125,9 @@ void FPDBStoreSuperPOp::onCacheLoadResponse(const ScanMessage &msg) {
   }
 }
 
-void FPDBStoreSuperPOp::onBloomFilter(const BloomFilterMessage &msg) {
-  std::optional<std::shared_ptr<bloomfilter::BloomFilterUsePOp>> bloomFilterUsePOp;
-
-  for (const auto &opIt: subPlan_->getPhysicalOps()) {
-    auto op = opIt.second;
-    if (op->getType() == POpType::BLOOM_FILTER_USE) {
-      bloomFilterUsePOp = std::static_pointer_cast<bloomfilter::BloomFilterUsePOp>(op);
-      break;
-    }
-  }
-
-  if (!bloomFilterUsePOp.has_value()) {
-    // no BloomFilterUsePOp found
-    ctx()->notifyError("No BloomFilterUsePOp found");
-  }
-  (*bloomFilterUsePOp)->setBloomFilter(msg.getBloomFilter());
+void FPDBStoreSuperPOp::onBloomFilter(const BloomFilterMessage &) {
+  // this is just to notify that one bloom filter has been sent to store, no real bloom filter in the msg
+  ++numBloomFiltersReceived_;
 
   // try to process
   if (readyToProcess()) {
@@ -147,6 +140,12 @@ bool FPDBStoreSuperPOp::readyToProcess() {
   if (waitForScanMessage_) {
     return false;
   }
+
+  // check if all bloom filters needed have been sent to store
+  if (numBloomFiltersReceived_ < numBloomFiltersExpected_) {
+    return false;
+  }
+
   return true;
 }
 

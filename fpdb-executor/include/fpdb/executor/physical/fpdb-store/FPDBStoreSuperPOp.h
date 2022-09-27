@@ -38,11 +38,12 @@ public:
 
   void setWaitForScanMessage(bool waitForScanMessage);
   void setShufflePOp(const std::shared_ptr<PhysicalOp> &op);
+  void addFPDBStoreBloomFilterProducer(const std::shared_ptr<PhysicalOp> &fpdbStoreBloomFilterProducer);
 
 private:
   void onStart();
   void onCacheLoadResponse(const ScanMessage &msg);
-  void onBloomFilter(const BloomFilterMessage &msg);
+  void onBloomFilter(const BloomFilterMessage &);
   void onComplete(const CompleteMessage &);
 
   bool readyToProcess();
@@ -54,8 +55,15 @@ private:
   std::string host_;
   int port_;
 
+  // if waiting for scan message before sending request to store
   bool waitForScanMessage_ = false;
+
+  // set when pushing shuffle to store
   std::optional<std::string> shufflePOpName_ = std::nullopt;
+
+  // set when pushing bloom filter to store
+  int numBloomFiltersExpected_ = 0;
+  int numBloomFiltersReceived_ = 0;
 
 // caf inspect
 public:

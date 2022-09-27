@@ -326,7 +326,11 @@ tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::
       auto bloomFilterInfo = consumerToBloomFilterIt.second;
       auto bloomFilterKey = cache::BloomFilterCache::generateBloomFilterKey(query_id,
                                                                             bloomFilterInfo->bloomFilterCreatePOp_);
-      bloomFilterInfo->bloomFilter_ = get_bloom_filter_from_cache(bloomFilterKey);
+      auto exp_bloom_filter = bloom_filter_cache_.consumeBloomFilter(bloomFilterKey);
+      if (!exp_bloom_filter.has_value()) {
+        return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed, exp_bloom_filter.error()));
+      }
+      bloomFilterInfo->bloomFilter_ = *exp_bloom_filter;
     }
 
     // for each filter with bitmap pushdown enabled, wait until its bitmap is ready
@@ -504,7 +508,7 @@ FlightHandler::do_put_put_bitmap(const ServerCallContext&,
             cache::BloomFilterCache::generateBloomFilterKey(put_bitmap_cmd->query_id(), put_bitmap_cmd->op());
 
     // put bloom filter
-    put_bloom_filter_into_cache(bloom_filter_key, bloom_filter, *num_copies);
+    bloom_filter_cache_.produceBloomFilter(bloom_filter_key, bloom_filter, *num_copies);
   } else {
     // bitmap key
     auto bitmap_key = cache::BitmapCache::generateBitmapKey(put_bitmap_cmd->query_id(), put_bitmap_cmd->op());
@@ -552,33 +556,6 @@ std::optional<std::vector<int64_t>> FlightHandler::get_bitmap_from_cache(const s
   return *exp_bitmap;
 }
 
-std::shared_ptr<BloomFilter> FlightHandler::get_bloom_filter_from_cache(const std::string &key) {
-  // get corresponding vars
-  auto& bitmap_mutex = bitmap_mutex_map_[BitmapType::BLOOM_FILTER_COMPUTE];
-  auto& bitmap_cvs = bitmap_cvs_map_[BitmapType::BLOOM_FILTER_COMPUTE];
-
-  // get bloom filter until it's ready
-  std::unique_lock lock(*bitmap_mutex);
-
-  tl::expected<std::shared_ptr<BloomFilter>, std::string> exp_bloom_filter;
-  std::shared_ptr<std::condition_variable_any> cv;
-  auto cvIt = bitmap_cvs.find(key);
-  if (cvIt != bitmap_cvs.end()) {
-    cv = cvIt->second;
-  } else {
-    cv = std::make_shared<std::condition_variable_any>();
-    bitmap_cvs[key] = cv;
-  }
-
-  cv->wait(lock, [&] {
-    exp_bloom_filter = bloom_filter_cache_.consumeBloomFilter(key);
-    return exp_bloom_filter.has_value();
-  });
-
-  bitmap_cvs.erase(key);
-  return *exp_bloom_filter;
-}
-
 void FlightHandler::put_bitmap_into_cache(const std::string &key,
                                           const std::vector<int64_t> &bitmap,
                                           BitmapType bitmap_type,
@@ -599,31 +576,10 @@ void FlightHandler::put_bitmap_into_cache(const std::string &key,
   bitmap_mutex->unlock();
 }
 
-void FlightHandler::put_bloom_filter_into_cache(const std::string &key,
-                                                const std::shared_ptr<BloomFilter> &bloom_filter,
-                                                int num_copies) {
-  // get corresponding vars
-  auto& bitmap_mutex = bitmap_mutex_map_[BitmapType::BLOOM_FILTER_COMPUTE];
-  auto& bitmap_cvs = bitmap_cvs_map_[BitmapType::BLOOM_FILTER_COMPUTE];
-
-  // put bloom filter
-  bloom_filter_cache_.produceBloomFilter(key, bloom_filter, num_copies);
-
-  bitmap_mutex->lock();
-  auto cvIt = bitmap_cvs.find(key);
-  if (cvIt != bitmap_cvs.end()) {
-    cvIt->second->notify_all();
-  }
-  bitmap_mutex->unlock();
-}
-
 void FlightHandler::init_bitmap_cache() {
-  auto bitmap_types = {BitmapType::FILTER_COMPUTE, BitmapType::FILTER_STORAGE, BitmapType::BLOOM_FILTER_COMPUTE};
-
+  auto bitmap_types = {BitmapType::FILTER_COMPUTE, BitmapType::FILTER_STORAGE};
   for (auto bitmap_type: bitmap_types) {
-    if (bitmap_type != BitmapType::BLOOM_FILTER_COMPUTE) {
-      bitmap_cache_map_[bitmap_type] = std::make_shared<BitmapCache>();
-    }
+    bitmap_cache_map_[bitmap_type] = std::make_shared<BitmapCache>();
     bitmap_mutex_map_[bitmap_type] = std::make_shared<std::mutex>();
     bitmap_cvs_map_[bitmap_type] = std::unordered_map<std::string, std::shared_ptr<std::condition_variable_any>>();
   }

@@ -686,6 +686,7 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
                                                fpdbStoreConnector->getFlightPort()});
 
         // set bloom filter use info (embedded bloom filter) to last sub op inside upConnRightPOps
+        // also connect bloom filter create with fpdb store super
         for (const auto &upRightConnPOp: upRightConnPOps) {
           auto subPlan = static_pointer_cast<FPDBStoreSuperPOp>(upRightConnPOp)->getSubPlan();
           auto expLast = subPlan->getLast();
@@ -699,6 +700,11 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
           (*expLast)->addConsumerToBloomFilterInfo((*expRoot)->name(),
                                                    bloomFilterCreatePOp->name(),
                                                    rightColumnNames);
+          // connect
+          static_pointer_cast<bloomfilter::BloomFilterCreatePOp>(bloomFilterCreatePOp)
+                  ->addFPDBStoreBloomFilterConsumer(upRightConnPOp);
+          static_pointer_cast<FPDBStoreSuperPOp>(upRightConnPOp)
+                  ->addFPDBStoreBloomFilterProducer(bloomFilterCreatePOp);
         }
 
         // connect upRightConnPOps (FPDBStoreSuperPOp) to downstream (joinProbePOp)
@@ -844,6 +850,7 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
         }
 
         // set bloom filter use info (embedded bloom filter) to last sub op inside upConnRightPOps
+        // also connect bloom filter create with fpdb store super
         for (const auto &upRightConnPOp: upRightConnPOps) {
           auto subPlan = static_pointer_cast<FPDBStoreSuperPOp>(upRightConnPOp)->getSubPlan();
           auto expLast = subPlan->getLast();
@@ -858,6 +865,11 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
             (*expLast)->addConsumerToBloomFilterInfo(joinProbePOps[i]->name(),
                                                      bloomFilterCreatePOps[i]->name(),
                                                      rightColumnNames);
+            // connect
+            static_pointer_cast<bloomfilter::BloomFilterCreatePOp>(bloomFilterCreatePOps[i])
+                    ->addFPDBStoreBloomFilterConsumer(upRightConnPOp);
+            static_pointer_cast<FPDBStoreSuperPOp>(upRightConnPOp)
+                    ->addFPDBStoreBloomFilterProducer(bloomFilterCreatePOps[i]);
           }
         }
 

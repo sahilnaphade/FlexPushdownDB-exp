@@ -30,6 +30,7 @@ public:
   void produce(const std::shared_ptr<PhysicalOp> &op) override;
 
   void addBloomFilterUsePOp(const std::shared_ptr<PhysicalOp> &bloomFilterUsePOp);
+  void addFPDBStoreBloomFilterConsumer(const std::shared_ptr<PhysicalOp> &fpdbStoreBloomFilterConsumer);
   void setBloomFilterInfo(const fpdb_store::FPDBStoreBloomFilterCreateInfo &bloomFilterInfo);
 
 private:
@@ -37,6 +38,7 @@ private:
   void onTupleSet(const TupleSetMessage &msg);
   void onComplete(const CompleteMessage &);
   void putBloomFilterToStore(const std::shared_ptr<BloomFilter> &bloomFilter);
+  void notifyFPDBStoreBloomFilterUsers();
 
   BloomFilterCreateKernel kernel_;
   std::set<std::string> bloomFilterUsePOps_;
@@ -44,6 +46,7 @@ private:
 
   // set only when pushing down bloom filter
   std::optional<fpdb_store::FPDBStoreBloomFilterCreateInfo> bloomFilterInfo_;
+  std::set<std::string> fpdbStoreBloomFilterConsumers_;
 
 // caf inspect
 public:

@@ -48,6 +48,12 @@ void BloomFilterCreatePOp::addBloomFilterUsePOp(const std::shared_ptr<PhysicalOp
   PhysicalOp::produce(bloomFilterUsePOp);
 }
 
+void BloomFilterCreatePOp::addFPDBStoreBloomFilterConsumer(
+        const std::shared_ptr<PhysicalOp> &fpdbStoreBloomFilterConsumer) {
+  fpdbStoreBloomFilterConsumers_.emplace(fpdbStoreBloomFilterConsumer->name());
+  PhysicalOp::produce(fpdbStoreBloomFilterConsumer);
+}
+
 void BloomFilterCreatePOp::setBloomFilterInfo(const fpdb_store::FPDBStoreBloomFilterCreateInfo &bloomFilterInfo) {
   bloomFilterInfo_ = bloomFilterInfo;
 }
@@ -88,6 +94,7 @@ void BloomFilterCreatePOp::onComplete(const CompleteMessage &) {
     // send bloom filter to fpdb-store if needed
     if (bloomFilterInfo_.has_value()) {
       putBloomFilterToStore(*bloomFilter);
+      notifyFPDBStoreBloomFilterUsers();
     }
 
     ctx()->notifyComplete();
@@ -138,6 +145,12 @@ void BloomFilterCreatePOp::putBloomFilterToStore(const std::shared_ptr<BloomFilt
       ctx()->notifyError(status.message());
     }
   }
+}
+
+void BloomFilterCreatePOp::notifyFPDBStoreBloomFilterUsers() {
+  // just send a msg to notify that bloom filter is ready at store, no real bloom filter in the msg
+  std::shared_ptr<Message> bloomFilterMessage = std::make_shared<BloomFilterMessage>(nullptr, name_);
+  ctx()->tell(bloomFilterMessage, fpdbStoreBloomFilterConsumers_);
 }
 
 void BloomFilterCreatePOp::clear() {
