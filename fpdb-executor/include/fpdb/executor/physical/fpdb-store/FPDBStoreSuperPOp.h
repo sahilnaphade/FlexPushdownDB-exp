@@ -83,7 +83,9 @@ public:
                                f.field("host", op.host_),
                                f.field("port", op.port_),
                                f.field("waitForScanMessage", op.waitForScanMessage_),
-                               f.field("shufflePOpName", op.shufflePOpName_));
+                               f.field("shufflePOpName", op.shufflePOpName_),
+                               f.field("numBloomFiltersExpected", op.numBloomFiltersExpected_),
+                               f.field("numBloomFiltersReceived", op.numBloomFiltersReceived_));
   }
 
 };
