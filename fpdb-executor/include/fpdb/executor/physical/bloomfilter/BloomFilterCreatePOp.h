@@ -65,7 +65,8 @@ public:
                                f.field("kernel", op.kernel_),
                                f.field("bloomFilterUsePOps", op.bloomFilterUsePOps_),
                                f.field("passTupleSetConsumers", op.passTupleSetConsumers_),
-                               f.field("bloomFilterInfo", op.bloomFilterInfo_));
+                               f.field("bloomFilterInfo", op.bloomFilterInfo_),
+                               f.field("fpdbStoreBloomFilterConsumers", op.fpdbStoreBloomFilterConsumers_));
   }
 };
 
