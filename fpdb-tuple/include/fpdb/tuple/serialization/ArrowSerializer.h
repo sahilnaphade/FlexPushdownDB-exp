@@ -16,10 +16,18 @@ class ArrowSerializer {
 public:
   /**
    * Serialization and deserialization methods of arrow::Table.
+   * If setting copy_view = false, need to make sure the bytes vector doesn't become invalid
+   * during the usage of the output table.
    */
   static std::shared_ptr<arrow::Table> bytes_to_table(const std::vector<std::uint8_t>& bytes_vec,
                                                       bool copy_view = true);
   static std::vector<std::uint8_t> table_to_bytes(const std::shared_ptr<arrow::Table>& table);
+
+  /**
+   * This is just used by the temp fix for the issue that arrow's group-by kernel will crash
+   * when using unaligned buffers from flight.
+   */
+  static std::shared_ptr<arrow::Table> align_table_by_copy(const std::shared_ptr<arrow::Table>& table);
 
   /**
    * Serialization and deserialization methods of arrow::RecordBatch.

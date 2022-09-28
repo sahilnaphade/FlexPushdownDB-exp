@@ -78,6 +78,49 @@ std::vector<std::uint8_t> ArrowSerializer::table_to_bytes(const std::shared_ptr<
   return bytes_vec;
 }
 
+std::shared_ptr<arrow::Table> ArrowSerializer::align_table_by_copy(const std::shared_ptr<arrow::Table>& table) {
+  if (!table) {
+    return nullptr;
+  }
+
+  arrow::Status status;
+
+  // table -> buffer
+  auto maybe_output_stream = arrow::io::BufferOutputStream::Create();
+  if (!maybe_output_stream.ok())
+    throw std::runtime_error(fmt::format("Error converting Arrow table to bytes  |  error: {}", maybe_output_stream.status().message()));
+
+  auto maybe_writer = arrow::ipc::MakeStreamWriter((*maybe_output_stream).get(), table->schema());
+  if (!maybe_writer.ok())
+    throw std::runtime_error(fmt::format("Error converting Arrow table to bytes  |  error: {}", maybe_writer.status().message()));
+
+  status = (*maybe_writer)->WriteTable(*table);
+  if (!status.ok())
+    throw std::runtime_error(fmt::format("Error converting Arrow table to bytes  |  error: {}", status.message()));
+
+  status = (*maybe_writer)->Close();
+  if (!status.ok())
+    throw std::runtime_error(fmt::format("Error converting Arrow table to bytes  |  error: {}", status.message()));
+
+  auto maybe_buffer = (*maybe_output_stream)->Finish();
+  if (!maybe_buffer.ok())
+    throw std::runtime_error(fmt::format("Error converting Arrow table to bytes  |  error: {}", status.message()));
+
+  // buffer -> table
+  auto buffer_reader = std::make_shared<::arrow::io::BufferReader>(*maybe_buffer);
+
+  auto maybe_reader = arrow::ipc::RecordBatchStreamReader::Open(buffer_reader);
+  if (!maybe_reader.ok())
+    throw std::runtime_error(fmt::format("Error converting bytes to Arrow table  |  error: {}", maybe_reader.status().message()));
+
+  std::shared_ptr<arrow::Table> new_table;
+  status = (*maybe_reader)->ReadAll(&new_table);
+  if (!status.ok())
+    throw std::runtime_error(fmt::format("Error converting bytes to Arrow table  |  error: {}", status.message()));
+
+  return new_table;
+}
+
 std::shared_ptr<arrow::RecordBatch> ArrowSerializer::bytes_to_recordBatch(const std::vector<std::uint8_t>& bytes_vec) {
   if (bytes_vec.empty()) {
     return nullptr;
