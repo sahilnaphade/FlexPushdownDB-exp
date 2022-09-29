@@ -120,7 +120,7 @@ file(MAKE_DIRECTORY ${ARROW_INCLUDE_DIR}) # Include directory needs to exist to 
 # Arrow does not add absl to the arrow_bundled_dependencies static library so we need to add it ourselves
 # See: https://issues.apache.org/jira/browse/ARROW-14708
 set(_ABSL_EP_INSTALL_DIR ${ARROW_BASE_DIR}/src/${ARROW_BASE}-build/absl_ep-install)
-file(MAKE_DIRECTORY ${_ABSL_EP_INSTALL_DIR}/${CMAKE_INSTALL_INCLUDEDIR})
+file(MAKE_DIRECTORY ${_ABSL_EP_INSTALL_DIR}/include)
 
 # Absl's lib structure is very complicated so use the targets exported by cmake
 set(_IMPORT_PREFIX ${_ABSL_EP_INSTALL_DIR})
