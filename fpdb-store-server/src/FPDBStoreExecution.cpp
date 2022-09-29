@@ -3,7 +3,6 @@
 //
 
 #include <fpdb/store/server/FPDBStoreExecution.h>
-#include <fpdb/store/server/cache/TableCache.hpp>
 
 namespace fpdb::store::server {
 

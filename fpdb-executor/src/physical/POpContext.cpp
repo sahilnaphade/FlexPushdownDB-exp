@@ -3,6 +3,7 @@
 //
 
 #include <fpdb/executor/physical/POpContext.h>
+#include <fpdb/executor/physical/Globals.h>
 #include <fpdb/executor/physical/bloomfilter/BloomFilterUseKernel.h>
 #include <fpdb/executor/cache/SegmentCacheActor.h>
 #include <fpdb/executor/message/Message.h>
@@ -11,11 +12,13 @@
 #include <fpdb/executor/message/TupleSetSizeMessage.h>
 #include <fpdb/executor/message/cache/LoadRequestMessage.h>
 #include <fpdb/executor/message/cache/CacheMetricsMessage.h>
+#include <fpdb/executor/flight/FlightHandler.h>
 #include <spdlog/spdlog.h>
 #include <utility>
 #include <cassert>
 
 using namespace fpdb::executor::message;
+using namespace fpdb::executor::flight;
 
 namespace fpdb::executor::physical {
 
@@ -32,51 +35,71 @@ void POpContext::tell(const std::shared_ptr<Message> &msg,
   // Send message to consumers
   auto &finalConsumers = consumers.has_value() ? *consumers : this->operatorActor()->operator_()->consumers();
   for (const auto &consumer: finalConsumers) {
-    ::caf::actor actorHandle = operatorMap_.get(consumer).value().getActor();
-
-    // apply embedded bloom filter
-    auto appliedMsg = applyEmbeddedBloomFilter(msg, consumer);
-
-    operatorActor_->anon_send(actorHandle, Envelope(appliedMsg));
+    send_regular(msg, consumer);
   }
 }
 
-void POpContext::send(const std::shared_ptr<message::Message> &msg, const std::string& recipientId) {
+void POpContext::send(const std::shared_ptr<message::Message> &msg, const std::string& consumer) {
   message::Envelope e(msg);
 
-  if(recipientId == "SegmentCache"){
-    if(msg->type() == MessageType::LOAD_REQUEST){
+  if (consumer == "SegmentCache"){
+    // message to segment cache
+    if (msg->type() == MessageType::LOAD_REQUEST) {
       operatorActor_->request(segmentCacheActor_, infinite, LoadAtom_v, std::static_pointer_cast<fpdb::executor::message::LoadRequestMessage>(msg))
       .then([=](const std::shared_ptr<fpdb::executor::message::LoadResponseMessage>& response){
       operatorActor_->anon_send(this->operatorActor(), Envelope(response));
       });
     }
-    else if(msg->type() == MessageType::STORE_REQUEST){
+    else if (msg->type() == MessageType::STORE_REQUEST) {
       operatorActor_->anon_send(segmentCacheActor_, StoreAtom_v, std::static_pointer_cast<fpdb::executor::message::StoreRequestMessage>(msg));
     }
-    else if(msg->type() == MessageType::WEIGHT_REQUEST){
+    else if (msg->type() == MessageType::WEIGHT_REQUEST) {
       operatorActor_->anon_send(segmentCacheActor_, WeightAtom_v, std::static_pointer_cast<fpdb::executor::message::WeightRequestMessage>(msg));
     }
-    else if(msg->type() == MessageType::CACHE_METRICS){
+    else if (msg->type() == MessageType::CACHE_METRICS) {
       operatorActor_->anon_send(segmentCacheActor_, MetricsAtom_v, std::static_pointer_cast<fpdb::executor::message::CacheMetricsMessage>(msg));
     }
-    else{
+    else {
       notifyError("Unrecognized message " + msg->getTypeString());
     }
+  } else {
+    // regular message
+    send_regular(msg, consumer);
+  }
+}
 
+void POpContext::send_regular(const std::shared_ptr<message::Message> &msg, const std::string &consumer) {
+  // get local op entry
+  auto expOpEntry = operatorMap_.get(consumer);
+  if (!expOpEntry.has_value()) {
+    notifyError(expOpEntry.error());
     return;
   }
+  auto opEntry = *expOpEntry;
 
-  auto expectedOperator = operatorMap_.get(recipientId);
-  if (expectedOperator.has_value()){
-    auto recipientOperator = expectedOperator.value();
+  // apply embedded bloom filter
+  auto appliedMsg = applyEmbeddedBloomFilter(msg, consumer);
 
-    // apply embedded bloom filter
-    auto appliedMsg = applyEmbeddedBloomFilter(msg, recipientId);
+  // decide whether use actor's comm or flight to send tupleSet message
+  if (USE_FLIGHT_COMM
+      && appliedMsg->type() == MessageType::TUPLESET
+      && operatorActor_->operator_()->getNodeId() != opEntry.getNodeId()) {
+    // check if daemon flight server already created
+    if (FlightHandler::daemonServer_ == nullptr) {
+      notifyError("Daemon flight server not created yet");
+    }
 
-    operatorActor_->anon_send(recipientOperator.getActor(), Envelope(appliedMsg));
-  } else{
-  	notifyError(fmt::format("Actor with id '{}' not found", recipientId));
+    // put table into flight server
+    FlightHandler::daemonServer_->putTable(operatorActor_->operator_()->getQueryId(), operatorActor_->name_, consumer,
+                                           std::static_pointer_cast<TupleSetMessage>(appliedMsg)->tuples()->table());
+
+    // send notification
+    std::shared_ptr<Message> tupleSetReadyRemoteMessage = std::make_shared<TupleSetReadyRemoteMessage>(
+            FlightHandler::daemonServer_->getHost(), FlightHandler::daemonServer_->getPort(), operatorActor_->name_);
+    operatorActor_->anon_send(opEntry.getActor(), Envelope(tupleSetReadyRemoteMessage));
+  } else {
+    // send using actor's comm
+    operatorActor_->anon_send(opEntry.getActor(), Envelope(appliedMsg));
   }
 }
 

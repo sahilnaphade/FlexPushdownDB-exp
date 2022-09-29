@@ -13,7 +13,7 @@ namespace fpdb::executor::physical {
 
 class POpConnection {
 public:
-  POpConnection(std::string Name, ::caf::actor ActorHandle, POpRelationshipType ConnectionType);
+  POpConnection(std::string Name, ::caf::actor ActorHandle, POpRelationshipType ConnectionType, int nodeId);
   POpConnection() = default;
   POpConnection(const POpConnection&) = default;
   POpConnection& operator=(const POpConnection&) = default;
@@ -21,11 +21,13 @@ public:
   const std::string &getName() const;
   const ::caf::actor &getActorHandle() const;
   POpRelationshipType getConnectionType() const;
+  int getNodeId() const;
 
 private:
   std::string name_;
   ::caf::actor actorHandle_;
   POpRelationshipType connectionType_;
+  int nodeId_;
 
 // caf inspect
 public:
@@ -33,7 +35,8 @@ public:
   friend bool inspect(Inspector& f, POpConnection& con) {
     return f.object(con).fields(f.field("name", con.name_),
                                 f.field("actorHandle", con.actorHandle_),
-                                f.field("connectionType", con.connectionType_));
+                                f.field("connectionType", con.connectionType_),
+                                f.field("nodeId", con.nodeId_));
   }
 };
 

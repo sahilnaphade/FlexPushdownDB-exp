@@ -36,6 +36,7 @@ public:
   static shared_ptr<ExecConfig> parseExecConfig(const shared_ptr<Catalogue> &catalogue,
                                                 const shared_ptr<ObjStoreConnector> &objStoreConnector);
   static int parseCAFServerPort();
+  static int parseFlightPort();
 
   const shared_ptr<Mode> &getMode() const;
   const shared_ptr<CachingPolicy> &getCachingPolicy() const;

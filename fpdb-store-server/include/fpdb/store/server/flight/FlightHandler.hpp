@@ -284,14 +284,6 @@ private:
    */
   void init_bitmap_cache();
 
-  /**
-   * Make record batches from table, generating at least 1 batch, which is required by record batch stream
-   * @param table
-   * @return
-   */
-  tl::expected<::arrow::RecordBatchVector, ::arrow::Status>
-  table_to_record_batches(const std::shared_ptr<::arrow::Table> &table);
-
   ::arrow::flight::Location location_;
   std::string store_root_path_;
   std::shared_ptr<::caf::actor_system> actor_system_;

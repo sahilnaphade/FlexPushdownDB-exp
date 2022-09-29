@@ -83,6 +83,11 @@ int ExecConfig::parseCAFServerPort() {
   return stoi(configMap["CAF_SERVER_PORT"]);
 }
 
+int ExecConfig::parseFlightPort() {
+  unordered_map<string, string> configMap = readConfig("exec.conf");
+  return stoi(configMap["FLIGHT_PORT"]);
+}
+
 size_t ExecConfig::parseCacheSize(const string& stringToParse) {
   size_t cacheSize;
   if (stringToParse.substr(stringToParse.length() - 2) == "GB"

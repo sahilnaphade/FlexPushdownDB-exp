@@ -39,6 +39,9 @@ add_library(fpdb-executor STATIC
         src/physical/POpContext.cpp include/fpdb/executor/physical/POpContext.h
         src/physical/PhysicalOp.cpp include/fpdb/executor/physical/PhysicalOp.h
         include/fpdb/executor/physical/POpType.h
+#        table communication across the compute cluster using flight
+        src/flight/FlightHandler.cpp include/fpdb/executor/flight/FlightHandler.h
+        src/flight/TableCache.cpp include/fpdb/executor/flight/TableCache.h
 #        physical operators
         src/physical/Globals.cpp include/fpdb/executor/physical/Globals.h
         src/physical/sort/SortPOp.cpp include/fpdb/executor/physical/sort/SortPOp.h
@@ -147,7 +150,7 @@ target_link_libraries(fpdb-executor PUBLIC graphviz_dot_layout_shared)
 target_link_libraries(fpdb-executor PUBLIC graphviz_neato_layout_shared)
 target_link_libraries(fpdb-executor PUBLIC primesieve_static)
 target_link_libraries(fpdb-executor PRIVATE fpdb-store-server-file)
-target_link_libraries(fpdb-executor PRIVATE fpdb-store-server-flight-api)
+target_link_libraries(fpdb-executor PUBLIC fpdb-store-server-flight-api)
 
 
 #-----------------------------------------------------------------------------------------------------------------------

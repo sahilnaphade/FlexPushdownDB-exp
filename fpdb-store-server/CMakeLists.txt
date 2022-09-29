@@ -89,18 +89,6 @@ add_library(fpdb-store-server-objlib OBJECT
         src/flight/FlightHandler.cpp include/fpdb/store/server/flight/FlightHandler.hpp
         src/flight/HeaderMiddleware.cpp include/fpdb/store/server/flight/HeaderMiddleware.hpp
         src/flight/HeaderMiddlewareFactory.cpp include/fpdb/store/server/flight/HeaderMiddlewareFactory.hpp
-        src/flight/CmdType.cpp include/fpdb/store/server/flight/CmdType.hpp
-        src/flight/CmdObject.cpp include/fpdb/store/server/flight/CmdObject.hpp
-        src/flight/SelectObjectContentCmd.cpp include/fpdb/store/server/flight/SelectObjectContentCmd.hpp
-        include/fpdb/store/server/flight/BitmapType.h
-        src/flight/PutBitmapCmd.cpp include/fpdb/store/server/flight/PutBitmapCmd.hpp
-        src/flight/ClearBitmapCmd.cpp include/fpdb/store/server/flight/ClearBitmapCmd.hpp
-        src/flight/TicketType.cpp include/fpdb/store/server/flight/TicketType.hpp
-        src/flight/TicketObject.cpp include/fpdb/store/server/flight/TicketObject.hpp
-        src/flight/GetObjectTicket.cpp include/fpdb/store/server/flight/GetObjectTicket.hpp
-        src/flight/SelectObjectContentTicket.cpp include/fpdb/store/server/flight/SelectObjectContentTicket.hpp
-        src/flight/GetBitmapTicket.cpp include/fpdb/store/server/flight/GetBitmapTicket.hpp
-        src/flight/GetTableTicket.cpp include/fpdb/store/server/flight/GetTableTicket.hpp
         src/cache/BitmapCache.cpp include/fpdb/store/server/cache/BitmapCache.hpp
         src/cache/BloomFilterCache.cpp include/fpdb/store/server/cache/BloomFilterCache.hpp
         src/cache/TableCache.cpp include/fpdb/store/server/cache/TableCache.hpp)
@@ -110,6 +98,7 @@ set_target_properties(fpdb-store-server-objlib PROPERTIES OUTPUT_NAME fpdb-store
 
 list(APPEND _PUBLIC_LINK_LIBRARIES expected)
 list(APPEND _PUBLIC_LINK_LIBRARIES fpdb-store-server-file)
+list(APPEND _PUBLIC_LINK_LIBRARIES fpdb-store-server-flight-api)
 list(APPEND _PRIVATE_LINK_LIBRARIES fpdb-executor)
 list(APPEND _PUBLIC_LINK_LIBRARIES nlohmann_json)
 list(APPEND _PUBLIC_LINK_LIBRARIES caf::libcaf_core_shared)

@@ -51,6 +51,7 @@ POpActor::POpActor(::caf::actor_config &cfg, std::shared_ptr<PhysicalOp> opBehav
         auto localEntry = LocalPOpDirectoryEntry(element.getName(),
                                 element.getActorHandle(),
                                 element.getConnectionType(),
+                                element.getNodeId(),
                                 false);
 
         auto result = self->operator_()->ctx()->operatorMap().insert(localEntry);
@@ -165,7 +166,7 @@ POpActor::read_table_from_fpdb_store(const std::string &host, int port, const st
 
   // return
   if (table == nullptr) {
-    opBehaviour_->ctx()->notifyError("Received null table from FPDB-Store");
+    opBehaviour_->ctx()->notifyError(fmt::format("Received null table from remote node: {}", host));
   }
 
   // FIXME: arrow flight may produce unaligned buffers after transferring, which may crash if the table is used

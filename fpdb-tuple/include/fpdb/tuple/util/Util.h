@@ -19,6 +19,12 @@ public:
   static tl::expected<std::shared_ptr<arrow::RecordBatch>, std::string>
   makeEmptyRecordBatch(const std::shared_ptr<arrow::Schema> &schema);
 
+  /**
+   * Make record batches from table, generating at least 1 batch
+   */
+  static tl::expected<::arrow::RecordBatchVector, std::string>
+  table_to_record_batches(const std::shared_ptr<::arrow::Table> &table);
+
 };
 
 }

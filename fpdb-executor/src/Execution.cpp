@@ -173,7 +173,10 @@ void Execution::start() {
         throw runtime_error(expEntry.error());
       }
       auto producerHandle = (*expEntry).getActorHandle();
-      opConnections.emplace_back(producer, producerHandle, POpRelationshipType::Producer);
+      opConnections.emplace_back(producer,
+                                 producerHandle,
+                                 POpRelationshipType::Producer,
+                                 (*expEntry).getDef()->getNodeId());
     }
     for (const auto &consumer: element.second.getDef()->consumers()) {
       auto expEntry = opDirectory_.get(consumer);
@@ -181,7 +184,10 @@ void Execution::start() {
         throw runtime_error(expEntry.error());
       }
       auto consumerHandle = (*expEntry).getActorHandle();
-      opConnections.emplace_back(consumer, consumerHandle, POpRelationshipType::Consumer);
+      opConnections.emplace_back(consumer,
+                                 consumerHandle,
+                                 POpRelationshipType::Consumer,
+                                 (*expEntry).getDef()->getNodeId());
     }
 
     auto cm = make_shared<message::ConnectMessage>(opConnections, ExecutionRootActorName);

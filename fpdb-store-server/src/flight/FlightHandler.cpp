@@ -275,8 +275,8 @@ tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::
     }
   }
 
-  return tl::make_unexpected(MakeFlightError(
-          FlightStatusCode::Failed, fmt::format("Unrecognized Flight Ticket type '{}'", ticket_object->type()->name())));
+  return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed,
+             fmt::format("Unrecognized Flight Ticket type '{}' at FPDB store", ticket_object->type()->name())));
 }
 
 tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status>
@@ -367,9 +367,9 @@ tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::
   }
 
   // make record batch stream and return
-  auto exp_batches = table_to_record_batches(table);
+  auto exp_batches = tuple::util::Util::table_to_record_batches(table);
   if (!exp_batches.has_value()) {
-    return tl::make_unexpected(exp_batches.error());
+    return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed,exp_batches.error()));
   }
   auto rb_reader = ::arrow::RecordBatchReader::Make(*exp_batches);
   return std::make_unique<::arrow::flight::RecordBatchStream>(*rb_reader);
@@ -412,9 +412,9 @@ tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::
   }
 
   // make record batch stream and return
-  auto exp_batches = table_to_record_batches(*exp_table);
+  auto exp_batches = tuple::util::Util::table_to_record_batches(*exp_table);
   if (!exp_batches.has_value()) {
-    return tl::make_unexpected(exp_batches.error());
+    return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed, exp_batches.error()));
   }
   auto rb_reader = ::arrow::RecordBatchReader::Make(*exp_batches);
   return std::make_unique<::arrow::flight::RecordBatchStream>(*rb_reader);
@@ -583,35 +583,6 @@ void FlightHandler::init_bitmap_cache() {
     bitmap_mutex_map_[bitmap_type] = std::make_shared<std::mutex>();
     bitmap_cvs_map_[bitmap_type] = std::unordered_map<std::string, std::shared_ptr<std::condition_variable_any>>();
   }
-}
-
-tl::expected<::arrow::RecordBatchVector, ::arrow::Status>
-FlightHandler::table_to_record_batches(const std::shared_ptr<arrow::Table> &table) {
-  if (table == nullptr) {
-    return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed, "Cannot make record batches from null table"));
-  }
-
-  ::arrow::RecordBatchVector batches;
-  if (table->num_rows() > 0) {
-    std::shared_ptr<arrow::RecordBatch> batch;
-    ::arrow::TableBatchReader tbl_reader(*table);
-    tbl_reader.set_chunksize(fpdb::tuple::DefaultChunkSize);
-    auto status = tbl_reader.ReadAll(&batches);
-    if (!status.ok()) {
-      return tl::make_unexpected(status);
-    }
-  } else {
-    ::arrow::ArrayVector arrayVec;
-    for (const auto &field: table->schema()->fields()) {
-      auto expArray = fpdb::tuple::util::Util::makeEmptyArray(field->type());
-      if (!expArray.has_value()) {
-        return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed, expArray.error()));
-      }
-      arrayVec.emplace_back(*expArray);
-    }
-    batches.emplace_back(::arrow::RecordBatch::Make(table->schema(), 0, arrayVec));
-  }
-  return batches;
 }
 
 } // namespace fpdb::store::server::flight

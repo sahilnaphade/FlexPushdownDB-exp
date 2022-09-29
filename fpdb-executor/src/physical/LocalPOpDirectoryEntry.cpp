@@ -11,11 +11,13 @@ namespace fpdb::executor::physical {
 LocalPOpDirectoryEntry::LocalPOpDirectoryEntry(std::string name,
                                                caf::actor actor,
                                                POpRelationshipType relationshipType,
+                                               int nodeId,
                                                bool complete) :
-    name_(std::move(name)),
-    actor_(std::move(actor)),
-    relationshipType_(relationshipType),
-    complete_(complete) {}
+  name_(std::move(name)),
+  actor_(std::move(actor)),
+  relationshipType_(relationshipType),
+  nodeId_(nodeId),
+  complete_(complete) {}
 
 const std::string &LocalPOpDirectoryEntry::name() const {
   return name_;
@@ -41,8 +43,12 @@ void LocalPOpDirectoryEntry::name(const std::string &name) {
   name_ = name;
 }
 
-const caf::actor & LocalPOpDirectoryEntry::getActor() const {
+const caf::actor &LocalPOpDirectoryEntry::getActor() const {
   return actor_;
+}
+
+int LocalPOpDirectoryEntry::getNodeId() const {
+  return nodeId_;
 }
 
 void LocalPOpDirectoryEntry::destroyActor() {

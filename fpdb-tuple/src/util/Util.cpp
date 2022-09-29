@@ -27,12 +27,38 @@ Util::makeEmptyRecordBatch(const std::shared_ptr<arrow::Schema> &schema) {
   arrow::ArrayVector arrayVec;
   for (const auto &field: schema->fields()) {
     auto expArray = makeEmptyArray(field->type());
-    if (!expArray) {
+    if (!expArray.has_value()) {
       return tl::make_unexpected(expArray.error());
     }
     arrayVec.emplace_back(*expArray);
   }
   return arrow::RecordBatch::Make(schema, 0, arrayVec);
 }
+
+tl::expected<::arrow::RecordBatchVector, std::string>
+Util::table_to_record_batches(const std::shared_ptr<arrow::Table> &table) {
+  if (table == nullptr) {
+    return tl::make_unexpected("Cannot make record batches from null table");
+  }
+
+  ::arrow::RecordBatchVector batches;
+  if (table->num_rows() > 0) {
+    std::shared_ptr<arrow::RecordBatch> batch;
+    ::arrow::TableBatchReader tbl_reader(*table);
+    tbl_reader.set_chunksize(fpdb::tuple::DefaultChunkSize);
+    auto status = tbl_reader.ReadAll(&batches);
+    if (!status.ok()) {
+      return tl::make_unexpected(status.message());
+    }
+  } else {
+    auto expRecordBatch = makeEmptyRecordBatch(table->schema());
+    if (!expRecordBatch.has_value()) {
+      return tl::make_unexpected(expRecordBatch.error());
+    }
+    batches.emplace_back(*expRecordBatch);
+  }
+  return batches;
+}
+
 
 }
