@@ -102,7 +102,7 @@ POpActor::POpActor(::caf::actor_config &cfg, std::shared_ptr<PhysicalOp> opBehav
 void POpActor::on_regular_message(const fpdb::executor::message::Envelope &msg) {
   if (msg.message().type() == MessageType::TUPLESET_READY_REMOTE) {
     const auto &typedMessage = dynamic_cast<const TupleSetReadyRemoteMessage &>(msg.message());
-    auto tupleSet = read_table_from_fpdb_store(typedMessage.getHost(), typedMessage.getPort(), typedMessage.sender());
+    auto tupleSet = read_remote_table(typedMessage.getHost(), typedMessage.getPort(), typedMessage.sender());
 
     // metrics
 #if SHOW_DEBUG_METRICS == true
@@ -128,7 +128,7 @@ void POpActor::on_regular_message(const fpdb::executor::message::Envelope &msg) 
 }
 
 std::shared_ptr<TupleSet>
-POpActor::read_table_from_fpdb_store(const std::string &host, int port, const std::string &sender) {
+POpActor::read_remote_table(const std::string &host, int port, const std::string &sender) {
   // make flight client and connect
   arrow::flight::Location clientLocation;
   auto status = arrow::flight::Location::ForGrpcTcp(host, port, &clientLocation);

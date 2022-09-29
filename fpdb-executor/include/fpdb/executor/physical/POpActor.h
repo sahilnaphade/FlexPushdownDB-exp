@@ -42,7 +42,7 @@ public:
   std::queue<fpdb::executor::message::Envelope> messageBuffer_;
 
 private:
-  std::shared_ptr<TupleSet> read_table_from_fpdb_store(const std::string &host, int port, const std::string &sender);
+  std::shared_ptr<TupleSet> read_remote_table(const std::string &host, int port, const std::string &sender);
 
   std::shared_ptr<PhysicalOp> opBehaviour_;
   long processingTime_ = 0;
