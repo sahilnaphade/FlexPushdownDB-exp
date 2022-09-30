@@ -49,7 +49,7 @@ inline bool ENABLE_FPDB_STORE_BITMAP_PUSHDOWN = false;
 inline bool USE_ARROW_GROUP_BY_IMPL = true;
 inline bool USE_ARROW_HASH_JOIN_IMPL = true;
 inline bool USE_TWO_PHASE_GROUP_BY = true;
-inline bool USE_FLIGHT_COMM = true;
+inline bool USE_FLIGHT_COMM = false;
 inline constexpr int64_t BLOOM_FILTER_MAX_INPUT_SIZE = 20000000;  // won't create bloom filter if input is too large
 
 /**
