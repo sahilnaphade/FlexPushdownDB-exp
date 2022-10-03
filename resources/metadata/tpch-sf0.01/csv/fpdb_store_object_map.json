@@ -1,5 +1,5 @@
 {
-  "schemaName": "tpch-sf0.01/csv",
+  "schemaName": "tpch-sf0.01/csv/",
   "numNodes": 1,
   "objectMap": [
     {

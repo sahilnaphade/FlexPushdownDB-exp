@@ -2,7 +2,7 @@ import os
 import json
 
 # configurable parameters
-schema = "tpch-sf10/csv"
+schema = "tpch-sf10/csv/"
 type_ = "round_robin"
 object_map_file_name = "fpdb_store_object_map.json"
 

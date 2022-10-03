@@ -1,5 +1,5 @@
 {
-  "schemaName": "tpch-sf0.01/parquet",
+  "schemaName": "tpch-sf0.01/parquet/",
   "numNodes": 1,
   "objectMap": [
     {
