@@ -14,8 +14,8 @@ namespace fpdb::aws {
 
 class AWSConfig {
 public:
-  AWSConfig(S3ClientType s3ClientType,
-            size_t networkLimit);
+  AWSConfig(S3ClientType s3ClientType = S3ClientType::S3,
+            size_t networkLimit = 0);
 
   static shared_ptr<AWSConfig> parseAWSConfig();
 

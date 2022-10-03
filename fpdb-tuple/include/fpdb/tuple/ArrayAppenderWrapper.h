@@ -111,6 +111,8 @@ public:
       return ArrayAppenderWrapper<::arrow::Int64Type::c_type, ::arrow::Int64Type>::make(expectedSize);
     } else if (type->id() == ::arrow::DoubleType::type_id) {
       return ArrayAppenderWrapper<::arrow::DoubleType::c_type, ::arrow::DoubleType>::make(expectedSize);
+    } else if (type->id() == ::arrow::Date32Type::type_id) {
+      return ArrayAppenderWrapper<::arrow::Date32Type::c_type, ::arrow::Date32Type>::make(expectedSize);
     } else if (type->id() == ::arrow::Date64Type::type_id) {
       return ArrayAppenderWrapper<::arrow::Date64Type::c_type, ::arrow::Date64Type>::make(expectedSize);
     } else if (type->id() == ::arrow::BooleanType::type_id) {

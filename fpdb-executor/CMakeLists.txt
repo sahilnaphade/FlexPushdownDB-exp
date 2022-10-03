@@ -172,6 +172,22 @@ target_link_libraries(fpdb-executor-bench fpdb-executor)
 
 
 #-----------------------------------------------------------------------------------------------------------------------
+# Executable
+#-----------------------------------------------------------------------------------------------------------------------
+
+add_executable(fpdb-executor-hash-partitioner-exec
+        executable/HashPartitionerMain.cpp
+        src/physical/shuffle/ShuffleKernel.cpp include/fpdb/executor/physical/shuffle/ShuffleKernel.h
+        src/physical/shuffle/RecordBatchShuffler.cpp include/fpdb/executor/physical/shuffle/RecordBatchShuffler.h)
+
+target_include_directories(fpdb-executor-hash-partitioner-exec PRIVATE include)
+
+target_link_libraries(fpdb-executor-hash-partitioner-exec fpdb-tuple)
+target_link_libraries(fpdb-executor-hash-partitioner-exec fpdb-aws)
+target_link_libraries(fpdb-executor-hash-partitioner-exec nlohmann_json)
+
+
+#-----------------------------------------------------------------------------------------------------------------------
 # Diagnostics
 #-----------------------------------------------------------------------------------------------------------------------
 

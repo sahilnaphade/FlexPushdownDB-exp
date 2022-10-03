@@ -1,0 +1,78 @@
+{
+  "schemaName": "tpch-sf0.01-2-node-hash-part/parquet/",
+  "numNodes": 2,
+  "objectMap": [
+    {
+      "object": "nation_sharded/nation.parquet.0",
+      "nodeId": 0
+    },
+    {
+      "object": "nation_sharded/nation.parquet.1",
+      "nodeId": 1
+    },
+    {
+      "object": "region_sharded/region.parquet.0",
+      "nodeId": 0
+    },
+    {
+      "object": "region_sharded/region.parquet.1",
+      "nodeId": 1
+    },
+    {
+      "object": "part_sharded/part.parquet.0",
+      "nodeId": 0
+    },
+    {
+      "object": "part_sharded/part.parquet.1",
+      "nodeId": 1
+    },
+    {
+      "object": "supplier_sharded/supplier.parquet.0",
+      "nodeId": 0
+    },
+    {
+      "object": "supplier_sharded/supplier.parquet.1",
+      "nodeId": 1
+    },
+    {
+      "object": "partsupp_sharded/partsupp.parquet.0",
+      "nodeId": 0
+    },
+    {
+      "object": "partsupp_sharded/partsupp.parquet.1",
+      "nodeId": 1
+    },
+    {
+      "object": "customer_sharded/customer.parquet.0",
+      "nodeId": 0
+    },
+    {
+      "object": "customer_sharded/customer.parquet.1",
+      "nodeId": 1
+    },
+    {
+      "object": "orders_sharded/orders.parquet.0",
+      "nodeId": 0
+    },
+    {
+      "object": "orders_sharded/orders.parquet.1",
+      "nodeId": 1
+    },
+    {
+      "object": "lineitem_sharded/lineitem.parquet.0",
+      "nodeId": 0
+    },
+    {
+      "object": "lineitem_sharded/lineitem.parquet.1",
+      "nodeId": 0
+    },
+    {
+      "object": "lineitem_sharded/lineitem.parquet.2",
+      "nodeId": 1
+    },
+    {
+      "object": "lineitem_sharded/lineitem.parquet.3",
+      "nodeId": 1
+    }
+  ]
+}
