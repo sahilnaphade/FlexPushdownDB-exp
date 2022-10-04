@@ -12,6 +12,7 @@
 #include <aws/s3/model/GetObjectRequest.h>
 #include <aws/s3/model/PutObjectRequest.h>
 #include <nlohmann/json.hpp>
+#include <filesystem>
 #include <unordered_map>
 #include <stdio.h>
 #include <iostream>
@@ -277,19 +278,19 @@ private:
     fflush(log_);
 
     // directory path
-    filesystem::path schemaPath = std::filesystem::current_path()
+    std::filesystem::path schemaPath = std::filesystem::current_path()
             .parent_path()
             .parent_path()
             .append("resources/metadata")
             .append(newSchema_);
-    if (!filesystem::exists(schemaPath)) {
-      filesystem::create_directories(schemaPath);
+    if (!std::filesystem::exists(schemaPath)) {
+      std::filesystem::create_directories(schemaPath);
     }
 
     // read or create json file of hash keys
     nlohmann::ordered_json hashKeysJObj;
-    filesystem::path hashKeysFilePath = schemaPath.append("fpdb_store_hash_keys.json");
-    if (!recreateMetadataFiles_ && filesystem::exists(hashKeysFilePath)) {
+    std::filesystem::path hashKeysFilePath = schemaPath.append("fpdb_store_hash_keys.json");
+    if (!recreateMetadataFiles_ && std::filesystem::exists(hashKeysFilePath)) {
       hashKeysJObj = nlohmann::ordered_json::parse(readFile(hashKeysFilePath));
     } else {
       hashKeysJObj["schemaName"] = newSchema_;
@@ -315,8 +316,8 @@ private:
 
     // read or create json file of object map
     nlohmann::ordered_json objectMapJObj;
-    filesystem::path objectMapFilePath = schemaPath.append("fpdb_store_object_map.json");
-    if (!recreateMetadataFiles_ && filesystem::exists(objectMapFilePath)) {
+    std::filesystem::path objectMapFilePath = schemaPath.append("fpdb_store_object_map.json");
+    if (!recreateMetadataFiles_ && std::filesystem::exists(objectMapFilePath)) {
       objectMapJObj = nlohmann::ordered_json::parse(readFile(objectMapFilePath));
     } else {
       objectMapJObj["schemaName"] = newSchema_;
