@@ -1,5 +1,5 @@
 {
-  "schemaName": "tpch-sf0.01-2-node-hash-part/parquet/",
+  "schemaName": "tpch-sf0.01-1-node-hash-part/parquet/",
   "tables": [
     {
       "name": "nation",

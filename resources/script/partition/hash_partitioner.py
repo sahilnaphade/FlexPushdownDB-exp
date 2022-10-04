@@ -10,16 +10,16 @@ bucket = "flexpushdowndb"
 
 # configurable parameters
 num_rows_per_part = 20000
-num_nodes = 2
+num_nodes = 1
 schema = "tpch-sf0.01/parquet/"
 hash_keys = {
     "lineitem": "l_orderkey",
     "orders": "o_orderkey",
-    "customer": "c_custkey",
+    "customer": "c_nationkey",
     "part": "p_partkey",
     "partsupp": "ps_partkey",
-    "supplier": "s_suppkey",
-    "nation": "n_nationkey",
+    "supplier": "s_nationkey",
+    "nation": "n_regionkey",
     "region": "r_regionkey"
 }
 build_dir_name = "cmake-build-debug"

@@ -1,12 +1,12 @@
 {
-  "schemaName": "tpch-sf0.01-2-node-hash-part/parquet/",
+  "schemaName": "tpch-sf0.01-1-node-hash-part/parquet/",
   "tables": [
     {
       "name": "nation",
       "format": {
         "name": "parquet"
       },
-      "numPartitions": 2,
+      "numPartitions": 1,
       "fields": [
         {
           "name": "n_nationkey",
@@ -31,7 +31,7 @@
       "format": {
         "name": "parquet"
       },
-      "numPartitions": 2,
+      "numPartitions": 1,
       "fields": [
         {
           "name": "r_regionkey",
@@ -52,7 +52,7 @@
       "format": {
         "name": "parquet"
       },
-      "numPartitions": 2,
+      "numPartitions": 1,
       "fields": [
         {
           "name": "p_partkey",
@@ -97,7 +97,7 @@
       "format": {
         "name": "parquet"
       },
-      "numPartitions": 2,
+      "numPartitions": 1,
       "fields": [
         {
           "name": "s_suppkey",
@@ -134,7 +134,7 @@
       "format": {
         "name": "parquet"
       },
-      "numPartitions": 2,
+      "numPartitions": 1,
       "fields": [
         {
           "name": "ps_partkey",
@@ -163,7 +163,7 @@
       "format": {
         "name": "parquet"
       },
-      "numPartitions": 2,
+      "numPartitions": 1,
       "fields": [
         {
           "name": "c_custkey",
@@ -204,7 +204,7 @@
       "format": {
         "name": "parquet"
       },
-      "numPartitions": 2,
+      "numPartitions": 1,
       "fields": [
         {
           "name": "o_orderkey",
