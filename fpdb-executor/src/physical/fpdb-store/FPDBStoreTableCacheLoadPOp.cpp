@@ -3,6 +3,7 @@
 //
 
 #include <fpdb/executor/physical/fpdb-store/FPDBStoreTableCacheLoadPOp.h>
+#include <fpdb/executor/metrics/Globals.h>
 #include <fpdb/store/server/flight/GetTableTicket.hpp>
 #include <fpdb/store/server/flight/Util.hpp>
 #include <arrow/flight/api.h>
@@ -94,7 +95,15 @@ void FPDBStoreTableCacheLoadPOp::onTupleSetWaitRemote(const TupleSetWaitRemoteMe
       ctx()->notifyComplete();
       return;
     } else {
-      std::shared_ptr<Message> tupleSetMessage = std::make_shared<TupleSetMessage>(TupleSet::make(table), name_);
+      auto tupleSet = TupleSet::make(table);
+
+      // metrics
+#if SHOW_DEBUG_METRICS == true
+      std::shared_ptr<Message> execMetricsMsg = std::make_shared<DebugMetricsMessage>(tupleSet->size(), name_);
+      ctx()->notifyRoot(execMetricsMsg);
+#endif
+
+      std::shared_ptr<Message> tupleSetMessage = std::make_shared<TupleSetMessage>(tupleSet, name_);
       ctx()->tell(tupleSetMessage);
     }
   }

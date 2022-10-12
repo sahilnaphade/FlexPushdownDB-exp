@@ -21,7 +21,6 @@ POpActor::POpActor(::caf::actor_config &cfg, std::shared_ptr<PhysicalOp> opBehav
   name_ = opBehaviour_->name();
 }
 
-// TODO: add TupleSetReadyFPDBStoreMessage
 ::caf::behavior behaviour(POpActor *self) {
 
   auto ctx = self->operator_()->ctx();
