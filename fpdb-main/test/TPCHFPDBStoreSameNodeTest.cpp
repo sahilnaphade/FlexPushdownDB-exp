@@ -1029,7 +1029,7 @@ TEST_CASE ("tpch-sf0.01-1-node-hash-part-hash-join-not-pushable" * doctest::skip
 
 // Enable co-located hash join pushdown first
 // for 'tpch-sf0.01-1-node-hash-part', 'lineitem' and 'orders' are co-located at 'l_orderkey = o.o_orderkey'
-// just for a pullup baseline
+// just for a pullup baseline to check the hash-join pullup part from "PrePToFPDBStorePTransformer" is correct
 TEST_CASE ("tpch-sf0.01-1-node-hash-part-hash-join-pullup" * doctest::skip(false || SKIP_SUITE)) {
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01-1-node-hash-part/parquet/",
