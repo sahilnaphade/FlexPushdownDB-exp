@@ -20,6 +20,8 @@
 #include <fpdb/executor/physical/split/SplitPOp.h>
 #include <fpdb/executor/physical/bloomfilter/BloomFilterCreatePOp.h>
 #include <fpdb/executor/physical/bloomfilter/BloomFilterUsePOp.h>
+#include <fpdb/executor/physical/fpdb-store/FPDBStoreSuperPOp.h>
+#include <fpdb/executor/physical/fpdb-store/FPDBStoreTableCacheLoadPOp.h>
 #include <fpdb/executor/physical/collate/CollatePOp.h>
 #include <fpdb/executor/physical/transform/PrePToPTransformerUtil.h>
 #include <fpdb/executor/physical/transform/StoreTransformTraits.h>
@@ -334,13 +336,15 @@ PrePToPTransformer::transformGroupOnePhase(const shared_ptr<GroupPrePOp> &groupP
     }
 
     // check if we need to push shuffle to store
+    bool withHashJoinPushdown = false;
     if (catalogueEntry_->getType() == CatalogueEntryType::OBJ_STORE &&
         std::static_pointer_cast<obj_store::ObjStoreCatalogueEntry>(catalogueEntry_)->getStoreType() ==
           obj_store::ObjStoreType::FPDB_STORE) {
       const auto &shuffleAddRes =
               PrePToFPDBStorePTransformer::addSeparablePOp(upConnPOps, shufflePOps, physicalOps_, mode_);
-      auto opsForShuffle = shuffleAddRes.first;
-      auto addiOps = shuffleAddRes.second;
+      auto opsForShuffle = std::get<0>(shuffleAddRes);
+      auto addiOps = std::get<1>(shuffleAddRes);
+      withHashJoinPushdown = std::get<2>(shuffleAddRes);
       allPOps.insert(allPOps.end(), addiOps.begin(), addiOps.end());
       upConnPOps = opsForShuffle;
     } else {
@@ -351,7 +355,11 @@ PrePToPTransformer::transformGroupOnePhase(const shared_ptr<GroupPrePOp> &groupP
     }
 
     // connect to downstream
-    PrePToPTransformerUtil::connectManyToMany(upConnPOps, groupPOps);
+    if (withHashJoinPushdown) {
+      PrePToPTransformerUtil::connectOneToOne(upConnPOps, groupPOps);
+    } else {
+      PrePToPTransformerUtil::connectManyToMany(upConnPOps, groupPOps);
+    }
   }
 
   // add and return
@@ -422,8 +430,8 @@ PrePToPTransformer::transformGroupTwoPhase(const shared_ptr<GroupPrePOp> &groupP
       std::static_pointer_cast<obj_store::ObjStoreCatalogueEntry>(catalogueEntry_)->getStoreType() ==
         obj_store::ObjStoreType::FPDB_STORE) {
     const auto &groupAddRes = PrePToFPDBStorePTransformer::addSeparablePOp(upConnPOps, groupPOps, physicalOps_, mode_);
-    auto opsForGroup = groupAddRes.first;
-    auto addiOps = groupAddRes.second;
+    auto opsForGroup = std::get<0>(groupAddRes);
+    auto addiOps = std::get<1>(groupAddRes);
     allPOps.insert(allPOps.end(), addiOps.begin(), addiOps.end());
     upConnPOps = opsForGroup;
   } else {
@@ -449,13 +457,15 @@ PrePToPTransformer::transformGroupTwoPhase(const shared_ptr<GroupPrePOp> &groupP
     }
 
     // check if we need to push shuffle to store
+    bool withHashJoinPushdown = false;
     if (catalogueEntry_->getType() == CatalogueEntryType::OBJ_STORE &&
         std::static_pointer_cast<obj_store::ObjStoreCatalogueEntry>(catalogueEntry_)->getStoreType() ==
         obj_store::ObjStoreType::FPDB_STORE) {
       const auto &shuffleAddRes =
               PrePToFPDBStorePTransformer::addSeparablePOp(upConnPOps, shufflePOps, physicalOps_, mode_);
-      auto opsForShuffle = shuffleAddRes.first;
-      auto addiOps = shuffleAddRes.second;
+      auto opsForShuffle = std::get<0>(shuffleAddRes);
+      auto addiOps = std::get<1>(shuffleAddRes);
+      withHashJoinPushdown = std::get<2>(shuffleAddRes);
       allPOps.insert(allPOps.end(), addiOps.begin(), addiOps.end());
       upConnPOps = opsForShuffle;
     } else {
@@ -486,7 +496,11 @@ PrePToPTransformer::transformGroupTwoPhase(const shared_ptr<GroupPrePOp> &groupP
               aggReduceFunctions));
     }
     allPOps.insert(allPOps.end(), groupReducePOps.begin(), groupReducePOps.end());
-    PrePToPTransformerUtil::connectManyToMany(upConnPOps, groupReducePOps);
+    if (withHashJoinPushdown) {
+      PrePToPTransformerUtil::connectOneToOne(upConnPOps, groupReducePOps);
+    } else {
+      PrePToPTransformerUtil::connectManyToMany(upConnPOps, groupReducePOps);
+    }
     selfConnDownPOps = groupReducePOps;
   }
 
@@ -648,234 +662,119 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
   }
   if (isBloomFilterUseSeparable) {
     for (const auto &upRightConnPOp: upRightConnPOps) {
-      if (upRightConnPOp->getType() != POpType::FPDB_STORE_SUPER) {
+      if (upRightConnPOp->getType() != POpType::FPDB_STORE_SUPER
+          && upRightConnPOp->getType() != FPDB_STORE_TABLE_CACHE_LOAD) {
         isBloomFilterUseSeparable = false;
         break;
       }
     }
   }
 
-  // if num > 1, then we need shuffle operators
-  if (parallelDegree_ * numNodes_ == 1) {
-    // if using bloom filter
-    if (useBloomFilter) {
-      auto &joinBuildPOp = USE_ARROW_HASH_JOIN_IMPL ? hashJoinArrowPOps[0] : hashJoinBuildPOps[0];
-      auto &joinProbePOp = USE_ARROW_HASH_JOIN_IMPL ? hashJoinArrowPOps[0] : hashJoinProbePOps[0];
+  // create shuffle ops
+  vector<shared_ptr<PhysicalOp>> shuffleLeftPOps, shuffleRightPOps;
+  for (const auto &upLeftConnPOp: upLeftConnPOps) {
+    shuffleLeftPOps.emplace_back(make_shared<shuffle::ShufflePOp>(
+            fmt::format("Shuffle[{}]-{}", prePOpId, upLeftConnPOp->name()),
+            upLeftConnPOp->getProjectColumnNames(),
+            upLeftConnPOp->getNodeId(),
+            leftColumnNames));
+  }
+  for (const auto &upRightConnPOp : upRightConnPOps) {
+    shuffleRightPOps.emplace_back(make_shared<shuffle::ShufflePOp>(
+            fmt::format("Shuffle[{}]-{}", prePOpId, upRightConnPOp->name()),
+            upRightConnPOp->getProjectColumnNames(),
+            upRightConnPOp->getNodeId(),
+            rightColumnNames));
+  }
 
-      // BloomFilterCreatePOp
-      shared_ptr<PhysicalOp> bloomFilterCreatePOp = make_shared<bloomfilter::BloomFilterCreatePOp>(
-              fmt::format("BloomFilterCreate[{}]-{}", prePOpId, hashJoinPredicateStr),
-              upLeftConnPOps[0]->getProjectColumnNames(),
-              joinBuildPOp->getNodeId(),
-              leftColumnNames);
-      allPOps.emplace_back(bloomFilterCreatePOp);
+  // check if we need to push shuffle to store
+  bool leftWithHashJoinPushdown = false, rightWithHashJoinPushdown = false;
+  if (catalogueEntry_->getType() == CatalogueEntryType::OBJ_STORE &&
+      std::static_pointer_cast<obj_store::ObjStoreCatalogueEntry>(catalogueEntry_)->getStoreType() ==
+        obj_store::ObjStoreType::FPDB_STORE) {
+    // left, connection to upstream will be made in addSeparablePOp()
+    const auto &shuffleLeftAddRes =
+            PrePToFPDBStorePTransformer::addSeparablePOp(upLeftConnPOps, shuffleLeftPOps, physicalOps_, mode_);
+    auto opsForShuffleLeft = std::get<0>(shuffleLeftAddRes);
+    auto leftAddiOps = std::get<1>(shuffleLeftAddRes);
+    leftWithHashJoinPushdown = std::get<2>(shuffleLeftAddRes);
+    allPOps.insert(allPOps.end(), leftAddiOps.begin(), leftAddiOps.end());
+    upLeftConnPOps = opsForShuffleLeft;
 
-      // connect bloom filter create to upstream and downstream (joinBuildPOp)
-      PrePToPTransformerUtil::connectManyToOne(upLeftConnPOps, bloomFilterCreatePOp);
-      if (USE_ARROW_HASH_JOIN_IMPL) {
-        bloomFilterCreatePOp->produce(joinBuildPOp);
-        static_pointer_cast<join::HashJoinArrowPOp>(joinBuildPOp)->addBuildProducer(bloomFilterCreatePOp);
-      } else {
-        PrePToPTransformerUtil::connectOneToOne(bloomFilterCreatePOp, joinBuildPOp);
-      }
-
-      if (isBloomFilterUseSeparable) {
-        // we can push down bloom filter
-        // set bloom filter create info
-        auto fpdbStoreConnector = static_pointer_cast<FPDBStoreConnector>(objStoreConnector_);
-        static_pointer_cast<bloomfilter::BloomFilterCreatePOp>(bloomFilterCreatePOp)->setBloomFilterInfo(
-                FPDBStoreBloomFilterCreateInfo{PrePToPTransformerUtil::getHostToNumOps(upRightConnPOps),
-                                               fpdbStoreConnector->getFlightPort()});
-
-        // set bloom filter use info (embedded bloom filter) to last sub op inside upConnRightPOps
-        // also connect bloom filter create with fpdb store super
-        for (const auto &upRightConnPOp: upRightConnPOps) {
-          auto subPlan = static_pointer_cast<FPDBStoreSuperPOp>(upRightConnPOp)->getSubPlan();
-          auto expLast = subPlan->getLast();
-          if (!expLast.has_value()) {
-            throw runtime_error(expLast.error());
-          }
-          auto expRoot = subPlan->getRootPOp();
-          if (!expRoot.has_value()) {
-            throw runtime_error(expRoot.error());
-          }
-          (*expLast)->addConsumerToBloomFilterInfo((*expRoot)->name(),
-                                                   bloomFilterCreatePOp->name(),
-                                                   rightColumnNames);
-          // connect
-          static_pointer_cast<bloomfilter::BloomFilterCreatePOp>(bloomFilterCreatePOp)
-                  ->addFPDBStoreBloomFilterConsumer(upRightConnPOp);
-          static_pointer_cast<FPDBStoreSuperPOp>(upRightConnPOp)
-                  ->addFPDBStoreBloomFilterProducer(bloomFilterCreatePOp);
-        }
-
-        // connect upRightConnPOps (FPDBStoreSuperPOp) to downstream (joinProbePOp)
-        if (USE_ARROW_HASH_JOIN_IMPL) {
-          for (const auto &upRightConnPOp: upRightConnPOps) {
-            upRightConnPOp->produce(joinProbePOp);
-            static_pointer_cast<join::HashJoinArrowPOp>(joinProbePOp)->addProbeProducer(upRightConnPOp);
-          }
-        } else {
-          PrePToPTransformerUtil::connectManyToOne(upRightConnPOps, joinProbePOp);
-        }
-      } else {
-        // we cannot push down bloom filter
-        // BloomFilterUsePOp
-        shared_ptr<PhysicalOp> bloomFilterUsePOp = make_shared<bloomfilter::BloomFilterUsePOp>(
-                fmt::format("BloomFilterUse[{}]-{}", prePOpId, hashJoinPredicateStr),
-                upRightConnPOps[0]->getProjectColumnNames(),
-                joinProbePOp->getNodeId(),
-                rightColumnNames);
-        allPOps.emplace_back(bloomFilterUsePOp);
-
-        // connect bloom filter create to bloom filter use
-        static_pointer_cast<bloomfilter::BloomFilterCreatePOp>(bloomFilterCreatePOp)
-                ->addBloomFilterUsePOp(bloomFilterUsePOp);
-        bloomFilterUsePOp->consume(bloomFilterCreatePOp);
-
-        // connect bloom filter use to upstream and downstream (joinProbePOp)
-        PrePToPTransformerUtil::connectManyToOne(upRightConnPOps, bloomFilterUsePOp);
-        if (USE_ARROW_HASH_JOIN_IMPL) {
-          bloomFilterUsePOp->produce(joinProbePOp);
-          static_pointer_cast<join::HashJoinArrowPOp>(joinProbePOp)->addProbeProducer(bloomFilterUsePOp);
-        } else {
-          PrePToPTransformerUtil::connectOneToOne(bloomFilterUsePOp, joinProbePOp);
-        }
-      }
-    } else {
-      // connect hash join to upstream
-      if (USE_ARROW_HASH_JOIN_IMPL) {
-        for (const auto &upLeftConnPOp: upLeftConnPOps) {
-          upLeftConnPOp->produce(hashJoinArrowPOps[0]);
-          static_pointer_cast<join::HashJoinArrowPOp>(hashJoinArrowPOps[0])->addBuildProducer(upLeftConnPOp);
-        }
-        for (const auto &upRightConnPOp: upRightConnPOps) {
-          upRightConnPOp->produce(hashJoinArrowPOps[0]);
-          static_pointer_cast<join::HashJoinArrowPOp>(hashJoinArrowPOps[0])->addProbeProducer(upRightConnPOp);
-        }
-      } else {
-        PrePToPTransformerUtil::connectManyToOne(upLeftConnPOps, hashJoinBuildPOps[0]);
-        PrePToPTransformerUtil::connectManyToOne(upRightConnPOps, hashJoinProbePOps[0]);
-      }
-    }
+    // right, connection to upstream will be made in addSeparablePOp()
+    const auto &shuffleRightAddRes =
+            PrePToFPDBStorePTransformer::addSeparablePOp(upRightConnPOps, shuffleRightPOps, physicalOps_, mode_);
+    auto opsForShuffleRight = std::get<0>(shuffleRightAddRes);
+    auto rightAddiOps = std::get<1>(shuffleRightAddRes);
+    rightWithHashJoinPushdown = std::get<2>(shuffleRightAddRes);
+    allPOps.insert(allPOps.end(), rightAddiOps.begin(), rightAddiOps.end());
+    upRightConnPOps = opsForShuffleRight;
   } else {
-    // create shuffle ops
-    vector<shared_ptr<PhysicalOp>> shuffleLeftPOps, shuffleRightPOps;
-    for (const auto &upLeftConnPOp: upLeftConnPOps) {
-      shuffleLeftPOps.emplace_back(make_shared<shuffle::ShufflePOp>(
-              fmt::format("Shuffle[{}]-{}", prePOpId, upLeftConnPOp->name()),
-              upLeftConnPOp->getProjectColumnNames(),
-              upLeftConnPOp->getNodeId(),
+    allPOps.insert(allPOps.end(), shuffleLeftPOps.begin(), shuffleLeftPOps.end());
+    allPOps.insert(allPOps.end(), shuffleRightPOps.begin(), shuffleRightPOps.end());
+
+    // connect to upstream
+    PrePToPTransformerUtil::connectOneToOne(upLeftConnPOps, shuffleLeftPOps);
+    PrePToPTransformerUtil::connectOneToOne(upRightConnPOps, shuffleRightPOps);
+    upLeftConnPOps = shuffleLeftPOps;
+    upRightConnPOps = shuffleRightPOps;
+  }
+
+  // if using bloom filter
+  if (useBloomFilter) {
+    auto &joinBuildPOps = USE_ARROW_HASH_JOIN_IMPL ? hashJoinArrowPOps : hashJoinBuildPOps;
+    auto &joinProbePOps = USE_ARROW_HASH_JOIN_IMPL ? hashJoinArrowPOps : hashJoinProbePOps;
+    vector<shared_ptr<PhysicalOp>> bloomFilterCreatePOps, bloomFilterUsePOps;
+
+    // BloomFilterCreatePOp
+    for (int i = 0; i < parallelDegree_ * numNodes_; ++i) {
+      bloomFilterCreatePOps.emplace_back(make_shared<bloomfilter::BloomFilterCreatePOp>(
+              fmt::format("BloomFilterCreate[{}]-{}-{}", prePOpId, hashJoinPredicateStr, i),
+              upLeftConnPOps[0]->getProjectColumnNames(),
+              joinBuildPOps[i]->getNodeId(),
               leftColumnNames));
     }
-    for (const auto &upRightConnPOp : upRightConnPOps) {
-      shuffleRightPOps.emplace_back(make_shared<shuffle::ShufflePOp>(
-              fmt::format("Shuffle[{}]-{}", prePOpId, upRightConnPOp->name()),
-              upRightConnPOp->getProjectColumnNames(),
-              upRightConnPOp->getNodeId(),
-              rightColumnNames));
-    }
+    allPOps.insert(allPOps.end(), bloomFilterCreatePOps.begin(), bloomFilterCreatePOps.end());
 
-    // check if we need to push shuffle to store
-    if (catalogueEntry_->getType() == CatalogueEntryType::OBJ_STORE &&
-        std::static_pointer_cast<obj_store::ObjStoreCatalogueEntry>(catalogueEntry_)->getStoreType() ==
-          obj_store::ObjStoreType::FPDB_STORE) {
-      // left, connection to upstream will be made in addSeparablePOp()
-      const auto &shuffleLeftAddRes =
-              PrePToFPDBStorePTransformer::addSeparablePOp(upLeftConnPOps, shuffleLeftPOps, physicalOps_, mode_);
-      auto opsForShuffleLeft = shuffleLeftAddRes.first;
-      auto leftAddiOps = shuffleLeftAddRes.second;
-      allPOps.insert(allPOps.end(), leftAddiOps.begin(), leftAddiOps.end());
-      upLeftConnPOps = opsForShuffleLeft;
-
-      // right, connection to upstream will be made in addSeparablePOp()
-      const auto &shuffleRightAddRes =
-              PrePToFPDBStorePTransformer::addSeparablePOp(upRightConnPOps, shuffleRightPOps, physicalOps_, mode_);
-      auto opsForShuffleRight = shuffleRightAddRes.first;
-      auto rightAddiOps = shuffleRightAddRes.second;
-      allPOps.insert(allPOps.end(), rightAddiOps.begin(), rightAddiOps.end());
-      upRightConnPOps = opsForShuffleRight;
+    // connect bloom filter create to upstream and downstream (joinBuildPOps)
+    // there are actually two choices to connect BloomFilterCreatePOp into the plan:
+    //   1)     producer (node i)              2)            producer (node i)
+    //                 |                                        /        \
+    //      BloomFilterCreate (node j)           consumer (node j)   BloomFilterCreate (node j)
+    //                 |
+    //          consumer (node j)
+    // because BloomFilterCreatePOp is made at the same node of consumer (joinBuild) instead of producer (shuffle),
+    // 2) incurs double network transfer for each cross-node tupleSet message (i != j), so we pick 1) here
+    if (leftWithHashJoinPushdown) {
+      PrePToPTransformerUtil::connectOneToOne(upLeftConnPOps, bloomFilterCreatePOps);
     } else {
-      allPOps.insert(allPOps.end(), shuffleLeftPOps.begin(), shuffleLeftPOps.end());
-      allPOps.insert(allPOps.end(), shuffleRightPOps.begin(), shuffleRightPOps.end());
-
-      // connect to upstream
-      PrePToPTransformerUtil::connectOneToOne(upLeftConnPOps, shuffleLeftPOps);
-      PrePToPTransformerUtil::connectOneToOne(upRightConnPOps, shuffleRightPOps);
-      upLeftConnPOps = shuffleLeftPOps;
-      upRightConnPOps = shuffleRightPOps;
+      PrePToPTransformerUtil::connectManyToMany(upLeftConnPOps, bloomFilterCreatePOps);
+    }
+    if (USE_ARROW_HASH_JOIN_IMPL) {
+      for (int i = 0; i < parallelDegree_ * numNodes_; ++i) {
+        bloomFilterCreatePOps[i]->produce(joinBuildPOps[i]);
+        static_pointer_cast<join::HashJoinArrowPOp>(joinBuildPOps[i])->addBuildProducer(bloomFilterCreatePOps[i]);
+      }
+    } else {
+      PrePToPTransformerUtil::connectOneToOne(bloomFilterCreatePOps, joinBuildPOps);
     }
 
-    // if using bloom filter
-    if (useBloomFilter) {
-      auto &joinBuildPOps = USE_ARROW_HASH_JOIN_IMPL ? hashJoinArrowPOps : hashJoinBuildPOps;
-      auto &joinProbePOps = USE_ARROW_HASH_JOIN_IMPL ? hashJoinArrowPOps : hashJoinProbePOps;
-      vector<shared_ptr<PhysicalOp>> bloomFilterCreatePOps, bloomFilterUsePOps;
+    if (isBloomFilterUseSeparable) {
+      // we can push down bloom filter
+      pushdownBloomFilter(bloomFilterCreatePOps, upRightConnPOps, joinProbePOps,
+                          rightColumnNames, rightWithHashJoinPushdown);
 
-      // BloomFilterCreatePOp
-      for (int i = 0; i < parallelDegree_ * numNodes_; ++i) {
-        bloomFilterCreatePOps.emplace_back(make_shared<bloomfilter::BloomFilterCreatePOp>(
-                fmt::format("BloomFilterCreate[{}]-{}-{}", prePOpId, hashJoinPredicateStr, i),
-                upLeftConnPOps[0]->getProjectColumnNames(),
-                joinBuildPOps[i]->getNodeId(),
-                leftColumnNames));
-      }
-      allPOps.insert(allPOps.end(), bloomFilterCreatePOps.begin(), bloomFilterCreatePOps.end());
-
-      // connect bloom filter create to upstream and downstream (joinBuildPOps)
-      // there are actually two choices to connect BloomFilterCreatePOp into the plan:
-      //   1)     producer (node i)              2)            producer (node i)
-      //                 |                                        /        \
-      //      BloomFilterCreate (node j)           consumer (node j)   BloomFilterCreate (node j)
-      //                 |
-      //          consumer (node j)
-      // because BloomFilterCreatePOp is made at the same node of consumer (joinBuild) instead of producer (shuffle),
-      // 2) incurs double network transfer for each cross-node tupleSet message (i != j), so we pick 1) here
-      PrePToPTransformerUtil::connectManyToMany(upLeftConnPOps, bloomFilterCreatePOps);
-      if (USE_ARROW_HASH_JOIN_IMPL) {
-        for (int i = 0; i < parallelDegree_ * numNodes_; ++i) {
-          bloomFilterCreatePOps[i]->produce(joinBuildPOps[i]);
-          static_pointer_cast<join::HashJoinArrowPOp>(joinBuildPOps[i])->addBuildProducer(bloomFilterCreatePOps[i]);
+      // connect upRightConnPOps (FPDBStoreSuperPOp/FPDBStoreTableCacheLoadPOp) to downstream (joinProbePOps)
+      if (rightWithHashJoinPushdown) {
+        if (USE_ARROW_HASH_JOIN_IMPL) {
+          for (uint i = 0; i < upRightConnPOps.size(); ++i) {
+            upRightConnPOps[i]->produce(joinProbePOps[i]);
+            static_pointer_cast<join::HashJoinArrowPOp>(joinProbePOps[i])->addProbeProducer(upRightConnPOps[i]);
+          }
+        } else {
+          PrePToPTransformerUtil::connectOneToOne(upRightConnPOps, joinProbePOps);
         }
       } else {
-        PrePToPTransformerUtil::connectOneToOne(bloomFilterCreatePOps, joinBuildPOps);
-      }
-
-      if (isBloomFilterUseSeparable) {
-        // we can push down bloom filter
-        // set bloom filter create info
-        auto fpdbStoreConnector = static_pointer_cast<FPDBStoreConnector>(objStoreConnector_);
-        for (const auto &bloomFilterCreatePOp: bloomFilterCreatePOps) {
-          static_pointer_cast<bloomfilter::BloomFilterCreatePOp>(bloomFilterCreatePOp)->setBloomFilterInfo(
-                  FPDBStoreBloomFilterCreateInfo{PrePToPTransformerUtil::getHostToNumOps(upRightConnPOps),
-                                                 fpdbStoreConnector->getFlightPort()});
-        }
-
-        // set bloom filter use info (embedded bloom filter) to last sub op inside upConnRightPOps
-        // also connect bloom filter create with fpdb store super
-        for (const auto &upRightConnPOp: upRightConnPOps) {
-          auto subPlan = static_pointer_cast<FPDBStoreSuperPOp>(upRightConnPOp)->getSubPlan();
-          auto expLast = subPlan->getLast();
-          if (!expLast.has_value()) {
-            throw runtime_error(expLast.error());
-          }
-          auto expRoot = subPlan->getRootPOp();
-          if (!expRoot.has_value()) {
-            throw runtime_error(expRoot.error());
-          }
-          for (int i = 0; i < parallelDegree_ * numNodes_; ++i) {
-            (*expLast)->addConsumerToBloomFilterInfo(joinProbePOps[i]->name(),
-                                                     bloomFilterCreatePOps[i]->name(),
-                                                     rightColumnNames);
-            // connect
-            static_pointer_cast<bloomfilter::BloomFilterCreatePOp>(bloomFilterCreatePOps[i])
-                    ->addFPDBStoreBloomFilterConsumer(upRightConnPOp);
-            static_pointer_cast<FPDBStoreSuperPOp>(upRightConnPOp)
-                    ->addFPDBStoreBloomFilterProducer(bloomFilterCreatePOps[i]);
-          }
-        }
-
-        // connect upRightConnPOps (FPDBStoreSuperPOp) to downstream (joinProbePOps)
         if (USE_ARROW_HASH_JOIN_IMPL) {
           for (const auto &joinProbePOp: joinProbePOps) {
             for (const auto &upRightConnPOp: upRightConnPOps) {
@@ -886,59 +785,158 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
         } else {
           PrePToPTransformerUtil::connectManyToMany(upRightConnPOps, joinProbePOps);
         }
+      }
+    } else {
+      // we cannot push down bloom filter
+      // BloomFilterUsePOp
+      for (int i = 0; i < parallelDegree_ * numNodes_; ++i) {
+        bloomFilterUsePOps.emplace_back(make_shared<bloomfilter::BloomFilterUsePOp>(
+                fmt::format("BloomFilterUse[{}]-{}-{}", prePOpId, hashJoinPredicateStr, i),
+                upRightConnPOps[0]->getProjectColumnNames(),
+                joinProbePOps[i]->getNodeId(),
+                rightColumnNames));
+      }
+      allPOps.insert(allPOps.end(), bloomFilterUsePOps.begin(), bloomFilterUsePOps.end());
+
+      // connect bloom filter create to bloom filter use
+      for (int i = 0; i < parallelDegree_ * numNodes_; ++i) {
+        static_pointer_cast<bloomfilter::BloomFilterCreatePOp>(bloomFilterCreatePOps[i])
+                ->addBloomFilterUsePOp(bloomFilterUsePOps[i]);
+        bloomFilterUsePOps[i]->consume(bloomFilterCreatePOps[i]);
+      }
+
+      // connect bloom filter use to upstream and downstream (joinProbePOps)
+      if (rightWithHashJoinPushdown) {
+        PrePToPTransformerUtil::connectOneToOne(upRightConnPOps, bloomFilterUsePOps);
       } else {
-        // we cannot push down bloom filter
-        // BloomFilterUsePOp
-        for (int i = 0; i < parallelDegree_ * numNodes_; ++i) {
-          bloomFilterUsePOps.emplace_back(make_shared<bloomfilter::BloomFilterUsePOp>(
-                  fmt::format("BloomFilterUse[{}]-{}-{}", prePOpId, hashJoinPredicateStr, i),
-                  upRightConnPOps[0]->getProjectColumnNames(),
-                  joinProbePOps[i]->getNodeId(),
-                  rightColumnNames));
-        }
-        allPOps.insert(allPOps.end(), bloomFilterUsePOps.begin(), bloomFilterUsePOps.end());
-
-        // connect bloom filter create to bloom filter use
-        for (int i = 0; i < parallelDegree_ * numNodes_; ++i) {
-          static_pointer_cast<bloomfilter::BloomFilterCreatePOp>(bloomFilterCreatePOps[i])
-                  ->addBloomFilterUsePOp(bloomFilterUsePOps[i]);
-          bloomFilterUsePOps[i]->consume(bloomFilterCreatePOps[i]);
-        }
-
-        // connect bloom filter use to upstream and downstream (joinProbePOps)
         PrePToPTransformerUtil::connectManyToMany(upRightConnPOps, bloomFilterUsePOps);
-        if (USE_ARROW_HASH_JOIN_IMPL) {
-          for (int i = 0; i < parallelDegree_ * numNodes_; ++i) {
-            bloomFilterUsePOps[i]->produce(joinProbePOps[i]);
-            static_pointer_cast<join::HashJoinArrowPOp>(joinProbePOps[i])->addProbeProducer(bloomFilterUsePOps[i]);
-          }
-        } else {
-          PrePToPTransformerUtil::connectOneToOne(bloomFilterUsePOps, joinProbePOps);
+      }
+      if (USE_ARROW_HASH_JOIN_IMPL) {
+        for (int i = 0; i < parallelDegree_ * numNodes_; ++i) {
+          bloomFilterUsePOps[i]->produce(joinProbePOps[i]);
+          static_pointer_cast<join::HashJoinArrowPOp>(joinProbePOps[i])->addProbeProducer(bloomFilterUsePOps[i]);
+        }
+      } else {
+        PrePToPTransformerUtil::connectOneToOne(bloomFilterUsePOps, joinProbePOps);
+      }
+    }
+  } else {
+    // connect hash join to upstream
+    if (USE_ARROW_HASH_JOIN_IMPL) {
+      for (const auto &hashJoinArrowPOp: hashJoinArrowPOps) {
+        for (const auto &upLeftConnPOp: upLeftConnPOps) {
+          upLeftConnPOp->produce(hashJoinArrowPOp);
+          static_pointer_cast<join::HashJoinArrowPOp>(hashJoinArrowPOp)->addBuildProducer(upLeftConnPOp);
+        }
+        for (const auto &upRightConnPOp: upRightConnPOps) {
+          upRightConnPOp->produce(hashJoinArrowPOp);
+          static_pointer_cast<join::HashJoinArrowPOp>(hashJoinArrowPOp)->addProbeProducer(upRightConnPOp);
         }
       }
     } else {
-      // connect hash join to upstream
-      if (USE_ARROW_HASH_JOIN_IMPL) {
-        for (const auto &hashJoinArrowPOp: hashJoinArrowPOps) {
-          for (const auto &upLeftConnPOp: upLeftConnPOps) {
-            upLeftConnPOp->produce(hashJoinArrowPOp);
-            static_pointer_cast<join::HashJoinArrowPOp>(hashJoinArrowPOp)->addBuildProducer(upLeftConnPOp);
-          }
-          for (const auto &upRightConnPOp: upRightConnPOps) {
-            upRightConnPOp->produce(hashJoinArrowPOp);
-            static_pointer_cast<join::HashJoinArrowPOp>(hashJoinArrowPOp)->addProbeProducer(upRightConnPOp);
-          }
-        }
-      } else {
-        PrePToPTransformerUtil::connectManyToMany(upLeftConnPOps, hashJoinBuildPOps);
-        PrePToPTransformerUtil::connectManyToMany(upRightConnPOps, hashJoinProbePOps);
-      }
+      PrePToPTransformerUtil::connectManyToMany(upLeftConnPOps, hashJoinBuildPOps);
+      PrePToPTransformerUtil::connectManyToMany(upRightConnPOps, hashJoinProbePOps);
     }
   }
 
   // add and return
   PrePToPTransformerUtil::addPhysicalOps(allPOps, physicalOps_);
   return USE_ARROW_HASH_JOIN_IMPL ? hashJoinArrowPOps : hashJoinProbePOps;
+}
+
+void PrePToPTransformer::pushdownBloomFilter(const vector<shared_ptr<PhysicalOp>> &bloomFilterCreatePOps,
+                                             vector<shared_ptr<PhysicalOp>> &upRightConnPOps,
+                                             vector<shared_ptr<PhysicalOp>> &joinProbePOps,
+                                             const vector<string> &rightColumnNames,
+                                             bool withHashJoinPushdown) {
+  if (withHashJoinPushdown) {
+    pushdownBloomFilterWithHashJoinPushdown(bloomFilterCreatePOps, upRightConnPOps, rightColumnNames);
+  } else {
+    pushdownBloomFilterNoHashJoinPushdown(bloomFilterCreatePOps, upRightConnPOps, joinProbePOps, rightColumnNames);
+  }
+}
+
+void PrePToPTransformer::pushdownBloomFilterNoHashJoinPushdown(
+        const vector<shared_ptr<PhysicalOp>> &bloomFilterCreatePOps,
+        vector<shared_ptr<PhysicalOp>> &upRightConnPOps,
+        vector<shared_ptr<PhysicalOp>> &joinProbePOps,
+        const vector<string> &rightColumnNames) {
+  // set bloom filter create info
+  auto fpdbStoreConnector = static_pointer_cast<FPDBStoreConnector>(objStoreConnector_);
+  for (const auto &bloomFilterCreatePOp: bloomFilterCreatePOps) {
+    static_pointer_cast<bloomfilter::BloomFilterCreatePOp>(bloomFilterCreatePOp)->setBloomFilterInfo(
+            FPDBStoreBloomFilterCreateInfo{PrePToPTransformerUtil::getHostToNumOps(upRightConnPOps),
+                                           fpdbStoreConnector->getFlightPort()});
+  }
+
+  // set bloom filter use info (embedded bloom filter) to last sub op inside upConnRightPOps
+  // also connect bloom filter create with fpdb store super
+  for (const auto &upRightConnPOp: upRightConnPOps) {
+    auto subPlan = static_pointer_cast<FPDBStoreSuperPOp>(upRightConnPOp)->getSubPlan();
+    auto expLast = subPlan->getLast();
+    if (!expLast.has_value()) {
+      throw runtime_error(expLast.error());
+    }
+    for (int i = 0; i < parallelDegree_ * numNodes_; ++i) {
+      (*expLast)->addConsumerToBloomFilterInfo(joinProbePOps[i]->name(),
+                                               bloomFilterCreatePOps[i]->name(),
+                                               rightColumnNames);
+      // connect
+      static_pointer_cast<bloomfilter::BloomFilterCreatePOp>(bloomFilterCreatePOps[i])
+              ->addFPDBStoreBloomFilterConsumer(upRightConnPOp);
+      static_pointer_cast<FPDBStoreSuperPOp>(upRightConnPOp)
+              ->addFPDBStoreBloomFilterProducer(bloomFilterCreatePOps[i]);
+    }
+  }
+}
+
+void PrePToPTransformer::pushdownBloomFilterWithHashJoinPushdown(
+        const vector<shared_ptr<PhysicalOp>> &bloomFilterCreatePOps,
+        vector<shared_ptr<PhysicalOp>> &upRightConnPOps,
+        const vector<string> &rightColumnNames) {
+  // get all FPDBStoreSuperPOps
+  set<string> fpdbStoreSuperPOpNames;
+  for (const auto &upRightConnPOp: upRightConnPOps) {
+    if (upRightConnPOp->getType() == POpType::FPDB_STORE_TABLE_CACHE_LOAD) {
+      fpdbStoreSuperPOpNames.emplace(
+              static_pointer_cast<fpdb_store::FPDBStoreTableCacheLoadPOp>(upRightConnPOp)->getProducer());
+    }
+  }
+  vector<shared_ptr<PhysicalOp>> fpdbStoreSuperPOps;
+  for (const auto &fpdbStoreSuperPOpName: fpdbStoreSuperPOpNames) {
+    fpdbStoreSuperPOps.emplace_back(physicalOps_.find(fpdbStoreSuperPOpName)->second);
+  }
+
+  // set bloom filter create info
+  auto fpdbStoreConnector = static_pointer_cast<FPDBStoreConnector>(objStoreConnector_);
+  for (const auto &bloomFilterCreatePOp: bloomFilterCreatePOps) {
+    static_pointer_cast<bloomfilter::BloomFilterCreatePOp>(bloomFilterCreatePOp)->setBloomFilterInfo(
+            FPDBStoreBloomFilterCreateInfo{PrePToPTransformerUtil::getHostToNumOps(fpdbStoreSuperPOps),
+                                           fpdbStoreConnector->getFlightPort()});
+  }
+
+  // set bloom filter use info (embedded bloom filter) to last sub op inside upConnRightPOps
+  // also connect bloom filter create with fpdb store super
+  for (const auto &fpdbStoreSuperPOp: fpdbStoreSuperPOps) {
+    const auto &expLasts =
+            static_pointer_cast<fpdb_store::FPDBStoreSuperPOp>(fpdbStoreSuperPOp)->getSubPlan()->getLasts();
+    if (!expLasts.has_value()) {
+      throw runtime_error(expLasts.error());
+    }
+    for (int i = 0; i < parallelDegree_ * numNodes_; ++i) {
+      for (const auto &last: *expLasts) {
+        last->addConsumerToBloomFilterInfo(upRightConnPOps[i]->name(),
+                                           bloomFilterCreatePOps[i]->name(),
+                                           rightColumnNames);
+      }
+
+      // connect
+      static_pointer_cast<bloomfilter::BloomFilterCreatePOp>(bloomFilterCreatePOps[i])
+              ->addFPDBStoreBloomFilterConsumer(fpdbStoreSuperPOp);
+      static_pointer_cast<fpdb_store::FPDBStoreSuperPOp>(fpdbStoreSuperPOp)
+              ->addFPDBStoreBloomFilterProducer(bloomFilterCreatePOps[i]);
+    }
+  }
 }
 
 vector<shared_ptr<PhysicalOp>>

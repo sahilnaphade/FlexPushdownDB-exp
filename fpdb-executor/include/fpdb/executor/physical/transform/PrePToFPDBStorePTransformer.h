@@ -48,9 +48,10 @@ public:
    * @param separablePOps
    * @param opMap
    * @param mode
-   * @return a pair of connect physical ops (to consumers) and additional physical ops to add to plan
+   * @return a tuple of "connect physical ops (to consumers)", "additional physical ops to add to plan", and
+   * "whether hash join is pushed"
    */
-  static pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
+  static std::tuple<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>, bool>
   addSeparablePOp(vector<shared_ptr<PhysicalOp>> &producers,
                   vector<shared_ptr<PhysicalOp>> &separablePOps,
                   const unordered_map<string, shared_ptr<PhysicalOp>> &opMap,

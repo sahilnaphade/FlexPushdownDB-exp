@@ -175,7 +175,7 @@ public class TestOptimizer {
   @Test
   // for 'tpch-sf0.01-1-node-hash-part', 'lineitem' and 'orders' are co-located at 'l_orderkey = o.o_orderkey'
   public void testCoHashJoinPushable() throws Exception {
-    testSingle("tpch-sf0.01-1-node-hash-part/parquet", "tpch/original/04.sql", true);
+    testSingle("tpch-sf0.01-1-node-hash-part/parquet", "tpch/synthetic/co-join-3-table.sql", true);
   }
 
   @Test

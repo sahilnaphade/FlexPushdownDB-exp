@@ -186,7 +186,7 @@ tl::expected<::nlohmann::json, std::string>
 PhysicalPlanSerializer::serializeCollatePOp(const std::shared_ptr<collate::CollatePOp> &collatePOp) {
   auto jObj = serializePOpCommon(collatePOp);
 
-  jObj.emplace("forward", collatePOp->getForward());
+  jObj.emplace("forward", collatePOp->isForward());
   jObj.emplace("forwardConsumers", collatePOp->getForwardConsumers());
 
   return jObj;

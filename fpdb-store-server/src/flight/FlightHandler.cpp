@@ -317,20 +317,32 @@ tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::
   auto physical_plan = *exp_physical_plan;
 
   // wait for bitmaps ready if required
+  // need to maintain a map for fetched bloom filters, bc each request should consume the same bloom filter only once
+  std::unordered_map<std::string, std::shared_ptr<bloomfilter::BloomFilter>> consumed_bloom_filters;
   for (const auto &op_it: physical_plan->getPhysicalOps()) {
     auto op = op_it.second;
 
-    // for each op, wait until its embedded bloom filters are ready, if any
+    // for each op, get the embedded bloom filters
+    // it's guaranteed that bloom filters are ready before we get them here
     const auto &consumerToBloomFilterInfo = op->getConsumerToBloomFilterInfo();
     for (const auto &consumerToBloomFilterIt: consumerToBloomFilterInfo) {
-      auto bloomFilterInfo = consumerToBloomFilterIt.second;
-      auto bloomFilterKey = BloomFilterCache::generateBloomFilterKey(query_id,
-                                                                     bloomFilterInfo->bloomFilterCreatePOp_);
-      auto exp_bloom_filter = bloom_filter_cache_.consumeBloomFilter(bloomFilterKey);
-      if (!exp_bloom_filter.has_value()) {
-        return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed, exp_bloom_filter.error()));
+      auto bloom_filter_info = consumerToBloomFilterIt.second;
+      auto bloom_filter_key = BloomFilterCache::generateBloomFilterKey(query_id,
+                                                                       bloom_filter_info->bloomFilterCreatePOp_);
+      std::shared_ptr<bloomfilter::BloomFilter> bloom_filter;
+      // check "consumed_bloom_filters" first
+      auto consumed_bf_it = consumed_bloom_filters.find(bloom_filter_key);
+      if (consumed_bf_it != consumed_bloom_filters.end()) {
+        bloom_filter = consumed_bf_it->second;
+      } else {
+        auto exp_bloom_filter = bloom_filter_cache_.consumeBloomFilter(bloom_filter_key);
+        if (!exp_bloom_filter.has_value()) {
+          return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed, exp_bloom_filter.error()));
+        }
+        bloom_filter = *exp_bloom_filter;
+        consumed_bloom_filters.emplace(bloom_filter_key, bloom_filter);
       }
-      bloomFilterInfo->bloomFilter_ = *exp_bloom_filter;
+      bloom_filter_info->bloomFilter_ = bloom_filter;
     }
 
     // for each filter with bitmap pushdown enabled, wait until its bitmap is ready

@@ -31,8 +31,9 @@ public:
 
   // last op here ignores root collate
   tl::expected<shared_ptr<PhysicalOp>, string> getLast();
+  tl::expected<vector<shared_ptr<PhysicalOp>>, string> getLasts();
   tl::expected<void, string> addAsLast(shared_ptr<PhysicalOp> &op);
-  tl::expected<void, string> addAsLast(vector<shared_ptr<PhysicalOp>> &ops);
+  tl::expected<void, string> addAsLasts(vector<shared_ptr<PhysicalOp>> &ops);
 
 private:
   unordered_map<string, shared_ptr<PhysicalOp>> physicalOps_;

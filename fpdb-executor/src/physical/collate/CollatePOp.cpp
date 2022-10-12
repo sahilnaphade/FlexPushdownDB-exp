@@ -36,7 +36,7 @@ void CollatePOp::onReceive(const fpdb::executor::message::Envelope &message) {
   }
 }
 
-bool CollatePOp::getForward() const {
+bool CollatePOp::isForward() const {
   return forward_;
 }
 

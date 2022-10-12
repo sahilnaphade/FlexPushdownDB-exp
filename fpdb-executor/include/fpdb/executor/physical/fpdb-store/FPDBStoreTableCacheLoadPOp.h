@@ -12,7 +12,7 @@ namespace fpdb::executor::physical::fpdb_store {
 /**
  * Op to consume the table generated at storage side.
  * This is used only when pushing a big query plan (e.g. hash join) to store, to ensure pipelining (i.e. wait at
- * storage side and get table back immediately when generated.
+ * storage side and get table back immediately when generated).
  */
 class FPDBStoreTableCacheLoadPOp: public PhysicalOp{
   

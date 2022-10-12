@@ -216,7 +216,7 @@ pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>> PrePToFPDBS
   }
 }
 
-pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
+std::tuple<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>, bool>
 PrePToFPDBStorePTransformer::addSeparablePOp(vector<shared_ptr<PhysicalOp>> &producers,
                                              vector<shared_ptr<PhysicalOp>> &separablePOps,
                                              const unordered_map<string, shared_ptr<PhysicalOp>> &opMap,
@@ -224,7 +224,7 @@ PrePToFPDBStorePTransformer::addSeparablePOp(vector<shared_ptr<PhysicalOp>> &pro
   // check mode
   if (mode->id() == ModeId::PULL_UP || mode->id() == ModeId::CACHING_ONLY) {
     PrePToPTransformerUtil::connectOneToOne(producers, separablePOps);
-    return {separablePOps, separablePOps};
+    return {separablePOps, separablePOps, false};
   }
   // currently only pushdown-only mode is supported
   if (mode->id() != ModeId::PUSHDOWN_ONLY) {
@@ -243,9 +243,11 @@ PrePToFPDBStorePTransformer::addSeparablePOp(vector<shared_ptr<PhysicalOp>> &pro
 
   // do accordingly
   if (withHashJoinPushdown) {
-    return addSeparablePOpWithHashJoinPushdown(producers, separablePOps, opMap);
+    const auto &res = addSeparablePOpWithHashJoinPushdown(producers, separablePOps, opMap);
+    return {res.first, res.second, true};
   } else {
-    return addSeparablePOpNoHashJoinPushdown(producers, separablePOps);
+    const auto &res = addSeparablePOpNoHashJoinPushdown(producers, separablePOps);
+    return {res.first, res.second, false};
   }
 }
 
@@ -301,14 +303,6 @@ PrePToFPDBStorePTransformer::addSeparablePOpWithHashJoinPushdown(
         vector<shared_ptr<PhysicalOp>> &producers,
         vector<shared_ptr<PhysicalOp>> &separablePOps,
         const unordered_map<string, shared_ptr<PhysicalOp>> &opMap) {
-  // TODO: support also shuffle
-  for (const auto &separablePOp: separablePOps) {
-    if (separablePOp->getType() != POpType::GROUP) {
-      PrePToPTransformerUtil::connectOneToOne(producers, separablePOps);
-      return {separablePOps, separablePOps};
-    }
-  }
-
   // get all FPDBStoreSuperPOps
   set<string> fpdbStoreSuperPOps;
   for (const auto &producer: producers) {
@@ -335,8 +329,18 @@ PrePToFPDBStorePTransformer::addSeparablePOpWithHashJoinPushdown(
     auto rootNumProducers = (*expRootPOp)->producers().size();
     vector<shared_ptr<PhysicalOp>> subOps = {separablePOps.begin() + separablePOpsOffset,
                                              separablePOps.begin() + separablePOpsOffset + rootNumProducers};
-    fpdbStoreSuperPOp->getSubPlan()->addAsLast(subOps);
-    fpdbStoreSuperPOp->resetForwardConsumers();
+    fpdbStoreSuperPOp->getSubPlan()->addAsLasts(subOps);
+
+    // need to handle shuffle op specially (remove collatePOp from its consumeVec and add correct ones)
+    if (separablePOps[0]->getType() == POpType::SHUFFLE) {
+      for (const auto &shufflePOp: separablePOps) {
+        shufflePOp->setSeparated(true);
+        const auto &consumers = fpdbStoreSuperPOp->consumers();
+        std::static_pointer_cast<shuffle::ShufflePOp>(shufflePOp)
+                ->setConsumerVec(vector<string>{consumers.begin(), consumers.end()});
+      }
+    }
+
     separablePOpsOffset += rootNumProducers;
   }
 

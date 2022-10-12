@@ -1040,6 +1040,32 @@ TEST_CASE ("tpch-sf0.01-1-node-hash-part-hash-join-pullup" * doctest::skip(false
   stopFPDBStoreServer();
 }
 
+// Enable co-located hash join pushdown first
+// for 'tpch-sf0.01-1-node-hash-part', 'lineitem' and 'orders' are co-located at 'l_orderkey = o.o_orderkey'
+TEST_CASE ("tpch-sf0.01-1-node-hash-part-hash-join-synthetic-2-table" * doctest::skip(false || SKIP_SUITE)) {
+  startFPDBStoreServer();
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01-1-node-hash-part/parquet/",
+                                            {"tpch/synthetic/co-join-2-table.sql"},
+                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            false,
+                                            ObjStoreType::FPDB_STORE,
+                                            Mode::pushdownOnlyMode()));
+  stopFPDBStoreServer();
+}
+
+// Enable co-located hash join pushdown first
+// for 'tpch-sf0.01-1-node-hash-part', 'lineitem' and 'orders' are co-located at 'l_orderkey = o.o_orderkey'
+TEST_CASE ("tpch-sf0.01-1-node-hash-part-hash-join-synthetic-3-table" * doctest::skip(false || SKIP_SUITE)) {
+  startFPDBStoreServer();
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01-1-node-hash-part/parquet/",
+                                            {"tpch/synthetic/co-join-3-table.sql"},
+                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            false,
+                                            ObjStoreType::FPDB_STORE,
+                                            Mode::pushdownOnlyMode()));
+  stopFPDBStoreServer();
+}
+
 }
 
 }

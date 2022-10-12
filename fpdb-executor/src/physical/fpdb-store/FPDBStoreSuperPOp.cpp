@@ -114,27 +114,6 @@ void FPDBStoreSuperPOp::setForwardConsumers(const std::vector<std::shared_ptr<Ph
   collatePOp->setForwardConsumers(forwardConsumerMap);
 }
 
-void FPDBStoreSuperPOp::resetForwardConsumers() {
-  auto expRootPOp = subPlan_->getRootPOp();
-  if (!expRootPOp.has_value()) {
-    throw std::runtime_error(expRootPOp.error());
-  }
-  auto collatePOp = std::static_pointer_cast<collate::CollatePOp>(*expRootPOp);
-  const auto &producers = collatePOp->producers();
-  const auto &forwardConsumerMap = collatePOp->getForwardConsumers();
-  if (producers.size() != forwardConsumerMap.size()) {
-    throw std::runtime_error(fmt::format("num producers ({}) and num forward consumers ({}) mismatch on \"reset\"",
-                                         producers.size(), forwardConsumerMap.size()));
-  }
-  std::unordered_map<std::string, std::string> newForwardConsumerMap;
-  auto forwardConsumerIt = forwardConsumerMap.begin();
-  for (const auto &producer: producers) {
-    newForwardConsumerMap[producer] = forwardConsumerIt->second;
-    ++forwardConsumerIt;
-  }
-  collatePOp->setForwardConsumers(newForwardConsumerMap);
-}
-
 void FPDBStoreSuperPOp::onStart() {
   SPDLOG_DEBUG("Starting operator  |  name: '{}'", this->name());
 

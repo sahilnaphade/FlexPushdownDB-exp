@@ -89,6 +89,22 @@ tl::expected<shared_ptr<PhysicalOp>, string> PhysicalPlan::getLast() {
   return getPhysicalOp(*rootOpProducers.begin());
 }
 
+tl::expected<vector<shared_ptr<PhysicalOp>>, string> PhysicalPlan::getLasts() {
+  auto expRootOp = getRootPOp();
+  if (!expRootOp.has_value()) {
+    return tl::make_unexpected(expRootOp.error());
+  }
+  vector<shared_ptr<PhysicalOp>> lasts;
+  for (const auto &rootProducer: (*expRootOp)->producers()) {
+    auto expLast = getPhysicalOp(rootProducer);
+    if (!expLast.has_value()) {
+      return tl::make_unexpected(expLast.error());
+    }
+    lasts.emplace_back(*expLast);
+  }
+  return lasts;
+}
+
 tl::expected<void, string> PhysicalPlan::addAsLast(shared_ptr<PhysicalOp> &op) {
   // check exist
   if (physicalOps_.find(op->name()) != physicalOps_.end()) {
@@ -117,7 +133,7 @@ tl::expected<void, string> PhysicalPlan::addAsLast(shared_ptr<PhysicalOp> &op) {
   return {};
 }
 
-tl::expected<void, string> PhysicalPlan::addAsLast(vector<shared_ptr<PhysicalOp>> &ops) {
+tl::expected<void, string> PhysicalPlan::addAsLasts(vector<shared_ptr<PhysicalOp>> &ops) {
   // check "#producers of root" = "#op in ops"
   // find root
   auto expRootPOp = getRootPOp();

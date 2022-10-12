@@ -37,7 +37,7 @@ public:
   void clear() override;
   std::string getTypeString() const override;
 
-  bool getForward() const;
+  bool isForward() const;
   const std::unordered_map<std::string, std::string> &getForwardConsumers() const;
   void setForward(bool forward);
   void setForwardConsumers(const std::unordered_map<std::string, std::string> &forwardConsumers);

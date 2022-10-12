@@ -80,6 +80,21 @@ private:
 
   vector<shared_ptr<PhysicalOp>> transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoinPrePOp);
 
+  void pushdownBloomFilter(const vector<shared_ptr<PhysicalOp>> &bloomFilterCreatePOps,
+                           vector<shared_ptr<PhysicalOp>> &upRightConnPOps,
+                           vector<shared_ptr<PhysicalOp>> &joinProbePOps,
+                           const vector<string> &rightColumnNames,
+                           bool withHashJoinPushdown);
+
+  void pushdownBloomFilterNoHashJoinPushdown(const vector<shared_ptr<PhysicalOp>> &bloomFilterCreatePOps,
+                                             vector<shared_ptr<PhysicalOp>> &upRightConnPOps,
+                                             vector<shared_ptr<PhysicalOp>> &joinProbePOps,
+                                             const vector<string> &rightColumnNames);
+
+  void pushdownBloomFilterWithHashJoinPushdown(const vector<shared_ptr<PhysicalOp>> &bloomFilterCreatePOps,
+                                               vector<shared_ptr<PhysicalOp>> &upRightConnPOps,
+                                               const vector<string> &rightColumnNames);
+
   vector<shared_ptr<PhysicalOp>> transformNestedLoopJoin(const shared_ptr<NestedLoopJoinPrePOp> &nestedLoopJoinPrePOp);
 
   vector<shared_ptr<PhysicalOp>> transformFilterableScan(const shared_ptr<FilterableScanPrePOp> &filterableScanPrePOp);
