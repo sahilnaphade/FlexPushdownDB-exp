@@ -30,6 +30,7 @@
 #include <fpdb/executor/physical/bloomfilter/BloomFilterUsePOp.h>
 #include <fpdb/executor/physical/fpdb-store/FPDBStoreFileScanPOp.h>
 #include <fpdb/executor/physical/fpdb-store/FPDBStoreSuperPOp.h>
+#include <fpdb/executor/physical/fpdb-store/FPDBStoreTableCacheLoadPOp.h>
 #include <fpdb/tuple/serialization/ArrowSerializer.h>
 #include <fpdb/caf/CAFUtil.h>
 
@@ -63,6 +64,7 @@ CAF_ADD_TYPE_ID(POp, (bloomfilter::BloomFilterCreatePOp))
 CAF_ADD_TYPE_ID(POp, (bloomfilter::BloomFilterUsePOp))
 CAF_ADD_TYPE_ID(POp, (fpdb_store::FPDBStoreFileScanPOp))
 CAF_ADD_TYPE_ID(POp, (fpdb_store::FPDBStoreSuperPOp))
+CAF_ADD_TYPE_ID(POp, (fpdb_store::FPDBStoreTableCacheLoadPOp))
 CAF_ADD_TYPE_ID(POp, (caf::spawn_options))
 CAF_END_TYPE_ID_BLOCK(POp)
 
@@ -99,7 +101,8 @@ struct variant_inspector_traits<POpPtr> {
           type_id_v<bloomfilter::BloomFilterCreatePOp>,
           type_id_v<bloomfilter::BloomFilterUsePOp>,
           type_id_v<fpdb_store::FPDBStoreFileScanPOp>,
-          type_id_v<fpdb_store::FPDBStoreSuperPOp>
+          type_id_v<fpdb_store::FPDBStoreSuperPOp>,
+          type_id_v<fpdb_store::FPDBStoreTableCacheLoadPOp>
   };
 
   // Returns which type in allowed_types corresponds to x.
@@ -152,6 +155,8 @@ struct variant_inspector_traits<POpPtr> {
       return 22;
     else if (x->getType() == POpType::FPDB_STORE_SUPER)
       return 23;
+    else if (x->getType() == POpType::FPDB_STORE_TABLE_CACHE_LOAD)
+      return 24;
     else
       return -1;
   }
@@ -208,6 +213,8 @@ struct variant_inspector_traits<POpPtr> {
         return f(dynamic_cast<fpdb_store::FPDBStoreFileScanPOp &>(*x));
       case 23:
         return f(dynamic_cast<fpdb_store::FPDBStoreSuperPOp &>(*x));
+      case 24:
+        return f(dynamic_cast<fpdb_store::FPDBStoreTableCacheLoadPOp &>(*x));
       default: {
         none_t dummy;
         return f(dummy);
@@ -353,6 +360,11 @@ struct variant_inspector_traits<POpPtr> {
       }
       case type_id_v<fpdb_store::FPDBStoreSuperPOp>: {
         auto tmp = fpdb_store::FPDBStoreSuperPOp{};
+        continuation(tmp);
+        return true;
+      }
+      case type_id_v<fpdb_store::FPDBStoreTableCacheLoadPOp>: {
+        auto tmp = fpdb_store::FPDBStoreTableCacheLoadPOp{};
         continuation(tmp);
         return true;
       }

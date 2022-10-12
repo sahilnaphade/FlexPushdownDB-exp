@@ -5,9 +5,11 @@
 #include <fpdb/executor/physical/transform/PrePToFPDBStorePTransformer.h>
 #include <fpdb/executor/physical/transform/PrePToPTransformerUtil.h>
 #include <fpdb/executor/physical/transform/StoreTransformTraits.h>
+#include <fpdb/executor/physical/Globals.h>
 #include <fpdb/executor/physical/prune/PartitionPruner.h>
 #include <fpdb/executor/physical/file/RemoteFileScanPOp.h>
 #include <fpdb/executor/physical/fpdb-store/FPDBStoreSuperPOpUtil.h>
+#include <fpdb/executor/physical/fpdb-store/FPDBStoreTableCacheLoadPOp.h>
 #include <fpdb/executor/physical/project/ProjectPOp.h>
 #include <fpdb/executor/physical/filter/FilterPOp.h>
 #include <fpdb/executor/physical/aggregate/AggregatePOp.h>
@@ -15,6 +17,9 @@
 #include <fpdb/executor/physical/cache/CacheLoadPOp.h>
 #include <fpdb/executor/physical/merge/MergePOp.h>
 #include <fpdb/executor/physical/shuffle/ShufflePOp.h>
+#include <fpdb/executor/physical/join/hashjoin/HashJoinArrowPOp.h>
+#include <fpdb/executor/physical/bloomfilter/BloomFilterCreatePOp.h>
+#include <fpdb/executor/physical/bloomfilter/BloomFilterUsePOp.h>
 #include <fpdb/catalogue/obj-store/ObjStoreTable.h>
 
 using namespace fpdb::catalogue::obj_store;
@@ -23,19 +28,31 @@ namespace fpdb::executor::physical {
 
 PrePToFPDBStorePTransformer::PrePToFPDBStorePTransformer(const shared_ptr<SeparableSuperPrePOp> &separableSuperPrePOp,
                                                          const shared_ptr<Mode> &mode,
-                                                         int numNodes,
+                                                         int numComputeNodes,
+                                                         int computeParallelDegree,
+                                                         int fpdbStoreParallelDegree,
                                                          const shared_ptr<FPDBStoreConnector> &fpdbStoreConnector):
   separableSuperPrePOp_(separableSuperPrePOp),
   mode_(mode),
-  numNodes_(numNodes),
+  numComputeNodes_(numComputeNodes),
+  numFPDBStoreNodes_(fpdbStoreConnector->getNumHosts()),
+  computeParallelDegree_(computeParallelDegree),
+  fpdbStoreParallelDegree_(fpdbStoreParallelDegree),
   fpdbStoreConnector_(fpdbStoreConnector) {}
 
 pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
 PrePToFPDBStorePTransformer::transform(const shared_ptr<SeparableSuperPrePOp> &separableSuperPrePOp,
                                        const shared_ptr<Mode> &mode,
-                                       int numNodes,
+                                       int numComputeNodes,
+                                       int computeParallelDegree,
+                                       int fpdbStoreParallelDegree,
                                        const shared_ptr<FPDBStoreConnector> &fpdbStoreConnector) {
-  PrePToFPDBStorePTransformer transformer(separableSuperPrePOp, mode, numNodes, fpdbStoreConnector);
+  PrePToFPDBStorePTransformer transformer(separableSuperPrePOp,
+                                          mode,
+                                          numComputeNodes,
+                                          computeParallelDegree,
+                                          fpdbStoreParallelDegree,
+                                          fpdbStoreConnector);
   return transformer.transform();
 } 
 
@@ -86,43 +103,103 @@ pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>> PrePToFPDBS
     }
     case PUSHDOWN_ONLY:
     case HYBRID: {
-      // add collate at the end of each FPDB store super op
-      vector<shared_ptr<PhysicalOp>> collatePOps;
-      for (size_t i = 0; i < connPOps.size(); ++i) {
-        collatePOps.emplace_back(make_shared<collate::CollatePOp>(fmt::format("Collate[{}]-{}", rootPrePOp->getId(), i),
-                                                                  connPOps[i]->getProjectColumnNames(),
-                                                                  connPOps[i]->getNodeId()));
-      }
-      PrePToPTransformerUtil::connectOneToOne(connPOps, collatePOps);
+      if (hashJoinTransInfo_.enabled_) {
+        // if hash join pushdown is enabled
+        // make FPDB store super ops (a single big one for each store node)
+        vector<unordered_map<string, shared_ptr<PhysicalOp>>> opMaps{numFPDBStoreNodes_};
+        vector<vector<shared_ptr<PhysicalOp>>> connPOpsPerStoreNode{numFPDBStoreNodes_};
+        vector<string> collatePOps;
+        for (const auto &op: allPOps) {
+          opMaps[hashJoinTransInfo_.opToStoreNode_[op->name()]].emplace(op->name(), op);
+        }
+        for (const auto &op: connPOps) {
+          connPOpsPerStoreNode[hashJoinTransInfo_.opToStoreNode_[op->name()]].emplace_back(op);
+        }
+        for (uint i = 0; i < numFPDBStoreNodes_; ++i) {
+          shared_ptr<PhysicalOp> collatePOp = make_shared<collate::CollatePOp>(
+                  fmt::format("Collate[{}]-node-{}", rootPrePOp->getId(), i),
+                  vector<string>{},  // never used
+                  0);                // never used
+          collatePOps.emplace_back(collatePOp->name());
+          opMaps[i][collatePOp->name()] = collatePOp;
+          PrePToPTransformerUtil::connectManyToOne(connPOpsPerStoreNode[i], collatePOp);
+        }
+        vector<shared_ptr<PhysicalOp>> fpdbStoreSuperPOps;
+        for (uint i = 0; i < numFPDBStoreNodes_; ++i) {
+          auto fpdbStoreSuperPOp = make_shared<fpdb_store::FPDBStoreSuperPOp>(
+                  fmt::format("FPDBStoreSuper[{}]-node-{}", rootPrePOp->getId(), i),
+                  vector<string>{},  // never used
+                  0,                 // never used
+                  make_shared<PhysicalPlan>(opMaps[i], collatePOps[i]),
+                  fpdbStoreConnector_->getHost(i),
+                  fpdbStoreConnector_->getFlightPort());
+          fpdbStoreSuperPOp->setReceiveByOthers(true);
+          fpdbStoreSuperPOps.emplace_back(fpdbStoreSuperPOp);
+        }
 
-      // make FPDB store super op
-      unordered_map<string, shared_ptr<PhysicalOp>> opMap;
-      for (const auto &op: allPOps) {
-        opMap.emplace(op->name(), op);
-      }
+        // make FPDBStoreTableCacheLoadPOps to fetch results
+        vector<shared_ptr<PhysicalOp>> fpdbStoreTableCacheLoadPOps;
+        for (int i = 0; i < (int) numFPDBStoreNodes_; ++i) {
+          auto fpdbStoreSuperPOp = fpdbStoreSuperPOps[i];
+          auto typedFPDBStoreSuperPOp = static_pointer_cast<fpdb_store::FPDBStoreSuperPOp>(fpdbStoreSuperPOp);
+          vector<shared_ptr<PhysicalOp>> fpdbStoreTableCacheLoadPOpsPerNode;
+          for (int j = 0; j < fpdbStoreParallelDegree_; ++j) {
+            fpdbStoreTableCacheLoadPOpsPerNode.emplace_back(make_shared<fpdb_store::FPDBStoreTableCacheLoadPOp>(
+                    fmt::format("FPDBStoreTableCacheLoad[{}]-{}", rootPrePOp->getId(), i*fpdbStoreParallelDegree_ + j),
+                    vector<string>{},   // never used
+                    i % numComputeNodes_));
+          }
+          fpdbStoreTableCacheLoadPOps.insert(fpdbStoreTableCacheLoadPOps.end(),
+                                             fpdbStoreTableCacheLoadPOpsPerNode.begin(),
+                                             fpdbStoreTableCacheLoadPOpsPerNode.end());
+          PrePToPTransformerUtil::connectOneToMany(fpdbStoreSuperPOp, fpdbStoreTableCacheLoadPOpsPerNode);
+          typedFPDBStoreSuperPOp->setForwardConsumers(fpdbStoreTableCacheLoadPOpsPerNode);
+        }
 
-      vector<shared_ptr<PhysicalOp>> fpdbStoreSuperPOps;
-      for (uint i = 0; i < collatePOps.size(); ++i) {
-        auto rootOpToPlanAndHostRes = PrePToPTransformerUtil::rootOpToPlanAndHost(collatePOps[i], opMap, objectToHost_);
-        const auto &subPlan = rootOpToPlanAndHostRes.first;
-        const auto &host = rootOpToPlanAndHostRes.second;
-        fpdbStoreSuperPOps.emplace_back(make_shared<fpdb_store::FPDBStoreSuperPOp>(
-                fmt::format("FPDBStoreSuper[{}]-{}", rootPrePOp->getId(), i),
-                collatePOps[i]->getProjectColumnNames(),
-                collatePOps[i]->getNodeId(),
-                subPlan,
-                host,
-                fpdbStoreConnector_->getFlightPort()));
-      }
-
-      // transform to hybrid execution plan, if needed
-      if (mode_->id() == HYBRID) {
-        auto hybridTransformRes = transformPushdownOnlyToHybrid(fpdbStoreSuperPOps);
-        connPOps = hybridTransformRes.first;
-        allPOps = hybridTransformRes.second;
-      } else {
-        connPOps = fpdbStoreSuperPOps;
+        connPOps = fpdbStoreTableCacheLoadPOps;
         allPOps = fpdbStoreSuperPOps;
+        allPOps.insert(allPOps.end(), fpdbStoreTableCacheLoadPOps.begin(), fpdbStoreTableCacheLoadPOps.end());
+      } else {
+        // if hash join pushdown is not enabled
+        // add collate at the end of each FPDB store super op
+        vector<shared_ptr<PhysicalOp>> collatePOps;
+        for (size_t i = 0; i < connPOps.size(); ++i) {
+          collatePOps.emplace_back(
+                  make_shared<collate::CollatePOp>(fmt::format("Collate[{}]-{}", rootPrePOp->getId(), i),
+                                                   connPOps[i]->getProjectColumnNames(),
+                                                   connPOps[i]->getNodeId()));
+        }
+        PrePToPTransformerUtil::connectOneToOne(connPOps, collatePOps);
+
+        // make FPDB store super ops
+        unordered_map<string, shared_ptr<PhysicalOp>> opMap;
+        for (const auto &op: allPOps) {
+          opMap.emplace(op->name(), op);
+        }
+        vector<shared_ptr<PhysicalOp>> fpdbStoreSuperPOps;
+        for (uint i = 0; i < collatePOps.size(); ++i) {
+          auto rootOpToPlanAndHostRes = PrePToPTransformerUtil::rootOpToPlanAndHost(collatePOps[i], opMap,
+                                                                                    objectToHost_);
+          const auto &subPlan = rootOpToPlanAndHostRes.first;
+          const auto &host = rootOpToPlanAndHostRes.second;
+          fpdbStoreSuperPOps.emplace_back(make_shared<fpdb_store::FPDBStoreSuperPOp>(
+                  fmt::format("FPDBStoreSuper[{}]-{}", rootPrePOp->getId(), i),
+                  collatePOps[i]->getProjectColumnNames(),
+                  collatePOps[i]->getNodeId(),
+                  subPlan,
+                  host,
+                  fpdbStoreConnector_->getFlightPort()));
+        }
+
+        // transform to hybrid execution plan, if needed
+        if (mode_->id() == HYBRID) {
+          auto hybridTransformRes = transformPushdownOnlyToHybrid(fpdbStoreSuperPOps);
+          connPOps = hybridTransformRes.first;
+          allPOps = hybridTransformRes.second;
+        } else {
+          connPOps = fpdbStoreSuperPOps;
+          allPOps = fpdbStoreSuperPOps;
+        }
       }
 
       // check whether has reduce op
@@ -215,6 +292,10 @@ PrePToFPDBStorePTransformer::transformDfs(const shared_ptr<PrePhysicalOp> &prePO
     case PrePOpType::AGGREGATE: {
       const auto &aggregatePrePOp = std::static_pointer_cast<AggregatePrePOp>(prePOp);
       return transformAggregate(aggregatePrePOp);
+    }
+    case PrePOpType::HASH_JOIN: {
+      const auto &hashJoinPrePOp = std::static_pointer_cast<HashJoinPrePOp>(prePOp);
+      return transformHashJoin(hashJoinPrePOp);
     }
     default: {
       throw runtime_error(fmt::format("Unsupported prephysical operator type for FPDB store: {}", prePOp->getTypeString()));
@@ -531,7 +612,7 @@ PrePToFPDBStorePTransformer::transformFilterableScanPullup(const shared_ptr<Filt
     // remote file scan
     const auto &scanPOp = make_shared<file::RemoteFileScanPOp>(fmt::format("RemoteFileScan[{}]-{}/{}", separableSuperPrePOp_->getId(), bucket, object),
                                                                projPredColumnNames,
-                                                               partitionId % numNodes_,
+                                                               partitionId % numComputeNodes_,
                                                                bucket,
                                                                object,
                                                                table->getFormat(),
@@ -545,7 +626,7 @@ PrePToFPDBStorePTransformer::transformFilterableScanPullup(const shared_ptr<Filt
     if (predicate) {
       const auto &filterPOp = make_shared<filter::FilterPOp>(fmt::format("Filter[{}]-{}/{}", separableSuperPrePOp_->getId(), bucket, object),
                                                              projectColumnNames,
-                                                             partitionId % numNodes_,
+                                                             partitionId % numComputeNodes_,
                                                              predicate,
                                                              table);
       filterPOps.emplace_back(filterPOp);
@@ -601,7 +682,7 @@ PrePToFPDBStorePTransformer::transformFilterableScanPushdownOnly(const shared_pt
     // FPDB Store file scan
     const auto &scanPOp = make_shared<fpdb_store::FPDBStoreFileScanPOp>(fmt::format("FPDBStoreFileScan[{}]-{}/{}", separableSuperPrePOp_->getId(), bucket, object),
                                                                         projPredColumnNames,
-                                                                        partitionId % numNodes_,
+                                                                        partitionId % numComputeNodes_,
                                                                         bucket,
                                                                         object,
                                                                         table->getFormat(),
@@ -614,7 +695,7 @@ PrePToFPDBStorePTransformer::transformFilterableScanPushdownOnly(const shared_pt
     if (predicate) {
       const auto &filterPOp = make_shared<filter::FilterPOp>(fmt::format("Filter[{}]-{}/{}", separableSuperPrePOp_->getId(), bucket, object),
                                                              projectColumnNames,
-                                                             partitionId % numNodes_,
+                                                             partitionId % numComputeNodes_,
                                                              predicate,
                                                              table);
       filterPOps.emplace_back(filterPOp);
@@ -678,7 +759,7 @@ PrePToFPDBStorePTransformer::transformFilterableScanCachingOnly(const shared_ptr
     // cache load
     const auto cacheLoadPOp = make_shared<cache::CacheLoadPOp>(fmt::format("CacheLoad[{}]-{}/{}", separableSuperPrePOp_->getId(), bucket, object),
                                                                projectColumnNames,
-                                                               partitionId % numNodes_,
+                                                               partitionId % numComputeNodes_,
                                                                predicateColumnNames,
                                                                std::vector<std::set<std::string>>{},    // not needed
                                                                projPredColumnNames,
@@ -691,7 +772,7 @@ PrePToFPDBStorePTransformer::transformFilterableScanCachingOnly(const shared_ptr
     // remote file scan
     const auto &scanPOp = make_shared<file::RemoteFileScanPOp>(fmt::format("RemoteFileScan[{}]-{}/{}", separableSuperPrePOp_->getId(), bucket, object),
                                                                projPredColumnNames,
-                                                               partitionId % numNodes_,
+                                                               partitionId % numComputeNodes_,
                                                                bucket,
                                                                object,
                                                                table->getFormat(),
@@ -707,7 +788,7 @@ PrePToFPDBStorePTransformer::transformFilterableScanCachingOnly(const shared_ptr
     // merge
     const auto &mergePOp = make_shared<merge::MergePOp>(fmt::format("Merge[{}]-{}/{}", separableSuperPrePOp_->getId(), bucket, object),
                                                         projPredColumnNames,
-                                                        partitionId % numNodes_);
+                                                        partitionId % numComputeNodes_);
     allPOps.emplace_back(mergePOp);
 
     // connect
@@ -722,7 +803,7 @@ PrePToFPDBStorePTransformer::transformFilterableScanCachingOnly(const shared_ptr
     if (predicate) {
       const auto &filterPOp = make_shared<filter::FilterPOp>(fmt::format("Filter[{}]-{}/{}", separableSuperPrePOp_->getId(), bucket, object),
                                                              projectColumnNames,
-                                                             partitionId % numNodes_,
+                                                             partitionId % numComputeNodes_,
                                                              predicate,
                                                              table,
                                                              weightedSegmentKeys);
@@ -740,6 +821,7 @@ PrePToFPDBStorePTransformer::transformFilterableScanCachingOnly(const shared_ptr
   return make_pair(selfConnDownPOps, allPOps);
 }
 
+// majorly a copy from 'PrePToPTransformer::transformProject()'
 pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
 PrePToFPDBStorePTransformer::transformProject(const shared_ptr<ProjectPrePOp> &projectPrePOp) {
   // id
@@ -761,12 +843,18 @@ PrePToFPDBStorePTransformer::transformProject(const shared_ptr<ProjectPrePOp> &p
   vector<string> projectColumnNames{projectPrePOp->getProjectColumnNames().begin(),
                                     projectPrePOp->getProjectColumnNames().end()};
   for (size_t i = 0; i < upConnPOps.size(); ++i) {
-    selfPOps.emplace_back(make_shared<project::ProjectPOp>(fmt::format("Project[{}]-{}", prePOpId, i),
-                                                           projectColumnNames,
-                                                           upConnPOps[i]->getNodeId(),
-                                                           projectPrePOp->getExprs(),
-                                                           projectPrePOp->getExprNames(),
-                                                           projectPrePOp->getProjectColumnNamePairs()));
+    auto projectPOp = make_shared<project::ProjectPOp>(fmt::format("Project[{}]-{}", prePOpId, i),
+                                                       projectColumnNames,
+                                                       upConnPOps[i]->getNodeId(),
+                                                       projectPrePOp->getExprs(),
+                                                       projectPrePOp->getExprNames(),
+                                                       projectPrePOp->getProjectColumnNamePairs());
+    selfPOps.emplace_back(projectPOp);
+    // update for hash join pushdown
+    if (hashJoinTransInfo_.enabled_) {
+      hashJoinTransInfo_.opToStoreNode_[projectPOp->name()] =
+              hashJoinTransInfo_.opToStoreNode_[upConnPOps[i]->name()];
+    }
   }
 
   // connect to upstream
@@ -778,6 +866,7 @@ PrePToFPDBStorePTransformer::transformProject(const shared_ptr<ProjectPrePOp> &p
   return make_pair(selfPOps, allPOps);
 }
 
+// majorly a copy from 'PrePToPTransformer::transformFilter()'
 pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
 PrePToFPDBStorePTransformer::transformFilter(const shared_ptr<FilterPrePOp> &filterPrePOp) {
   // id
@@ -799,11 +888,17 @@ PrePToFPDBStorePTransformer::transformFilter(const shared_ptr<FilterPrePOp> &fil
   vector<string> projectColumnNames{filterPrePOp->getProjectColumnNames().begin(),
                                     filterPrePOp->getProjectColumnNames().end()};
   for (size_t i = 0; i < upConnPOps.size(); ++i) {
-    selfPOps.emplace_back(make_shared<filter::FilterPOp>(fmt::format("Filter[{}]-{}", prePOpId, i),
-                                                         projectColumnNames,
-                                                         upConnPOps[i]->getNodeId(),
-                                                         filterPrePOp->getPredicate(),
-                                                         nullptr));
+    auto filterPOp = make_shared<filter::FilterPOp>(fmt::format("Filter[{}]-{}", prePOpId, i),
+                                                    projectColumnNames,
+                                                    upConnPOps[i]->getNodeId(),
+                                                    filterPrePOp->getPredicate(),
+                                                    nullptr);
+    selfPOps.emplace_back(filterPOp);
+    // update for hash join pushdown
+    if (hashJoinTransInfo_.enabled_) {
+      hashJoinTransInfo_.opToStoreNode_[filterPOp->name()] =
+              hashJoinTransInfo_.opToStoreNode_[upConnPOps[i]->name()];
+    }
   }
 
   // connect to upstream
@@ -815,6 +910,7 @@ PrePToFPDBStorePTransformer::transformFilter(const shared_ptr<FilterPrePOp> &fil
   return make_pair(selfPOps, allPOps);
 }
 
+// majorly a copy from 'PrePToPTransformer::transformAggregate()'
 pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
 PrePToFPDBStorePTransformer::transformAggregate(const shared_ptr<AggregatePrePOp> &aggregatePrePOp) {
   // id
@@ -864,11 +960,17 @@ PrePToFPDBStorePTransformer::transformAggregate(const shared_ptr<AggregatePrePOp
       aggFunctions.insert(aggFunctions.end(), transAggFunctions.begin(), transAggFunctions.end());
     }
 
-    aggregatePOps.emplace_back(make_shared<aggregate::AggregatePOp>(
+    auto aggregatePOp = make_shared<aggregate::AggregatePOp>(
             fmt::format("Aggregate[{}]-{}", prePOpId, i),
             parallelAggProjectColumnNames,
             upConnPOps[i]->getNodeId(),
-            aggFunctions));
+            aggFunctions);
+    aggregatePOps.emplace_back(aggregatePOp);
+    // update for hash join pushdown
+    if (hashJoinTransInfo_.enabled_) {
+      hashJoinTransInfo_.opToStoreNode_[aggregatePOp->name()] =
+              hashJoinTransInfo_.opToStoreNode_[upConnPOps[i]->name()];
+    }
   }
   allPOps.insert(allPOps.end(), aggregatePOps.begin(), aggregatePOps.end());
 
@@ -876,6 +978,293 @@ PrePToFPDBStorePTransformer::transformAggregate(const shared_ptr<AggregatePrePOp
   PrePToPTransformerUtil::connectOneToOne(upConnPOps, aggregatePOps);
 
   return make_pair(aggregatePOps, allPOps);
+}
+
+pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
+PrePToFPDBStorePTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoinPrePOp) {
+  if (!USE_ARROW_HASH_JOIN_IMPL) {
+    throw runtime_error("Old hash join impl is deprecated");
+  }
+  switch (mode_->id()) {
+    case PULL_UP:
+    case CACHING_ONLY: {
+      return transformHashJoinNoPushdown(hashJoinPrePOp);
+    }
+    case PUSHDOWN_ONLY: {
+      return transformHashJoinPushdown(hashJoinPrePOp);
+    }
+    default: {
+      throw runtime_error("Hybrid mode for hash join pushdown is not supported");
+    }
+  }
+}
+
+// majorly a copy from 'PrePToPTransformer::transformHashJoin()'
+pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
+PrePToFPDBStorePTransformer::transformHashJoinNoPushdown(const shared_ptr<HashJoinPrePOp> &hashJoinPrePOp) {
+  // id
+  auto prePOpId = hashJoinPrePOp->getId();
+
+  // transform producers
+  const auto &producersTransRes = transformProducers(hashJoinPrePOp);
+  if (producersTransRes.size() != 2) {
+    throw runtime_error(fmt::format("Unsupported number of producers for hashJoin, should be {}, but get {}",
+                                    2, producersTransRes.size()));
+  }
+  auto upLeftConnPOps = producersTransRes[0].first;
+  auto upRightConnPOps = producersTransRes[1].first;
+  auto leftAllPOps = producersTransRes[0].second;
+  auto rightAllPOps = producersTransRes[1].second;
+  auto allPOps = leftAllPOps;
+  allPOps.insert(allPOps.end(), rightAllPOps.begin(), rightAllPOps.end());
+  
+  // information from prep op
+  vector<string> projectColumnNames{hashJoinPrePOp->getProjectColumnNames().begin(),
+                                    hashJoinPrePOp->getProjectColumnNames().end()};
+  auto joinType = hashJoinPrePOp->getJoinType();
+  const auto &leftColumnNames = hashJoinPrePOp->getLeftColumnNames();
+  const auto &rightColumnNames = hashJoinPrePOp->getRightColumnNames();
+  join::HashJoinPredicate hashJoinPredicate(leftColumnNames, rightColumnNames);
+  const auto &hashJoinPredicateStr = hashJoinPredicate.toString();
+  
+  // shuffle
+  vector<shared_ptr<PhysicalOp>> shuffleLeftPOps, shuffleRightPOps;
+  for (const auto &upLeftConnPOp: upLeftConnPOps) {
+    shuffleLeftPOps.emplace_back(make_shared<shuffle::ShufflePOp>(
+            fmt::format("Shuffle[{}]-{}", prePOpId, upLeftConnPOp->name()),
+            upLeftConnPOp->getProjectColumnNames(),
+            upLeftConnPOp->getNodeId(),
+            leftColumnNames));
+  }
+  for (const auto &upRightConnPOp : upRightConnPOps) {
+    shuffleRightPOps.emplace_back(make_shared<shuffle::ShufflePOp>(
+            fmt::format("Shuffle[{}]-{}", prePOpId, upRightConnPOp->name()),
+            upRightConnPOp->getProjectColumnNames(),
+            upRightConnPOp->getNodeId(),
+            rightColumnNames));
+  }
+  allPOps.insert(allPOps.end(), shuffleLeftPOps.begin(), shuffleLeftPOps.end());
+  allPOps.insert(allPOps.end(), shuffleRightPOps.begin(), shuffleRightPOps.end());
+  PrePToPTransformerUtil::connectOneToOne(upLeftConnPOps, shuffleLeftPOps);
+  PrePToPTransformerUtil::connectOneToOne(upRightConnPOps, shuffleRightPOps);
+  
+  // bloom filter if enabled
+  vector<shared_ptr<PhysicalOp>> bloomFilterCreatePOps, bloomFilterUsePOps;
+  bool useBloomFilter = USE_BLOOM_FILTER &&
+          (joinType == JoinType::INNER || joinType == JoinType::LEFT || joinType == JoinType::SEMI);
+  if (useBloomFilter) {
+    for (int i = 0; i < computeParallelDegree_ * numComputeNodes_; ++i) {
+      auto bloomFilterCreatePOp = make_shared<bloomfilter::BloomFilterCreatePOp>(
+              fmt::format("BloomFilterCreate[{}]-{}-{}", prePOpId, hashJoinPredicateStr, i),
+              upLeftConnPOps[0]->getProjectColumnNames(),
+              i % numComputeNodes_,
+              leftColumnNames);
+      auto bloomFilterUsePOp = make_shared<bloomfilter::BloomFilterUsePOp>(
+              fmt::format("BloomFilterUse[{}]-{}-{}", prePOpId, hashJoinPredicateStr, i),
+              upRightConnPOps[0]->getProjectColumnNames(),
+              i % numComputeNodes_,
+              rightColumnNames);
+      bloomFilterCreatePOps.emplace_back(bloomFilterCreatePOp);
+      bloomFilterUsePOps.emplace_back(bloomFilterUsePOp);
+      bloomFilterCreatePOp->addBloomFilterUsePOp(bloomFilterUsePOp);
+      bloomFilterUsePOp->consume(bloomFilterCreatePOp);
+    }
+    allPOps.insert(allPOps.end(), bloomFilterCreatePOps.begin(), bloomFilterCreatePOps.end());
+    allPOps.insert(allPOps.end(), bloomFilterUsePOps.begin(), bloomFilterUsePOps.end());
+    PrePToPTransformerUtil::connectManyToMany(shuffleLeftPOps, bloomFilterCreatePOps);
+    PrePToPTransformerUtil::connectManyToMany(shuffleRightPOps, bloomFilterUsePOps);
+  }
+
+  // hash join
+  vector<shared_ptr<PhysicalOp>> hashJoinArrowPOps;
+  for (int i = 0; i < computeParallelDegree_ * numComputeNodes_; ++i) {
+    auto hashJoinArrowPOp = make_shared<join::HashJoinArrowPOp>(
+            fmt::format("HashJoinArrow[{}]-{}-{}", prePOpId, hashJoinPredicateStr, i),
+            projectColumnNames,
+            i % numComputeNodes_,
+            hashJoinPredicate,
+            joinType);
+    hashJoinArrowPOps.emplace_back(hashJoinArrowPOp);
+    if (USE_BLOOM_FILTER) {
+      bloomFilterCreatePOps[i]->produce(hashJoinArrowPOp);
+      bloomFilterUsePOps[i]->produce(hashJoinArrowPOp);
+      hashJoinArrowPOp->addBuildProducer(bloomFilterCreatePOps[i]);
+      hashJoinArrowPOp->addProbeProducer(bloomFilterUsePOps[i]);
+    } else {
+      for (const auto &shuffleLeftPOp: shuffleLeftPOps) {
+        shuffleLeftPOp->produce(hashJoinArrowPOp);
+        hashJoinArrowPOp->addBuildProducer(shuffleLeftPOp);
+      }
+      for (const auto &shuffleRightPOp: shuffleRightPOps) {
+        shuffleRightPOp->produce(hashJoinArrowPOp);
+        hashJoinArrowPOp->addProbeProducer(shuffleRightPOp);
+      }
+    }
+  }
+  allPOps.insert(allPOps.end(), hashJoinArrowPOps.begin(), hashJoinArrowPOps.end());
+
+  return {hashJoinArrowPOps, allPOps};
+}
+
+// the major difference is that joins are separately processed in each storage node
+pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
+PrePToFPDBStorePTransformer::transformHashJoinPushdown(const shared_ptr<HashJoinPrePOp> &hashJoinPrePOp) {
+  // set flag
+  hashJoinTransInfo_.enabled_ = true;
+
+  // id
+  auto prePOpId = hashJoinPrePOp->getId();
+
+  // transform producers
+  const auto &producersTransRes = transformProducers(hashJoinPrePOp);
+  if (producersTransRes.size() != 2) {
+    throw runtime_error(fmt::format("Unsupported number of producers for hashJoin, should be {}, but get {}",
+                                    2, producersTransRes.size()));
+  }
+  auto upLeftConnPOps = producersTransRes[0].first;
+  auto upRightConnPOps = producersTransRes[1].first;
+  auto leftAllPOps = producersTransRes[0].second;
+  auto rightAllPOps = producersTransRes[1].second;
+  auto allPOps = leftAllPOps;
+  allPOps.insert(allPOps.end(), rightAllPOps.begin(), rightAllPOps.end());
+
+  // information from prep op
+  vector<string> projectColumnNames{hashJoinPrePOp->getProjectColumnNames().begin(),
+                                    hashJoinPrePOp->getProjectColumnNames().end()};
+  auto joinType = hashJoinPrePOp->getJoinType();
+  const auto &leftColumnNames = hashJoinPrePOp->getLeftColumnNames();
+  const auto &rightColumnNames = hashJoinPrePOp->getRightColumnNames();
+  join::HashJoinPredicate hashJoinPredicate(leftColumnNames, rightColumnNames);
+  const auto &hashJoinPredicateStr = hashJoinPredicate.toString();
+
+  // group upConnPOps by storage nodes
+  unordered_map<string, shared_ptr<PhysicalOp>> leftOpMap, rightOpMap;
+  for (const auto &leftOp: leftAllPOps) {
+    leftOpMap[leftOp->name()] = leftOp;
+  }
+  for (const auto &rightOp: rightAllPOps) {
+    rightOpMap[rightOp->name()] = rightOp;
+  }
+  unordered_map<string, int> hostToId;
+  const auto &hosts = fpdbStoreConnector_->getHosts();
+  for (int i = 0; i < (int) hosts.size(); ++i) {
+    hostToId[hosts[i]] = i;
+  }
+  for (const auto &upLeftConnPOp: upLeftConnPOps) {
+    PrePToPTransformerUtil::updateOpToStoreNode(hashJoinTransInfo_.opToStoreNode_, upLeftConnPOp, leftOpMap,
+                                                objectToHost_, hostToId);
+  }
+  for (const auto &upRightConnPOp: upRightConnPOps) {
+    PrePToPTransformerUtil::updateOpToStoreNode(hashJoinTransInfo_.opToStoreNode_, upRightConnPOp, rightOpMap,
+                                                objectToHost_, hostToId);
+  }
+
+  // shuffle
+  vector<vector<shared_ptr<PhysicalOp>>> shuffleLeftPOps{numFPDBStoreNodes_}, shuffleRightPOps{numFPDBStoreNodes_};
+  for (auto &upLeftConnPOp: upLeftConnPOps) {
+    shared_ptr<PhysicalOp> shuffleLeftPOp = make_shared<shuffle::ShufflePOp>(
+            fmt::format("Shuffle[{}]-{}", prePOpId, upLeftConnPOp->name()),
+            upLeftConnPOp->getProjectColumnNames(),
+            0,  // never used
+            leftColumnNames);
+    PrePToPTransformerUtil::connectOneToOne(upLeftConnPOp, shuffleLeftPOp);
+    int fpdbStoreNodeId = hashJoinTransInfo_.opToStoreNode_[upLeftConnPOp->name()];
+    hashJoinTransInfo_.opToStoreNode_[shuffleLeftPOp->name()] = fpdbStoreNodeId;
+    shuffleLeftPOps[fpdbStoreNodeId].emplace_back(shuffleLeftPOp);
+  }
+  for (auto &upRightConnPOp : upRightConnPOps) {
+    shared_ptr<PhysicalOp> shuffleRightPOp = make_shared<shuffle::ShufflePOp>(
+            fmt::format("Shuffle[{}]-{}", prePOpId, upRightConnPOp->name()),
+            upRightConnPOp->getProjectColumnNames(),
+            0,  // never used
+            rightColumnNames);
+    PrePToPTransformerUtil::connectOneToOne(upRightConnPOp, shuffleRightPOp);
+    int fpdbStoreNodeId = hashJoinTransInfo_.opToStoreNode_[upRightConnPOp->name()];
+    hashJoinTransInfo_.opToStoreNode_[shuffleRightPOp->name()] = fpdbStoreNodeId;
+    shuffleRightPOps[fpdbStoreNodeId].emplace_back(shuffleRightPOp);
+  }
+  for (int i = 0; i < (int) numFPDBStoreNodes_; ++i) {
+    allPOps.insert(allPOps.end(), shuffleLeftPOps[i].begin(), shuffleLeftPOps[i].end());
+    allPOps.insert(allPOps.end(), shuffleRightPOps[i].begin(), shuffleRightPOps[i].end());
+  }
+
+  // bloom filter if enabled
+  vector<vector<shared_ptr<PhysicalOp>>> bloomFilterCreatePOps{numFPDBStoreNodes_},
+          bloomFilterUsePOps{numFPDBStoreNodes_};
+  bool useBloomFilter = USE_BLOOM_FILTER &&
+          (joinType == JoinType::INNER || joinType == JoinType::LEFT || joinType == JoinType::SEMI);
+  if (useBloomFilter) {
+    for (int i = 0; i < fpdbStoreParallelDegree_ * (int) numFPDBStoreNodes_; ++i) {
+      int fpdbStoreNodeId = i / fpdbStoreParallelDegree_;
+      auto bloomFilterCreatePOp = make_shared<bloomfilter::BloomFilterCreatePOp>(
+              fmt::format("BloomFilterCreate[{}]-{}-{}", prePOpId, hashJoinPredicateStr, i),
+              upLeftConnPOps[0]->getProjectColumnNames(),
+              0,  // never used
+              leftColumnNames);
+      auto bloomFilterUsePOp = make_shared<bloomfilter::BloomFilterUsePOp>(
+              fmt::format("BloomFilterUse[{}]-{}-{}", prePOpId, hashJoinPredicateStr, i),
+              upRightConnPOps[0]->getProjectColumnNames(),
+              0,  // never used
+              rightColumnNames);
+      bloomFilterCreatePOps[fpdbStoreNodeId].emplace_back(bloomFilterCreatePOp);
+      bloomFilterUsePOps[fpdbStoreNodeId].emplace_back(bloomFilterUsePOp);
+      bloomFilterCreatePOp->addBloomFilterUsePOp(bloomFilterUsePOp);
+      bloomFilterUsePOp->consume(bloomFilterCreatePOp);
+      hashJoinTransInfo_.opToStoreNode_[bloomFilterCreatePOp->name()] = fpdbStoreNodeId;
+      hashJoinTransInfo_.opToStoreNode_[bloomFilterUsePOp->name()] = fpdbStoreNodeId;
+    }
+    for (int i = 0; i < (int) numFPDBStoreNodes_; ++i) {
+      allPOps.insert(allPOps.end(), bloomFilterCreatePOps[i].begin(), bloomFilterCreatePOps[i].end());
+      allPOps.insert(allPOps.end(), bloomFilterUsePOps[i].begin(), bloomFilterUsePOps[i].end());
+      PrePToPTransformerUtil::connectManyToMany(shuffleLeftPOps[i], bloomFilterCreatePOps[i]);
+      PrePToPTransformerUtil::connectManyToMany(shuffleRightPOps[i], bloomFilterUsePOps[i]);
+    }
+  }
+
+  // hash join
+  vector<vector<shared_ptr<PhysicalOp>>> hashJoinArrowPOps{numFPDBStoreNodes_};
+  vector<shared_ptr<PhysicalOp>> hashJoinArrowPOpsPlain;
+  for (int i = 0; i < fpdbStoreParallelDegree_ * (int) numFPDBStoreNodes_; ++i) {
+    int fpdbStoreNodeId = i / fpdbStoreParallelDegree_;
+    auto hashJoinArrowPOp = make_shared<join::HashJoinArrowPOp>(
+            fmt::format("HashJoinArrow[{}]-{}-{}", prePOpId, hashJoinPredicateStr, i),
+            projectColumnNames,
+            0,  // never used
+            hashJoinPredicate,
+            joinType);
+    hashJoinArrowPOps[fpdbStoreNodeId].emplace_back(hashJoinArrowPOp);
+    hashJoinTransInfo_.opToStoreNode_[hashJoinArrowPOp->name()] = fpdbStoreNodeId;
+  }
+  for (int i = 0; i < (int) numFPDBStoreNodes_; ++i) {
+    hashJoinArrowPOpsPlain.insert(hashJoinArrowPOpsPlain.end(), hashJoinArrowPOps[i].begin(),
+                                  hashJoinArrowPOps[i].end());
+    allPOps.insert(allPOps.end(), hashJoinArrowPOps[i].begin(), hashJoinArrowPOps[i].end());
+    if (USE_BLOOM_FILTER) {
+      for (int j = 0; j < fpdbStoreParallelDegree_; ++j) {
+        bloomFilterCreatePOps[i][j]->produce(hashJoinArrowPOps[i][j]);
+        bloomFilterUsePOps[i][j]->produce(hashJoinArrowPOps[i][j]);
+        static_pointer_cast<join::HashJoinArrowPOp>(hashJoinArrowPOps[i][j])
+                ->addBuildProducer(bloomFilterCreatePOps[i][j]);
+        static_pointer_cast<join::HashJoinArrowPOp>(hashJoinArrowPOps[i][j])
+                ->addProbeProducer(bloomFilterUsePOps[i][j]);
+      }
+    } else {
+      for (const auto &shuffleLeftPOp: shuffleLeftPOps[i]) {
+        for (const auto &hashJoinArrowPOp: hashJoinArrowPOps[i]) {
+          shuffleLeftPOp->produce(hashJoinArrowPOp);
+          static_pointer_cast<join::HashJoinArrowPOp>(hashJoinArrowPOp)->addBuildProducer(shuffleLeftPOp);
+        }
+      }
+      for (const auto &shuffleRightPOp: shuffleRightPOps[i]) {
+        for (const auto &hashJoinArrowPOp: hashJoinArrowPOps[i]) {
+          shuffleRightPOp->produce(hashJoinArrowPOp);
+          static_pointer_cast<join::HashJoinArrowPOp>(hashJoinArrowPOp)->addProbeProducer(shuffleRightPOp);
+        }
+      }
+    }
+  }
+
+  return {hashJoinArrowPOpsPlain, allPOps};
 }
 
 }

@@ -35,6 +35,14 @@ int PhysicalOp::getNodeId() const {
   return nodeId_;
 }
 
+void PhysicalOp::setProducers(const std::set<std::string> &producers) {
+  producers_ = producers;
+}
+
+void PhysicalOp::setConsumers(const std::set<std::string> &consumers) {
+  consumers_ = consumers;
+}
+
 void PhysicalOp::produce(const std::shared_ptr<PhysicalOp> &op) {
   consumers_.emplace(op->name());
 }

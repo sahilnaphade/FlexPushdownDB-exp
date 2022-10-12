@@ -999,4 +999,47 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pushdown-only-22" * doctest
 
 }
 
+TEST_SUITE ("tpch-sf0.01-1-node-hash-part-hash-join-pushdown" * doctest::skip(SKIP_SUITE)) {
+
+// Enable co-located hash join pushdown first
+// for 'tpch-sf0.01-1-node-hash-part', 'lineitem' and 'orders' are co-located at 'l_orderkey = o.o_orderkey'
+TEST_CASE ("tpch-sf0.01-1-node-hash-part-hash-join-pushable" * doctest::skip(false || SKIP_SUITE)) {
+  startFPDBStoreServer();
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01-1-node-hash-part/parquet/",
+                                            {"tpch/original/04.sql"},
+                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            false,
+                                            ObjStoreType::FPDB_STORE,
+                                            Mode::pushdownOnlyMode()));
+  stopFPDBStoreServer();
+}
+
+// Enable co-located hash join pushdown first
+// for 'tpch-sf0.01-1-node-hash-part', 'lineitem' and 'orders' are co-located at 'l_orderkey = o.o_orderkey'
+TEST_CASE ("tpch-sf0.01-1-node-hash-part-hash-join-not-pushable" * doctest::skip(false || SKIP_SUITE)) {
+  startFPDBStoreServer();
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01-1-node-hash-part/parquet/",
+                                            {"tpch/original/19.sql"},
+                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            false,
+                                            ObjStoreType::FPDB_STORE,
+                                            Mode::pushdownOnlyMode()));
+  stopFPDBStoreServer();
+}
+
+// Enable co-located hash join pushdown first
+// for 'tpch-sf0.01-1-node-hash-part', 'lineitem' and 'orders' are co-located at 'l_orderkey = o.o_orderkey'
+// just for a pullup baseline
+TEST_CASE ("tpch-sf0.01-1-node-hash-part-hash-join-pullup" * doctest::skip(false || SKIP_SUITE)) {
+  startFPDBStoreServer();
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01-1-node-hash-part/parquet/",
+                                            {"tpch/original/04.sql"},
+                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            false,
+                                            ObjStoreType::FPDB_STORE));
+  stopFPDBStoreServer();
+}
+
+}
+
 }

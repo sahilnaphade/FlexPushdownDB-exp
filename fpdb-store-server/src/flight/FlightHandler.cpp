@@ -324,8 +324,8 @@ tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::
     const auto &consumerToBloomFilterInfo = op->getConsumerToBloomFilterInfo();
     for (const auto &consumerToBloomFilterIt: consumerToBloomFilterInfo) {
       auto bloomFilterInfo = consumerToBloomFilterIt.second;
-      auto bloomFilterKey = cache::BloomFilterCache::generateBloomFilterKey(query_id,
-                                                                            bloomFilterInfo->bloomFilterCreatePOp_);
+      auto bloomFilterKey = BloomFilterCache::generateBloomFilterKey(query_id,
+                                                                     bloomFilterInfo->bloomFilterCreatePOp_);
       auto exp_bloom_filter = bloom_filter_cache_.consumeBloomFilter(bloomFilterKey);
       if (!exp_bloom_filter.has_value()) {
         return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed, exp_bloom_filter.error()));
@@ -341,35 +341,31 @@ tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::
       }
 
       // wait for bitmap ready
-      auto bitmap_key = cache::BitmapCache::generateBitmapKey(query_id, typedOp->getBitmapWrapper()->mirrorOp_);
+      auto bitmap_key = BitmapCache::generateBitmapKey(query_id, typedOp->getBitmapWrapper()->mirrorOp_);
       auto bitmap = get_bitmap_from_cache(bitmap_key, BitmapType::FILTER_COMPUTE);
       typedOp->setBitmap(bitmap);
     }
   }
 
   // execute the query plan
-  auto execution = std::make_shared<FPDBStoreExecution>(query_id, actor_system_, physical_plan);
+  auto execution = std::make_shared<FPDBStoreExecution>(
+          query_id, actor_system_, physical_plan,
+          [&] (const std::string &consumer, const std::shared_ptr<arrow::Table> &table) {
+            auto table_key = executor::flight::TableCache::generateTableKey(query_id, fpdb_store_super_pop, consumer);
+            put_table_into_cache(table_key, table);
+          },
+          [&] (const std::string &sender, const std::vector<int64_t> &bitmap) {
+            auto bitmap_key = BitmapCache::generateBitmapKey(query_id, sender);
+            put_bitmap_into_cache(bitmap_key, bitmap, BitmapType::FILTER_STORAGE, true);
+          });
 
   // get query result
   auto table = execution->execute()->table();
 
-  // buffer bitmaps generated at storage side
-  for (const auto &bitmap_it: execution->getBitmaps()) {
-    auto bitmap_key = cache::BitmapCache::generateBitmapKey(query_id, bitmap_it.first);
-    put_bitmap_into_cache(bitmap_key, bitmap_it.second, BitmapType::FILTER_STORAGE, true);
-  }
-  
-  // buffer tupleSets generated at storage side
-  // compute side guarantees that tables in the table cache are only consumed after produced
-  for (const auto &table_it: execution->getTupleSets()) {
-    auto table_key = cache::TableCache::generateTableKey(query_id, fpdb_store_super_pop, table_it.first);
-    table_cache_.produceTable(table_key, table_it.second->table());
-  }
-
   // make record batch stream and return
   auto exp_batches = tuple::util::Util::table_to_record_batches(table);
   if (!exp_batches.has_value()) {
-    return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed,exp_batches.error()));
+    return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed, exp_batches.error()));
   }
   auto rb_reader = ::arrow::RecordBatchReader::Make(*exp_batches);
   return std::make_unique<::arrow::flight::RecordBatchStream>(*rb_reader);
@@ -381,7 +377,7 @@ tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::
   // get bitmap from bitmap cache
   auto query_id = get_bitmap_ticket->query_id();
   auto op = get_bitmap_ticket->op();
-  auto bitmap_key = cache::BitmapCache::generateBitmapKey(query_id, op);
+  auto bitmap_key = BitmapCache::generateBitmapKey(query_id, op);
   auto bitmap = get_bitmap_from_cache(bitmap_key, BitmapType::FILTER_STORAGE);
   if (!bitmap.has_value()) {
     return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed,
@@ -405,10 +401,11 @@ tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::
   auto query_id = get_table_ticket->query_id();
   auto producer = get_table_ticket->producer();
   auto consumer = get_table_ticket->consumer();
-  auto table_key = cache::TableCache::generateTableKey(query_id, producer, consumer);
-  auto exp_table = table_cache_.consumeTable(table_key);
+  auto wait_not_exist = get_table_ticket->wait_not_exist();
+  auto table_key = executor::flight::TableCache::generateTableKey(query_id, producer, consumer);
+  auto exp_table = get_table_from_cache(table_key, wait_not_exist);
   if (!exp_table.has_value()) {
-    return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed, exp_table.error()));
+    return tl::make_unexpected(exp_table.error());
   }
 
   // make record batch stream and return
@@ -504,14 +501,13 @@ FlightHandler::do_put_put_bitmap(const ServerCallContext&,
     bloom_filter->setBitArray(*exp_bitmap);
 
     // bloom filter key
-    auto bloom_filter_key =
-            cache::BloomFilterCache::generateBloomFilterKey(put_bitmap_cmd->query_id(), put_bitmap_cmd->op());
+    auto bloom_filter_key = BloomFilterCache::generateBloomFilterKey(put_bitmap_cmd->query_id(), put_bitmap_cmd->op());
 
     // put bloom filter
     bloom_filter_cache_.produceBloomFilter(bloom_filter_key, bloom_filter, *num_copies);
   } else {
     // bitmap key
-    auto bitmap_key = cache::BitmapCache::generateBitmapKey(put_bitmap_cmd->query_id(), put_bitmap_cmd->op());
+    auto bitmap_key = BitmapCache::generateBitmapKey(put_bitmap_cmd->query_id(), put_bitmap_cmd->op());
     auto valid = put_bitmap_cmd->valid();
 
     // put bitmap
@@ -525,7 +521,7 @@ tl::expected<void, ::arrow::Status>
 FlightHandler::do_put_clear_bitmap(const ServerCallContext&,
                                    const std::shared_ptr<ClearBitmapCmd>& clear_bitmap_cmd) {
   // bitmap key
-  auto bitmap_key = cache::BitmapCache::generateBitmapKey(clear_bitmap_cmd->query_id(), clear_bitmap_cmd->op());
+  auto bitmap_key = BitmapCache::generateBitmapKey(clear_bitmap_cmd->query_id(), clear_bitmap_cmd->op());
 
   // just consume the bitmap
   get_bitmap_from_cache(bitmap_key, clear_bitmap_cmd->bitmap_type());
@@ -556,6 +552,33 @@ std::optional<std::vector<int64_t>> FlightHandler::get_bitmap_from_cache(const s
   return *exp_bitmap;
 }
 
+tl::expected<std::shared_ptr<arrow::Table>, ::arrow::Status>
+FlightHandler::get_table_from_cache(const std::string &key, bool wait_not_exist) {
+  // try to get table from table cache
+  auto exp_table = table_cache_.consumeTable(key);
+  if (exp_table.has_value()) {
+    return *exp_table;
+  }
+
+  // wait if needed, otherwise return error
+  if (!wait_not_exist) {
+    return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed, exp_table.error()));
+  }
+
+  std::unique_lock lock(table_mutex_);
+
+  auto cv = std::make_shared<std::condition_variable_any>();
+  table_cvs_[key] = cv;
+
+  cv->wait(lock, [&] {
+    exp_table = table_cache_.consumeTable(key);
+    return exp_table.has_value();
+  });
+
+  table_cvs_.erase(key);
+  return *exp_table;
+}
+
 void FlightHandler::put_bitmap_into_cache(const std::string &key,
                                           const std::vector<int64_t> &bitmap,
                                           BitmapType bitmap_type,
@@ -574,6 +597,19 @@ void FlightHandler::put_bitmap_into_cache(const std::string &key,
     cvIt->second->notify_one();
   }
   bitmap_mutex->unlock();
+}
+
+void FlightHandler::put_table_into_cache(const std::string &key, const std::shared_ptr<arrow::Table> &table) {
+  // put table
+  table_cache_.produceTable(key, table);
+
+  // notify if needed
+  table_mutex_.lock();
+  auto cvIt = table_cvs_.find(key);
+  if (cvIt != table_cvs_.end()) {
+    cvIt->second->notify_one();
+  }
+  table_mutex_.unlock();
 }
 
 void FlightHandler::init_bitmap_cache() {

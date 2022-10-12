@@ -6,6 +6,7 @@ import com.flexpushdowndb.calcite.schema.SchemaImpl;
 import com.flexpushdowndb.calcite.schema.SchemaReader;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
+import org.apache.calcite.adapter.enumerable.EnumerableHashJoin;
 import org.apache.calcite.adapter.enumerable.EnumerableRules;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.config.CalciteConnectionProperty;
@@ -37,9 +38,7 @@ import org.apache.calcite.sql2rel.StandardConvertletTable;
 import org.apache.calcite.tools.*;
 
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 public class Optimizer {
   private static final RelOptTable.ViewExpander NOOP_EXPANDER = (type, query, schema, path) -> null;
@@ -49,6 +48,7 @@ public class Optimizer {
   private final RelOptPlanner planner;
   private final RelBuilder relBuilder;
   private final CalciteSchema rootSchema;
+  private final boolean findPushableHashJoins;
 
   // assigned during query parsing
   private SqlValidator sqlValidator = null;
@@ -61,6 +61,7 @@ public class Optimizer {
     this.planner = cluster.getPlanner();
     this.relBuilder = RelBuilder.proto(planner.getContext()).create(cluster, null);
     this.rootSchema = CalciteSchema.createRootSchema(false, true);
+    this.findPushableHashJoins = true;
 
     // Set RelMetadataProvider, using DefaultRelMetadataProvider
     List<RelMetadataProvider> metadataProviders = new ArrayList<>();
@@ -71,7 +72,7 @@ public class Optimizer {
     this.cluster.setMetadataProvider(cachingMetadataProvider);
   }
 
-  public RelNode planQuery(String query, String schemaName) throws Exception {
+  public OptimizeResult planQuery(String query, String schemaName) throws Exception {
     // Parse and Validate
     RelNode logicalPlan = parseAndValidate(query, schemaName);
 
@@ -91,7 +92,15 @@ public class Optimizer {
     RelNode trimmedPhysicalPlan = trim(postFilterPushdownPlan);
 
     // Heuristics to apply
-    return postHeuristics(trimmedPhysicalPlan);
+    RelNode postHeuristicsPlan = postHeuristics(trimmedPhysicalPlan);
+
+    // Find pushable co-located join
+    Set<EnumerableHashJoin> pushableHashJoins = null;
+    if (findPushableHashJoins) {
+      pushableHashJoins = findPushableHashJoins(postHeuristicsPlan, schemaName);
+    }
+
+    return new OptimizeResult(postHeuristicsPlan, pushableHashJoins);
   }
 
   private RelNode parseAndValidate(String query, String schemaName) throws Exception {
@@ -188,6 +197,15 @@ public class Optimizer {
     HepPlanner hepPlanner = new HepPlanner(hepProgram);
     hepPlanner.setRoot(relNode);
     return hepPlanner.findBestExp();
+  }
+
+  private Set<EnumerableHashJoin> findPushableHashJoins(RelNode relNode, String schemaName) {
+    CalciteSchema schema = rootSchema.getSubSchema(schemaName, true);
+    if (schema == null) {
+      return new HashSet<>();
+    }
+    Map<String, String> hashKeys = ((SchemaImpl) schema.schema).getHashKeys();
+    return PushableHashJoinFinder.find(relNode, hashKeys);
   }
 
   private static List<RelOptRule> getJoinOptimizeRules() {

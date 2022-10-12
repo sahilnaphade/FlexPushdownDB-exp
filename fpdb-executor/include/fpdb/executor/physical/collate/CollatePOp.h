@@ -37,15 +37,26 @@ public:
   void clear() override;
   std::string getTypeString() const override;
 
+  bool getForward() const;
+  const std::unordered_map<std::string, std::string> &getForwardConsumers() const;
+  void setForward(bool forward);
+  void setForwardConsumers(const std::unordered_map<std::string, std::string> &forwardConsumers);
+
 private:
   static constexpr uint tablesCutoff_ = 20;
 
   void onStart();
   void onComplete(const fpdb::executor::message::CompleteMessage &message);
   void onTupleSet(const fpdb::executor::message::TupleSetMessage& message);
+  void onTupleSetForward(const fpdb::executor::message::TupleSetMessage& message);
+  void onTupleSetRegular(const fpdb::executor::message::TupleSetMessage& message);
 
   std::shared_ptr<TupleSet> tuples_;
   std::vector<std::shared_ptr<arrow::Table>> tables_;
+
+  // used when forwarding tupleSets to the root (e.g. hash-join pushdown)
+  bool forward_ = false;
+  std::unordered_map<std::string, std::string> forwardConsumers_;
 
 // caf inspect
 public:

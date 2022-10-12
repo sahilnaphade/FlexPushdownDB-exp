@@ -30,6 +30,11 @@ public:
   void clear() override;
   std::string getTypeString() const override;
 
+  const HashJoinArrowKernel &getKernel() const;
+  const std::set<std::string> &getBuildProducers() const;
+  const std::set<std::string> &getProbeProducers() const;
+  void setBuildProducers(const std::set<std::string> &buildProducers);
+  void setProbeProducers(const std::set<std::string> &probeProducers);
   void addBuildProducer(const std::shared_ptr<PhysicalOp> &buildProducer);
   void addProbeProducer(const std::shared_ptr<PhysicalOp> &probeProducer);
 

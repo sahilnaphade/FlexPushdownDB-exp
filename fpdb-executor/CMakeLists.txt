@@ -15,6 +15,7 @@ add_library(fpdb-executor STATIC
         src/message/TupleSetBufferMessage.cpp include/fpdb/executor/message/TupleSetBufferMessage.h
         src/message/TupleSetIndexMessage.cpp include/fpdb/executor/message/TupleSetIndexMessage.h
         src/message/TupleSetReadyRemoteMessage.cpp include/fpdb/executor/message/TupleSetReadyRemoteMessage.h
+        src/message/TupleSetWaitRemoteMessage.cpp include/fpdb/executor/message/TupleSetWaitRemoteMessage.h
         src/message/TupleSetSizeMessage.cpp include/fpdb/executor/message/TupleSetSizeMessage.h
         src/message/DebugMetricsMessage.cpp include/fpdb/executor/message/DebugMetricsMessage.h
         src/message/ErrorMessage.cpp include/fpdb/executor/message/ErrorMessage.h
@@ -110,6 +111,7 @@ add_library(fpdb-executor STATIC
         src/physical/s3/SelectPOp.cpp include/fpdb/executor/physical/s3/SelectPOp.h
         src/physical/fpdb-store/FPDBStoreSuperPOp.cpp include/fpdb/executor/physical/fpdb-store/FPDBStoreSuperPOp.h
         src/physical/fpdb-store/FPDBStoreFileScanPOp.cpp include/fpdb/executor/physical/fpdb-store/FPDBStoreFileScanPOp.h
+        src/physical/fpdb-store/FPDBStoreTableCacheLoadPOp.cpp include/fpdb/executor/physical/fpdb-store/FPDBStoreTableCacheLoadPOp.h
         src/physical/fpdb-store/FPDBStoreSuperPOpUtil.cpp include/fpdb/executor/physical/fpdb-store/FPDBStoreSuperPOpUtil.h
         src/physical/fpdb-store/FPDBStoreFilterBitmapWrapper.cpp include/fpdb/executor/physical/fpdb-store/FPDBStoreFilterBitmapWrapper.h
         src/physical/fpdb-store/FPDBStoreBloomFilterInfo.cpp include/fpdb/executor/physical/fpdb-store/FPDBStoreBloomFilterInfo.h

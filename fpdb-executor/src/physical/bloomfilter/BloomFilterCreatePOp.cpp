@@ -43,6 +43,26 @@ void BloomFilterCreatePOp::produce(const std::shared_ptr<PhysicalOp> &op) {
   PhysicalOp::produce(op);
 }
 
+const BloomFilterCreateKernel &BloomFilterCreatePOp::getKernel() const {
+  return kernel_;
+}
+
+const std::set<std::string> &BloomFilterCreatePOp::getBloomFilterUsePOps() const {
+  return bloomFilterUsePOps_;
+}
+
+const std::set<std::string> &BloomFilterCreatePOp::getPassTupleSetConsumers() const {
+  return passTupleSetConsumers_;
+}
+
+void BloomFilterCreatePOp::setBloomFilterUsePOps(const std::set<std::string> &bloomFilterUsePOps) {
+  bloomFilterUsePOps_ = bloomFilterUsePOps;
+}
+
+void BloomFilterCreatePOp::setPassTupleSetConsumers(const std::set<std::string> &passTupleSetConsumers) {
+  passTupleSetConsumers_ = passTupleSetConsumers;
+}
+
 void BloomFilterCreatePOp::addBloomFilterUsePOp(const std::shared_ptr<PhysicalOp> &bloomFilterUsePOp) {
   bloomFilterUsePOps_.emplace(bloomFilterUsePOp->name());
   PhysicalOp::produce(bloomFilterUsePOp);

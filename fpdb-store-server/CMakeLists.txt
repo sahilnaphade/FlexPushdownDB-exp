@@ -52,6 +52,7 @@ target_link_libraries(fpdb-store-server-file fmt::fmt)
 #-----------------------------------------------------------------------------------------------------------------------
 
 add_library(fpdb-store-server-flight-api STATIC
+        include/fpdb/store/server/flight/Util.hpp
         src/flight/CmdType.cpp include/fpdb/store/server/flight/CmdType.hpp
         src/flight/CmdObject.cpp include/fpdb/store/server/flight/CmdObject.hpp
         src/flight/SelectObjectContentCmd.cpp include/fpdb/store/server/flight/SelectObjectContentCmd.hpp
@@ -73,8 +74,8 @@ target_link_libraries(fpdb-store-server-flight-api PRIVATE nlohmann_json)
 target_link_libraries(fpdb-store-server-flight-api PRIVATE fmt::fmt)
 
 add_library(fpdb-store-server-objlib OBJECT
-        include/fpdb/store/server/flight/Util.hpp
         include/fpdb/store/server/Global.hpp
+        src/flight/Util.cpp include/fpdb/store/server/flight/Util.hpp
         src/Module.cpp include/fpdb/store/server/Module.hpp
         src/Server.cpp include/fpdb/store/server/Server.hpp
         src/ServerConfig.cpp include/fpdb/store/server/ServerConfig.hpp
@@ -89,9 +90,8 @@ add_library(fpdb-store-server-objlib OBJECT
         src/flight/FlightHandler.cpp include/fpdb/store/server/flight/FlightHandler.hpp
         src/flight/HeaderMiddleware.cpp include/fpdb/store/server/flight/HeaderMiddleware.hpp
         src/flight/HeaderMiddlewareFactory.cpp include/fpdb/store/server/flight/HeaderMiddlewareFactory.hpp
-        src/cache/BitmapCache.cpp include/fpdb/store/server/cache/BitmapCache.hpp
-        src/cache/BloomFilterCache.cpp include/fpdb/store/server/cache/BloomFilterCache.hpp
-        src/cache/TableCache.cpp include/fpdb/store/server/cache/TableCache.hpp)
+        src/flight/BitmapCache.cpp include/fpdb/store/server/flight/BitmapCache.hpp
+        src/flight/BloomFilterCache.cpp include/fpdb/store/server/flight/BloomFilterCache.hpp)
 
 set_target_properties(fpdb-store-server-objlib PROPERTIES POSITION_INDEPENDENT_CODE ON)
 set_target_properties(fpdb-store-server-objlib PROPERTIES OUTPUT_NAME fpdb-store-server)

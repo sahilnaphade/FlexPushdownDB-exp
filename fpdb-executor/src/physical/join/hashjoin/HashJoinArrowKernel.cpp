@@ -24,6 +24,14 @@ HashJoinArrowKernel HashJoinArrowKernel::make(const HashJoinPredicate &pred,
   return {pred, neededColumnNames, joinType};
 }
 
+const HashJoinPredicate &HashJoinArrowKernel::getPred() const {
+  return pred_;
+}
+
+JoinType HashJoinArrowKernel::getJoinType() const {
+  return joinType_;
+}
+
 tl::expected<void, std::string> HashJoinArrowKernel::joinBuildTupleSet(const std::shared_ptr<TupleSet> &tupleSet) {
   // buffer input schema and make output schema
   if (!buildInputSchema_.has_value()) {

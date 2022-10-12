@@ -13,6 +13,7 @@
 #include <fpdb/plan/prephysical/FilterPrePOp.h>
 #include <fpdb/plan/prephysical/ProjectPrePOp.h>
 #include <fpdb/plan/prephysical/AggregatePrePOp.h>
+#include <fpdb/plan/prephysical/HashJoinPrePOp.h>
 #include <fpdb/plan/Mode.h>
 #include <fpdb/catalogue/obj-store/fpdb-store/FPDBStoreConnector.h>
 #include <fpdb/expression/gandiva/Expression.h>
@@ -36,6 +37,8 @@ public:
   transform(const shared_ptr<SeparableSuperPrePOp> &separableSuperPrePOp,
             const shared_ptr<Mode> &mode,
             int numNodes,
+            int computeParallelDegree,
+            int fpdbStoreParallelDegree,
             const shared_ptr<FPDBStoreConnector> &fpdbStoreConnector);
 
   /**
@@ -54,6 +57,8 @@ private:
   PrePToFPDBStorePTransformer(const shared_ptr<SeparableSuperPrePOp> &separableSuperPrePOp,
                               const shared_ptr<Mode> &mode,
                               int numNodes,
+                              int computeParallelDegree,
+                              int fpdbStoreParallelDegree,
                               const shared_ptr<FPDBStoreConnector> &fpdbStoreConnector);
   
   /**
@@ -108,13 +113,29 @@ private:
   pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
   transformAggregate(const shared_ptr<AggregatePrePOp> &aggregatePrePOp);
 
+  pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
+  transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoinPrePOp);
+
+  pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
+  transformHashJoinNoPushdown(const shared_ptr<HashJoinPrePOp> &hashJoinPrePOp);
+
+  pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
+  transformHashJoinPushdown(const shared_ptr<HashJoinPrePOp> &hashJoinPrePOp);
+
   shared_ptr<SeparableSuperPrePOp> separableSuperPrePOp_;
   std::shared_ptr<Mode> mode_;
-  int numNodes_;
+  int numComputeNodes_;
+  size_t numFPDBStoreNodes_;
+  int computeParallelDegree_;
+  int fpdbStoreParallelDegree_;
   std::shared_ptr<FPDBStoreConnector> fpdbStoreConnector_;
 
   // temp variables
   unordered_map<std::string, std::string> objectToHost_;
+  struct HashJoinTransInfo {
+    bool enabled_ = false;
+    unordered_map<std::string, int> opToStoreNode_;
+  } hashJoinTransInfo_;   // only used when pushing hash joins
 
 };
 

@@ -2,8 +2,8 @@
 // Created by Yifei Yang on 4/10/22.
 //
 
-#ifndef FPDB_FPDB_STORE_SERVER_INCLUDE_FPDB_STORE_SERVER_CACHE_BITMAPCACHE_HPP
-#define FPDB_FPDB_STORE_SERVER_INCLUDE_FPDB_STORE_SERVER_CACHE_BITMAPCACHE_HPP
+#ifndef FPDB_FPDB_STORE_SERVER_INCLUDE_FPDB_STORE_SERVER_FLIGHT_BITMAPCACHE_HPP
+#define FPDB_FPDB_STORE_SERVER_INCLUDE_FPDB_STORE_SERVER_FLIGHT_BITMAPCACHE_HPP
 
 #include <unordered_map>
 #include <vector>
@@ -11,7 +11,7 @@
 #include <shared_mutex>
 #include <tl/expected.hpp>
 
-namespace fpdb::store::server::cache {
+namespace fpdb::store::server::flight {
 
 /**
  * A cache for constructed bitmaps during bitmap pushdown.
@@ -36,4 +36,4 @@ private:
 }
 
 
-#endif //FPDB_FPDB_STORE_SERVER_INCLUDE_FPDB_STORE_SERVER_CACHE_BITMAPCACHE_HPP
+#endif //FPDB_FPDB_STORE_SERVER_INCLUDE_FPDB_STORE_SERVER_FLIGHT_BITMAPCACHE_HPP

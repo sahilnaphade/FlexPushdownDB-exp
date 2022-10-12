@@ -16,6 +16,10 @@ const unordered_map<string, shared_ptr<PhysicalOp>> &PhysicalPlan::getPhysicalOp
   return physicalOps_;
 }
 
+const std::string& PhysicalPlan::getRootPOpName() const {
+  return rootPOpName_;
+}
+
 tl::expected<shared_ptr<PhysicalOp>, string> PhysicalPlan::getPhysicalOp(const string &name) const {
   auto physicalOpIt = physicalOps_.find(name);
   if (physicalOpIt != physicalOps_.end()) {

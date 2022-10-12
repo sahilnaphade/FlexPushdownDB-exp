@@ -1,10 +1,10 @@
 package com.flexpushdowndb.calcite;
 
+import com.flexpushdowndb.calcite.optimizer.OptimizeResult;
 import com.flexpushdowndb.calcite.optimizer.Optimizer;
 import com.flexpushdowndb.calcite.serializer.RelJsonSerializer;
 import com.flexpushdowndb.util.FileUtils;
 import org.apache.calcite.plan.RelOptUtil;
-import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.sql.SqlExplainFormat;
 import org.apache.calcite.sql.SqlExplainLevel;
 import org.ini4j.Ini;
@@ -30,11 +30,13 @@ public class TestOptimizer {
 
     // plan
     Optimizer optimizer = new Optimizer(resourcePath);
-    RelNode queryPlan = optimizer.planQuery(query, schemaName);
-    System.out.println(RelOptUtil.dumpPlan("[Optimized plan]", queryPlan, SqlExplainFormat.TEXT,
+    OptimizeResult optimizeResult = optimizer.planQuery(query, schemaName);
+    System.out.println(RelOptUtil.dumpPlan("[Optimized plan]", optimizeResult.getPlan(), SqlExplainFormat.TEXT,
             SqlExplainLevel.ALL_ATTRIBUTES));
     if (showJsonPlan) {
-      System.out.println("[Serialized json plan]\n" + RelJsonSerializer.serialize(queryPlan).toString(2));
+      System.out.println("[Serialized json plan]\n" + RelJsonSerializer
+              .serialize(optimizeResult.getPlan(), optimizeResult.getPushableHashJoins())
+              .toString(2));
     }
   }
 
@@ -168,5 +170,17 @@ public class TestOptimizer {
   @Test
   public void testTPCH_Q22() throws Exception {
     testSingle("tpch-sf0.01/csv", "tpch/original/22.sql", true);
+  }
+
+  @Test
+  // for 'tpch-sf0.01-1-node-hash-part', 'lineitem' and 'orders' are co-located at 'l_orderkey = o.o_orderkey'
+  public void testCoHashJoinPushable() throws Exception {
+    testSingle("tpch-sf0.01-1-node-hash-part/parquet", "tpch/original/04.sql", true);
+  }
+
+  @Test
+  // for 'tpch-sf0.01-1-node-hash-part', 'lineitem' and 'orders' are co-located at 'l_orderkey = o.o_orderkey'
+  public void testCoHashJoinNotPushable() throws Exception {
+    testSingle("tpch-sf0.01-1-node-hash-part/parquet", "tpch/original/19.sql", true);
   }
 }

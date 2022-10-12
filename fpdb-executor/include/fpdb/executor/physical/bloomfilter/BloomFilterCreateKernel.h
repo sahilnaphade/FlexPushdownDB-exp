@@ -26,6 +26,9 @@ public:
   
   static BloomFilterCreateKernel make(const std::vector<std::string> columnNames, double desiredFalsePositiveRate);
 
+  const std::vector<std::string> getColumnNames() const;
+  double getDesiredFalsePositiveRate() const;
+
   tl::expected<void, std::string> bufferTupleSet(const std::shared_ptr<TupleSet> &tupleSet);
   tl::expected<void, std::string> buildBloomFilter();
   const std::optional<std::shared_ptr<BloomFilter>> &getBloomFilter() const;

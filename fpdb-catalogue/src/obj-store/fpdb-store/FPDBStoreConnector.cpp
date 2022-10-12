@@ -26,6 +26,10 @@ const std::string &FPDBStoreConnector::getHost(int id) const {
   return hosts_[id];
 }
 
+size_t FPDBStoreConnector::getNumHosts() const {
+  return hosts_.size();
+}
+
 int FPDBStoreConnector::getFileServicePort() const {
   return fileServicePort_;
 }

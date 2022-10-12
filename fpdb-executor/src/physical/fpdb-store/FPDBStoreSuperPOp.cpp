@@ -58,7 +58,7 @@ void FPDBStoreSuperPOp::produce(const std::shared_ptr<PhysicalOp> &op) {
   if (shufflePOpName_.has_value()) {
     auto expShufflePOp = subPlan_->getPhysicalOp(*shufflePOpName_);
     if (!expShufflePOp.has_value()) {
-      ctx()->notifyError(expShufflePOp.error());
+      throw std::runtime_error(expShufflePOp.error());
     }
     std::static_pointer_cast<shuffle::ShufflePOp>(*expShufflePOp)->addToConsumerVec(op);
   }
@@ -80,6 +80,10 @@ void FPDBStoreSuperPOp::setWaitForScanMessage(bool waitForScanMessage) {
   waitForScanMessage_ = waitForScanMessage;
 }
 
+void FPDBStoreSuperPOp::setReceiveByOthers(bool receiveByOthers) {
+  receiveByOthers_ = receiveByOthers;
+}
+
 void FPDBStoreSuperPOp::setShufflePOp(const std::shared_ptr<PhysicalOp> &op) {
   shufflePOpName_ = op->name();
 }
@@ -88,6 +92,26 @@ void FPDBStoreSuperPOp::addFPDBStoreBloomFilterProducer(
         const std::shared_ptr<PhysicalOp> &fpdbStoreBloomFilterProducer) {
   ++numBloomFiltersExpected_;
   PhysicalOp::consume(fpdbStoreBloomFilterProducer);
+}
+
+void FPDBStoreSuperPOp::setForwardConsumers(const std::vector<std::shared_ptr<PhysicalOp>> &consumers) {
+  auto expRootPOp = subPlan_->getRootPOp();
+  if (!expRootPOp.has_value()) {
+    throw std::runtime_error(expRootPOp.error());
+  }
+  auto collatePOp = std::static_pointer_cast<collate::CollatePOp>(*expRootPOp);
+  const auto producers = collatePOp->producers();
+  if (producers.size() != consumers.size()) {
+    throw std::runtime_error(fmt::format("num producers ({}) and num forward consumers ({}) mismatch",
+                             producers.size(), consumers.size()));
+  }
+  std::unordered_map<std::string, std::string> forwardConsumerMap;
+  int i = 0;
+  for (const auto &producer: producers) {
+    forwardConsumerMap[producer] = consumers[i++]->name();
+  }
+  collatePOp->setForward(true);
+  collatePOp->setForwardConsumers(forwardConsumerMap);
 }
 
 void FPDBStoreSuperPOp::onStart() {
@@ -175,6 +199,13 @@ void FPDBStoreSuperPOp::processAtStore() {
     ctx()->notifyError(expTicket.error());
   }
 
+  // if pushdown result should be received by consumers, let them start waiting now
+  if (receiveByOthers_) {
+    std::shared_ptr<Message> tupleSetWaitRemoteMessage =
+            std::make_shared<TupleSetWaitRemoteMessage>(host_, port_, name_);
+    ctx()->tell(tupleSetWaitRemoteMessage);
+  }
+
   std::unique_ptr<::arrow::flight::FlightStreamReader> reader;
   status = client->DoGet(*expTicket, &reader);
   if (!status.ok()) {
@@ -187,45 +218,38 @@ void FPDBStoreSuperPOp::processAtStore() {
     ctx()->notifyError(status.message());
   }
 
-  // if not having shuffle op, do regularly
-  if (!shufflePOpName_.has_value()) {
-    // check table
-    if (table == nullptr) {
-      ctx()->notifyError("Received null table from FPDB-Store");
-    }
+  // if pushdown result hasn't been waiting by consumers
+  if (!receiveByOthers_) {
+    // if not having shuffle op, do regularly
+    if (!shufflePOpName_.has_value()) {
+      // check table
+      if (table == nullptr) {
+        ctx()->notifyError("Received null table from FPDB-Store");
+      }
 
-    // send output tupleSet
-    std::shared_ptr<TupleSet> tupleSet;
-    if (table->num_rows() > 0) {
-      tupleSet = TupleSet::make(table);
-    } else {
-      tupleSet = TupleSet::make(table->schema());
-    }
-    std::shared_ptr<Message> tupleSetMessage = std::make_shared<TupleSetMessage>(tupleSet, name_);
-    ctx()->tell(tupleSetMessage);
+      // send output tupleSet
+      std::shared_ptr<TupleSet> tupleSet;
+      if (table->num_rows() > 0) {
+        tupleSet = TupleSet::make(table);
+      } else {
+        tupleSet = TupleSet::make(table->schema());
+      }
+      std::shared_ptr<Message> tupleSetMessage = std::make_shared<TupleSetMessage>(tupleSet, name_);
+      ctx()->tell(tupleSetMessage);
 
-    // metrics
+      // metrics
 #if SHOW_DEBUG_METRICS == true
-    std::shared_ptr<Message> execMetricsMsg =
-            std::make_shared<DebugMetricsMessage>(tupleSet->size(), this->name());
-    ctx()->notifyRoot(execMetricsMsg);
+      std::shared_ptr<Message> execMetricsMsg =
+              std::make_shared<DebugMetricsMessage>(tupleSet->size(), this->name());
+      ctx()->notifyRoot(execMetricsMsg);
 #endif
-  }
-
-  // if having shuffle op
-  else {
-    auto expShufflePOp = subPlan_->getPhysicalOp(*shufflePOpName_);
-    if (!expShufflePOp.has_value()) {
-      ctx()->notifyError(expShufflePOp.error());
     }
-    const auto &shuffleConsumerVec = std::static_pointer_cast<shuffle::ShufflePOp>(*expShufflePOp)->getConsumerVec();
-    std::set<std::string> shuffleConsumerSet(shuffleConsumerVec.begin(), shuffleConsumerVec.end());
 
-    // notify shuffle's consumers that tupleSets are ready
-    std::shared_ptr<Message> tupleSetReadyRemoteMessage =
-            std::make_shared<TupleSetReadyRemoteMessage>(host_, port_, name_);
-    for (const auto &shufflePOpConsumer: shuffleConsumerSet) {
-      ctx()->send(tupleSetReadyRemoteMessage, shufflePOpConsumer);
+      // if having shuffle op
+    else {
+      std::shared_ptr<Message> tupleSetReadyRemoteMessage =
+              std::make_shared<TupleSetReadyRemoteMessage>(host_, port_, name_);
+      ctx()->tell(tupleSetReadyRemoteMessage);
     }
   }
 

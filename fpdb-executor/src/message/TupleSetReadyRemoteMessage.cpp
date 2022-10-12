@@ -14,7 +14,7 @@ TupleSetReadyRemoteMessage::TupleSetReadyRemoteMessage(const std::string &host,
   port_(port) {}
 
 std::string TupleSetReadyRemoteMessage::getTypeString() const {
-  return "TupleSetReadyFPDBStoreMessage";
+  return "TupleSetReadyRemoteMessage";
 }
 
 const std::string &TupleSetReadyRemoteMessage::getHost() const {

@@ -20,12 +20,11 @@
 #include "fpdb/store/server/flight/GetTableTicket.hpp"
 #include "fpdb/store/server/flight/HeaderMiddleware.hpp"
 #include "fpdb/store/server/flight/BitmapType.h"
+#include "fpdb/store/server/flight/BitmapCache.hpp"
+#include "fpdb/store/server/flight/BloomFilterCache.hpp"
 #include "fpdb/store/server/caf/ActorManager.hpp"
-#include "fpdb/store/server/cache/BitmapCache.hpp"
-#include "fpdb/store/server/cache/BloomFilterCache.hpp"
-#include "fpdb/store/server/cache/TableCache.hpp"
+#include "fpdb/executor/flight/TableCache.h"
 
-using namespace fpdb::store::server::cache;
 using namespace ::arrow::flight;
 
 namespace fpdb::store::server::flight {
@@ -270,6 +269,14 @@ private:
   /**
    *
    * @param key
+   * @return
+   */
+  tl::expected<std::shared_ptr<arrow::Table>, ::arrow::Status> get_table_from_cache(const std::string &key,
+                                                                                    bool wait_not_exist);
+
+  /**
+   *
+   * @param key
    * @param bitmap
    * @param bitmap_type
    * @param valid
@@ -278,6 +285,13 @@ private:
                              const std::vector<int64_t> &bitmap,
                              BitmapType bitmap_type,
                              bool valid);
+
+  /**
+   *
+   * @param key
+   * @param table
+   */
+  void put_table_into_cache(const std::string &key, const std::shared_ptr<arrow::Table> &table);
 
   /**
    * init bitmap caches, as well as mutex and cond_var used for them
@@ -295,12 +309,16 @@ private:
   BloomFilterCache bloom_filter_cache_;
 
   // table cache (e.x. for shuffle result)
-  TableCache table_cache_;
+  executor::flight::TableCache table_cache_;
 
   // mutex and cv for bitmap caches
   std::unordered_map<BitmapType, std::shared_ptr<std::mutex>> bitmap_mutex_map_;
   std::unordered_map<BitmapType,
           std::unordered_map<std::string, std::shared_ptr<std::condition_variable_any>>> bitmap_cvs_map_;
+
+  // mutex and cv for table cache
+  std::mutex table_mutex_;
+  std::unordered_map<std::string, std::shared_ptr<std::condition_variable_any>> table_cvs_;
 };
 
 } // namespace fpdb::store::server::flight

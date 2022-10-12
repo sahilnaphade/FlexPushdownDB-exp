@@ -2,10 +2,10 @@
 // Created by Yifei Yang on 9/14/22.
 //
 
-#include <fpdb/store/server/cache/BloomFilterCache.hpp>
+#include <fpdb/store/server/flight/BloomFilterCache.hpp>
 #include <fmt/format.h>
 
-namespace fpdb::store::server::cache {
+namespace fpdb::store::server::flight {
 
 std::string BloomFilterCache::generateBloomFilterKey(long queryId, const std::string &op) {
   return fmt::format("{}-{}", std::to_string(queryId), op);

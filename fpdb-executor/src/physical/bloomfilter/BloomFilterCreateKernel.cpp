@@ -17,6 +17,14 @@ BloomFilterCreateKernel BloomFilterCreateKernel::make(const std::vector<std::str
   return {columnNames, desiredFalsePositiveRate};
 }
 
+const std::vector<std::string> BloomFilterCreateKernel::getColumnNames() const {
+  return columnNames_;
+}
+
+double BloomFilterCreateKernel::getDesiredFalsePositiveRate() const {
+  return desiredFalsePositiveRate_;
+}
+
 tl::expected<void, std::string> BloomFilterCreateKernel::bufferTupleSet(const std::shared_ptr<TupleSet> &tupleSet) {
   // buffer tupleSet
   if (!receivedTupleSet_.has_value()) {

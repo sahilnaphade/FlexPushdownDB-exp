@@ -9,11 +9,13 @@ namespace fpdb::plan::prephysical {
 HashJoinPrePOp::HashJoinPrePOp(uint id,
                                JoinType joinType,
                                const vector<string> &leftColumnNames,
-                               const vector<string> &rightColumnNames) :
+                               const vector<string> &rightColumnNames,
+                               bool pushable) :
   PrePhysicalOp(id, HASH_JOIN),
   joinType_(joinType),
   leftColumnNames_(leftColumnNames),
-  rightColumnNames_(rightColumnNames) {}
+  rightColumnNames_(rightColumnNames),
+  pushable_(pushable) {}
 
 string HashJoinPrePOp::getTypeString() {
   return "HashJoinPrePOp";
@@ -36,6 +38,10 @@ const vector<string> &HashJoinPrePOp::getLeftColumnNames() const {
 
 const vector<string> &HashJoinPrePOp::getRightColumnNames() const {
   return rightColumnNames_;
+}
+
+bool HashJoinPrePOp::isPushable() const {
+  return pushable_;
 }
 
 }

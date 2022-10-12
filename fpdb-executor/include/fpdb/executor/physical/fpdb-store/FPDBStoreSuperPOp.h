@@ -37,8 +37,10 @@ public:
   int getPort() const;
 
   void setWaitForScanMessage(bool waitForScanMessage);
+  void setReceiveByOthers(bool receiveByOthers);
   void setShufflePOp(const std::shared_ptr<PhysicalOp> &op);
   void addFPDBStoreBloomFilterProducer(const std::shared_ptr<PhysicalOp> &fpdbStoreBloomFilterProducer);
+  void setForwardConsumers(const std::vector<std::shared_ptr<PhysicalOp>> &consumers);
 
 private:
   void onStart();
@@ -57,6 +59,9 @@ private:
 
   // if waiting for scan message before sending request to store
   bool waitForScanMessage_ = false;
+
+  // set when the result of pushdown is received by consumers instead of here
+  bool receiveByOthers_ = false;
 
   // set when pushing shuffle to store
   std::optional<std::string> shufflePOpName_ = std::nullopt;
@@ -83,6 +88,7 @@ public:
                                f.field("host", op.host_),
                                f.field("port", op.port_),
                                f.field("waitForScanMessage", op.waitForScanMessage_),
+                               f.field("receiveByOthers", op.receiveByOthers_),
                                f.field("shufflePOpName", op.shufflePOpName_),
                                f.field("numBloomFiltersExpected", op.numBloomFiltersExpected_),
                                f.field("numBloomFiltersReceived", op.numBloomFiltersReceived_));

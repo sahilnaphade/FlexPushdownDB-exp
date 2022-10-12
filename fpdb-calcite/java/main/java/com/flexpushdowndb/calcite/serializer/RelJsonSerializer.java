@@ -12,19 +12,32 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 public final class RelJsonSerializer {
-  public static JSONObject serialize(RelNode relNode) {
+  private final RelNode relNode;
+  private final Set<EnumerableHashJoin> pushableHashJoins;
+
+  public RelJsonSerializer(RelNode relNode, Set<EnumerableHashJoin> pushableHashJoins) {
+    this.relNode = relNode;
+    this.pushableHashJoins = pushableHashJoins;
+  }
+
+  public static JSONObject serialize(RelNode relNode, Set<EnumerableHashJoin> pushableHashJoins) {
     JSONArray outputFieldsJArr = new JSONArray();
     for (String fieldName: relNode.getRowType().getFieldNames()) {
       outputFieldsJArr.put(fieldName);
     }
     return new JSONObject()
-            .put("plan", serializeRel(relNode))
+            .put("plan", new RelJsonSerializer(relNode, pushableHashJoins).serialize())
             .put("outputFields", outputFieldsJArr);
   }
 
-  private static JSONObject serializeRel(RelNode relNode) {
+  private JSONObject serialize() {
+    return serializeRel(relNode);
+  }
+
+  private JSONObject serializeRel(RelNode relNode) {
     JSONObject jo;
     if (relNode instanceof EnumerableTableScan) {
       jo = serializeEnumerableTableScan((EnumerableTableScan) relNode);
@@ -46,7 +59,7 @@ public final class RelJsonSerializer {
     return jo;
   }
 
-  private static JSONArray serializeRelInputs(RelNode relNode) {
+  private JSONArray serializeRelInputs(RelNode relNode) {
     JSONArray jArr = new JSONArray();
     for (RelNode input: relNode.getInputs()) {
       jArr.put(serializeRel(input));
@@ -54,7 +67,7 @@ public final class RelJsonSerializer {
     return jArr;
   }
 
-  private static JSONObject serializeEnumerableTableScan(EnumerableTableScan scan) {
+  private JSONObject serializeEnumerableTableScan(EnumerableTableScan scan) {
     JSONObject jo = new JSONObject();
     // operator name
     jo.put("operator", scan.getClass().getSimpleName());
@@ -67,7 +80,7 @@ public final class RelJsonSerializer {
     return jo;
   }
 
-  private static JSONObject serializeEnumerableFilter(EnumerableFilter filter) {
+  private JSONObject serializeEnumerableFilter(EnumerableFilter filter) {
     JSONObject jo = new JSONObject();
     // operator name
     jo.put("operator", filter.getClass().getSimpleName());
@@ -80,7 +93,7 @@ public final class RelJsonSerializer {
     return jo;
   }
 
-  private static JSONObject serializeJoin(Join join) {
+  private JSONObject serializeJoin(Join join) {
     JSONObject jo = new JSONObject();
     // operator name
     jo.put("operator", join.getClass().getSimpleName());
@@ -137,12 +150,17 @@ public final class RelJsonSerializer {
     // join type
     jo.put("joinType", join.getJoinType());
 
+    // pushable hash joins
+    jo.put("pushable", join instanceof EnumerableHashJoin
+            && pushableHashJoins != null
+            && pushableHashJoins.contains((EnumerableHashJoin) join));
+
     // input operators
     jo.put("inputs", serializeRelInputs(join));
     return jo;
   }
 
-  private static JSONObject serializeEnumerableProject(EnumerableProject project) {
+  private JSONObject serializeEnumerableProject(EnumerableProject project) {
     JSONObject jo = new JSONObject();
     // operator name
     jo.put("operator", project.getClass().getSimpleName());
@@ -166,7 +184,7 @@ public final class RelJsonSerializer {
     return jo;
   }
 
-  private static JSONObject serializeEnumerableAggregate(EnumerableAggregateBase aggregate) {
+  private JSONObject serializeEnumerableAggregate(EnumerableAggregateBase aggregate) {
     JSONObject jo = new JSONObject();
     // operator name
     jo.put("operator", aggregate.getClass().getSimpleName());
@@ -202,7 +220,7 @@ public final class RelJsonSerializer {
     return jo;
   }
 
-  private static JSONArray serializeSortFields(Sort sort) {
+  private JSONArray serializeSortFields(Sort sort) {
     List<String> inputFieldNames = sort.getInput().getRowType().getFieldNames();
     JSONArray sortFieldsJArr = new JSONArray();
     for (RelFieldCollation collation: sort.getCollation().getFieldCollations()) {
@@ -214,7 +232,7 @@ public final class RelJsonSerializer {
     return sortFieldsJArr;
   }
 
-  private static JSONObject serializeEnumerableSort(EnumerableSort sort) {
+  private JSONObject serializeEnumerableSort(EnumerableSort sort) {
     JSONObject jo = new JSONObject();
     // operator name
     jo.put("operator", sort.getClass().getSimpleName());
@@ -225,7 +243,7 @@ public final class RelJsonSerializer {
     return jo;
   }
 
-  private static JSONObject serializeEnumerableLimitSort(EnumerableLimitSort limitSort) {
+  private JSONObject serializeEnumerableLimitSort(EnumerableLimitSort limitSort) {
     JSONObject jo = new JSONObject();
     // operator name
     jo.put("operator", limitSort.getClass().getSimpleName());

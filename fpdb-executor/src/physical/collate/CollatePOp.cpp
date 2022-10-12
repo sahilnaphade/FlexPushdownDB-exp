@@ -5,6 +5,7 @@
 #include <fpdb/executor/physical/collate/CollatePOp.h>
 #include <fpdb/executor/message/TupleSetMessage.h>
 #include <fpdb/executor/message/CompleteMessage.h>
+#include <fpdb/store/server/flight/Util.hpp>
 #include <arrow/table.h>               // for ConcatenateTables, Table (ptr ...
 #include <arrow/pretty_print.h>
 #include <vector>                      // for vector
@@ -25,8 +26,8 @@ void CollatePOp::onReceive(const fpdb::executor::message::Envelope &message) {
   if (message.message().type() == MessageType::START) {
     this->onStart();
   } else if (message.message().type() == MessageType::TUPLESET) {
-    auto tupleMessage = dynamic_cast<const fpdb::executor::message::TupleSetMessage &>(message.message());
-    this->onTupleSet(tupleMessage);
+    auto tupleSetMessage = dynamic_cast<const fpdb::executor::message::TupleSetMessage &>(message.message());
+    this->onTupleSet(tupleSetMessage);
   } else if (message.message().type() == MessageType::COMPLETE) {
     auto completeMessage = dynamic_cast<const fpdb::executor::message::CompleteMessage &>(message.message());
     this->onComplete(completeMessage);
@@ -35,12 +36,28 @@ void CollatePOp::onReceive(const fpdb::executor::message::Envelope &message) {
   }
 }
 
+bool CollatePOp::getForward() const {
+  return forward_;
+}
+
+const std::unordered_map<std::string, std::string> &CollatePOp::getForwardConsumers() const {
+  return forwardConsumers_;
+}
+
+void CollatePOp::setForward(bool forward) {
+  forward_ = forward;
+}
+
+void CollatePOp::setForwardConsumers(const std::unordered_map<std::string, std::string> &forwardConsumers) {
+  forwardConsumers_ = forwardConsumers;
+}
+
 void CollatePOp::onStart() {
   SPDLOG_DEBUG("Starting operator  |  name: '{}'", this->name());
 }
 
 void CollatePOp::onComplete(const fpdb::executor::message::CompleteMessage &) {
-  if(!ctx()->isComplete() && ctx()->operatorMap().allComplete(POpRelationshipType::Producer)){
+  if (!ctx()->isComplete() && ctx()->operatorMap().allComplete(POpRelationshipType::Producer)){
     if (!tables_.empty()) {
       tables_.push_back(tuples_->table());
       const arrow::Result<std::shared_ptr<arrow::Table>> &res = arrow::ConcatenateTables(tables_);
@@ -49,6 +66,21 @@ void CollatePOp::onComplete(const fpdb::executor::message::CompleteMessage &) {
       }
       tuples_->table(*res);
       tables_.clear();
+    }
+
+    // if "forward_" is enabled, then send "end table" for "forwardConsumers_" to the root actor,
+    // denoting the pipeline of tables is ended
+    if (forward_) {
+      auto expEndTable = fpdb::store::server::flight::Util::getEndTable();
+      if (!expEndTable.has_value()) {
+        ctx()->notifyError(expEndTable.error());
+        return;
+      }
+      for (const auto &forwardConsumerIt: forwardConsumers_) {
+        std::shared_ptr<Message> tupleSetBufferMessage = std::make_shared<TupleSetBufferMessage>(
+                TupleSet::make(*expEndTable), forwardConsumerIt.second, name_);
+        ctx()->notifyRoot(tupleSetBufferMessage);
+      }
     }
 
     // make the order of output columns the same as the query specifies
@@ -67,6 +99,25 @@ void CollatePOp::onComplete(const fpdb::executor::message::CompleteMessage &) {
 }
 
 void CollatePOp::onTupleSet(const fpdb::executor::message::TupleSetMessage &message) {
+  if (forward_) {
+    onTupleSetForward(message);
+  } else {
+    onTupleSetRegular(message);
+  }
+}
+
+void CollatePOp::onTupleSetForward(const fpdb::executor::message::TupleSetMessage &message) {
+  auto consumerIt = forwardConsumers_.find(message.sender());
+  if (consumerIt == forwardConsumers_.end()) {
+    ctx()->notifyError(fmt::format("Sender '{}' not found in forward consumers", message.sender()));
+    return;
+  }
+  std::shared_ptr<Message> tupleSetBufferMessage = std::make_shared<TupleSetBufferMessage>(
+          message.tuples(), consumerIt->second, name_);
+  ctx()->notifyRoot(tupleSetBufferMessage);
+}
+
+void CollatePOp::onTupleSetRegular(const fpdb::executor::message::TupleSetMessage &message) {
   if (!tuples_) {
     assert(message.tuples());
     tuples_ = message.tuples();

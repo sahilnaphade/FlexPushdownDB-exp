@@ -24,6 +24,7 @@ public:
   ~PhysicalPlan() = default;
 
   const unordered_map<string, shared_ptr<PhysicalOp>> &getPhysicalOps() const;
+  const std::string& getRootPOpName() const;
   tl::expected<shared_ptr<PhysicalOp>, string> getPhysicalOp(const string &name) const;
   tl::expected<shared_ptr<PhysicalOp>, string> getRootPOp() const;
   tl::expected<void, string> renamePOp(const string oldName, const string newName);

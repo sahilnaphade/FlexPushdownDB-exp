@@ -62,13 +62,28 @@ public:
    * The plan should be a sub-plan of FPDBStoreSuperPOp
    * @param rootOp
    * @param opMap
-   * @param fpdbStoreFileScanToHost
+   * @param objectToHost
    * @return
    */
   static pair<shared_ptr<PhysicalPlan>, std::string> rootOpToPlanAndHost(
           const shared_ptr<PhysicalOp> &rootOp,
           const unordered_map<string, shared_ptr<PhysicalOp>> &opMap,
           const unordered_map<std::string, std::string> &objectToHost);
+
+  /**
+   * Update the map of <op, store node id> for a serial order of ops from root
+   * Ops should contain at least one FPDBStoreFileScanPOp
+   * @param opToStoreNode
+   * @param rootOp
+   * @param opMap
+   * @param objectToHost
+   * @param hostToId
+   */
+  static void updateOpToStoreNode(unordered_map<string, int> &opToStoreNode,
+                                  const shared_ptr<PhysicalOp> &rootOp,
+                                  const unordered_map<string, shared_ptr<PhysicalOp>> &opMap,
+                                  const unordered_map<std::string, std::string> &objectToHost,
+                                  const unordered_map<std::string, int> &hostToId);
 
   /**
    * Add physical operators to existing ones

@@ -2,10 +2,10 @@
 // Created by Yifei Yang on 4/10/22.
 //
 
-#include <fpdb/store/server/cache/BitmapCache.hpp>
+#include <fpdb/store/server/flight/BitmapCache.hpp>
 #include <fmt/format.h>
 
-namespace fpdb::store::server::cache {
+namespace fpdb::store::server::flight {
 
 std::string BitmapCache::generateBitmapKey(long queryId, const std::string &op) {
   return fmt::format("{}-{}", std::to_string(queryId), op);

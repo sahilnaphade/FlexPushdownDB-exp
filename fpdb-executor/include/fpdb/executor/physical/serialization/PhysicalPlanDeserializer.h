@@ -26,10 +26,7 @@ private:
    */
   tl::expected<std::shared_ptr<PhysicalPlan>, std::string> deserialize();
 
-  tl::expected<std::shared_ptr<PhysicalOp>, std::string> deserializeDfs(const ::nlohmann::json &jObj,
-                                                                        bool isRoot = false);
-
-  tl::expected<std::vector<std::shared_ptr<PhysicalOp>>, std::string> deserializeProducers(const ::nlohmann::json &jObj);
+  tl::expected<std::shared_ptr<PhysicalOp>, std::string> deserializePOp(const ::nlohmann::json &jObj);
 
   tl::expected<std::shared_ptr<PhysicalOp>, std::string> deserializeFPDBStoreFileScanPOp(const ::nlohmann::json &jObj);
 
@@ -43,10 +40,18 @@ private:
 
   tl::expected<std::shared_ptr<PhysicalOp>, std::string> deserializeShufflePOp(const ::nlohmann::json &jObj);
 
+  tl::expected<std::shared_ptr<PhysicalOp>, std::string> deserializeBloomFilterCreatePOp(const ::nlohmann::json &jObj);
+
+  tl::expected<std::shared_ptr<PhysicalOp>, std::string> deserializeBloomFilterUsePOp(const ::nlohmann::json &jObj);
+
+  tl::expected<std::shared_ptr<PhysicalOp>, std::string> deserializeHashJoinArrowPOp(const ::nlohmann::json &jObj);
+
   tl::expected<std::shared_ptr<PhysicalOp>, std::string> deserializeCollatePOp(const ::nlohmann::json &jObj);
 
   tl::expected<std::tuple<std::string,
                           std::vector<std::string>,
+                          std::set<std::string>,
+                          std::set<std::string>,
                           bool,
                           std::unordered_map<std::string, std::shared_ptr<fpdb_store::FPDBStoreBloomFilterUseInfo>>>,
                std::string>
@@ -54,9 +59,6 @@ private:
 
   std::string planString_;
   std::string storeRootPath_;
-
-  std::unordered_map<std::string, std::shared_ptr<PhysicalOp>> physicalOps_;
-  std::string rootPOpName_;
 
 };
 

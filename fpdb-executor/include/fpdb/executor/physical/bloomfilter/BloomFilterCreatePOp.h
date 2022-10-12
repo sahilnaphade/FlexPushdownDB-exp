@@ -29,6 +29,12 @@ public:
   std::string getTypeString() const override;
   void produce(const std::shared_ptr<PhysicalOp> &op) override;
 
+  const BloomFilterCreateKernel &getKernel() const;
+  const std::set<std::string> &getBloomFilterUsePOps() const;
+  const std::set<std::string> &getPassTupleSetConsumers() const;
+
+  void setBloomFilterUsePOps(const std::set<std::string> &bloomFilterUsePOps);
+  void setPassTupleSetConsumers(const std::set<std::string> &passTupleSetConsumers);
   void addBloomFilterUsePOp(const std::shared_ptr<PhysicalOp> &bloomFilterUsePOp);
   void addFPDBStoreBloomFilterConsumer(const std::shared_ptr<PhysicalOp> &fpdbStoreBloomFilterConsumer);
   void setBloomFilterInfo(const fpdb_store::FPDBStoreBloomFilterCreateInfo &bloomFilterInfo);

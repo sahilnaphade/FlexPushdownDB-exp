@@ -42,6 +42,9 @@ public:
                                   const std::set<std::string> &neededColumnNames,
                                   JoinType joinType);
 
+  const HashJoinPredicate &getPred() const;
+  JoinType getJoinType() const;
+
   tl::expected<void, std::string> joinBuildTupleSet(const std::shared_ptr<TupleSet> &tupleSet);
   tl::expected<void, std::string> joinProbeTupleSet(const std::shared_ptr<TupleSet> &tupleSet);
   void finalizeInput(bool isBuildSide);

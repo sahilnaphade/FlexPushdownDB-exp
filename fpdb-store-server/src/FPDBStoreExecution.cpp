@@ -8,8 +8,12 @@ namespace fpdb::store::server {
 
 FPDBStoreExecution::FPDBStoreExecution(long queryId,
                                        const std::shared_ptr<::caf::actor_system> &actorSystem,
-                                       const std::shared_ptr<PhysicalPlan> &physicalPlan):
-  Execution(queryId, actorSystem, {}, nullptr, physicalPlan, false) {}
+                                       const std::shared_ptr<PhysicalPlan> &physicalPlan,
+                                       TableCallBack tableCallBack,
+                                       BitmapCallBack bitmapCallBack):
+  Execution(queryId, actorSystem, {}, nullptr, physicalPlan, false),
+  tableCallBack_(std::move(tableCallBack)),
+  bitmapCallBack_(std::move(bitmapCallBack)) {}
 
 void FPDBStoreExecution::join() {
   SPDLOG_DEBUG("Waiting for all operators to complete");
@@ -41,22 +45,13 @@ void FPDBStoreExecution::join() {
 
               case MessageType::BITMAP: {
                 auto bitmapMessage = ((BitmapMessage &) msg);
-                bitmaps_[bitmapMessage.sender()] = bitmapMessage.getBitmap();
+                bitmapCallBack_(bitmapMessage.sender(), bitmapMessage.getBitmap());
                 break;
               }
 
               case MessageType::TUPLESET_BUFFER: {
                 auto tupleSetBufferMessage = ((TupleSetBufferMessage &) msg);
-                auto consumer = tupleSetBufferMessage.getConsumer();
-                auto tupleSetIt = tupleSets_.find(consumer);
-                if (tupleSetIt == tupleSets_.end()) {
-                  tupleSets_[consumer] = tupleSetBufferMessage.tuples();
-                } else {
-                  auto res = tupleSetIt->second->append(tupleSetBufferMessage.tuples());
-                  if (!res.has_value()) {
-                    errAct(res.error());
-                  }
-                }
+                tableCallBack_(tupleSetBufferMessage.getConsumer(), tupleSetBufferMessage.tuples()->table());
               }
 
 #if SHOW_DEBUG_METRICS == true
@@ -79,14 +74,6 @@ void FPDBStoreExecution::join() {
           handle_err);
 
   stopTime_ = chrono::steady_clock::now();
-}
-
-const std::unordered_map<std::string, std::shared_ptr<TupleSet>> &FPDBStoreExecution::getTupleSets() const {
-  return tupleSets_;
-}
-
-const std::unordered_map<std::string, std::vector<int64_t>> &FPDBStoreExecution::getBitmaps() const {
-  return bitmaps_;
 }
 
 }

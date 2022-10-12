@@ -16,12 +16,14 @@ std::shared_ptr<SeparableTraits> SeparableTraits::S3SeparableTraits() {
 }
 
 std::shared_ptr<SeparableTraits> SeparableTraits::FPDBStoreSeparableTraits() {
-  // GROUP is excluded because it's separable only when using two-phase group-by, and only the first phase is separable
+  // GROUP is excluded because it's separable only when using two-phase group-by, and only the first phase is separable,
+  // so that flag is set by 'StoreTransformTraits'.
   return std::make_shared<SeparableTraits>(std::set<PrePOpType>{
     FILTERABLE_SCAN,
     FILTER,
     AGGREGATE,
-    PROJECT
+    PROJECT,
+    HASH_JOIN
   });
 }
 

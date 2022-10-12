@@ -760,10 +760,17 @@ shared_ptr<prephysical::HashJoinPrePOp> CalcitePlanJsonDeserializer::deserialize
   const auto &joinCondJObj = jObj["condition"];
   const pair<vector<string>, vector<string>> &joinColumnNames = deserializeHashJoinCondition(joinCondJObj);
 
+  // deserialize pushable
+  if (!jObj.contains("pushable")) {
+    throw runtime_error("Invalid hash join, no field 'pushable'");
+  }
+  bool pushable = jObj["pushable"].get<bool>();
+
   shared_ptr<PrePhysicalOp> hashJoinPrePOp = make_shared<HashJoinPrePOp>(pOpIdGenerator_.fetch_add(1),
                                                                          joinType,
                                                                          joinColumnNames.first,
-                                                                         joinColumnNames.second);
+                                                                         joinColumnNames.second,
+                                                                         pushable);
 
   // deserialize producers
   const auto &producers = deserializeProducers(jObj);

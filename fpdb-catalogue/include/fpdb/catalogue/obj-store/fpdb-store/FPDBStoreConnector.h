@@ -24,6 +24,7 @@ public:
 
   const std::vector<std::string> &getHosts() const;
   const std::string &getHost(int id) const;
+  size_t getNumHosts() const;
   int getFileServicePort() const;
   int getFlightPort() const;
 

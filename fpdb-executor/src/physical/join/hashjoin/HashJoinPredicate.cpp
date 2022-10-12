@@ -3,6 +3,7 @@
 //
 
 #include <fpdb/executor/physical/join/hashjoin/HashJoinPredicate.h>
+#include <fmt/format.h>
 #include <utility>
 #include <sstream>
 #include <cassert>
@@ -35,4 +36,25 @@ string HashJoinPredicate::toString() const {
     }
   }
   return ss.str();
+}
+
+::nlohmann::json HashJoinPredicate::toJson() const {
+  ::nlohmann::json jObj;
+  jObj.emplace("leftColumnNames", leftColumnNames_);
+  jObj.emplace("rightColumnNames", rightColumnNames_);
+  return jObj;
+}
+
+tl::expected<HashJoinPredicate, std::string> HashJoinPredicate::fromJson(const nlohmann::json &jObj) {
+  if (!jObj.contains("leftColumnNames")) {
+    return tl::make_unexpected(fmt::format("LeftColumnNames not specified in HashJoinPredicate JSON '{}'", jObj));
+  }
+  auto leftColumnNames = jObj["leftColumnNames"].get<vector<string>>();
+
+  if (!jObj.contains("rightColumnNames")) {
+    return tl::make_unexpected(fmt::format("RightColumnNames not specified in HashJoinPredicate JSON '{}'", jObj));
+  }
+  auto rightColumnNames = jObj["rightColumnNames"].get<vector<string>>();
+
+  return HashJoinPredicate(leftColumnNames, rightColumnNames);
 }

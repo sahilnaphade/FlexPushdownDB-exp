@@ -15,7 +15,8 @@ public:
   HashJoinPrePOp(uint id,
                  JoinType joinType,
                  const vector<string> &leftColumnNames,
-                 const vector<string> &rightColumnNames);
+                 const vector<string> &rightColumnNames,
+                 bool pushable);
 
   string getTypeString() override;
 
@@ -24,11 +25,13 @@ public:
   JoinType getJoinType() const;
   const vector<string> &getLeftColumnNames() const;
   const vector<string> &getRightColumnNames() const;
+  bool isPushable() const;
 
 private:
   JoinType joinType_;
   vector<string> leftColumnNames_;
   vector<string> rightColumnNames_;
+  bool pushable_;
 };
 
 }

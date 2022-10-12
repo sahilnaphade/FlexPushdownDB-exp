@@ -2,8 +2,8 @@
 // Created by Yifei Yang on 9/14/22.
 //
 
-#ifndef FPDB_FPDB_STORE_SERVER_INCLUDE_FPDB_STORE_SERVER_CACHE_BLOOMFILTERCACHE_HPP
-#define FPDB_FPDB_STORE_SERVER_INCLUDE_FPDB_STORE_SERVER_CACHE_BLOOMFILTERCACHE_HPP
+#ifndef FPDB_FPDB_STORE_SERVER_INCLUDE_FPDB_STORE_SERVER_FLIGHT_BLOOMFILTERCACHE_HPP
+#define FPDB_FPDB_STORE_SERVER_INCLUDE_FPDB_STORE_SERVER_FLIGHT_BLOOMFILTERCACHE_HPP
 
 #include <unordered_map>
 #include <string>
@@ -14,7 +14,7 @@
 
 using namespace fpdb::executor::physical::bloomfilter;
 
-namespace fpdb::store::server::cache {
+namespace fpdb::store::server::flight {
 
 /**
  * A cache for constructed bloom filters during bloom filter pushdown.
@@ -40,4 +40,4 @@ private:
 }
 
 
-#endif //FPDB_FPDB_STORE_SERVER_INCLUDE_FPDB_STORE_SERVER_CACHE_BLOOMFILTERCACHE_HPP
+#endif //FPDB_FPDB_STORE_SERVER_INCLUDE_FPDB_STORE_SERVER_FLIGHT_BLOOMFILTERCACHE_HPP

@@ -5,6 +5,8 @@
 #ifndef FPDB_FPDB_STORE_SERVER_INCLUDE_FPDB_STORE_SERVER_FLIGHT_UTIL_HPP
 #define FPDB_FPDB_STORE_SERVER_INCLUDE_FPDB_STORE_SERVER_FLIGHT_UTIL_HPP
 
+#include <arrow/api.h>
+#include <tl/expected.hpp>
 #include "string"
 
 namespace fpdb::store::server::flight {
@@ -20,8 +22,9 @@ static constexpr std::string_view ValidJSONName = "valid";
 static constexpr std::string_view BitmapTypeJSONName = "bitmap_type";
 static constexpr std::string_view NumCopiesJSONName = "num_copies";
 static constexpr std::string_view BloomFilterJSONName = "bloom_filter";
-static constexpr std::string_view ProducerJSONName = "producer";;
+static constexpr std::string_view ProducerJSONName = "producer";
 static constexpr std::string_view ConsumerJSONName = "consumer";
+static constexpr std::string_view WaitNotExistJSONName = "wait_not_exist";
 
 static constexpr std::string_view GetObjectCmdTypeName = "get_object";
 static constexpr std::string_view SelectObjectContentCmdTypeName = "select_object_content";
@@ -35,6 +38,22 @@ static constexpr std::string_view GetTableTicketTypeName = "get_table";
 static constexpr std::string_view HeaderMiddlewareKey = "header_middleware";
 static constexpr std::string_view BucketHeaderKey = "bucket";
 static constexpr std::string_view ObjectHeaderKey = "object";
+
+class Util {
+
+public:
+  /**
+   * Used to generate an arrow table denoting the operator at storage side is finished,
+   * to enable pipelining between the storage and compute layer.
+   */
+  static tl::expected<std::shared_ptr<arrow::Table>, std::string> getEndTable();
+  static bool isEndTable(const std::shared_ptr<arrow::Table> &table);
+
+private:
+  static constexpr std::string_view EndTableColumnName = "complete_col";
+  static constexpr std::string_view EndTableRowValue = "complete";
+
+};
 
 }
 

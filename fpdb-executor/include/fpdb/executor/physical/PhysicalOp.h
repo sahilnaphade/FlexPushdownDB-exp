@@ -50,6 +50,8 @@ public:
   void setName(const std::string &Name);
   void setProjectColumnNames(const std::vector<std::string> &projectColumnNames);
   void setQueryId(long queryId);
+  void setProducers(const std::set<std::string> &producers);
+  void setConsumers(const std::set<std::string> &consumers);
   virtual void produce(const std::shared_ptr<PhysicalOp> &op);
   virtual void consume(const std::shared_ptr<PhysicalOp> &op);
   virtual void unProduce(const std::shared_ptr<PhysicalOp> &op);

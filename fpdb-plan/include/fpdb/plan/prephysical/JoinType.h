@@ -18,7 +18,7 @@ enum JoinType {
   SEMI
 };
 
-tl::expected<std::string, std::string> joinTypeToStr(JoinType joinType) {
+inline tl::expected<std::string, std::string> joinTypeToStr(JoinType joinType) {
   switch (joinType) {
     case INNER: return "Inner";
     case LEFT: return "Left";
@@ -29,7 +29,7 @@ tl::expected<std::string, std::string> joinTypeToStr(JoinType joinType) {
   }
 }
 
-tl::expected<JoinType, std::string> strToJoinType(const std::string &joinTypeStr) {
+inline tl::expected<JoinType, std::string> strToJoinType(const std::string &joinTypeStr) {
   if (joinTypeStr == "Inner") {
     return JoinType::INNER;
   } else if (joinTypeStr == "Left") {

@@ -12,22 +12,21 @@ namespace fpdb::store::server {
 class FPDBStoreExecution: public executor::Execution {
 
 public:
+  using TableCallBack = std::function<void(const std::string &consumer, const std::shared_ptr<arrow::Table> &table)>;
+  using BitmapCallBack = std::function<void(const std::string &sender, const std::vector<int64_t> &bitmap)>;
+
   FPDBStoreExecution(long queryId,
                      const std::shared_ptr<::caf::actor_system> &actorSystem,
-                     const std::shared_ptr<PhysicalPlan> &physicalPlan);
+                     const std::shared_ptr<PhysicalPlan> &physicalPlan,
+                     TableCallBack tableCallBack,
+                     BitmapCallBack bitmapCallBack);
   ~FPDBStoreExecution() override = default;
-
-  const std::unordered_map<std::string, std::shared_ptr<TupleSet>> &getTupleSets() const;
-  const std::unordered_map<std::string, std::vector<int64_t>> &getBitmaps() const;
 
 private:
   void join() override;
 
-  // for shuffled tupleSets at storage side (consumer name -> tupleSet)
-  std::unordered_map<std::string, std::shared_ptr<TupleSet>> tupleSets_;
-
-  // for bitmap constructed at storage side (producer name -> bitmap)
-  std::unordered_map<std::string, std::vector<int64_t>> bitmaps_;
+  TableCallBack tableCallBack_;
+  BitmapCallBack bitmapCallBack_;
 };
 
 }

@@ -188,6 +188,18 @@ pair<shared_ptr<PhysicalPlan>, std::string> PrePToPTransformerUtil::rootOpToPlan
   return {make_shared<PhysicalPlan>(ops, rootOp->name()), *host};
 }
 
+void PrePToPTransformerUtil::updateOpToStoreNode(unordered_map<string, int> &opToStoreNode,
+                                                 const shared_ptr<PhysicalOp> &rootOp,
+                                                 const unordered_map<string, shared_ptr<PhysicalOp>> &opMap,
+                                                 const unordered_map<std::string, std::string> &objectToHost,
+                                                 const unordered_map<std::string, int> &hostToId) {
+  auto planWithHost = rootOpToPlanAndHost(rootOp, opMap, objectToHost);
+  auto hostId = hostToId.find(planWithHost.second)->second;
+  for (const auto &op: planWithHost.first->getPhysicalOps()) {
+    opToStoreNode[op.first] = hostId;
+  }
+}
+
 void PrePToPTransformerUtil::addPhysicalOps(const vector<shared_ptr<PhysicalOp>> &newOps,
                                             unordered_map<string, shared_ptr<PhysicalOp>> &ops) {
   for (const auto &newOp: newOps) {

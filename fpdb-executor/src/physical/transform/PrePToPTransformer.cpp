@@ -1051,7 +1051,8 @@ PrePToPTransformer::transformSeparableSuper(const shared_ptr<SeparableSuperPrePO
         throw runtime_error("object store type for catalogue entry and connector mismatch, catalogue entry is 'FPDB-Store'");
       }
       auto fpdbStoreConnector = static_pointer_cast<obj_store::FPDBStoreConnector>(objStoreConnector_);
-      auto transformRes = PrePToFPDBStorePTransformer::transform(separableSuperPrePOp, mode_, numNodes_, fpdbStoreConnector);
+      auto transformRes = PrePToFPDBStorePTransformer::transform(separableSuperPrePOp, mode_, numNodes_,
+                                                                 parallelDegree_, parallelDegree_, fpdbStoreConnector);
       PrePToPTransformerUtil::addPhysicalOps(transformRes.second, physicalOps_);
       return transformRes.first;
     }

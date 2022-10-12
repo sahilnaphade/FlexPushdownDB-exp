@@ -3,6 +3,7 @@
 //
 
 #include <fpdb/plan/prephysical/separable/SeparablePrePOpTransformer.h>
+#include <fpdb/plan/prephysical/HashJoinPrePOp.h>
 #include <fpdb/catalogue/obj-store/ObjStoreCatalogueEntry.h>
 
 namespace fpdb::plan::prephysical::separable {
@@ -67,7 +68,15 @@ SeparablePrePOpTransformer::transformDfs(const std::shared_ptr<PrePhysicalOp> &o
     }
   }
 
-  if (separableTraits_->isSeparable(op->getType()) && producerSeparablePrePOps.size() == newProducers.size()) {
+  bool separable;
+  if (op->getType() == PrePOpType::HASH_JOIN) {
+    separable = std::static_pointer_cast<HashJoinPrePOp>(op)->isPushable()
+            && separableTraits_->isSeparable(PrePOpType::HASH_JOIN);
+  } else {
+    separable = separableTraits_->isSeparable(op->getType());
+  }
+
+  if (separable && producerSeparablePrePOps.size() == newProducers.size()) {
     // if separable and each producer forms a SeparableSuperPrePOp, then combine them as a larger one
     newProducers.clear();
     for (const auto &producerSeparablePrePOp: producerSeparablePrePOps) {
