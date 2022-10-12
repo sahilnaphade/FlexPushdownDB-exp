@@ -30,6 +30,8 @@ public:
   std::string getTypeString() const override;
   void consume(const std::shared_ptr<PhysicalOp> &op) override;
 
+  const std::string &getProducer() const;
+
 private:
   void onStart();
   void onTupleSetWaitRemote(const TupleSetWaitRemoteMessage &msg);

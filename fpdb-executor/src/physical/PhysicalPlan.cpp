@@ -117,4 +117,33 @@ tl::expected<void, string> PhysicalPlan::addAsLast(shared_ptr<PhysicalOp> &op) {
   return {};
 }
 
+tl::expected<void, string> PhysicalPlan::addAsLast(vector<shared_ptr<PhysicalOp>> &ops) {
+  // check "#producers of root" = "#op in ops"
+  // find root
+  auto expRootPOp = getRootPOp();
+  if (!expRootPOp.has_value()) {
+    return tl::make_unexpected(expRootPOp.error());
+  }
+  auto rootPOp = *expRootPOp;
+  auto rootProducers = rootPOp->producers();
+  if (rootProducers.size() != ops.size()) {
+    return tl::make_unexpected(fmt::format("size of ops and size of root's producers mismatch: {} vs {}",
+                                           rootProducers.size(), ops.size()));
+  }
+
+  // add before root
+  uint opId = 0;
+  for (const auto &producerName: rootProducers) {
+    auto op = ops[opId++];
+    auto producer = physicalOps_.find(producerName)->second;
+    producer->unProduce(rootPOp);
+    rootPOp->unConsume(producer);
+    PrePToPTransformerUtil::connectOneToOne(producer, op);
+    PrePToPTransformerUtil::connectOneToOne(op, rootPOp);
+    physicalOps_.emplace(op->name(), op);
+  }
+
+  return {};
+}
+
 }

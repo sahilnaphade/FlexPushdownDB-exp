@@ -337,7 +337,8 @@ PrePToPTransformer::transformGroupOnePhase(const shared_ptr<GroupPrePOp> &groupP
     if (catalogueEntry_->getType() == CatalogueEntryType::OBJ_STORE &&
         std::static_pointer_cast<obj_store::ObjStoreCatalogueEntry>(catalogueEntry_)->getStoreType() ==
           obj_store::ObjStoreType::FPDB_STORE) {
-      const auto &shuffleAddRes = PrePToFPDBStorePTransformer::addSeparablePOp(upConnPOps, shufflePOps, mode_);
+      const auto &shuffleAddRes =
+              PrePToFPDBStorePTransformer::addSeparablePOp(upConnPOps, shufflePOps, physicalOps_, mode_);
       auto opsForShuffle = shuffleAddRes.first;
       auto addiOps = shuffleAddRes.second;
       allPOps.insert(allPOps.end(), addiOps.begin(), addiOps.end());
@@ -420,7 +421,7 @@ PrePToPTransformer::transformGroupTwoPhase(const shared_ptr<GroupPrePOp> &groupP
   if (catalogueEntry_->getType() == CatalogueEntryType::OBJ_STORE &&
       std::static_pointer_cast<obj_store::ObjStoreCatalogueEntry>(catalogueEntry_)->getStoreType() ==
         obj_store::ObjStoreType::FPDB_STORE) {
-    const auto &groupAddRes = PrePToFPDBStorePTransformer::addSeparablePOp(upConnPOps, groupPOps, mode_);
+    const auto &groupAddRes = PrePToFPDBStorePTransformer::addSeparablePOp(upConnPOps, groupPOps, physicalOps_, mode_);
     auto opsForGroup = groupAddRes.first;
     auto addiOps = groupAddRes.second;
     allPOps.insert(allPOps.end(), addiOps.begin(), addiOps.end());
@@ -451,7 +452,8 @@ PrePToPTransformer::transformGroupTwoPhase(const shared_ptr<GroupPrePOp> &groupP
     if (catalogueEntry_->getType() == CatalogueEntryType::OBJ_STORE &&
         std::static_pointer_cast<obj_store::ObjStoreCatalogueEntry>(catalogueEntry_)->getStoreType() ==
         obj_store::ObjStoreType::FPDB_STORE) {
-      const auto &shuffleAddRes = PrePToFPDBStorePTransformer::addSeparablePOp(upConnPOps, shufflePOps, mode_);
+      const auto &shuffleAddRes =
+              PrePToFPDBStorePTransformer::addSeparablePOp(upConnPOps, shufflePOps, physicalOps_, mode_);
       auto opsForShuffle = shuffleAddRes.first;
       auto addiOps = shuffleAddRes.second;
       allPOps.insert(allPOps.end(), addiOps.begin(), addiOps.end());
@@ -780,7 +782,7 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
           obj_store::ObjStoreType::FPDB_STORE) {
       // left, connection to upstream will be made in addSeparablePOp()
       const auto &shuffleLeftAddRes =
-              PrePToFPDBStorePTransformer::addSeparablePOp(upLeftConnPOps, shuffleLeftPOps, mode_);
+              PrePToFPDBStorePTransformer::addSeparablePOp(upLeftConnPOps, shuffleLeftPOps, physicalOps_, mode_);
       auto opsForShuffleLeft = shuffleLeftAddRes.first;
       auto leftAddiOps = shuffleLeftAddRes.second;
       allPOps.insert(allPOps.end(), leftAddiOps.begin(), leftAddiOps.end());
@@ -788,7 +790,7 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
 
       // right, connection to upstream will be made in addSeparablePOp()
       const auto &shuffleRightAddRes =
-              PrePToFPDBStorePTransformer::addSeparablePOp(upRightConnPOps, shuffleRightPOps, mode_);
+              PrePToFPDBStorePTransformer::addSeparablePOp(upRightConnPOps, shuffleRightPOps, physicalOps_, mode_);
       auto opsForShuffleRight = shuffleRightAddRes.first;
       auto rightAddiOps = shuffleRightAddRes.second;
       allPOps.insert(allPOps.end(), rightAddiOps.begin(), rightAddiOps.end());

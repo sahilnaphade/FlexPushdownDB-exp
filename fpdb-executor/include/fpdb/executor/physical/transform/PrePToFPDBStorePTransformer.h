@@ -45,13 +45,33 @@ public:
    * Add each of the separable operators to the corresponding FPDBStoreSuperPOp
    * if the producers is FPDBStoreSuperPOp and the operator type is enabled for pushdown
    * @param producers
-   * @param bloomFilterUsePOps
+   * @param separablePOps
+   * @param opMap
+   * @param mode
    * @return a pair of connect physical ops (to consumers) and additional physical ops to add to plan
    */
   static pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
   addSeparablePOp(vector<shared_ptr<PhysicalOp>> &producers,
                   vector<shared_ptr<PhysicalOp>> &separablePOps,
+                  const unordered_map<string, shared_ptr<PhysicalOp>> &opMap,
                   const shared_ptr<Mode> &mode);
+
+  /**
+   * The case when there is no hash-join pushdown, which is the regular case
+   */
+  static pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
+  addSeparablePOpNoHashJoinPushdown(vector<shared_ptr<PhysicalOp>> &producers,
+                                    vector<shared_ptr<PhysicalOp>> &separablePOps);
+
+  /**
+   * The case when there is hash-join pushdown
+   * "producers" should all be "FPDBStoreTableCacheLoadPOp"
+   * "separablePOps" should be the same type
+   */
+  static pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
+  addSeparablePOpWithHashJoinPushdown(vector<shared_ptr<PhysicalOp>> &producers,
+                                      vector<shared_ptr<PhysicalOp>> &separablePOps,
+                                      const unordered_map<string, shared_ptr<PhysicalOp>> &opMap);
 
 private:
   PrePToFPDBStorePTransformer(const shared_ptr<SeparableSuperPrePOp> &separableSuperPrePOp,

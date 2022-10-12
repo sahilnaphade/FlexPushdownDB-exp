@@ -219,59 +219,128 @@ pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>> PrePToFPDBS
 pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
 PrePToFPDBStorePTransformer::addSeparablePOp(vector<shared_ptr<PhysicalOp>> &producers,
                                              vector<shared_ptr<PhysicalOp>> &separablePOps,
+                                             const unordered_map<string, shared_ptr<PhysicalOp>> &opMap,
                                              const shared_ptr<Mode> &mode) {
-  // check if not in a mode with pushdown
+  // check mode
   if (mode->id() == ModeId::PULL_UP || mode->id() == ModeId::CACHING_ONLY) {
     PrePToPTransformerUtil::connectOneToOne(producers, separablePOps);
     return {separablePOps, separablePOps};
   }
-
   // currently only pushdown-only mode is supported
-  if (mode->id() == ModeId::PUSHDOWN_ONLY) {
-    vector<shared_ptr<PhysicalOp>> connPOps, addiPOps;
-
-    for (uint i = 0; i < producers.size(); ++i) {
-      auto producer = producers[i];
-      auto separablePOp = separablePOps[i];
-
-      // pushable when the operator type is enabled for pushdown, and the producer is FPDBStoreSuperPOp
-      if (StoreTransformTraits::FPDBStoreStoreTransformTraits()->isSeparable(separablePOp->getType()) &&
-          producer->getType() == POpType::FPDB_STORE_SUPER) {
-        separablePOp->setSeparated(true);
-        auto fpdbStoreSuperPOp = static_pointer_cast<fpdb_store::FPDBStoreSuperPOp>(producer);
-        auto res = fpdbStoreSuperPOp->getSubPlan()->addAsLast(separablePOp);
-        if (!res.has_value()) {
-          throw runtime_error(res.error());
-        }
-        connPOps.emplace_back(fpdbStoreSuperPOp);
-
-        // need to handle shuffle op specially (remove collatePOp from its consumeVec)
-        if (separablePOp->getType() == POpType::SHUFFLE) {
-          fpdbStoreSuperPOp->setShufflePOp(separablePOp);
-          std::static_pointer_cast<shuffle::ShufflePOp>(separablePOp)->clearConsumerVec();
-        }
-
-        // need to handle group op specially
-        // (set projectColumnNames for both fpdbStoreSuperPOp and root op of the subPlan)
-        else if (separablePOp->getType() == POpType::GROUP) {
-          auto expRootOp = fpdbStoreSuperPOp->getSubPlan()->getRootPOp();
-          if (!expRootOp.has_value()) {
-            throw runtime_error(expRootOp.error());
-          }
-          (*expRootOp)->setProjectColumnNames(separablePOp->getProjectColumnNames());
-          fpdbStoreSuperPOp->setProjectColumnNames(separablePOp->getProjectColumnNames());
-        }
-      } else {
-        PrePToPTransformerUtil::connectOneToOne(producer, separablePOp);
-        connPOps.emplace_back(separablePOp);
-        addiPOps.emplace_back(separablePOp);
-      }
-    }
-
-    return {connPOps, addiPOps};
-  } else {
+  if (mode->id() != ModeId::PUSHDOWN_ONLY) {
     throw runtime_error("Hybrid mode for adding separablePOp to FPDBStoreSuperPOp is not implemented");
   }
+
+  // check if hash-join is pushed
+  // FIXME: not a good way to check by whether the producer is FPDBStoreTableCacheLoadPOp
+  bool withHashJoinPushdown = false;
+  for (const auto &producer: producers) {
+    if (producer->getType() == POpType::FPDB_STORE_TABLE_CACHE_LOAD) {
+      withHashJoinPushdown = true;
+      break;
+    }
+  }
+
+  // do accordingly
+  if (withHashJoinPushdown) {
+    return addSeparablePOpWithHashJoinPushdown(producers, separablePOps, opMap);
+  } else {
+    return addSeparablePOpNoHashJoinPushdown(producers, separablePOps);
+  }
+}
+
+pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
+PrePToFPDBStorePTransformer::addSeparablePOpNoHashJoinPushdown(vector<shared_ptr<PhysicalOp>> &producers,
+                                                               vector<shared_ptr<PhysicalOp>> &separablePOps) {
+
+  vector<shared_ptr<PhysicalOp>> connPOps, addiPOps;
+
+  for (uint i = 0; i < producers.size(); ++i) {
+    auto producer = producers[i];
+    auto separablePOp = separablePOps[i];
+
+    // pushable when the operator type is enabled for pushdown, and the producer is FPDBStoreSuperPOp
+    if (StoreTransformTraits::FPDBStoreStoreTransformTraits()->isSeparable(separablePOp->getType()) &&
+        producer->getType() == POpType::FPDB_STORE_SUPER) {
+      separablePOp->setSeparated(true);
+      auto fpdbStoreSuperPOp = static_pointer_cast<fpdb_store::FPDBStoreSuperPOp>(producer);
+      auto res = fpdbStoreSuperPOp->getSubPlan()->addAsLast(separablePOp);
+      if (!res.has_value()) {
+        throw runtime_error(res.error());
+      }
+      connPOps.emplace_back(fpdbStoreSuperPOp);
+
+      // need to handle shuffle op specially (remove collatePOp from its consumeVec)
+      if (separablePOp->getType() == POpType::SHUFFLE) {
+        fpdbStoreSuperPOp->setShufflePOp(separablePOp);
+        std::static_pointer_cast<shuffle::ShufflePOp>(separablePOp)->clearConsumerVec();
+      }
+
+      // need to handle group op specially
+      // (set projectColumnNames for both fpdbStoreSuperPOp and root op of the subPlan)
+      else if (separablePOp->getType() == POpType::GROUP) {
+        auto expRootOp = fpdbStoreSuperPOp->getSubPlan()->getRootPOp();
+        if (!expRootOp.has_value()) {
+          throw runtime_error(expRootOp.error());
+        }
+        (*expRootOp)->setProjectColumnNames(separablePOp->getProjectColumnNames());
+        fpdbStoreSuperPOp->setProjectColumnNames(separablePOp->getProjectColumnNames());
+      }
+    } else {
+      PrePToPTransformerUtil::connectOneToOne(producer, separablePOp);
+      connPOps.emplace_back(separablePOp);
+      addiPOps.emplace_back(separablePOp);
+    }
+  }
+
+  return {connPOps, addiPOps};
+}
+
+pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
+PrePToFPDBStorePTransformer::addSeparablePOpWithHashJoinPushdown(
+        vector<shared_ptr<PhysicalOp>> &producers,
+        vector<shared_ptr<PhysicalOp>> &separablePOps,
+        const unordered_map<string, shared_ptr<PhysicalOp>> &opMap) {
+  // TODO: support also shuffle
+  for (const auto &separablePOp: separablePOps) {
+    if (separablePOp->getType() != POpType::GROUP) {
+      PrePToPTransformerUtil::connectOneToOne(producers, separablePOps);
+      return {separablePOps, separablePOps};
+    }
+  }
+
+  // get all FPDBStoreSuperPOps
+  set<string> fpdbStoreSuperPOps;
+  for (const auto &producer: producers) {
+    if (producer->getType() == POpType::FPDB_STORE_TABLE_CACHE_LOAD) {
+      fpdbStoreSuperPOps.emplace(static_pointer_cast<fpdb_store::FPDBStoreTableCacheLoadPOp>(producer)->getProducer());
+    }
+  }
+
+  // check if the operator type is enabled for pushdown
+  if (!StoreTransformTraits::FPDBStoreStoreTransformTraits()->isSeparable(separablePOps[0]->getType())) {
+    PrePToPTransformerUtil::connectOneToOne(producers, separablePOps);
+    return {separablePOps, separablePOps};
+  }
+
+  // add separablePOps to the subPlan of FPDBStoreSuperPOps
+  uint separablePOpsOffset = 0;
+  for (const auto &fpdbStoreSuperPOpName: fpdbStoreSuperPOps) {
+    auto fpdbStoreSuperPOp =
+            static_pointer_cast<fpdb_store::FPDBStoreSuperPOp>(opMap.find(fpdbStoreSuperPOpName)->second);
+    auto expRootPOp = fpdbStoreSuperPOp->getSubPlan()->getRootPOp();
+    if (!expRootPOp.has_value()) {
+      throw runtime_error(expRootPOp.error());
+    }
+    auto rootNumProducers = (*expRootPOp)->producers().size();
+    vector<shared_ptr<PhysicalOp>> subOps = {separablePOps.begin() + separablePOpsOffset,
+                                             separablePOps.begin() + separablePOpsOffset + rootNumProducers};
+    fpdbStoreSuperPOp->getSubPlan()->addAsLast(subOps);
+    fpdbStoreSuperPOp->resetForwardConsumers();
+    separablePOpsOffset += rootNumProducers;
+  }
+
+  return {producers, {}};
 }
 
 pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>

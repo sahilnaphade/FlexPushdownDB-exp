@@ -36,9 +36,16 @@ std::string FPDBStoreTableCacheLoadPOp::getTypeString() const {
 
 void FPDBStoreTableCacheLoadPOp::consume(const std::shared_ptr<PhysicalOp> &op) {
   if (!producers_.empty()) {
-    throw std::runtime_error("FPDBStoreTableCacheLoadPOp should only have one producer.");
+    throw std::runtime_error("FPDBStoreTableCacheLoadPOp should only have one producer");
   }
   PhysicalOp::consume(op);
+}
+
+const std::string &FPDBStoreTableCacheLoadPOp::getProducer() const {
+  if (producers_.empty()) {
+    throw std::runtime_error("FPDBStoreTableCacheLoadPOp has no producer");
+  }
+  return *producers_.begin();
 }
 
 void FPDBStoreTableCacheLoadPOp::onStart() {
