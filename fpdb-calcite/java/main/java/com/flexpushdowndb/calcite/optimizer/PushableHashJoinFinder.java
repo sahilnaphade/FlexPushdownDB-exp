@@ -1,7 +1,6 @@
 package com.flexpushdowndb.calcite.optimizer;
 
 import com.flexpushdowndb.calcite.schema.TableImpl;
-import javafx.util.Pair;
 import org.apache.calcite.adapter.enumerable.EnumerableHashJoin;
 import org.apache.calcite.prepare.RelOptTableImpl;
 import org.apache.calcite.rel.RelNode;
@@ -43,9 +42,9 @@ public final class PushableHashJoinFinder {
       }
 
       // check if co-located
-      List<Pair<Integer, Integer>> joinKeys = extractJoinKeys(hashJoin.getCondition());
+      List<Map.Entry<Integer, Integer>> joinKeys = extractJoinKeys(hashJoin.getCondition());
       boolean colocated = false;
-      for (Pair<Integer, Integer> joinKey: joinKeys) {
+      for (Map.Entry<Integer, Integer> joinKey: joinKeys) {
         RelColumnOrigin leftColumnOrigin = mq.getColumnOrigin(hashJoin, joinKey.getKey());
         RelColumnOrigin rightColumnOrigin = mq.getColumnOrigin(hashJoin, joinKey.getValue());
         // check null
@@ -81,8 +80,8 @@ public final class PushableHashJoinFinder {
     return pushableHashJoins;
   }
 
-  private static List<Pair<Integer, Integer>> extractJoinKeys(RexNode joinCondition) {
-    List<Pair<Integer, Integer>> joinKeys = new ArrayList<>();
+  private static List<Map.Entry<Integer, Integer>> extractJoinKeys(RexNode joinCondition) {
+    List<Map.Entry<Integer, Integer>> joinKeys = new ArrayList<>();
     if (!(joinCondition instanceof RexCall)) {
       return joinKeys;
     }
@@ -97,7 +96,7 @@ public final class PushableHashJoinFinder {
         RexNode leftOperand = call.getOperands().get(0);
         RexNode rightOperand = call.getOperands().get(1);
         if (leftOperand instanceof RexInputRef && rightOperand instanceof RexInputRef) {
-          return new ArrayList<>(Collections.singletonList(new Pair<>(
+          return new ArrayList<>(Collections.singletonList(new AbstractMap.SimpleImmutableEntry<>(
                   ((RexInputRef) leftOperand).getIndex(),
                   ((RexInputRef) rightOperand).getIndex())));
         } else {
