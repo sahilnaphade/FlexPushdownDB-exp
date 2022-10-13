@@ -83,7 +83,7 @@ add_executable(fpdb-main-bench
 target_include_directories(fpdb-main-bench PRIVATE test-base)
 
 target_link_libraries(fpdb-main-bench PRIVATE fpdb-main)
-target_link_libraries(fpdb-main-bench PRIVATE fpdb-store-client-static)
+target_link_libraries(fpdb-main-bench PRIVATE fpdb-store-server-static)
 target_link_libraries(fpdb-main-bench PRIVATE doctest::doctest)
 
 add_dependencies(fpdb-main-bench resources)

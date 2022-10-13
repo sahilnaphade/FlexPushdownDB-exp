@@ -1003,7 +1003,7 @@ TEST_SUITE ("tpch-sf0.01-1-node-hash-part-hash-join-pushdown" * doctest::skip(SK
 
 // Enable co-located hash join pushdown first
 // for 'tpch-sf0.01-1-node-hash-part', 'lineitem' and 'orders' are co-located at 'l_orderkey = o.o_orderkey'
-TEST_CASE ("tpch-sf0.01-1-node-hash-part-hash-join-pushable" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("tpch-sf0.01-1-node-hash-part-hash-join-pushable-04" * doctest::skip(false || SKIP_SUITE)) {
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01-1-node-hash-part/parquet/",
                                             {"tpch/original/04.sql"},
@@ -1016,7 +1016,7 @@ TEST_CASE ("tpch-sf0.01-1-node-hash-part-hash-join-pushable" * doctest::skip(fal
 
 // Enable co-located hash join pushdown first
 // for 'tpch-sf0.01-1-node-hash-part', 'lineitem' and 'orders' are co-located at 'l_orderkey = o.o_orderkey'
-TEST_CASE ("tpch-sf0.01-1-node-hash-part-hash-join-not-pushable" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("tpch-sf0.01-1-node-hash-part-hash-join-not-pushable-19" * doctest::skip(false || SKIP_SUITE)) {
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01-1-node-hash-part/parquet/",
                                             {"tpch/original/19.sql"},
@@ -1030,7 +1030,7 @@ TEST_CASE ("tpch-sf0.01-1-node-hash-part-hash-join-not-pushable" * doctest::skip
 // Enable co-located hash join pushdown first
 // for 'tpch-sf0.01-1-node-hash-part', 'lineitem' and 'orders' are co-located at 'l_orderkey = o.o_orderkey'
 // just for a pullup baseline to check the hash-join pullup part from "PrePToFPDBStorePTransformer" is correct
-TEST_CASE ("tpch-sf0.01-1-node-hash-part-hash-join-pullup" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("tpch-sf0.01-1-node-hash-part-hash-join-pullup-04" * doctest::skip(false || SKIP_SUITE)) {
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01-1-node-hash-part/parquet/",
                                             {"tpch/original/04.sql"},
