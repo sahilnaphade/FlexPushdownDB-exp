@@ -52,7 +52,7 @@ target_link_libraries(fpdb-store-server-file fmt::fmt)
 #-----------------------------------------------------------------------------------------------------------------------
 
 add_library(fpdb-store-server-flight-api STATIC
-        include/fpdb/store/server/flight/Util.hpp
+        src/flight/Util.cpp include/fpdb/store/server/flight/Util.hpp
         src/flight/CmdType.cpp include/fpdb/store/server/flight/CmdType.hpp
         src/flight/CmdObject.cpp include/fpdb/store/server/flight/CmdObject.hpp
         src/flight/SelectObjectContentCmd.cpp include/fpdb/store/server/flight/SelectObjectContentCmd.hpp
