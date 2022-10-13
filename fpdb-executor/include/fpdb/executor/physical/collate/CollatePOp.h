@@ -71,7 +71,9 @@ public:
                                f.field("producers", op.producers_),
                                f.field("consumers", op.consumers_),
                                f.field("consumerToBloomFilterInfo", op.consumerToBloomFilterInfo_),
-                               f.field("isSeparated", op.isSeparated_));
+                               f.field("isSeparated", op.isSeparated_),
+                               f.field("forward", op.forward_),
+                               f.field("forwardConsumers", op.forwardConsumers_));
   }
 };
 

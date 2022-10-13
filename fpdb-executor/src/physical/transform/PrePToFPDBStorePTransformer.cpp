@@ -333,7 +333,7 @@ PrePToFPDBStorePTransformer::addSeparablePOpWithHashJoinPushdown(
 
     // need to handle shuffle op specially (remove collatePOp from its consumeVec and add correct ones)
     if (separablePOps[0]->getType() == POpType::SHUFFLE) {
-      for (const auto &shufflePOp: separablePOps) {
+      for (const auto &shufflePOp: subOps) {
         shufflePOp->setSeparated(true);
         const auto &consumers = fpdbStoreSuperPOp->consumers();
         std::static_pointer_cast<shuffle::ShufflePOp>(shufflePOp)
