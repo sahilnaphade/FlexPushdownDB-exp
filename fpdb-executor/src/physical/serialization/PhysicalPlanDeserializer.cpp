@@ -552,6 +552,11 @@ PhysicalPlanDeserializer::deserializeCollatePOp(const ::nlohmann::json &jObj) {
   }
   auto forwardConsumers = jObj["forwardConsumers"].get<std::unordered_map<std::string, std::string>>();
 
+  if (!jObj.contains("endConsumers")) {
+    return tl::make_unexpected(fmt::format("EndConsumers not specified in CollatePOp JSON '{}'", jObj));
+  }
+  auto endConsumers = jObj["endConsumers"].get<std::vector<std::string>>();
+
   auto collatePOp = std::make_shared<fpdb::executor::physical::collate::CollatePOp>(name,
                                                                                     projectColumnNames,
                                                                                     0);
@@ -561,6 +566,7 @@ PhysicalPlanDeserializer::deserializeCollatePOp(const ::nlohmann::json &jObj) {
   collatePOp->setConsumerToBloomFilterInfo(consumerToBloomFilterInfo);
   collatePOp->setForward(forward);
   collatePOp->setForwardConsumers(forwardConsumers);
+  collatePOp->setEndConsumers(endConsumers);
 
   return collatePOp;
 }

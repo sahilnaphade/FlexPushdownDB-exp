@@ -67,6 +67,7 @@ add_library(fpdb-executor STATIC
         src/physical/cache/CacheHelper.cpp include/fpdb/executor/physical/cache/CacheHelper.h
         src/physical/collate/CollatePOp.cpp include/fpdb/executor/physical/collate/CollatePOp.h
         src/physical/collate/CollatePOp2.cpp include/fpdb/executor/physical/collate/CollatePOp2.h
+        src/physical/collect/CollectPOp.cpp include/fpdb/executor/physical/collect/CollectPOp.h
         src/physical/file/FileScanAbstractPOp.cpp include/fpdb/executor/physical/file/FileScanAbstractPOp.h
         src/physical/file/LocalFileScanPOp.cpp include/fpdb/executor/physical/file/LocalFileScanPOp.h
         src/physical/file/RemoteFileScanPOp.cpp include/fpdb/executor/physical/file/RemoteFileScanPOp.h

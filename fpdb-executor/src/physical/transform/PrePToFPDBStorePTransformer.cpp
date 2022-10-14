@@ -15,6 +15,7 @@
 #include <fpdb/executor/physical/aggregate/AggregatePOp.h>
 #include <fpdb/executor/physical/collate/CollatePOp.h>
 #include <fpdb/executor/physical/cache/CacheLoadPOp.h>
+#include <fpdb/executor/physical/collect/CollectPOp.h>
 #include <fpdb/executor/physical/merge/MergePOp.h>
 #include <fpdb/executor/physical/shuffle/ShufflePOp.h>
 #include <fpdb/executor/physical/join/hashjoin/HashJoinArrowPOp.h>
@@ -219,8 +220,11 @@ pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>> PrePToFPDBS
 std::tuple<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>, bool>
 PrePToFPDBStorePTransformer::addSeparablePOp(vector<shared_ptr<PhysicalOp>> &producers,
                                              vector<shared_ptr<PhysicalOp>> &separablePOps,
-                                             const unordered_map<string, shared_ptr<PhysicalOp>> &opMap,
-                                             const shared_ptr<Mode> &mode) {
+                                             const shared_ptr<Mode> &mode,
+                                             unordered_map<string, shared_ptr<PhysicalOp>>* opMap,
+                                             int prePOpId,
+                                             int numComputeNodes,
+                                             int computeParallelDegree) {
   // check mode
   if (mode->id() == ModeId::PULL_UP || mode->id() == ModeId::CACHING_ONLY) {
     PrePToPTransformerUtil::connectOneToOne(producers, separablePOps);
@@ -243,7 +247,8 @@ PrePToFPDBStorePTransformer::addSeparablePOp(vector<shared_ptr<PhysicalOp>> &pro
 
   // do accordingly
   if (withHashJoinPushdown) {
-    const auto &res = addSeparablePOpWithHashJoinPushdown(producers, separablePOps, opMap);
+    const auto &res = addSeparablePOpWithHashJoinPushdown(producers, separablePOps,
+                                                          opMap, prePOpId, numComputeNodes, computeParallelDegree);
     return {res.first, res.second, true};
   } else {
     const auto &res = addSeparablePOpNoHashJoinPushdown(producers, separablePOps);
@@ -299,15 +304,22 @@ PrePToFPDBStorePTransformer::addSeparablePOpNoHashJoinPushdown(vector<shared_ptr
 }
 
 pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
-PrePToFPDBStorePTransformer::addSeparablePOpWithHashJoinPushdown(
-        vector<shared_ptr<PhysicalOp>> &producers,
-        vector<shared_ptr<PhysicalOp>> &separablePOps,
-        const unordered_map<string, shared_ptr<PhysicalOp>> &opMap) {
-  // get all FPDBStoreSuperPOps
-  set<string> fpdbStoreSuperPOps;
+PrePToFPDBStorePTransformer::addSeparablePOpWithHashJoinPushdown(vector<shared_ptr<PhysicalOp>> &producers,
+                                                                 vector<shared_ptr<PhysicalOp>> &separablePOps,
+                                                                 unordered_map<string, shared_ptr<PhysicalOp>>* opMap,
+                                                                 int prePOpId,
+                                                                 int numComputeNodes,
+                                                                 int computeParallelDegree) {
+  // get all FPDBStoreSuperPOps in order
+  set<string> fpdbStoreSuperPOpNameSet;
+  vector<string> fpdbStoreSuperPOpNames;
   for (const auto &producer: producers) {
     if (producer->getType() == POpType::FPDB_STORE_TABLE_CACHE_LOAD) {
-      fpdbStoreSuperPOps.emplace(static_pointer_cast<fpdb_store::FPDBStoreTableCacheLoadPOp>(producer)->getProducer());
+      auto fpdbStoreSuperPOpName = static_pointer_cast<fpdb_store::FPDBStoreTableCacheLoadPOp>(producer)->getProducer();
+      if (fpdbStoreSuperPOpNameSet.find(fpdbStoreSuperPOpName) == fpdbStoreSuperPOpNameSet.end()) {
+        fpdbStoreSuperPOpNames.emplace_back(fpdbStoreSuperPOpName);
+        fpdbStoreSuperPOpNameSet.emplace(fpdbStoreSuperPOpName);
+      }
     }
   }
 
@@ -317,34 +329,83 @@ PrePToFPDBStorePTransformer::addSeparablePOpWithHashJoinPushdown(
     return {separablePOps, separablePOps};
   }
 
-  // add separablePOps to the subPlan of FPDBStoreSuperPOps
-  uint separablePOpsOffset = 0;
-  for (const auto &fpdbStoreSuperPOpName: fpdbStoreSuperPOps) {
-    auto fpdbStoreSuperPOp =
-            static_pointer_cast<fpdb_store::FPDBStoreSuperPOp>(opMap.find(fpdbStoreSuperPOpName)->second);
-    auto expRootPOp = fpdbStoreSuperPOp->getSubPlan()->getRootPOp();
-    if (!expRootPOp.has_value()) {
-      throw runtime_error(expRootPOp.error());
+  // add separablePOps to the subPlan of FPDBStoreSuperPOps, need to trait shuffle specially
+  if (separablePOps[0]->getType() == POpType::SHUFFLE) {
+    // remove "producers" from opMap because shuffle needs different number of FPDBStoreTableCacheLoadPOps
+    for (const auto &producer: producers) {
+      opMap->erase(producer->name());
     }
-    auto rootNumProducers = (*expRootPOp)->producers().size();
-    vector<shared_ptr<PhysicalOp>> subOps = {separablePOps.begin() + separablePOpsOffset,
-                                             separablePOps.begin() + separablePOpsOffset + rootNumProducers};
-    fpdbStoreSuperPOp->getSubPlan()->addAsLasts(subOps);
 
-    // need to handle shuffle op specially (remove collatePOp from its consumeVec and add correct ones)
-    if (separablePOps[0]->getType() == POpType::SHUFFLE) {
+    // CollectPOps to combine tables from multiple FPDBStoreTableCacheLoadPOps that belong to the same shuffle piece
+    vector<shared_ptr<PhysicalOp>> collectPOps;
+    for (int i = 0; i < computeParallelDegree * numComputeNodes; ++i) {
+      collectPOps.emplace_back(make_shared<collect::CollectPOp>(fmt::format("Collect[{}]-{}", prePOpId, i),
+                                                                vector<string>{},  // never used
+                                                                i % numComputeNodes));
+    }
+
+    // new FPDBStoreTableCacheLoadPOps and add separablePOPs to FPDBStoreSuperPOps,
+    vector<shared_ptr<PhysicalOp>> newFPDBStoreTableCacheLoadPOps;
+    uint separablePOpsOffset = 0;
+    for (uint i = 0; i < fpdbStoreSuperPOpNames.size(); ++i) {
+      auto fpdbStoreSuperPOp = opMap->find(fpdbStoreSuperPOpNames[i])->second;
+      // clear consumers of fpdbStoreSuperPOp first
+      fpdbStoreSuperPOp->setConsumers({});
+      // make new FPDBStoreTableCacheLoadPOps
+      vector<string> newFPDBStoreTableCacheLoadPOpNamesPerStoreNode;
+      for (int j = 0; j < computeParallelDegree * numComputeNodes; ++j) {
+        shared_ptr<PhysicalOp> newFPDBStoreTableCacheLoadPOp = make_shared<fpdb_store::FPDBStoreTableCacheLoadPOp>(
+                fmt::format("FPDBStoreTableCacheLoad[{}]-node-{}-{}", prePOpId, i, j),
+                vector<string>{},   // never used
+                j % numComputeNodes);
+        newFPDBStoreTableCacheLoadPOps.emplace_back(newFPDBStoreTableCacheLoadPOp);
+        newFPDBStoreTableCacheLoadPOpNamesPerStoreNode.emplace_back(newFPDBStoreTableCacheLoadPOp->name());
+        // connect FPDBStoreSuperPOp to this
+        PrePToPTransformerUtil::connectOneToOne(fpdbStoreSuperPOp, newFPDBStoreTableCacheLoadPOp);
+        // connect this to CollectPOp
+        PrePToPTransformerUtil::connectOneToOne(newFPDBStoreTableCacheLoadPOp, collectPOps[j]);
+      }
+
+      // add separablePOps to FPDBStoreSuperPOps
+      auto typedFPDBStoreSuperPOp = static_pointer_cast<fpdb_store::FPDBStoreSuperPOp>(fpdbStoreSuperPOp);
+      auto expRootPOp = typedFPDBStoreSuperPOp->getSubPlan()->getRootPOp();
+      if (!expRootPOp.has_value()) {
+        throw runtime_error(expRootPOp.error());
+      }
+      static_pointer_cast<collate::CollatePOp>(*expRootPOp)
+              ->setEndConsumers(newFPDBStoreTableCacheLoadPOpNamesPerStoreNode);
+      auto rootNumProducers = (*expRootPOp)->producers().size();
+      vector<shared_ptr<PhysicalOp>> subOps = {separablePOps.begin() + separablePOpsOffset,
+                                               separablePOps.begin() + separablePOpsOffset + rootNumProducers};
+      typedFPDBStoreSuperPOp->getSubPlan()->addAsLasts(subOps);
       for (const auto &shufflePOp: subOps) {
         shufflePOp->setSeparated(true);
-        const auto &consumers = fpdbStoreSuperPOp->consumers();
         std::static_pointer_cast<shuffle::ShufflePOp>(shufflePOp)
-                ->setConsumerVec(vector<string>{consumers.begin(), consumers.end()});
+                ->setConsumerVec(newFPDBStoreTableCacheLoadPOpNamesPerStoreNode);
       }
+      separablePOpsOffset += rootNumProducers;
     }
-
-    separablePOpsOffset += rootNumProducers;
+    auto addiPOps = newFPDBStoreTableCacheLoadPOps;
+    addiPOps.insert(addiPOps.end(), collectPOps.begin(), collectPOps.end());
+    return {collectPOps, addiPOps};
+  } else {
+    // regular case (when separablePOps are not shuffle)
+    uint separablePOpsOffset = 0;
+    for (const auto &fpdbStoreSuperPOpName: fpdbStoreSuperPOpNames) {
+      auto fpdbStoreSuperPOp =
+              static_pointer_cast<fpdb_store::FPDBStoreSuperPOp>(opMap->find(fpdbStoreSuperPOpName)->second);
+      auto expRootPOp = fpdbStoreSuperPOp->getSubPlan()->getRootPOp();
+      if (!expRootPOp.has_value()) {
+        throw runtime_error(expRootPOp.error());
+      }
+      auto rootNumProducers = (*expRootPOp)->producers().size();
+      vector<shared_ptr<PhysicalOp>> subOps = {separablePOps.begin() + separablePOpsOffset,
+                                               separablePOps.begin() + separablePOpsOffset + rootNumProducers};
+      fpdbStoreSuperPOp->getSubPlan()->addAsLasts(subOps);
+      separablePOpsOffset += rootNumProducers;
+    }
+    return {producers, {}};
   }
-
-  return {producers, {}};
 }
 
 pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>

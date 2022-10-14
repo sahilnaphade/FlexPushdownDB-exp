@@ -54,8 +54,11 @@ public:
   static std::tuple<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>, bool>
   addSeparablePOp(vector<shared_ptr<PhysicalOp>> &producers,
                   vector<shared_ptr<PhysicalOp>> &separablePOps,
-                  const unordered_map<string, shared_ptr<PhysicalOp>> &opMap,
-                  const shared_ptr<Mode> &mode);
+                  const shared_ptr<Mode> &mode,
+                  unordered_map<string, shared_ptr<PhysicalOp>>* opMap,
+                  int prePOpId = 0,
+                  int numComputeNodes = 0,
+                  int computeParallelDegree = 0);
 
   /**
    * The case when there is no hash-join pushdown, which is the regular case
@@ -72,7 +75,10 @@ public:
   static pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>>
   addSeparablePOpWithHashJoinPushdown(vector<shared_ptr<PhysicalOp>> &producers,
                                       vector<shared_ptr<PhysicalOp>> &separablePOps,
-                                      const unordered_map<string, shared_ptr<PhysicalOp>> &opMap);
+                                      unordered_map<string, shared_ptr<PhysicalOp>>* opMap,
+                                      int prePOpId,
+                                      int numComputeNodes,
+                                      int computeParallelDegree);
 
 private:
   PrePToFPDBStorePTransformer(const shared_ptr<SeparableSuperPrePOp> &separableSuperPrePOp,

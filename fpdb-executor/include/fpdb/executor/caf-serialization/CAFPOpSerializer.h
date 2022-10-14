@@ -9,6 +9,7 @@
 #include <fpdb/executor/physical/aggregate/AggregatePOp.h>
 #include <fpdb/executor/physical/cache/CacheLoadPOp.h>
 #include <fpdb/executor/physical/collate/CollatePOp.h>
+#include <fpdb/executor/physical/collect/CollectPOp.h>
 #include <fpdb/executor/physical/file/LocalFileScanPOp.h>
 #include <fpdb/executor/physical/file/RemoteFileScanPOp.h>
 #include <fpdb/executor/physical/filter/FilterPOp.h>
@@ -43,6 +44,7 @@ CAF_ADD_TYPE_ID(POp, (POpPtr))
 CAF_ADD_TYPE_ID(POp, (aggregate::AggregatePOp))
 CAF_ADD_TYPE_ID(POp, (cache::CacheLoadPOp))
 CAF_ADD_TYPE_ID(POp, (fpdb::executor::physical::collate::CollatePOp))
+CAF_ADD_TYPE_ID(POp, (collect::CollectPOp))
 CAF_ADD_TYPE_ID(POp, (file::LocalFileScanPOp))
 CAF_ADD_TYPE_ID(POp, (file::RemoteFileScanPOp))
 CAF_ADD_TYPE_ID(POp, (filter::FilterPOp))
@@ -81,6 +83,7 @@ struct variant_inspector_traits<POpPtr> {
           type_id_v<aggregate::AggregatePOp>,
           type_id_v<cache::CacheLoadPOp>,
           type_id_v<fpdb::executor::physical::collate::CollatePOp>,
+          type_id_v<collect::CollectPOp>,
           type_id_v<file::LocalFileScanPOp>,
           type_id_v<file::RemoteFileScanPOp>,
           type_id_v<filter::FilterPOp>,
@@ -115,48 +118,50 @@ struct variant_inspector_traits<POpPtr> {
       return 2;
     else if (x->getType() == POpType::COLLATE)
       return 3;
-    else if (x->getType() == POpType::LOCAL_FILE_SCAN)
+    else if (x->getType() == POpType::COLLECT)
       return 4;
-    else if (x->getType() == POpType::REMOTE_FILE_SCAN)
+    else if (x->getType() == POpType::LOCAL_FILE_SCAN)
       return 5;
-    else if (x->getType() == POpType::FILTER)
+    else if (x->getType() == POpType::REMOTE_FILE_SCAN)
       return 6;
-    else if (x->getType() == POpType::GROUP)
+    else if (x->getType() == POpType::FILTER)
       return 7;
-    else if (x->getType() == POpType::HASH_JOIN_BUILD)
+    else if (x->getType() == POpType::GROUP)
       return 8;
-    else if (x->getType() == POpType::HASH_JOIN_PROBE)
+    else if (x->getType() == POpType::HASH_JOIN_BUILD)
       return 9;
-    else if (x->getType() == POpType::HASH_JOIN_ARROW)
+    else if (x->getType() == POpType::HASH_JOIN_PROBE)
       return 10;
-    else if (x->getType() == POpType::NESTED_LOOP_JOIN)
+    else if (x->getType() == POpType::HASH_JOIN_ARROW)
       return 11;
-    else if (x->getType() == POpType::LIMIT_SORT)
+    else if (x->getType() == POpType::NESTED_LOOP_JOIN)
       return 12;
-    else if (x->getType() == POpType::MERGE)
+    else if (x->getType() == POpType::LIMIT_SORT)
       return 13;
-    else if (x->getType() == POpType::PROJECT)
+    else if (x->getType() == POpType::MERGE)
       return 14;
-    else if (x->getType() == POpType::S3_GET)
+    else if (x->getType() == POpType::PROJECT)
       return 15;
-    else if (x->getType() == POpType::S3_SELECT)
+    else if (x->getType() == POpType::S3_GET)
       return 16;
-    else if (x->getType() == POpType::SHUFFLE)
+    else if (x->getType() == POpType::S3_SELECT)
       return 17;
-    else if (x->getType() == POpType::SORT)
+    else if (x->getType() == POpType::SHUFFLE)
       return 18;
-    else if (x->getType() == POpType::SPLIT)
+    else if (x->getType() == POpType::SORT)
       return 19;
-    else if (x->getType() == POpType::BLOOM_FILTER_CREATE)
+    else if (x->getType() == POpType::SPLIT)
       return 20;
-    else if (x->getType() == POpType::BLOOM_FILTER_USE)
+    else if (x->getType() == POpType::BLOOM_FILTER_CREATE)
       return 21;
-    else if (x->getType() == POpType::FPDB_STORE_FILE_SCAN)
+    else if (x->getType() == POpType::BLOOM_FILTER_USE)
       return 22;
-    else if (x->getType() == POpType::FPDB_STORE_SUPER)
+    else if (x->getType() == POpType::FPDB_STORE_FILE_SCAN)
       return 23;
-    else if (x->getType() == POpType::FPDB_STORE_TABLE_CACHE_LOAD)
+    else if (x->getType() == POpType::FPDB_STORE_SUPER)
       return 24;
+    else if (x->getType() == POpType::FPDB_STORE_TABLE_CACHE_LOAD)
+      return 25;
     else
       return -1;
   }
@@ -172,48 +177,50 @@ struct variant_inspector_traits<POpPtr> {
       case 3:
         return f(dynamic_cast<fpdb::executor::physical::collate::CollatePOp &>(*x));
       case 4:
-        return f(dynamic_cast<file::LocalFileScanPOp &>(*x));
+        return f(dynamic_cast<collect::CollectPOp &>(*x));
       case 5:
-        return f(dynamic_cast<file::RemoteFileScanPOp &>(*x));
+        return f(dynamic_cast<file::LocalFileScanPOp &>(*x));
       case 6:
-        return f(dynamic_cast<filter::FilterPOp &>(*x));
+        return f(dynamic_cast<file::RemoteFileScanPOp &>(*x));
       case 7:
-        return f(dynamic_cast<fpdb::executor::physical::group::GroupPOp &>(*x));
+        return f(dynamic_cast<filter::FilterPOp &>(*x));
       case 8:
-        return f(dynamic_cast<join::HashJoinBuildPOp &>(*x));
+        return f(dynamic_cast<fpdb::executor::physical::group::GroupPOp &>(*x));
       case 9:
-        return f(dynamic_cast<join::HashJoinProbePOp &>(*x));
+        return f(dynamic_cast<join::HashJoinBuildPOp &>(*x));
       case 10:
-        return f(dynamic_cast<join::HashJoinArrowPOp &>(*x));
+        return f(dynamic_cast<join::HashJoinProbePOp &>(*x));
       case 11:
-        return f(dynamic_cast<join::NestedLoopJoinPOp &>(*x));
+        return f(dynamic_cast<join::HashJoinArrowPOp &>(*x));
       case 12:
-        return f(dynamic_cast<limitsort::LimitSortPOp &>(*x));
+        return f(dynamic_cast<join::NestedLoopJoinPOp &>(*x));
       case 13:
-        return f(dynamic_cast<merge::MergePOp &>(*x));
+        return f(dynamic_cast<limitsort::LimitSortPOp &>(*x));
       case 14:
-        return f(dynamic_cast<project::ProjectPOp &>(*x));
+        return f(dynamic_cast<merge::MergePOp &>(*x));
       case 15:
-        return f(dynamic_cast<fpdb::executor::physical::s3::S3GetPOp &>(*x));
-//      case 16:
-//        return f(dynamic_cast<fpdb::executor::physical::s3::S3SelectPOp &>(*x));
+        return f(dynamic_cast<project::ProjectPOp &>(*x));
       case 16:
-        return f(dynamic_cast<fpdb::executor::physical::s3::SelectPOp &>(*x));
+        return f(dynamic_cast<fpdb::executor::physical::s3::S3GetPOp &>(*x));
+//      case 17:
+//        return f(dynamic_cast<fpdb::executor::physical::s3::S3SelectPOp &>(*x));
       case 17:
-        return f(dynamic_cast<shuffle::ShufflePOp &>(*x));
+        return f(dynamic_cast<fpdb::executor::physical::s3::SelectPOp &>(*x));
       case 18:
-        return f(dynamic_cast<sort::SortPOp &>(*x));
+        return f(dynamic_cast<shuffle::ShufflePOp &>(*x));
       case 19:
-        return f(dynamic_cast<split::SplitPOp &>(*x));
+        return f(dynamic_cast<sort::SortPOp &>(*x));
       case 20:
-        return f(dynamic_cast<bloomfilter::BloomFilterCreatePOp &>(*x));
+        return f(dynamic_cast<split::SplitPOp &>(*x));
       case 21:
-        return f(dynamic_cast<bloomfilter::BloomFilterUsePOp &>(*x));
+        return f(dynamic_cast<bloomfilter::BloomFilterCreatePOp &>(*x));
       case 22:
-        return f(dynamic_cast<fpdb_store::FPDBStoreFileScanPOp &>(*x));
+        return f(dynamic_cast<bloomfilter::BloomFilterUsePOp &>(*x));
       case 23:
-        return f(dynamic_cast<fpdb_store::FPDBStoreSuperPOp &>(*x));
+        return f(dynamic_cast<fpdb_store::FPDBStoreFileScanPOp &>(*x));
       case 24:
+        return f(dynamic_cast<fpdb_store::FPDBStoreSuperPOp &>(*x));
+      case 25:
         return f(dynamic_cast<fpdb_store::FPDBStoreTableCacheLoadPOp &>(*x));
       default: {
         none_t dummy;
@@ -255,6 +262,11 @@ struct variant_inspector_traits<POpPtr> {
       }
       case type_id_v<fpdb::executor::physical::collate::CollatePOp>: {
         auto tmp = fpdb::executor::physical::collate::CollatePOp{};
+        continuation(tmp);
+        return true;
+      }
+      case type_id_v<collect::CollectPOp>: {
+        auto tmp = collect::CollectPOp{};
         continuation(tmp);
         return true;
       }

@@ -188,6 +188,7 @@ PhysicalPlanSerializer::serializeCollatePOp(const std::shared_ptr<collate::Colla
 
   jObj.emplace("forward", collatePOp->isForward());
   jObj.emplace("forwardConsumers", collatePOp->getForwardConsumers());
+  jObj.emplace("endConsumers", collatePOp->getEndConsumers());
 
   return jObj;
 }

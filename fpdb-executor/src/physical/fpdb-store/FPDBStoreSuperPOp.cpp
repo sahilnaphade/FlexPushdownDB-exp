@@ -105,13 +105,18 @@ void FPDBStoreSuperPOp::setForwardConsumers(const std::vector<std::shared_ptr<Ph
     throw std::runtime_error(fmt::format("num producers ({}) and num forward consumers ({}) mismatch on \"set\"",
                              producers.size(), consumers.size()));
   }
+  // set both forwardConsumers and endConsumers for root
+  std::vector<std::string> endConsumers;
   std::unordered_map<std::string, std::string> forwardConsumerMap;
   int i = 0;
   for (const auto &producer: producers) {
-    forwardConsumerMap[producer] = consumers[i++]->name();
+    const auto &consumer = consumers[i++]->name();
+    forwardConsumerMap[producer] = consumer;
+    endConsumers.emplace_back(consumer);
   }
   collatePOp->setForward(true);
   collatePOp->setForwardConsumers(forwardConsumerMap);
+  collatePOp->setEndConsumers(endConsumers);
 }
 
 void FPDBStoreSuperPOp::onStart() {

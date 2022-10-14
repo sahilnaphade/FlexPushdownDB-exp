@@ -44,12 +44,20 @@ const std::unordered_map<std::string, std::string> &CollatePOp::getForwardConsum
   return forwardConsumers_;
 }
 
+const std::vector<std::string> &CollatePOp::getEndConsumers() const {
+  return endConsumers_;
+}
+
 void CollatePOp::setForward(bool forward) {
   forward_ = forward;
 }
 
 void CollatePOp::setForwardConsumers(const std::unordered_map<std::string, std::string> &forwardConsumers) {
   forwardConsumers_ = forwardConsumers;
+}
+
+void CollatePOp::setEndConsumers(const std::vector<std::string> &endConsumers) {
+  endConsumers_ = endConsumers;
 }
 
 void CollatePOp::onStart() {
@@ -76,9 +84,9 @@ void CollatePOp::onComplete(const fpdb::executor::message::CompleteMessage &) {
         ctx()->notifyError(expEndTable.error());
         return;
       }
-      for (const auto &forwardConsumerIt: forwardConsumers_) {
+      for (const auto &endConsumer: endConsumers_) {
         std::shared_ptr<Message> tupleSetBufferMessage = std::make_shared<TupleSetBufferMessage>(
-                TupleSet::make(*expEndTable), forwardConsumerIt.second, name_);
+                TupleSet::make(*expEndTable), endConsumer, name_);
         ctx()->notifyRoot(tupleSetBufferMessage);
       }
     }
