@@ -106,4 +106,5 @@ Compiler needed:
 ## To Do
 ### Refactoring
 - Use a single flight client instead of creating one for each request
+- Check if file readers are too slow?
   
