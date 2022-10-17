@@ -32,7 +32,8 @@ public:
   Execution(long queryId,
             const shared_ptr<::caf::actor_system> &actorSystem,
             const vector<::caf::node_id> &nodes,
-            const ::caf::actor &segmentCacheActor,
+            const ::caf::actor &localSegmentCacheActor,
+            const vector<::caf::actor> &remoteSegmentCacheActors,
             const shared_ptr<PhysicalPlan> &physicalPlan,
             bool isDistributed);
   virtual ~Execution();
@@ -66,7 +67,8 @@ protected:
   shared_ptr<::caf::actor_system> actorSystem_;
   vector<::caf::node_id> nodes_;
   shared_ptr<::caf::scoped_actor> rootActor_;
-  ::caf::actor segmentCacheActor_;
+  ::caf::actor localSegmentCacheActor_;             // used in single-node execution
+  vector<::caf::actor> remoteSegmentCacheActors_;   // used in distributed execution
   shared_ptr<PhysicalPlan> physicalPlan_;
   bool isDistributed_;
 

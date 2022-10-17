@@ -47,7 +47,8 @@ public:
                                f.field("consumerToBloomFilterInfo", op.consumerToBloomFilterInfo_),
                                f.field("isSeparated", op.isSeparated_),
                                f.field("kernel", op.kernel_),
-                               f.field("scanOnStart", op.scanOnStart_));
+                               f.field("scanOnStart", op.scanOnStart_),
+                               f.field("toCache", op.toCache_));
   }
 };
 

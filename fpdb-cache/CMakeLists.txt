@@ -16,7 +16,8 @@ add_library(fpdb-cache STATIC
         src/policy/LFUSCachingPolicy.cpp include/fpdb/cache/policy/LFUSCachingPolicy.h
         src/policy/WLFUCachingPolicy.cpp include/fpdb/cache/policy/WLFUCachingPolicy.h
         src/policy/BeladyCachingPolicyHelper.cpp include/fpdb/cache/policy/BeladyCachingPolicyHelper.h
-        src/policy/BeladyCachingPolicy.cpp include/fpdb/cache/policy/BeladyCachingPolicy.h)
+        src/policy/BeladyCachingPolicy.cpp include/fpdb/cache/policy/BeladyCachingPolicy.h
+        include/fpdb/cache/caf-serialization/CAFCachingPolicySerializer.h)
 
 target_include_directories(fpdb-cache PUBLIC include)
 

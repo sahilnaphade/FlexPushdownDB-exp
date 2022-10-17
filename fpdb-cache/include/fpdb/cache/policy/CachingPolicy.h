@@ -34,6 +34,9 @@ public:
                 size_t maxSize,
                 std::shared_ptr<CatalogueEntry> catalogueEntry,
                 bool readSegmentSize);
+  CachingPolicy() = default;
+  CachingPolicy(const CachingPolicy&) = default;
+  CachingPolicy& operator=(const CachingPolicy&) = default;
 
   virtual ~CachingPolicy() = default;
 

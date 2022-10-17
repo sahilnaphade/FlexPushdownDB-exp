@@ -11,7 +11,7 @@ FPDBStoreExecution::FPDBStoreExecution(long queryId,
                                        const std::shared_ptr<PhysicalPlan> &physicalPlan,
                                        TableCallBack tableCallBack,
                                        BitmapCallBack bitmapCallBack):
-  Execution(queryId, actorSystem, {}, nullptr, physicalPlan, false),
+  Execution(queryId, actorSystem, {}, nullptr, {}, physicalPlan, false),
   tableCallBack_(std::move(tableCallBack)),
   bitmapCallBack_(std::move(bitmapCallBack)) {}
 

@@ -43,6 +43,8 @@ public:
   inline static constexpr ::caf::type_id_t ObjStoreConnector_first_custom_type_id = ::caf::first_custom_type_id + 2800;
   inline static constexpr ::caf::type_id_t GroupAbstractKernel_first_custom_type_id = ::caf::first_custom_type_id + 2900;
   inline static constexpr ::caf::type_id_t FPDBStoreBloomFilterUseInfo_first_custom_type_id = ::caf::first_custom_type_id + 3000;
+  inline static constexpr ::caf::type_id_t Mode_first_custom_type_id = ::caf::first_custom_type_id + 3100;
+  inline static constexpr ::caf::type_id_t CachingPolicy_first_custom_type_id = ::caf::first_custom_type_id + 3200;
 
 };
 

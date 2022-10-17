@@ -20,6 +20,9 @@ class WLFUCachingPolicy : public CachingPolicy {
 public:
   explicit WLFUCachingPolicy(size_t maxSize,
                              std::shared_ptr<CatalogueEntry> catalogueEntry);
+  WLFUCachingPolicy() = default;
+  WLFUCachingPolicy(const WLFUCachingPolicy&) = default;
+  WLFUCachingPolicy& operator=(const WLFUCachingPolicy&) = default;
 
   void onLoad(const std::shared_ptr<SegmentKey> &key) override;
   void onWeight(const std::unordered_map<std::shared_ptr<SegmentKey>, double> &weightMap);
@@ -55,6 +58,16 @@ private:
    * For WFBR, erasing only erases the element in keyInCache_, but not in keySet_ to keep history hitNum
    */
   void erase(const std::shared_ptr<SegmentKey> &key);
+
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, WLFUCachingPolicy& policy) {
+    return f.object(policy).fields(f.field("type", policy.type_),
+                                   f.field("maxSize", policy.maxSize_),
+                                   f.field("freeSize", policy.freeSize_),
+                                   f.field("segmentSizeMap", policy.segmentSizeMap_));
+  }
 };
 
 }

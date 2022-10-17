@@ -57,7 +57,8 @@ public:
       kernel.schema_ = ArrowSerializer::bytes_to_schema(bytes);
       return true;
     };
-    return f.object(kernel).fields(f.field("format", kernel.format_),
+    return f.object(kernel).fields(f.field("type", kernel.type_),
+                                   f.field("format", kernel.format_),
                                    f.field("schema", schemaToBytes, schemaFromBytes),
                                    f.field("fileSize", kernel.fileSize_),
                                    f.field("byteRange", kernel.byteRange_),

@@ -50,8 +50,8 @@ class SegmentCacheActor {
 
 public:
   static behavior makeBehaviour(stateful_actor<SegmentCacheActorState> *self,
-                                const std::optional<std::shared_ptr<CachingPolicy>> &cachingPolicy,
-                                const std::shared_ptr<Mode> &mode);
+                                std::shared_ptr<CachingPolicy> cachingPolicy,
+                                std::shared_ptr<Mode> mode);
 
   static std::shared_ptr<LoadResponseMessage> load(const LoadRequestMessage &msg,
                                                    stateful_actor<SegmentCacheActorState> *self,

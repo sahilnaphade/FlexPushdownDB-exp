@@ -31,7 +31,7 @@ private:
    * Trim project columns.
    */
   void trimProjectColumnsDfs(const shared_ptr<PrePhysicalOp>& op,
-                             const optional<set<string>> &optDownUsedColumns);
+                             const std::optional<set<string>> &optDownUsedColumns);
 
   shared_ptr<PrePhysicalOp> rootOp_;
   vector<string> outputColumnNames_;

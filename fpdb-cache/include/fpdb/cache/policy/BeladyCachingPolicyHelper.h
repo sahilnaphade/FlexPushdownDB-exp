@@ -47,7 +47,7 @@ private:
   unordered_map<int, unordered_set<shared_ptr<cache::SegmentKey>,
           cache::SegmentKeyPointerHash, cache::SegmentKeyPointerPredicate>> queryNumToInvolvedSegments_;
   unordered_map<shared_ptr<cache::SegmentKey>, set<int>,
-  cache::SegmentKeyPointerHash, cache::SegmentKeyPointerPredicate> segmentKeysToInvolvedQueryNums_;
+          cache::SegmentKeyPointerHash, cache::SegmentKeyPointerPredicate> segmentKeysToInvolvedQueryNums_;
   int currentQueryNum_;
 };
 

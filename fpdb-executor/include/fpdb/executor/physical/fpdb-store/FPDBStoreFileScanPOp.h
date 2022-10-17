@@ -72,6 +72,7 @@ public:
                                f.field("isSeparated", op.isSeparated_),
                                f.field("kernel", op.kernel_),
                                f.field("scanOnStart", op.scanOnStart_),
+                               f.field("toCache", op.toCache_),
                                f.field("bucket", op.bucket_),
                                f.field("object", op.object_));
   }

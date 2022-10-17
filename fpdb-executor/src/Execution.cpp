@@ -18,13 +18,15 @@ namespace fpdb::executor {
 Execution::Execution(long queryId, 
                      const shared_ptr<::caf::actor_system> &actorSystem,
                      const vector<::caf::node_id> &nodes,
-                     const ::caf::actor &segmentCacheActor,
+                     const ::caf::actor &localSegmentCacheActor,
+                     const vector<::caf::actor> &remoteSegmentCacheActors,
                      const shared_ptr<PhysicalPlan> &physicalPlan,
                      bool isDistributed) :
   queryId_(queryId),
   actorSystem_(actorSystem),
   nodes_(nodes),
-  segmentCacheActor_(segmentCacheActor),
+  localSegmentCacheActor_(localSegmentCacheActor),
+  remoteSegmentCacheActors_(remoteSegmentCacheActors),
   physicalPlan_(physicalPlan),
   isDistributed_(isDistributed) {
   rootActor_ = make_shared<::caf::scoped_actor>(*actorSystem_);
@@ -45,8 +47,9 @@ void Execution::boot() {
   startTime_ = chrono::steady_clock::now();
 
   // Tell segment cache actor that new query comes
-  if (segmentCacheActor_) {
-    (*rootActor_)->anon_send(segmentCacheActor_, NewQueryAtom_v);
+  (*rootActor_)->anon_send(localSegmentCacheActor_, NewQueryAtom_v);
+  for (const auto &remoteSegmentCacheActor: remoteSegmentCacheActors_) {
+    (*rootActor_)->anon_send(remoteSegmentCacheActor, NewQueryAtom_v);
   }
 
   // Set query id, and add physical operators to operator directory
@@ -63,7 +66,10 @@ void Execution::boot() {
   // Spawn actors locally/remotely according to nodeId assigned
   for (auto &element: opDirectory_) {
     auto op = element.second.getDef();
-    auto ctx = make_shared<POpContext>(*rootActor_, segmentCacheActor_);
+    const auto &segmentCacheActor = isDistributed_ ?
+            remoteSegmentCacheActors_[op->getNodeId()]:
+            localSegmentCacheActor_;
+    auto ctx = make_shared<POpContext>(*rootActor_, segmentCacheActor);
     op->create(ctx);
 
     // Spawn collate at the coordinator

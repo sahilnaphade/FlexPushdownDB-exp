@@ -4,10 +4,12 @@
 
 #include <ios>
 #include <iomanip>
+#include <caf/io/all.hpp>
 
 #include <fpdb/executor/Executor.h>
 #include <fpdb/executor/Execution.h>
 #include <fpdb/executor/cache/SegmentCacheActor.h>
+#include <fpdb/cache/caf-serialization/CAFCachingPolicySerializer.h>
 
 using namespace fpdb::executor::cache;
 
@@ -40,9 +42,23 @@ void Executor::start() {
     throw runtime_error(fmt::format("Failed to start executor, missing caching policy for mode: {}", mode_->toString()));
   }
   if (isCacheUsed()) {
-    segmentCacheActor_ = actorSystem_->spawn(SegmentCacheActor::makeBehaviour, cachingPolicy_, mode_);
+    localSegmentCacheActor_ = actorSystem_->spawn(SegmentCacheActor::makeBehaviour, cachingPolicy_, mode_);
+    for (const auto &node: nodes_) {
+      auto remoteSpawnTout = std::chrono::seconds(10);
+      auto args = make_message(cachingPolicy_, mode_);
+      auto actorTypeName = "SegmentCacheActor";
+      auto expectedActorHandle = actorSystem_->middleman().remote_spawn<::caf::actor>(node,
+                                                                                      actorTypeName,
+                                                                                      args,
+                                                                                      remoteSpawnTout);
+      if (!expectedActorHandle) {
+        throw std::runtime_error(fmt::format("Failed to remote-spawn segment cache actor on node: {}",
+                                             to_string(expectedActorHandle.error())));
+      }
+      remoteSegmentCacheActors_.emplace_back(*expectedActorHandle);
+    }
   } else {
-    segmentCacheActor_ = nullptr;
+    localSegmentCacheActor_ = nullptr;
   }
   running_ = true;
 }
@@ -50,8 +66,14 @@ void Executor::start() {
 void Executor::stop() {
   // Stop the cache actor if cache is used
   if (isCacheUsed()) {
-    (*rootActor_)->anon_send(segmentCacheActor_, StopCacheAtom_v);
-    (*rootActor_)->send_exit(::caf::actor_cast<::caf::actor>(segmentCacheActor_), ::caf::exit_reason::user_shutdown);
+    (*rootActor_)->anon_send(localSegmentCacheActor_, StopCacheAtom_v);
+    (*rootActor_)->send_exit(::caf::actor_cast<::caf::actor>(localSegmentCacheActor_),
+                             ::caf::exit_reason::user_shutdown);
+    for (const auto &remoteSegmentCacheActor: remoteSegmentCacheActors_) {
+      (*rootActor_)->anon_send(remoteSegmentCacheActor, StopCacheAtom_v);
+      (*rootActor_)->send_exit(::caf::actor_cast<::caf::actor>(remoteSegmentCacheActor),
+                               ::caf::exit_reason::user_shutdown);
+    }
   }
 
   // Stop the root actor (seems, being defined by "scope", it needs to actually be destroyed to stop it)
@@ -66,7 +88,8 @@ pair<shared_ptr<TupleSet>, long> Executor::execute(const shared_ptr<PhysicalPlan
   const auto &execution = make_shared<Execution>(nextQueryId(),
                                                  actorSystem_,
                                                  nodes_,
-                                                 segmentCacheActor_,
+                                                 localSegmentCacheActor_,
+                                                 remoteSegmentCacheActors_,
                                                  physicalPlan,
                                                  isDistributed);
   const auto &result = execution->execute();
@@ -83,8 +106,20 @@ pair<shared_ptr<TupleSet>, long> Executor::execute(const shared_ptr<PhysicalPlan
   return make_pair(result, elapsedTime);
 }
 
-const actor &Executor::getSegmentCacheActor() const {
-  return segmentCacheActor_;
+const ::caf::actor &Executor::getLocalSegmentCacheActor() const {
+  return localSegmentCacheActor_;
+}
+
+const vector<::caf::actor> &Executor::getRemoteSegmentCacheActors() const {
+  return remoteSegmentCacheActors_;
+}
+
+const actor &Executor::getRemoteSegmentCacheActor(int nodeId) const {
+  if (nodeId >= (int) nodes_.size()) {
+    throw std::runtime_error(fmt::format("Invalid node id '{}' when getting remote segment cache actor, "
+                                         "num nodes: '{}'", nodeId, nodes_.size()));
+  }
+  return remoteSegmentCacheActors_[nodeId];
 }
 
 const shared_ptr<::caf::actor_system> &Executor::getActorSystem() const {
@@ -100,6 +135,7 @@ long Executor::nextQueryId() {
 }
 
 std::string Executor::showCacheMetrics() {
+  // TODO: add remote cache metrics
   size_t hitNum, missNum;
   size_t shardHitNum, shardMissNum;
 
@@ -114,25 +150,25 @@ std::string Executor::showCacheMetrics() {
     shardMissNum = 0;
   } else {
     scoped_actor self{*actorSystem_};
-    self->request(segmentCacheActor_, infinite, GetNumHitsAtom_v).receive(
+    self->request(localSegmentCacheActor_, infinite, GetNumHitsAtom_v).receive(
             [&](size_t numHits) {
               hitNum = numHits;
             },
             errorHandler);
 
-    self->request(segmentCacheActor_, infinite, GetNumMissesAtom_v).receive(
+    self->request(localSegmentCacheActor_, infinite, GetNumMissesAtom_v).receive(
             [&](size_t numMisses) {
               missNum = numMisses;
             },
             errorHandler);
 
-    self->request(segmentCacheActor_, infinite, GetNumShardHitsAtom_v).receive(
+    self->request(localSegmentCacheActor_, infinite, GetNumShardHitsAtom_v).receive(
             [&](size_t numShardHits) {
               shardHitNum = numShardHits;
             },
             errorHandler);
 
-    self->request(segmentCacheActor_, infinite, GetNumShardMissesAtom_v).receive(
+    self->request(localSegmentCacheActor_, infinite, GetNumShardMissesAtom_v).receive(
             [&](size_t numShardMisses) {
               shardMissNum = numShardMisses;
             },
@@ -144,6 +180,7 @@ std::string Executor::showCacheMetrics() {
 
   std::stringstream ss;
   ss << std::endl;
+  ss << std::left << "Local cache metrics:" << std::endl;
 
   ss << std::left << std::setw(60) << "Hit num:";
   ss << std::left << std::setw(40) << hitNum;
@@ -176,11 +213,15 @@ std::string Executor::showCacheMetrics() {
 
 void Executor::clearCacheMetrics() {
   if (isCacheUsed()) {
-    (*rootActor_)->anon_send(segmentCacheActor_, ClearMetricsAtom_v);
+    (*rootActor_)->anon_send(localSegmentCacheActor_, ClearMetricsAtom_v);
+    for (const auto &remoteSegmentCacheActor: remoteSegmentCacheActors_) {
+      (*rootActor_)->anon_send(remoteSegmentCacheActor, ClearMetricsAtom_v);
+    }
   }
 }
 
 double Executor::getCrtQueryHitRatio() {
+  // TODO: add remote cache metrics
   size_t crtQueryHitNum;
   size_t crtQueryMissNum;
 
@@ -194,13 +235,13 @@ double Executor::getCrtQueryHitRatio() {
 
     // NOTE: Creating a new scoped_actor will work, but can use rootActor_ as well
     scoped_actor self{*actorSystem_};
-    self->request(segmentCacheActor_, infinite, GetCrtQueryNumHitsAtom_v).receive(
+    self->request(localSegmentCacheActor_, infinite, GetCrtQueryNumHitsAtom_v).receive(
             [&](size_t numHits) {
               crtQueryHitNum = numHits;
             },
             errorHandler);
 
-    self->request(segmentCacheActor_, infinite, GetCrtQueryNumMissesAtom_v).receive(
+    self->request(localSegmentCacheActor_, infinite, GetCrtQueryNumMissesAtom_v).receive(
             [&](size_t numMisses) {
               crtQueryMissNum = numMisses;
             },
@@ -212,6 +253,7 @@ double Executor::getCrtQueryHitRatio() {
 }
 
 double Executor::getCrtQueryShardHitRatio() {
+  // TODO: add remote cache metrics
   size_t crtQueryShardHitNum;
   size_t crtQueryShardMissNum;
 
@@ -225,13 +267,13 @@ double Executor::getCrtQueryShardHitRatio() {
 
     // NOTE: Creating a new scoped_actor will work, but can use rootActor_ as well
     scoped_actor self{*actorSystem_};
-    self->request(segmentCacheActor_, infinite, GetCrtQueryNumShardHitsAtom_v).receive(
+    self->request(localSegmentCacheActor_, infinite, GetCrtQueryNumShardHitsAtom_v).receive(
             [&](size_t numShardHits) {
               crtQueryShardHitNum = numShardHits;
             },
             errorHandler);
 
-    self->request(segmentCacheActor_, infinite, GetCrtQueryNumShardMissesAtom_v).receive(
+    self->request(localSegmentCacheActor_, infinite, GetCrtQueryNumShardMissesAtom_v).receive(
             [&](size_t numShardMisses) {
               crtQueryShardMissNum = numShardMisses;
             },

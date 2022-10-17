@@ -78,11 +78,11 @@ void SegmentCacheActor::stop(stateful_actor<SegmentCacheActorState> *self) {
 }
 
 behavior SegmentCacheActor::makeBehaviour(stateful_actor<SegmentCacheActorState> *self,
-                                          const std::optional<std::shared_ptr<CachingPolicy>> &cachingPolicy,
-                                          const std::shared_ptr<Mode> &mode) {
+                                          std::shared_ptr<CachingPolicy> cachingPolicy,
+                                          std::shared_ptr<Mode> mode) {
 
-  if (cachingPolicy.has_value())
-	  self->state.cache = SegmentCache::make(cachingPolicy.value());
+  if (cachingPolicy != nullptr)
+	  self->state.cache = SegmentCache::make(std::move(cachingPolicy));
   else
 	  throw runtime_error("Error when creating SegmentCacheActor: no caching policy specified");
 

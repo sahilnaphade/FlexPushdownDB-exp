@@ -50,7 +50,9 @@ public:
   pair<shared_ptr<TupleSet>, long> execute(const shared_ptr<PhysicalPlan> &physicalPlan,
                                            bool isDistributed);
 
-  const ::caf::actor &getSegmentCacheActor() const;
+  const ::caf::actor &getLocalSegmentCacheActor() const;
+  const vector<::caf::actor> &getRemoteSegmentCacheActors() const;
+  const ::caf::actor &getRemoteSegmentCacheActor(int nodeId) const;
   const shared_ptr<::caf::actor_system> &getActorSystem() const;
 
   /**
@@ -68,7 +70,8 @@ private:
   shared_ptr<::caf::actor_system> actorSystem_;
   vector<::caf::node_id> nodes_;
   unique_ptr<::caf::scoped_actor> rootActor_;
-  ::caf::actor segmentCacheActor_;
+  ::caf::actor localSegmentCacheActor_;             // used in single-node execution
+  vector<::caf::actor> remoteSegmentCacheActors_;   // used in distributed execution
   shared_ptr<CachingPolicy> cachingPolicy_;
   shared_ptr<Mode> mode_;
   std::atomic<long> queryCounter_;

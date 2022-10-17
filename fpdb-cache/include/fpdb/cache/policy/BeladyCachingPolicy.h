@@ -25,6 +25,9 @@ class BeladyCachingPolicy: public CachingPolicy {
 public:
   explicit BeladyCachingPolicy(size_t maxSize,
                                std::shared_ptr<CatalogueEntry> catalogueEntry);
+  BeladyCachingPolicy() = default;
+  BeladyCachingPolicy(const BeladyCachingPolicy&) = default;
+  BeladyCachingPolicy& operator=(const BeladyCachingPolicy&) = default;
 
   void onLoad(const std::shared_ptr<SegmentKey> &key) override;
   void onRemove(const std::shared_ptr<SegmentKey> &key) override;
@@ -49,18 +52,27 @@ private:
   std::unordered_set<std::shared_ptr<SegmentKey>, SegmentKeyPointerHash, SegmentKeyPointerPredicate> keysInCache_;
   std::unordered_map<int, std::shared_ptr<std::unordered_set<std::shared_ptr<SegmentKey>, SegmentKeyPointerHash, SegmentKeyPointerPredicate>>> queryNumToKeysInCache_;
 
-  static bool lessKeyValue(const std::shared_ptr<SegmentKey> &key1,
-                           const std::shared_ptr<SegmentKey> &key2);
+  bool lessKeyValue(const std::shared_ptr<SegmentKey> &key1, const std::shared_ptr<SegmentKey> &key2);
   void erase(const std::shared_ptr<SegmentKey> &key);
 
   // Belady decisions (number of queries), this is passed in via generateCacheDecisions
   int numQueries_{};
 
   void assertDecreasingOrderingOfSegmentKeys(const shared_ptr<vector<shared_ptr<SegmentKey>>>& segmentKeys);
-};
 
-// helper_ to generate Belady decisions
-std::shared_ptr<BeladyCachingPolicyHelper> helper_;
+  // helper_ to generate Belady decisions
+  BeladyCachingPolicyHelper helper_;
+
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, BeladyCachingPolicy& policy) {
+    return f.object(policy).fields(f.field("type", policy.type_),
+                                   f.field("maxSize", policy.maxSize_),
+                                   f.field("freeSize", policy.freeSize_),
+                                   f.field("segmentSizeMap", policy.segmentSizeMap_));
+  }
+};
 
 }
 
