@@ -134,14 +134,16 @@ add_library(fpdb-executor STATIC
 #        serialization
         src/physical/serialization/PhysicalPlanSerializer.cpp include/fpdb/executor/physical/serialization/PhysicalPlanSerializer.h
         src/physical/serialization/PhysicalPlanDeserializer.cpp include/fpdb/executor/physical/serialization/PhysicalPlanDeserializer.h
-#        CAF Initialization
+#        CAF initialization
         src/caf/CAFInit.cpp include/fpdb/executor/caf/CAFInit.h
+        src/caf/CAFAdaptPushdownUtil.cpp include/fpdb/executor/caf/CAFAdaptPushdownUtil.h
 #        metrics
         include/fpdb/executor/metrics/Globals.h
         src/metrics/DebugMetrics.cpp include/fpdb/executor/metrics/DebugMetrics.h
 #        executor
         src/Executor.cpp include/fpdb/executor/Executor.h
-        src/Execution.cpp include/fpdb/executor/Execution.h)
+        src/Execution.cpp include/fpdb/executor/Execution.h
+        src/FPDBStoreExecution.cpp include/fpdb/executor/FPDBStoreExecution.h)
 
 target_include_directories(fpdb-executor PUBLIC include)
 

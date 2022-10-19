@@ -51,6 +51,7 @@ public:
 
 #if SHOW_DEBUG_METRICS == true
   string showDebugMetrics() const;
+  const metrics::DebugMetrics &getDebugMetrics() const;
 #endif
 
 protected:

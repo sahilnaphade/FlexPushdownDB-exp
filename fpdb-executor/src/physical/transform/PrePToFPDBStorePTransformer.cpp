@@ -133,6 +133,7 @@ pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>> PrePToFPDBS
                   0,                 // never used
                   make_shared<PhysicalPlan>(opMaps[i], collatePOps[i]),
                   fpdbStoreConnector_->getHost(i),
+                  fpdbStoreConnector_->getFileServicePort(),
                   fpdbStoreConnector_->getFlightPort());
           fpdbStoreSuperPOp->setReceiveByOthers(true);
           fpdbStoreSuperPOps.emplace_back(fpdbStoreSuperPOp);
@@ -189,6 +190,7 @@ pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>> PrePToFPDBS
                   collatePOps[i]->getNodeId(),
                   subPlan,
                   host,
+                  fpdbStoreConnector_->getFileServicePort(),
                   fpdbStoreConnector_->getFlightPort()));
         }
 
@@ -678,9 +680,9 @@ void PrePToFPDBStorePTransformer::enableBitmapPushdown(
         auto typedLocalPOp = static_pointer_cast<filter::FilterPOp>(localPOp);
         auto typedStorePOp = static_pointer_cast<filter::FilterPOp>(storePOp);
         typedLocalPOp->enableBitmapPushdown(fpdbStoreSuperPOp->name(), typedStorePOp->name(), true,
-                                            fpdbStoreSuperPOp->getHost(), fpdbStoreSuperPOp->getPort());
+                                            fpdbStoreSuperPOp->getHost(), fpdbStoreSuperPOp->getFlightPort());
         typedStorePOp->enableBitmapPushdown(fpdbStoreSuperPOp->name(), typedLocalPOp->name(), false,
-                                            fpdbStoreSuperPOp->getHost(), fpdbStoreSuperPOp->getPort());
+                                            fpdbStoreSuperPOp->getHost(), fpdbStoreSuperPOp->getFlightPort());
         break;
       }
       default: {

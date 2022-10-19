@@ -2,14 +2,14 @@
 // Created by Yifei Yang on 6/26/22.
 //
 
-#ifndef FPDB_FPDB_STORE_SERVER_INCLUDE_FPDB_STORE_SERVER_FPDBSTOREEXECUTION_H
-#define FPDB_FPDB_STORE_SERVER_INCLUDE_FPDB_STORE_SERVER_FPDBSTOREEXECUTION_H
+#ifndef FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_FPDBSTOREEXECUTION_H
+#define FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_FPDBSTOREEXECUTION_H
 
 #include <fpdb/executor/Execution.h>
 
-namespace fpdb::store::server {
+namespace fpdb::executor {
 
-class FPDBStoreExecution: public executor::Execution {
+class FPDBStoreExecution: public Execution {
 
 public:
   using TableCallBack = std::function<void(const std::string &consumer, const std::shared_ptr<arrow::Table> &table)>;
@@ -32,4 +32,4 @@ private:
 }
 
 
-#endif //FPDB_FPDB_STORE_SERVER_INCLUDE_FPDB_STORE_SERVER_FPDBSTOREEXECUTION_H
+#endif //FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_FPDBSTOREEXECUTION_H

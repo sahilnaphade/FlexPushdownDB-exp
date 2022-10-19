@@ -6,16 +6,20 @@
 
 namespace fpdb::executor::metrics {
 
-DebugMetrics::DebugMetrics():
-  updateMutex_(std::make_shared<std::mutex>()) {}
+DebugMetrics::DebugMetrics(int64_t bytesFromStore):
+  bytesFromStore_(bytesFromStore) {}
+
+void DebugMetrics::initUpdate() {
+  updateMutex_ = std::make_shared<std::mutex>();
+}
 
 int64_t DebugMetrics::getBytesFromStore() const {
   return bytesFromStore_;
 }
 
-void DebugMetrics::addBytesFromStore(int64_t bytes) {
+void DebugMetrics::add(const DebugMetrics &other) {
   std::lock_guard<std::mutex> guard(*updateMutex_);
-  bytesFromStore_ += bytes;
+  bytesFromStore_ += other.bytesFromStore_;
 }
 
 }

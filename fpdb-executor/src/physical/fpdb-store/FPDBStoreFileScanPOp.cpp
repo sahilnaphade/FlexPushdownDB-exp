@@ -4,6 +4,7 @@
 
 #include <fpdb/executor/physical/fpdb-store/FPDBStoreFileScanPOp.h>
 #include <fpdb/executor/physical/file/LocalFileScanKernel.h>
+#include <fpdb/executor/physical/file/RemoteFileScanPOp.h>
 
 namespace fpdb::executor::physical::fpdb_store {
 
@@ -57,6 +58,22 @@ const std::string &FPDBStoreFileScanPOp::getObject() const {
 
 std::string FPDBStoreFileScanPOp::getTypeString() const {
   return "FPDBStoreFileScanPOp";
+}
+
+std::shared_ptr<PhysicalOp> FPDBStoreFileScanPOp::toRemoteFileScanPOp(const std::string &host, int port) const {
+  return std::make_shared<file::RemoteFileScanPOp>(fmt::format("RemoteFileScan[fallback]-{}", name_),
+                                                   projectColumnNames_,
+                                                   nodeId_,
+                                                   bucket_,
+                                                   object_,
+                                                   kernel_->getFormat(),
+                                                   kernel_->getSchema(),
+                                                   kernel_->getFileSize(),
+                                                   host,
+                                                   port,
+                                                   kernel_->getByteRange(),
+                                                   scanOnStart_,
+                                                   toCache_);
 }
 
 }

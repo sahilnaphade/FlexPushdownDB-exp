@@ -6,7 +6,8 @@
 #include "fpdb/store/server/flight/HeaderMiddlewareFactory.hpp"
 #include "fpdb/store/server/flight/GetObjectTicket.hpp"
 #include "fpdb/store/server/flight/Util.hpp"
-#include "fpdb/store/server/FPDBStoreExecution.h"
+#include "fpdb/executor/FPDBStoreExecution.h"
+#include "fpdb/executor/physical/Globals.h"
 #include "fpdb/executor/physical/serialization/PhysicalPlanDeserializer.h"
 #include "fpdb/executor/physical/bloomfilter/BloomFilterUsePOp.h"
 #include "fpdb/executor/physical/filter/FilterPOp.h"
@@ -304,6 +305,11 @@ FlightHandler::do_get_get_object(const ServerCallContext&,
 tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::do_get_select_object_content(
   const ServerCallContext&, const std::shared_ptr<SelectObjectContentTicket>& select_object_content_ticket) {
 
+  // TODO: adaptive pushdown
+  if (executor::physical::ENABLE_ADAPTIVE_PUSHDOWN) {
+    return tl::make_unexpected(MakeFlightError(ReqRejectStatusCode, "Resource limited"));
+  }
+
   // query id and FPDBStoreSuperPOp
   auto query_id = select_object_content_ticket->query_id();
   auto fpdb_store_super_pop = select_object_content_ticket->fpdb_store_super_pop();
@@ -360,7 +366,7 @@ tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::
   }
 
   // execute the query plan
-  auto execution = std::make_shared<FPDBStoreExecution>(
+  auto execution = std::make_shared<executor::FPDBStoreExecution>(
           query_id, actor_system_, physical_plan,
           [&] (const std::string &consumer, const std::shared_ptr<arrow::Table> &table) {
             auto table_key = executor::flight::TableCache::generateTableKey(query_id, fpdb_store_super_pop, consumer);

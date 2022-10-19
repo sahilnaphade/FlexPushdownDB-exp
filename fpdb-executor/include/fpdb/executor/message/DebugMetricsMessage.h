@@ -6,6 +6,7 @@
 #define FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_MESSAGE_DEBUGMETRICSMESSAGE_H
 
 #include <fpdb/executor/message/Message.h>
+#include <fpdb/executor/metrics/DebugMetrics.h>
 #include <memory>
 
 namespace fpdb::executor::message {
@@ -13,8 +14,8 @@ namespace fpdb::executor::message {
 class DebugMetricsMessage : public Message {
 
 public:
-  DebugMetricsMessage(int64_t bytesFromStore,
-                     std::string sender);
+  DebugMetricsMessage(const executor::metrics::DebugMetrics &debugMetrics,
+                      const std::string &sender);
   DebugMetricsMessage() = default;
   DebugMetricsMessage(const DebugMetricsMessage&) = default;
   DebugMetricsMessage& operator=(const DebugMetricsMessage&) = default;
@@ -22,10 +23,10 @@ public:
 
   std::string getTypeString() const override;
 
-  int64_t getBytesFromStore() const;
+  const executor::metrics::DebugMetrics &getDebugMetrics() const;
 
 private:
-  int64_t bytesFromStore_;
+  executor::metrics::DebugMetrics debugMetrics_;
 
 // caf inspect
 public:
@@ -33,7 +34,7 @@ public:
   friend bool inspect(Inspector& f, DebugMetricsMessage& msg) {
     return f.object(msg).fields(f.field("type", msg.type_),
                                 f.field("sender", msg.sender_),
-                                f.field("bytesFromStore", msg.bytesFromStore_));
+                                f.field("debugMetrics", msg.debugMetrics_));
   }
 };
 

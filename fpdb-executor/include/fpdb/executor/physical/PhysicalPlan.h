@@ -35,6 +35,9 @@ public:
   tl::expected<void, string> addAsLast(shared_ptr<PhysicalOp> &op);
   tl::expected<void, string> addAsLasts(vector<shared_ptr<PhysicalOp>> &ops);
 
+  // to fall back to pullup (adaptive pushdown), by changing FPDBFileScanPOp to RemoteFileScanPOp
+  tl::expected<void, string> fallBackToPullup(const std::string &host, int port);
+
 private:
   unordered_map<string, shared_ptr<PhysicalOp>> physicalOps_;
   string rootPOpName_;

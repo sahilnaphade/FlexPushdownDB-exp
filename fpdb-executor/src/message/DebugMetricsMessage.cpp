@@ -6,17 +6,17 @@
 
 namespace fpdb::executor::message {
 
-DebugMetricsMessage::DebugMetricsMessage(int64_t bytesFromStore,
-                                       std::string sender):
-  Message(DEBUG_METRICS, std::move(sender)),
-  bytesFromStore_(bytesFromStore) {}
+DebugMetricsMessage::DebugMetricsMessage(const executor::metrics::DebugMetrics &debugMetrics,
+                                         const std::string &sender):
+  Message(DEBUG_METRICS, sender),
+  debugMetrics_(debugMetrics) {}
 
 std::string DebugMetricsMessage::getTypeString() const {
   return "DebugMetricsMessage";
 }
 
-int64_t DebugMetricsMessage::getBytesFromStore() const {
-  return bytesFromStore_;
+const executor::metrics::DebugMetrics &DebugMetricsMessage::getDebugMetrics() const {
+  return debugMetrics_;
 }
 
 }

@@ -5,6 +5,7 @@
 #include "TestUtil.h"
 #include <fpdb/main/ExecConfig.h>
 #include <fpdb/executor/caf/CAFInit.h>
+#include <fpdb/executor/caf/CAFAdaptPushdownUtil.h>
 #include <fpdb/executor/physical/transform/PrePToPTransformer.h>
 #include <fpdb/executor/physical/Globals.h>
 #include <fpdb/cache/Globals.h>
@@ -234,6 +235,11 @@ void TestUtil::makeExecutor() {
                                     true,
                                     false);
   executor_->start();
+
+  // make actor system for adaptive pushdown if needed
+  if (ENABLE_ADAPTIVE_PUSHDOWN) {
+    fpdb::executor::caf::CAFAdaptPushdownUtil::startDaemonAdaptPushdownActorSystem();
+  }
 }
 
 void TestUtil::executeQueryFile(const string &queryFileName) {
@@ -289,6 +295,11 @@ void TestUtil::stop() {
     s3Connector->getAwsClient()->shutdown();
   }
   executor_->stop();
+
+  // stop actor system for adaptive pushdown if needed
+  if (ENABLE_ADAPTIVE_PUSHDOWN) {
+    fpdb::executor::caf::CAFAdaptPushdownUtil::stopDaemonAdaptPushdownActorSystem();
+  }
 
   // clear global states
   fpdb::executor::physical::clearGlobal();

@@ -21,7 +21,8 @@ public:
                     int nodeId,
                     const std::shared_ptr<PhysicalPlan> &subPlan,
                     const std::string &host,
-                    int port);
+                    int fileServicePort,
+                    int flightPort);
   FPDBStoreSuperPOp() = default;
   FPDBStoreSuperPOp(const FPDBStoreSuperPOp&) = default;
   FPDBStoreSuperPOp& operator=(const FPDBStoreSuperPOp&) = default;
@@ -34,7 +35,8 @@ public:
 
   const std::shared_ptr<PhysicalPlan> &getSubPlan() const;
   const std::string &getHost() const;
-  int getPort() const;
+  int getFileServicePort() const;
+  int getFlightPort() const;
 
   void setWaitForScanMessage(bool waitForScanMessage);
   void setReceiveByOthers(bool receiveByOthers);
@@ -51,11 +53,13 @@ private:
   bool readyToProcess();
   void processAtStore();
   void processEmpty();
+  void processAsPullup();   // for adaptive pushdown
   tl::expected<std::string, std::string> serialize(bool pretty);
 
   std::shared_ptr<PhysicalPlan> subPlan_;
   std::string host_;
-  int port_;
+  int fileServicePort_;     // for adaptive pushdown
+  int flightPort_;
 
   // if waiting for scan message before sending request to store
   bool waitForScanMessage_ = false;
@@ -86,7 +90,8 @@ public:
                                f.field("isSeparated", op.isSeparated_),
                                f.field("subPlan", op.subPlan_),
                                f.field("host", op.host_),
-                               f.field("port", op.port_),
+                               f.field("fileServicePort", op.fileServicePort_),
+                               f.field("flightPort", op.flightPort_),
                                f.field("waitForScanMessage", op.waitForScanMessage_),
                                f.field("receiveByOthers", op.receiveByOthers_),
                                f.field("shufflePOpName", op.shufflePOpName_),

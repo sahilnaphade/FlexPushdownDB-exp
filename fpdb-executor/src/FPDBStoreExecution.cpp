@@ -2,9 +2,9 @@
 // Created by Yifei Yang on 6/26/22.
 //
 
-#include <fpdb/store/server/FPDBStoreExecution.h>
+#include <fpdb/executor/FPDBStoreExecution.h>
 
-namespace fpdb::store::server {
+namespace fpdb::executor {
 
 FPDBStoreExecution::FPDBStoreExecution(long queryId,
                                        const std::shared_ptr<::caf::actor_system> &actorSystem,
@@ -52,12 +52,13 @@ void FPDBStoreExecution::join() {
               case MessageType::TUPLESET_BUFFER: {
                 auto tupleSetBufferMessage = ((TupleSetBufferMessage &) msg);
                 tableCallBack_(tupleSetBufferMessage.getConsumer(), tupleSetBufferMessage.tuples()->table());
+                break;
               }
 
 #if SHOW_DEBUG_METRICS == true
               case MessageType::DEBUG_METRICS: {
                 auto debugMetricsMsg = ((DebugMetricsMessage &) msg);
-                debugMetrics_.addBytesFromStore(debugMetricsMsg.getBytesFromStore());
+                debugMetrics_.add(debugMetricsMsg.getDebugMetrics());
                 break;
               }
 #endif

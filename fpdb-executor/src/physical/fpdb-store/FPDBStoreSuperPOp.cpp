@@ -8,9 +8,12 @@
 #include <fpdb/executor/physical/Globals.h>
 #include <fpdb/executor/message/DebugMetricsMessage.h>
 #include <fpdb/executor/metrics/Globals.h>
+#include <fpdb/executor/caf/CAFAdaptPushdownUtil.h>
+#include <fpdb/executor/FPDBStoreExecution.h>
 #include <fpdb/store/server/flight/SelectObjectContentTicket.hpp>
 #include <fpdb/store/server/flight/GetTableTicket.hpp>
 #include <fpdb/store/server/flight/ClearBitmapCmd.hpp>
+#include <fpdb/store/server/flight/Util.hpp>
 #include <arrow/flight/api.h>
 #include <unordered_map>
 
@@ -23,11 +26,13 @@ FPDBStoreSuperPOp::FPDBStoreSuperPOp(const std::string &name,
                                      int nodeId,
                                      const std::shared_ptr<PhysicalPlan> &subPlan,
                                      const std::string &host,
-                                     int port):
+                                     int fileServicePort,
+                                     int flightPort):
   PhysicalOp(name, POpType::FPDB_STORE_SUPER, projectColumnNames, nodeId),
   subPlan_(subPlan),
   host_(host),
-  port_(port) {}
+  fileServicePort_(fileServicePort),
+  flightPort_(flightPort) {}
 
 void FPDBStoreSuperPOp::onReceive(const Envelope &envelope) {
   const auto &message = envelope.message();
@@ -72,8 +77,12 @@ const std::string &FPDBStoreSuperPOp::getHost() const {
   return host_;
 }
 
-int FPDBStoreSuperPOp::getPort() const {
-  return port_;
+int FPDBStoreSuperPOp::getFileServicePort() const {
+  return fileServicePort_;
+}
+
+int FPDBStoreSuperPOp::getFlightPort() const {
+  return flightPort_;
 }
 
 void FPDBStoreSuperPOp::setWaitForScanMessage(bool waitForScanMessage) {
@@ -181,9 +190,10 @@ bool FPDBStoreSuperPOp::readyToProcess() {
 void FPDBStoreSuperPOp::processAtStore() {
   // make flight client and connect
   arrow::flight::Location clientLocation;
-  auto status = arrow::flight::Location::ForGrpcTcp(host_, port_, &clientLocation);
+  auto status = arrow::flight::Location::ForGrpcTcp(host_, flightPort_, &clientLocation);
   if (!status.ok()) {
     ctx()->notifyError(status.message());
+    return;
   }
 
   arrow::flight::FlightClientOptions clientOptions = arrow::flight::FlightClientOptions::Defaults();
@@ -191,36 +201,59 @@ void FPDBStoreSuperPOp::processAtStore() {
   status = arrow::flight::FlightClient::Connect(clientLocation, clientOptions, &client);
   if (!status.ok()) {
     ctx()->notifyError(status.message());
+    return;
   }
 
   // send request to store
   auto expPlanString = serialize(false);
   if (!expPlanString.has_value()) {
     ctx()->notifyError(expPlanString.error());
+    return;
   }
   auto ticketObj = SelectObjectContentTicket::make(queryId_, name_, *expPlanString);
   auto expTicket = ticketObj->to_ticket(false);
   if (!expTicket.has_value()) {
     ctx()->notifyError(expTicket.error());
+    return;
   }
 
-  // if pushdown result should be received by consumers, let them start waiting now
+  // if pushdown result should be received by consumers in pipeline, let them start waiting now
   if (receiveByOthers_) {
     std::shared_ptr<Message> tupleSetWaitRemoteMessage =
-            std::make_shared<TupleSetWaitRemoteMessage>(host_, port_, name_);
+            std::make_shared<TupleSetWaitRemoteMessage>(host_, flightPort_, name_);
     ctx()->tell(tupleSetWaitRemoteMessage);
   }
 
   std::unique_ptr<::arrow::flight::FlightStreamReader> reader;
   status = client->DoGet(*expTicket, &reader);
   if (!status.ok()) {
-    ctx()->notifyError(status.message());
+    auto flightStatusDetail = std::static_pointer_cast<arrow::flight::FlightStatusDetail>(status.detail());
+    // the request is rejected by storage due to resource limitation
+    if (ENABLE_ADAPTIVE_PUSHDOWN && flightStatusDetail->code() == ReqRejectStatusCode) {
+      // currently unsupported if "receiveByOthers_" = true
+      if (receiveByOthers_) {
+        ctx()->notifyError("Adaptive pushdown with pipelining pushdown results is currently unsupported");
+        return;
+      }
+      // fall back to pullup (adaptive pushdown)
+      processAsPullup();
+      // complete and return
+      ctx()->notifyComplete();
+      return;
+    }
+
+    // error
+    else {
+      ctx()->notifyError(status.message());
+      return;
+    }
   }
 
   std::shared_ptr<::arrow::Table> table;
   status = reader->ReadAll(&table);
   if (!status.ok()) {
     ctx()->notifyError(status.message());
+    return;
   }
 
   // if pushdown result hasn't been waiting by consumers
@@ -230,6 +263,7 @@ void FPDBStoreSuperPOp::processAtStore() {
       // check table
       if (table == nullptr) {
         ctx()->notifyError("Received null table from FPDB-Store");
+        return;
       }
 
       // send output tupleSet
@@ -253,7 +287,7 @@ void FPDBStoreSuperPOp::processAtStore() {
       // if having shuffle op
     else {
       std::shared_ptr<Message> tupleSetReadyRemoteMessage =
-              std::make_shared<TupleSetReadyRemoteMessage>(host_, port_, name_);
+              std::make_shared<TupleSetReadyRemoteMessage>(host_, flightPort_, name_);
       ctx()->tell(tupleSetReadyRemoteMessage);
     }
   }
@@ -269,7 +303,7 @@ void FPDBStoreSuperPOp::processEmpty() {
 
   // need to clear bitmaps cached at storage if bitmap pushdown is enabled for some ops
   // make flight client and connect
-  auto client = makeDoPutFlightClient(host_, port_);
+  auto client = makeDoPutFlightClient(host_, flightPort_);
 
   for (const auto &opIt: subPlan_->getPhysicalOps()) {
     auto op = opIt.second;
@@ -286,6 +320,7 @@ void FPDBStoreSuperPOp::processEmpty() {
       auto expCmd = cmdObj->serialize(false);
       if (!expCmd.has_value()) {
         ctx()->notifyError(expCmd.error());
+        return;
       }
       auto descriptor = ::arrow::flight::FlightDescriptor::Command(*expCmd);
       std::unique_ptr<arrow::flight::FlightStreamWriter> writer;
@@ -293,16 +328,53 @@ void FPDBStoreSuperPOp::processEmpty() {
       auto status = client->DoPut(descriptor, nullptr, &writer, &metadataReader);
       if (!status.ok()) {
         ctx()->notifyError(status.message());
+        return;
       }
       status = writer->Close();
       if (!status.ok()) {
         ctx()->notifyError(status.message());
+        return;
       }
     }
   }
 
   // complete
   ctx()->notifyComplete();
+}
+
+void FPDBStoreSuperPOp::processAsPullup() {
+  // update "subPlan_", by changing FPDBFileScanPOp to RemoteFileScanPOp
+  auto res = subPlan_->fallBackToPullup(host_, fileServicePort_);
+  if (!res.has_value()) {
+    ctx()->notifyError(res.error());
+    return;
+  }
+
+  // execute subPlan
+  auto execution = std::make_shared<FPDBStoreExecution>(
+          queryId_, caf::CAFAdaptPushdownUtil::daemonAdaptPushdownActorSystem_, subPlan_,
+          [&] (const std::string &consumer, const std::shared_ptr<arrow::Table> &table) {
+            std::shared_ptr<Message> tupleSetMessage = std::make_shared<TupleSetMessage>(TupleSet::make(table), name_);
+            ctx()->send(tupleSetMessage, consumer);
+          },
+          [&] (const std::string &, const std::vector<int64_t> &) {
+            // noop
+          });
+  auto tupleSet = execution->execute();
+  if (tupleSet == nullptr || tupleSet->table() == nullptr) {
+    ctx()->notifyError("Received null table from fallback to pullup execution");
+    return;
+  }
+  if (tupleSet->numRows() != 0 || tupleSet->numColumns() != 0) {
+    std::shared_ptr<Message> tupleSetMessage = std::make_shared<TupleSetMessage>(tupleSet, name_);
+    ctx()->tell(tupleSetMessage);
+  }
+
+  // metrics
+#if SHOW_DEBUG_METRICS == true
+  std::shared_ptr<Message> execMetricsMsg = std::make_shared<DebugMetricsMessage>(execution->getDebugMetrics(), name_);
+  ctx()->notifyRoot(execMetricsMsg);
+#endif
 }
 
 tl::expected<std::string, std::string> FPDBStoreSuperPOp::serialize(bool pretty) {

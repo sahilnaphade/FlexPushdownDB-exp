@@ -52,6 +52,8 @@ public:
 
   std::string getTypeString() const override;
 
+  std::shared_ptr<PhysicalOp> toRemoteFileScanPOp(const std::string &host, int port) const;
+
 private:
   std::string bucket_;
   std::string object_;

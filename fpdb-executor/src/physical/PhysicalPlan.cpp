@@ -3,6 +3,9 @@
 //
 
 #include <fpdb/executor/physical/PhysicalPlan.h>
+#include <fpdb/executor/physical/fpdb-store/FPDBStoreFileScanPOp.h>
+#include <fpdb/executor/physical/file/RemoteFileScanPOp.h>
+#include <fpdb/executor/physical/collate/CollatePOp.h>
 #include <fpdb/executor/physical/transform/PrePToPTransformerUtil.h>
 
 namespace fpdb::executor::physical {
@@ -157,6 +160,40 @@ tl::expected<void, string> PhysicalPlan::addAsLasts(vector<shared_ptr<PhysicalOp
     PrePToPTransformerUtil::connectOneToOne(producer, op);
     PrePToPTransformerUtil::connectOneToOne(op, rootPOp);
     physicalOps_.emplace(op->name(), op);
+  }
+
+  return {};
+}
+
+tl::expected<void, string> PhysicalPlan::fallBackToPullup(const std::string &host, int port) {
+  // find FPDBStoreFileScanPOp and reset "isSeparate_"
+  std::optional<shared_ptr<fpdb_store::FPDBStoreFileScanPOp>> fpdbStoreFileScanPOp = std::nullopt;
+  for (const auto &opIt: physicalOps_) {
+    auto &op = opIt.second;
+    if (op->getType() == POpType::FPDB_STORE_FILE_SCAN) {
+      fpdbStoreFileScanPOp = static_pointer_cast<fpdb_store::FPDBStoreFileScanPOp>(op);
+      continue;
+    }
+    // shuffle still needs to set "isSeparate_" because we have to collect the output tables,
+    if (op->getType() != POpType::SHUFFLE) {
+      op->setSeparated(false);
+    }
+  }
+  if (!fpdbStoreFileScanPOp.has_value()) {
+    return tl::make_unexpected("FPDBStoreFileScanPOp not found when falling back to pullup");
+  }
+
+  // FPDBStoreFileScanPOp -> RemoteFileScanPOp
+  auto remoteFileScanPOp = (*fpdbStoreFileScanPOp)->toRemoteFileScanPOp(host, port);
+  physicalOps_.erase((*fpdbStoreFileScanPOp)->name());
+  physicalOps_.emplace(remoteFileScanPOp->name(), remoteFileScanPOp);
+  for (const auto &consumer: (*fpdbStoreFileScanPOp)->consumers()) {
+    auto expOp = getPhysicalOp(consumer);
+    if (!expOp.has_value()) {
+      return tl::make_unexpected(expOp.error());
+    }
+    (*expOp)->unConsume(*fpdbStoreFileScanPOp);
+    PrePToPTransformerUtil::connectOneToOne(remoteFileScanPOp, *expOp);
   }
 
   return {};

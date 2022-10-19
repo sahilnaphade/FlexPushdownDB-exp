@@ -30,6 +30,9 @@ Execution::Execution(long queryId,
   physicalPlan_(physicalPlan),
   isDistributed_(isDistributed) {
   rootActor_ = make_shared<::caf::scoped_actor>(*actorSystem_);
+#if SHOW_DEBUG_METRICS == true
+  debugMetrics_.initUpdate();
+#endif
 }
 
 Execution::~Execution() {
@@ -240,7 +243,7 @@ void Execution::join() {
 #if SHOW_DEBUG_METRICS == true
               case MessageType::DEBUG_METRICS: {
                 auto debugMetricsMsg = ((DebugMetricsMessage &) msg);
-                debugMetrics_.addBytesFromStore(debugMetricsMsg.getBytesFromStore());
+                debugMetrics_.add(debugMetricsMsg.getDebugMetrics());
                 break;
               }
 #endif
@@ -664,6 +667,10 @@ string Execution::showDebugMetrics() const{
   ss << endl;
 
   return ss.str();
+}
+
+const metrics::DebugMetrics &Execution::getDebugMetrics() const {
+  return debugMetrics_;
 }
 #endif
 

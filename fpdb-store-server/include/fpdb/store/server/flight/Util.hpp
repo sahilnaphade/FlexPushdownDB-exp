@@ -6,6 +6,7 @@
 #define FPDB_FPDB_STORE_SERVER_INCLUDE_FPDB_STORE_SERVER_FLIGHT_UTIL_HPP
 
 #include <arrow/api.h>
+#include <arrow/flight/api.h>
 #include <tl/expected.hpp>
 #include "string"
 
@@ -38,6 +39,8 @@ static constexpr std::string_view GetTableTicketTypeName = "get_table";
 static constexpr std::string_view HeaderMiddlewareKey = "header_middleware";
 static constexpr std::string_view BucketHeaderKey = "bucket";
 static constexpr std::string_view ObjectHeaderKey = "object";
+
+static constexpr arrow::flight::FlightStatusCode ReqRejectStatusCode = arrow::flight::FlightStatusCode::Unavailable;
 
 class Util {
 

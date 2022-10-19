@@ -13,16 +13,25 @@ namespace fpdb::executor::metrics {
 class DebugMetrics {
 
 public:
-  DebugMetrics();
+  DebugMetrics(int64_t bytesFromStore = 0);
+  DebugMetrics(const DebugMetrics&) = default;
+  DebugMetrics& operator=(const DebugMetrics&) = default;
   ~DebugMetrics() = default;
 
   int64_t getBytesFromStore() const;
-  void addBytesFromStore(int64_t bytes);
+  void initUpdate();
+  void add(const DebugMetrics &other);
 
 private:
-  int64_t bytesFromStore_ = 0;
+  int64_t bytesFromStore_;
   std::shared_ptr<std::mutex> updateMutex_;
 
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, DebugMetrics& metrics) {
+    return f.object(metrics).fields(f.field("bytesFromStore", metrics.bytesFromStore_));
+  }
 };
 
 }
