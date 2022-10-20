@@ -26,7 +26,10 @@ FlightHandler::FlightHandler(Location location,
                              std::shared_ptr<::caf::actor_system> actor_system) :
   location_(std::move(location)),
   store_root_path_(std::move(store_root_path)),
-  actor_system_(std::move(actor_system)) {}
+  actor_system_(std::move(actor_system)),
+  limit_select_req_(LimitSelectReq),
+  select_req_sem_(std::thread::hardware_concurrency() * ((double) AvailCpuPercent / 100.0)),
+  select_req_rej_thresh_(100.0 / (double) (100 - AvailCpuPercent)) {}
 
 FlightHandler::~FlightHandler() {
   this->shutdown();
@@ -305,9 +308,14 @@ FlightHandler::do_get_get_object(const ServerCallContext&,
 tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::do_get_select_object_content(
   const ServerCallContext&, const std::shared_ptr<SelectObjectContentTicket>& select_object_content_ticket) {
 
-  // TODO: adaptive pushdown
-  if (executor::physical::ENABLE_ADAPTIVE_PUSHDOWN) {
-    return tl::make_unexpected(MakeFlightError(ReqRejectStatusCode, "Resource limited"));
+  // adaptive pushdown, reject request when exceeding "MaxSelectReq"
+  if (limit_select_req_) {
+    std::unique_lock lock(select_req_mutex_);
+    if (rej_select_req()) {
+      return tl::make_unexpected(MakeFlightError(ReqRejectStatusCode, "Resource limited"));
+    } else {
+      select_req_sem_.acquire();
+    }
   }
 
   // query id and FPDBStoreSuperPOp
@@ -318,6 +326,9 @@ tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::
   auto exp_physical_plan = PhysicalPlanDeserializer::deserialize(select_object_content_ticket->query_plan_string(),
                                                                  store_root_path_);
   if (!exp_physical_plan.has_value()) {
+    if (limit_select_req_) {
+      select_req_sem_.release();
+    }
     return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed, exp_physical_plan.error()));
   }
   auto physical_plan = *exp_physical_plan;
@@ -343,6 +354,9 @@ tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::
       } else {
         auto exp_bloom_filter = bloom_filter_cache_.consumeBloomFilter(bloom_filter_key);
         if (!exp_bloom_filter.has_value()) {
+          if (limit_select_req_) {
+            select_req_sem_.release();
+          }
           return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed, exp_bloom_filter.error()));
         }
         bloom_filter = *exp_bloom_filter;
@@ -383,9 +397,15 @@ tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::
   // make record batch stream and return
   auto exp_batches = tuple::util::Util::table_to_record_batches(table);
   if (!exp_batches.has_value()) {
+    if (limit_select_req_) {
+      select_req_sem_.release();
+    }
     return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed, exp_batches.error()));
   }
   auto rb_reader = ::arrow::RecordBatchReader::Make(*exp_batches);
+  if (limit_select_req_) {
+    select_req_sem_.release();
+  }
   return std::make_unique<::arrow::flight::RecordBatchStream>(*rb_reader);
 }
 
@@ -636,6 +656,18 @@ void FlightHandler::init_bitmap_cache() {
     bitmap_cache_map_[bitmap_type] = std::make_shared<BitmapCache>();
     bitmap_mutex_map_[bitmap_type] = std::make_shared<std::mutex>();
     bitmap_cvs_map_[bitmap_type] = std::unordered_map<std::string, std::shared_ptr<std::condition_variable_any>>();
+  }
+}
+
+bool FlightHandler::rej_select_req() {
+  if (!ENABLE_ADAPTIVE_PUSHDOWN) {
+    return false;
+  }
+  if (++select_req_rej_offset_ >= select_req_rej_thresh_) {
+    select_req_rej_offset_ -= select_req_rej_thresh_;
+    return true;
+  } else {
+    return false;
   }
 }
 

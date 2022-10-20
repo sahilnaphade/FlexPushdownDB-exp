@@ -10,6 +10,7 @@
 #include <tl/expected.hpp>
 #include "mutex"
 #include "condition_variable"
+#include "semaphore"
 
 #include "fpdb/store/server/flight/SelectObjectContentCmd.hpp"
 #include "fpdb/store/server/flight/PutBitmapCmd.hpp"
@@ -22,6 +23,7 @@
 #include "fpdb/store/server/flight/BitmapType.h"
 #include "fpdb/store/server/flight/BitmapCache.hpp"
 #include "fpdb/store/server/flight/BloomFilterCache.hpp"
+#include "fpdb/store/server/flight/Util.hpp"
 #include "fpdb/store/server/caf/ActorManager.hpp"
 #include "fpdb/executor/flight/TableCache.h"
 
@@ -298,6 +300,11 @@ private:
    */
   void init_bitmap_cache();
 
+  /**
+   * decide whether to reject the incoming select request
+   */
+  bool rej_select_req();
+
   ::arrow::flight::Location location_;
   std::string store_root_path_;
   std::shared_ptr<::caf::actor_system> actor_system_;
@@ -319,6 +326,13 @@ private:
   // mutex and cv for table cache
   std::mutex table_mutex_;
   std::unordered_map<std::string, std::shared_ptr<std::condition_variable_any>> table_cvs_;
+
+  // if resource is limited, restrict the active "select" requests
+  bool limit_select_req_;
+  std::mutex select_req_mutex_;
+  std::counting_semaphore<> select_req_sem_;
+  double select_req_rej_offset_ = 0;  // used in "rej_select_req()"
+  double select_req_rej_thresh_;      // used in "rej_select_req()"
 };
 
 } // namespace fpdb::store::server::flight
