@@ -107,4 +107,6 @@ Compiler needed:
 ### Refactoring
 - Use a single flight client instead of creating one for each request
 - Check if file readers are too slow?
+  - Use all SSD drives?
+  - Use threads in Arrow readers?
   
