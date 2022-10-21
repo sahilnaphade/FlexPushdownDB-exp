@@ -32,7 +32,8 @@ void startFPDBStoreServer() {
                                             0,
                                             fpdbStoreClientConfig->getFlightPort(),
                                             fpdbStoreClientConfig->getFileServicePort(),
-                                            "test-resources"},
+                                            "test-resources/fpdb-store",
+                                            1},
           std::nullopt,
           actorManager);
   auto initResult = fpdbStoreServer->init();

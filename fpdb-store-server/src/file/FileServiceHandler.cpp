@@ -10,10 +10,12 @@
 
 namespace fpdb::store::server::file {
 
-FileServiceHandler::FileServiceHandler(const std::string &storeRootPath):
-  storeRootPath_(storeRootPath) {}
+FileServiceHandler::FileServiceHandler(const std::string &storeRootPathPrefix,
+                                       int numDrives):
+  storeRootPathPrefix_(storeRootPathPrefix),
+  numDrives_(numDrives) {}
 
-Status FileServiceHandler::ReadFile(ServerContext* context,
+Status FileServiceHandler::ReadFile(ServerContext*,
                                     const ReadFileRequest* request,
                                     ServerWriter<ReadFileResponse>* writer) {
   auto bucket = request->bucket();
@@ -26,14 +28,17 @@ Status FileServiceHandler::ReadFile(ServerContext* context,
   switch (option.type()) {
     case ReadOption_ReadType_FULL:
     case ReadOption_ReadType_RANGE: {
+      // increment num reqs and get store root path
+      auto storeRootPath = getStoreRootPath(updateReadFileDriveId());
+      
       // check if file exists
-      auto status = checkFileExist(bucket, object);
+      auto status = checkFileExist(storeRootPath, bucket, object);
       if (!status.ok()) {
         return status;
       }
 
       // set file position and length
-      auto objectPath = fmt::format("{}/{}/{}", storeRootPath_, bucket, object);
+      auto objectPath = fmt::format("{}/{}/{}", storeRootPath, bucket, object);
       int64_t position, length;
       if (option.type() == ReadOption_ReadType_FULL) {
         position = 0;
@@ -67,27 +72,32 @@ Status FileServiceHandler::ReadFile(ServerContext* context,
   }
 }
 
-Status FileServiceHandler::GetFileSize(ServerContext* context,
+Status FileServiceHandler::GetFileSize(ServerContext*,
                                        const GetFileSizeRequest* request,
                                        GetFileSizeResponse* response) {
   auto bucket = request->bucket();
   auto object = request->object();
 
+  // increment num reqs and get store root path
+  auto storeRootPath = getStoreRootPath(updateGetFileSizeDriveId());
+
   // check if file exists
-  auto status = checkFileExist(bucket, object);
+  auto status = checkFileExist(storeRootPath, bucket, object);
   if (!status.ok()) {
     return status;
   }
 
   // get file size
-  auto objectPath = fmt::format("{}/{}/{}", storeRootPath_, bucket, object);
+  auto objectPath = fmt::format("{}/{}/{}", storeRootPath, bucket, object);
   int64_t fileSize = fpdb::util::getFileSize(objectPath);
   response->set_size(fileSize);
   return Status::OK;
 }
 
-Status FileServiceHandler::checkFileExist(const std::string &bucket, const std::string &object) {
-  auto bucketPath = fmt::format("{}/{}", storeRootPath_, bucket);
+Status FileServiceHandler::checkFileExist(const std::string &storeRootPath, 
+                                          const std::string &bucket, 
+                                          const std::string &object) {
+  auto bucketPath = fmt::format("{}/{}", storeRootPath, bucket);
   if (!std::filesystem::exists(std::filesystem::path(bucketPath))) {
     return Status(StatusCode::NOT_FOUND, fmt::format("Bucket '{}' not exist", bucket));
   }
@@ -104,6 +114,26 @@ void FileServiceHandler::writeReadFileResponse(ServerWriter<ReadFileResponse>* w
   resp.set_data(data, bytesRead);
   resp.set_bytes_read(bytesRead);
   writer->Write(resp);
+}
+
+std::string FileServiceHandler::getStoreRootPath(int driveId) {
+  return fmt::format("{}-{}", storeRootPathPrefix_, driveId);
+}
+
+int FileServiceHandler::updateReadFileDriveId() {
+  std::unique_lock lock(updateReadFileDriveIdMutex_);
+  if (++readFileDriveId_ >= numDrives_) {
+    readFileDriveId_ -= numDrives_;
+  }
+  return readFileDriveId_;
+}
+
+int FileServiceHandler::updateGetFileSizeDriveId() {
+  std::unique_lock lock(updateGetFileSizeDriveIdMutex_);
+  if (++getFileSizeDriveId_ >= numDrives_) {
+    getFileSizeDriveId_ -= numDrives_;
+  }
+  return getFileSizeDriveId_;
 }
 
 }

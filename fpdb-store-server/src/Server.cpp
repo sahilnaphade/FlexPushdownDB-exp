@@ -27,7 +27,8 @@ Server::Server(const ServerConfig& cfg, std::optional<ClusterActor> remote_coord
       coordinator_port_(cfg.coordinator_port),
       flight_port_(cfg.flight_port),
       file_service_port_(cfg.file_service_port),
-      store_root_path_(cfg.store_root_path),
+      store_root_path_prefix_(cfg.store_root_path_prefix_),
+      num_drives_(cfg.num_drives_),
       actor_manager_(std::move(actor_manager)),
       cluster_actor_handle_(std::move(remote_coordinator_actor_handle)) {
 }
@@ -68,8 +69,9 @@ tl::expected<void, std::string> Server::init() {
     return tl::make_unexpected(fmt::format("Could not start FlightHandler, {}", st.message()));
   }
   flight_handler_ = std::make_unique<FlightHandler>(server_location,
-                                                    store_root_path_,
-                                                    actor_manager_->actor_system());
+                                                    actor_manager_->actor_system(),
+                                                    store_root_path_prefix_,
+                                                    num_drives_);
   auto ex = flight_handler_->init();
   if(!ex.has_value()) {
     return tl::make_unexpected(fmt::format("Could not start FlightHandler, {}", st.message()));
@@ -122,7 +124,7 @@ tl::expected<void, std::string> Server::start() {
   flight_future_ = std::async(std::launch::async, [=]() { return flight_handler_->serve(); });
 
   // Start the file service
-  file_service_ = std::make_unique<file::FileServiceHandler>(store_root_path_);
+  file_service_ = std::make_unique<file::FileServiceHandler>(store_root_path_prefix_, num_drives_);
 
   grpc::EnableDefaultHealthCheckService(true);
   grpc::reflection::InitProtoReflectionServerBuilderPlugin();

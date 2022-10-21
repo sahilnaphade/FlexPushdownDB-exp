@@ -39,8 +39,9 @@ public:
    * @param location
    */
   explicit FlightHandler(Location location,
-                         std::string store_root_path,
-                         std::shared_ptr<::caf::actor_system> actor_system);
+                         std::shared_ptr<::caf::actor_system> actor_system,
+                         std::string store_root_path_prefix,
+                         int num_drives);
 
   /**
    *
@@ -301,13 +302,26 @@ private:
   void init_bitmap_cache();
 
   /**
+   * Get root path of the corresponding drive
+   */
+  std::string getStoreRootPath(int driveId);
+
+  /**
+   * Update current drive id for scan, in a round-robin fashion
+   */
+  int update_scan_drive_id();
+
+  /**
    * decide whether to reject the incoming select request
    */
   bool rej_select_req();
 
   ::arrow::flight::Location location_;
-  std::string store_root_path_;
   std::shared_ptr<::caf::actor_system> actor_system_;
+  std::string store_root_path_prefix_;
+  int num_drives_;
+  int scan_drive_id_ = 0;    // updated in round-robin
+  std::mutex update_scan_drive_id_mutex_;
 
   // bitmap caches for FILTER_COMPUTE and FILTER_STORAGE
   std::unordered_map<BitmapType, std::shared_ptr<BitmapCache>> bitmap_cache_map_;

@@ -53,7 +53,8 @@ private:
   std::optional<int> coordinator_port_ = 0;
   int flight_port_ = 0;
   int file_service_port_ = 0;
-  std::string store_root_path_;
+  std::string store_root_path_prefix_;
+  int num_drives_;
 
   // signal
   std::unique_ptr<SignalHandler> signal_handler_;

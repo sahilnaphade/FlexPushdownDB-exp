@@ -25,7 +25,8 @@ public:
   int flight_port;
   int file_service_port;
 
-  std::string store_root_path;
+  std::string store_root_path_prefix_;
+  int num_drives_;
 };
 
 } // namespace fpdb::store::server

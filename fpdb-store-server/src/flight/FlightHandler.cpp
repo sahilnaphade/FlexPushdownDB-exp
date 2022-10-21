@@ -22,11 +22,13 @@ using namespace fpdb::tuple;
 namespace fpdb::store::server::flight {
 
 FlightHandler::FlightHandler(Location location,
-                             std::string store_root_path,
-                             std::shared_ptr<::caf::actor_system> actor_system) :
+                             std::shared_ptr<::caf::actor_system> actor_system,
+                             std::string store_root_path_prefix,
+                             int num_drives) :
   location_(std::move(location)),
-  store_root_path_(std::move(store_root_path)),
   actor_system_(std::move(actor_system)),
+  store_root_path_prefix_(std::move(store_root_path_prefix)),
+  num_drives_(num_drives),
   limit_select_req_(LimitSelectReq),
   select_req_sem_(std::thread::hardware_concurrency() * ((double) AvailCpuPercent / 100.0)),
   select_req_rej_thresh_(100.0 / (double) (100 - AvailCpuPercent)) {}
@@ -324,7 +326,7 @@ tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::
 
   // deserialize the query plan
   auto exp_physical_plan = PhysicalPlanDeserializer::deserialize(select_object_content_ticket->query_plan_string(),
-                                                                 store_root_path_);
+                                                                 getStoreRootPath(update_scan_drive_id()));
   if (!exp_physical_plan.has_value()) {
     if (limit_select_req_) {
       select_req_sem_.release();
@@ -657,6 +659,18 @@ void FlightHandler::init_bitmap_cache() {
     bitmap_mutex_map_[bitmap_type] = std::make_shared<std::mutex>();
     bitmap_cvs_map_[bitmap_type] = std::unordered_map<std::string, std::shared_ptr<std::condition_variable_any>>();
   }
+}
+
+std::string FlightHandler::getStoreRootPath(int driveId) {
+  return fmt::format("{}-{}", store_root_path_prefix_, driveId);
+}
+
+int FlightHandler::update_scan_drive_id() {
+  std::unique_lock lock(update_scan_drive_id_mutex_);
+  if (++scan_drive_id_ >= num_drives_) {
+    scan_drive_id_ -= num_drives_;
+  }
+  return scan_drive_id_;
 }
 
 bool FlightHandler::rej_select_req() {

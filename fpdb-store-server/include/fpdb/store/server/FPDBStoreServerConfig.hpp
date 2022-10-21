@@ -18,18 +18,21 @@ class FPDBStoreServerConfig {
 public:
   FPDBStoreServerConfig(int fileServicePort,
                         int flightPort,
-                        const std::string &storeRootPath);
+                        const std::string &storeRootPathPrefix,
+                        int numDrives);
 
   static std::shared_ptr<FPDBStoreServerConfig> parseFPDBStoreServerConfig();
 
   int getFileServicePort() const;
   int getFlightPort() const;
-  const std::string &getStoreRootPath() const;
+  const std::string &getStoreRootPathPrefix() const;
+  int getNumDrives() const;
 
 private:
   int fileServicePort_;
   int flightPort_;
-  std::string storeRootPath_;
+  std::string storeRootPathPrefix_;
+  int numDrives_;
 
 };
 
