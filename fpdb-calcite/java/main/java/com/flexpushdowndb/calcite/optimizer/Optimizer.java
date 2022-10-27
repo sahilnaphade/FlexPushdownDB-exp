@@ -153,8 +153,9 @@ public class Optimizer {
   }
 
   private RelNode joinOptimize(RelNode relNode, String schemaName) {
-    // set hash keys
+    // set config
     FPDBRelMdRowCount.THREAD_HASH_KEYS.set(getHashKeys(schemaName));
+    FPDBRelMdRowCount.THREAD_FIND_PUSHABLE_HASH_JOINS.set(findPushableHashJoins);
 
     // join optimize
     Program program = MorePrograms.heuristicJoinOrder(

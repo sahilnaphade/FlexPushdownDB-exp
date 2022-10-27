@@ -11,10 +11,11 @@ import java.util.Map;
 public class FPDBRelMdRowCount extends RelMdRowCount {
   public static final RelMetadataProvider SOURCE =
           ReflectiveRelMetadataProvider.reflectiveSource(BuiltInMethod.ROW_COUNT.method, new FPDBRelMdRowCount());
-  private static final Double COLOCATE_JOIN_REDUCTION_FACTOR = 2.0;
 
   // TODO: better to use RelDistribution instead of this
   public static final ThreadLocal<Map<String, String>> THREAD_HASH_KEYS = new ThreadLocal<>();
+  public static final ThreadLocal<Boolean> THREAD_FIND_PUSHABLE_HASH_JOINS = new ThreadLocal<>();
+  private static final Double COLOCATE_JOIN_REDUCTION_FACTOR = 2.0;
 
   @Override
   public @Nullable Double getRowCount(Join rel, RelMetadataQuery mq) {
@@ -22,7 +23,8 @@ public class FPDBRelMdRowCount extends RelMdRowCount {
     if (origRowCount == null) {
       return null;
     }
-    if (PushableHashJoinFinder.isBottomHashJoin(rel) &&
+    if (THREAD_FIND_PUSHABLE_HASH_JOINS.get() &&
+            PushableHashJoinFinder.isBottomHashJoin(rel) &&
             PushableHashJoinFinder.isJoinColocated(rel, THREAD_HASH_KEYS.get())) {
       return origRowCount / COLOCATE_JOIN_REDUCTION_FACTOR;
     } else {
