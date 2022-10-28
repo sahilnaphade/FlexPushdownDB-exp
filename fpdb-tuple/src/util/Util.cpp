@@ -60,5 +60,16 @@ Util::table_to_record_batches(const std::shared_ptr<arrow::Table> &table) {
   return batches;
 }
 
+int64_t Util::getSize(const std::shared_ptr<arrow::RecordBatch> &recordBatch) {
+  int64_t size = 0;
+  for (const auto &array: recordBatch->columns()) {
+    for (const auto &buffer: array->data()->buffers) {
+      if (buffer) {
+        size += buffer->size();
+      }
+    }
+  }
+  return size;
+}
 
 }

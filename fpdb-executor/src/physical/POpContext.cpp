@@ -95,11 +95,25 @@ void POpContext::send_regular(const std::shared_ptr<message::Message> &msg, cons
 
     // send notification
     std::shared_ptr<Message> tupleSetReadyRemoteMessage = std::make_shared<TupleSetReadyRemoteMessage>(
-            FlightHandler::daemonServer_->getHost(), FlightHandler::daemonServer_->getPort(), operatorActor_->name_);
+            FlightHandler::daemonServer_->getHost(),
+            FlightHandler::daemonServer_->getPort(),
+            false,
+            operatorActor_->name_);
     operatorActor_->anon_send(opEntry.getActor(), Envelope(tupleSetReadyRemoteMessage));
   } else {
     // send using actor's comm
     operatorActor_->anon_send(opEntry.getActor(), Envelope(appliedMsg));
+
+    // metrics
+#if SHOW_DEBUG_METRICS == true
+    if (appliedMsg->type() == MessageType::TUPLESET
+        && operatorActor_->operator_()->getNodeId() != opEntry.getNodeId()) {
+      std::shared_ptr<Message> execMetricsMsg = std::make_shared<DebugMetricsMessage>(
+              metrics::DebugMetrics(0, 0, std::static_pointer_cast<TupleSetMessage>(appliedMsg)->tuples()->size()),
+              operatorActor_->name_);
+      operatorActor_->anon_send(rootActor_, execMetricsMsg);
+    }
+#endif
   }
 }
 

@@ -95,8 +95,8 @@ std::shared_ptr<TupleSet> FileScanAbstractPOp::readTuples(const std::vector<std:
 
   // metrics
 #if SHOW_DEBUG_METRICS == true
-  std::shared_ptr<Message> execMetricsMsg =
-          std::make_shared<DebugMetricsMessage>(kernel_->getBytesReadRemote(), this->name());
+  std::shared_ptr<Message> execMetricsMsg = std::make_shared<DebugMetricsMessage>(
+          metrics::DebugMetrics(kernel_->getBytesReadRemote(), 0, 0), this->name());
   ctx()->notifyRoot(execMetricsMsg);
   kernel_->clearBytesReadRemote();
 #endif

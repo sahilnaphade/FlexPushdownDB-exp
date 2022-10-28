@@ -279,7 +279,7 @@ void FPDBStoreSuperPOp::processAtStore() {
       // metrics
 #if SHOW_DEBUG_METRICS == true
       std::shared_ptr<Message> execMetricsMsg =
-              std::make_shared<DebugMetricsMessage>(tupleSet->size(), this->name());
+              std::make_shared<DebugMetricsMessage>(metrics::DebugMetrics(tupleSet->size(), 0, 0), this->name());
       ctx()->notifyRoot(execMetricsMsg);
 #endif
     }
@@ -287,7 +287,7 @@ void FPDBStoreSuperPOp::processAtStore() {
       // if having shuffle op
     else {
       std::shared_ptr<Message> tupleSetReadyRemoteMessage =
-              std::make_shared<TupleSetReadyRemoteMessage>(host_, flightPort_, name_);
+              std::make_shared<TupleSetReadyRemoteMessage>(host_, flightPort_, true, name_);
       ctx()->tell(tupleSetReadyRemoteMessage);
     }
   }

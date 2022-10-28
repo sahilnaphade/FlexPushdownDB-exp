@@ -5,6 +5,7 @@
 #include <fpdb/executor/physical/bloomfilter/BloomFilterCreatePOp.h>
 #include <fpdb/executor/physical/Globals.h>
 #include <fpdb/store/server/flight/PutBitmapCmd.hpp>
+#include <fpdb/tuple/util/Util.h>
 
 using namespace fpdb::store::server::flight;
 
@@ -165,6 +166,14 @@ void BloomFilterCreatePOp::putBloomFilterToStore(const std::shared_ptr<BloomFilt
       ctx()->notifyError(status.message());
     }
   }
+
+  // metrics
+#if SHOW_DEBUG_METRICS == true
+  std::shared_ptr<Message> execMetricsMsg = std::make_shared<DebugMetricsMessage>(
+          metrics::DebugMetrics(0, fpdb::tuple::util::Util::getSize(recordBatch) * bloomFilterInfo_->hosts_.size(), 0),
+          name_);
+  ctx()->notifyRoot(execMetricsMsg);
+#endif
 }
 
 void BloomFilterCreatePOp::notifyFPDBStoreBloomFilterUsers() {

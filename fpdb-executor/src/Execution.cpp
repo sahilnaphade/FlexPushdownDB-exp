@@ -70,7 +70,7 @@ void Execution::boot() {
   for (auto &element: opDirectory_) {
     auto op = element.second.getDef();
     const auto &segmentCacheActor = isDistributed_ ?
-            remoteSegmentCacheActors_[op->getNodeId()]:
+            remoteSegmentCacheActors_.empty() ? nullptr : remoteSegmentCacheActors_[op->getNodeId()]:
             localSegmentCacheActor_;
     auto ctx = make_shared<POpContext>(*rootActor_, segmentCacheActor);
     op->create(ctx);
@@ -659,11 +659,39 @@ string Execution::showDebugMetrics() const{
   ss << "Debug Metrics |" << endl << endl;
 
   stringstream formattedBytesFromStore;
-  formattedBytesFromStore << debugMetrics_.getBytesFromStore() << " B" << " ("
-                          << ((double) debugMetrics_.getBytesFromStore() / 1024.0 / 1024.0 / 1024.0) << " GB)";
+  int64_t bytesFromStore = debugMetrics_.getBytesFromStore();
+  formattedBytesFromStore << bytesFromStore << " B" << " ("
+                          << ((double) bytesFromStore / 1024.0 / 1024.0 / 1024.0) << " GB)";
 
   ss << left << setw(60) << "Bytes transferred from store";
   ss << left << setw(60) << formattedBytesFromStore.str();
+  ss << endl;
+
+  stringstream formattedBytesToStore;
+  int64_t bytesToStore = debugMetrics_.getBytesToStore();
+  formattedBytesToStore << bytesToStore << " B" << " ("
+                        << ((double) bytesToStore / 1024.0 / 1024.0 / 1024.0) << " GB)";
+
+  ss << left << setw(60) << "Bytes transferred to store";
+  ss << left << setw(60) << formattedBytesToStore.str();
+  ss << endl;
+
+  stringstream formattedBytesInterCompute;
+  int64_t bytesInterCompute = debugMetrics_.getBytesInterCompute();
+  formattedBytesInterCompute << bytesInterCompute << " B" << " ("
+                             << ((double) bytesInterCompute / 1024.0 / 1024.0 / 1024.0) << " GB)";
+
+  ss << left << setw(60) << "Bytes transferred across compute nodes";
+  ss << left << setw(60) << formattedBytesInterCompute.str();
+  ss << endl;
+
+  stringstream formattedBytesRemote;
+  int64_t bytesRemote = bytesFromStore + bytesToStore + bytesInterCompute;
+  formattedBytesRemote << bytesRemote << " B" << " ("
+                       << ((double) bytesRemote / 1024.0 / 1024.0 / 1024.0) << " GB)";
+
+  ss << left << setw(60) << "Bytes transferred totally";
+  ss << left << setw(60) << formattedBytesRemote.str();
   ss << endl;
 
   return ss.str();

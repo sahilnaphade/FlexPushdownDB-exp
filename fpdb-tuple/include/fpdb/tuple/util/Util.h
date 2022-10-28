@@ -25,6 +25,11 @@ public:
   static tl::expected<::arrow::RecordBatchVector, std::string>
   table_to_record_batches(const std::shared_ptr<::arrow::Table> &table);
 
+  /**
+   * Get the size (num bytes)
+   */
+  static int64_t getSize(const std::shared_ptr<arrow::RecordBatch> &recordBatch);
+
 };
 
 }

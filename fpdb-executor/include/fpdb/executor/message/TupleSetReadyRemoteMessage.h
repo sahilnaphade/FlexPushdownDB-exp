@@ -16,7 +16,10 @@ namespace fpdb::executor::message {
 class TupleSetReadyRemoteMessage : public Message {
 
 public:
-  explicit TupleSetReadyRemoteMessage(const std::string &host, int port, const std::string &sender);
+  explicit TupleSetReadyRemoteMessage(const std::string &host,
+                                      int port,
+                                      bool isFromStore,
+                                      const std::string &sender);
   TupleSetReadyRemoteMessage() = default;
   TupleSetReadyRemoteMessage(const TupleSetReadyRemoteMessage&) = default;
   TupleSetReadyRemoteMessage& operator=(const TupleSetReadyRemoteMessage&) = default;
@@ -26,10 +29,12 @@ public:
 
   const std::string &getHost() const;
   int getPort() const;
+  bool isFromStore() const;
 
 private:
   std::string host_;
   int port_;
+  bool isFromStore_;
 
 // caf inspect
 public:
@@ -38,7 +43,8 @@ public:
     return f.object(msg).fields(f.field("type", msg.type_),
                                 f.field("sender", msg.sender_),
                                 f.field("host", msg.host_),
-                                f.field("port", msg.port_));
+                                f.field("port", msg.port_),
+                                f.field("isFromStore", msg.isFromStore_));
   }
 };
 

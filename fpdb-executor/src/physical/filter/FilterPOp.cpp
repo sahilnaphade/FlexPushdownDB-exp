@@ -13,6 +13,7 @@
 #include <fpdb/expression/gandiva/BinaryExpression.h>
 #include <fpdb/tuple/Globals.h>
 #include <fpdb/tuple/serialization/ArrowSerializer.h>
+#include <fpdb/tuple/util/Util.h>
 #include <fpdb/util/Util.h>
 #include <arrow/flight/api.h>
 #include <utility>
@@ -566,6 +567,13 @@ void FilterPOp::putBitmapToFPDBStore() {
     ctx()->notifyError(status.message());
   }
 
+  // metrics
+#if SHOW_DEBUG_METRICS == true
+  std::shared_ptr<Message> execMetricsMsg = std::make_shared<DebugMetricsMessage>(
+          metrics::DebugMetrics(0, fpdb::tuple::util::Util::getSize(recordBatch), 0), name_);
+  ctx()->notifyRoot(execMetricsMsg);
+#endif
+
   bitmapWrapper_->isBitmapSent_ = true;
 }
 
@@ -616,6 +624,13 @@ void FilterPOp::getBitmapFromFPDBStore() {
     ctx()->notifyError(expBitmap.error());
   }
   bitmapWrapper_->bitmap_ = *expBitmap;
+
+  // metrics
+#if SHOW_DEBUG_METRICS == true
+  std::shared_ptr<Message> execMetricsMsg = std::make_shared<DebugMetricsMessage>(
+          metrics::DebugMetrics(fpdb::tuple::util::Util::getSize(recordBatches[0]), 0, 0), name_);
+  ctx()->notifyRoot(execMetricsMsg);
+#endif
 }
 
 void FilterPOp::checkApplicability(const std::shared_ptr<fpdb::tuple::TupleSet>& tupleSet) {
