@@ -40,10 +40,23 @@ Execution::~Execution() {
 }
 
 shared_ptr<TupleSet> Execution::execute() {
+  preExecute();
   boot();
   start();
   join();
   return legacyCollateOperator_->tuples();
+}
+
+void Execution::preExecute() {
+  // Set query id, and add physical operators to operator directory
+  for (const auto &opIt: physicalPlan_->getPhysicalOps()) {
+    auto op = opIt.second;
+    op->setQueryId(queryId_);
+    auto result = opDirectory_.insert(POpDirectoryEntry(op, nullptr, false));
+    if (!result.has_value()) {
+      throw runtime_error(result.error());
+    }
+  }
 }
 
 void Execution::boot() {
@@ -53,17 +66,6 @@ void Execution::boot() {
   (*rootActor_)->anon_send(localSegmentCacheActor_, NewQueryAtom_v);
   for (const auto &remoteSegmentCacheActor: remoteSegmentCacheActors_) {
     (*rootActor_)->anon_send(remoteSegmentCacheActor, NewQueryAtom_v);
-  }
-
-  // Set query id, and add physical operators to operator directory
-  for (const auto &opIt: physicalPlan_->getPhysicalOps()) {
-    auto op = opIt.second;
-    assert(op);
-    op->setQueryId(queryId_);
-    auto result = opDirectory_.insert(POpDirectoryEntry(op, nullptr, false));
-    if (!result.has_value()) {
-      throw runtime_error(result.error());
-    }
   }
 
   // Spawn actors locally/remotely according to nodeId assigned

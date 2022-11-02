@@ -14,7 +14,8 @@ enum class CmdTypeId {
   GET_OBJECT,
   SELECT_OBJECT_CONTENT,
   PUT_BITMAP,
-  CLEAR_BITMAP
+  CLEAR_BITMAP,
+  PUT_ADAPT_PUSHDOWN_METRICS
 };
 
 class CmdType {
@@ -32,6 +33,8 @@ public:
   static std::shared_ptr<CmdType> put_bitmap();
 
   static std::shared_ptr<CmdType> clear_bitmap();
+
+  static std::shared_ptr<CmdType> put_adapt_pushdown_metrics();
 
 private:
   CmdTypeId id_;

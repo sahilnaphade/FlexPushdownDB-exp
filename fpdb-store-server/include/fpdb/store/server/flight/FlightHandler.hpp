@@ -15,6 +15,7 @@
 #include "fpdb/store/server/flight/SelectObjectContentCmd.hpp"
 #include "fpdb/store/server/flight/PutBitmapCmd.hpp"
 #include "fpdb/store/server/flight/ClearBitmapCmd.hpp"
+#include "fpdb/store/server/flight/PutAdaptPushdownMetricsCmd.hpp"
 #include "fpdb/store/server/flight/GetObjectTicket.hpp"
 #include "fpdb/store/server/flight/SelectObjectContentTicket.hpp"
 #include "fpdb/store/server/flight/GetBitmapTicket.hpp"
@@ -23,6 +24,7 @@
 #include "fpdb/store/server/flight/BitmapType.h"
 #include "fpdb/store/server/flight/BitmapCache.hpp"
 #include "fpdb/store/server/flight/BloomFilterCache.hpp"
+#include "fpdb/store/server/flight/AdaptPushdownManager.hpp"
 #include "fpdb/store/server/flight/Util.hpp"
 #include "fpdb/store/server/caf/ActorManager.hpp"
 #include "fpdb/executor/flight/TableCache.h"
@@ -262,6 +264,16 @@ private:
 
   /**
    *
+   * @param context
+   * @param put_adapt_pushdown_metrics_cmd
+   * @return
+   */
+  tl::expected<void, ::arrow::Status> do_put_put_adapt_pushdown_metrics(
+          const ServerCallContext& context,
+          const std::shared_ptr<PutAdaptPushdownMetricsCmd>& put_adapt_pushdown_metrics_cmd);
+
+  /**
+   *
    * @param key
    * @param bitmap_type
    * @return
@@ -347,6 +359,7 @@ private:
   std::counting_semaphore<> select_req_sem_;
   double select_req_rej_offset_ = 0;  // used in "rej_select_req()"
   double select_req_rej_thresh_;      // used in "rej_select_req()"
+  AdaptPushdownManager adaptPushdownManager_;
 };
 
 } // namespace fpdb::store::server::flight

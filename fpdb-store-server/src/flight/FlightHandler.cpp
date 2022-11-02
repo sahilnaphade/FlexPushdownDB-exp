@@ -481,7 +481,7 @@ FlightHandler::do_put_for_cmd(const ServerCallContext& context,
   }
   auto cmd_object = expected_cmd_object.value();
 
-  switch(cmd_object->type()->id()) {
+  switch (cmd_object->type()->id()) {
     case CmdTypeId::PUT_BITMAP: {
       auto put_bitmap_cmd = std::static_pointer_cast<PutBitmapCmd>(cmd_object);
       return do_put_put_bitmap(context, put_bitmap_cmd, reader);
@@ -489,6 +489,10 @@ FlightHandler::do_put_for_cmd(const ServerCallContext& context,
     case CmdTypeId::CLEAR_BITMAP: {
       auto clear_bitmap_cmd = std::static_pointer_cast<ClearBitmapCmd>(cmd_object);
       return do_put_clear_bitmap(context, clear_bitmap_cmd);
+    }
+    case CmdTypeId::PUT_ADAPT_PUSHDOWN_METRICS: {
+      auto put_adapt_pushdown_metrics = std::static_pointer_cast<PutAdaptPushdownMetricsCmd>(cmd_object);
+      return do_put_put_adapt_pushdown_metrics(context, put_adapt_pushdown_metrics);
     }
     default: {
       return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed,
@@ -565,6 +569,15 @@ FlightHandler::do_put_clear_bitmap(const ServerCallContext&,
 
   // just consume the bitmap
   get_bitmap_from_cache(bitmap_key, clear_bitmap_cmd->bitmap_type());
+
+  return {};
+}
+
+tl::expected<void, ::arrow::Status> FlightHandler::do_put_put_adapt_pushdown_metrics(
+        const ServerCallContext&,
+        const std::shared_ptr<PutAdaptPushdownMetricsCmd>& put_adapt_pushdown_metrics_cmd) {
+  // save metrics of adaptive pushdown
+  adaptPushdownManager_.addAdaptPushdownMetrics(put_adapt_pushdown_metrics_cmd->getAdaptPushdownMetrics());
 
   return {};
 }

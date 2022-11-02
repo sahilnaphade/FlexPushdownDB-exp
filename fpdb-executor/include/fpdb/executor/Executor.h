@@ -8,6 +8,7 @@
 #include <fpdb/executor/physical/PhysicalPlan.h>
 #include <fpdb/cache/policy/CachingPolicy.h>
 #include <fpdb/plan/Mode.h>
+#include <fpdb/catalogue/obj-store/fpdb-store/FPDBStoreConnector.h>
 #include <fpdb/tuple/TupleSet.h>
 #include <caf/all.hpp>
 #include <memory>
@@ -47,8 +48,11 @@ public:
    *
    * @return query result and execution time
    */
-  pair<shared_ptr<TupleSet>, long> execute(const shared_ptr<PhysicalPlan> &physicalPlan,
-                                           bool isDistributed);
+  pair<shared_ptr<TupleSet>, long> execute(
+          const shared_ptr<PhysicalPlan> &physicalPlan,
+          bool isDistributed,
+          bool collAdaptPushdownMetrics = false,
+          const std::shared_ptr<fpdb::catalogue::obj_store::FPDBStoreConnector> &fpdbStoreConnector = nullptr);
 
   const ::caf::actor &getLocalSegmentCacheActor() const;
   const vector<::caf::actor> &getRemoteSegmentCacheActors() const;

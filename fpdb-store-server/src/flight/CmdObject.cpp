@@ -6,6 +6,7 @@
 #include "fpdb/store/server/flight/SelectObjectContentCmd.hpp"
 #include "fpdb/store/server/flight/PutBitmapCmd.hpp"
 #include "fpdb/store/server/flight/ClearBitmapCmd.hpp"
+#include "fpdb/store/server/flight/PutAdaptPushdownMetricsCmd.hpp"
 #include "fpdb/store/server/flight/Util.hpp"
 #include <fmt/format.h>
 
@@ -30,6 +31,8 @@ tl::expected<std::shared_ptr<CmdObject>, std::string> CmdObject::deserialize(con
     return PutBitmapCmd::from_json(document);
   } else if (type == ClearBitmapCmdTypeName.data()) {
     return ClearBitmapCmd::from_json(document);
+  } else if (type == PutAdaptPushdownMetricsCmdTypeName.data()) {
+    return PutAdaptPushdownMetricsCmd::from_json(document);
   } else {
     return tl::make_unexpected(fmt::format("Unsupported cmd object type: '{}'", type));
   }

@@ -101,6 +101,10 @@ void TestUtil::setFixLayoutIndices(const set<int> &fixLayoutIndices) {
   fixLayoutIndices_ = fixLayoutIndices;
 }
 
+void TestUtil::setCollAdaptPushdownMetrics(bool collAdaptPushdownMetrics) {
+  collAdaptPushdownMetrics_ = collAdaptPushdownMetrics;
+}
+
 void TestUtil::runTest() {
   spdlog::set_level(spdlog::level::info);
 
@@ -274,7 +278,10 @@ void TestUtil::executeQueryFile(const string &queryFileName) {
                                                     numNodes);
 
   // execute
-  const auto &execRes = executor_->execute(physicalPlan, isDistributed_);
+  const auto &execRes = objStoreConnector_->getStoreType() == ObjStoreType::FPDB_STORE ?
+                        executor_->execute(physicalPlan, isDistributed_, collAdaptPushdownMetrics_,
+                                           static_pointer_cast<FPDBStoreConnector>(objStoreConnector_)) :
+                        executor_->execute(physicalPlan, isDistributed_);
 
   // show output
   stringstream ss;
@@ -295,6 +302,9 @@ void TestUtil::stop() {
     s3Connector->getAwsClient()->shutdown();
   }
   executor_->stop();
+
+  // stop calcite client
+  calciteClient_->stopClient();
 
   // stop actor system for adaptive pushdown if needed
   if (ENABLE_ADAPTIVE_PUSHDOWN) {

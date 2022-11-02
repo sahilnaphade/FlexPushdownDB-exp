@@ -23,10 +23,16 @@ CalciteClient::CalciteClient(const shared_ptr<CalciteConfig> &calciteConfig) :
 
 void CalciteClient::startClient() {
   shared_ptr<TSocket> socket = make_shared<TSocket>("localhost", calciteConfig_->getPort());
-  shared_ptr<TTransport> transport = make_shared<TBufferedTransport>(socket);
-  shared_ptr<TProtocol> protocol = make_shared<TBinaryProtocol>(transport);
-  transport->open();
+  transport_ = make_shared<TBufferedTransport>(socket);
+  shared_ptr<TProtocol> protocol = make_shared<TBinaryProtocol>(transport_);
+  transport_->open();
   calciteServerClient_ = make_shared<CalciteServerClient>(protocol);
+}
+
+void CalciteClient::stopClient() {
+  transport_->close();
+  transport_.reset();
+  calciteServerClient_.reset();
 }
 
 void CalciteClient::startServer() {

@@ -8,6 +8,7 @@
 
 #include <fpdb/executor/Executor.h>
 #include <fpdb/executor/Execution.h>
+#include <fpdb/executor/CollAdaptPushdownMetricsExecution.h>
 #include <fpdb/executor/cache/SegmentCacheActor.h>
 #include <fpdb/cache/caf-serialization/CAFCachingPolicySerializer.h>
 
@@ -83,9 +84,21 @@ void Executor::stop() {
   running_ = false;
 }
 
-pair<shared_ptr<TupleSet>, long> Executor::execute(const shared_ptr<PhysicalPlan> &physicalPlan,
-                                                   bool isDistributed) {
-  const auto &execution = make_shared<Execution>(nextQueryId(),
+pair<shared_ptr<TupleSet>, long> Executor::execute(
+        const shared_ptr<PhysicalPlan> &physicalPlan,
+        bool isDistributed,
+        bool collAdaptPushdownMetrics,
+        const std::shared_ptr<fpdb::catalogue::obj_store::FPDBStoreConnector> &fpdbStoreConnector) {
+  const auto &execution = collAdaptPushdownMetrics ?
+                          make_shared<CollAdaptPushdownMetricsExecution>(nextQueryId(),
+                                                                         actorSystem_,
+                                                                         nodes_,
+                                                                         localSegmentCacheActor_,
+                                                                         remoteSegmentCacheActors_,
+                                                                         physicalPlan,
+                                                                         isDistributed,
+                                                                         fpdbStoreConnector) :
+                          make_shared<Execution>(nextQueryId(),
                                                  actorSystem_,
                                                  nodes_,
                                                  localSegmentCacheActor_,

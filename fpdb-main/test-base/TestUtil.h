@@ -59,11 +59,12 @@ public:
            bool isDistributed,
            ObjStoreType objStoreType,
            const shared_ptr<Mode> &mode,
-           CachingPolicyType cachingPolicyType,
-           size_t cacheSize);
+           CachingPolicyType cachingPolicyType = CachingPolicyType::NONE,
+           size_t cacheSize = 1L * 1024 * 1024 * 1024);
 
   double getCrtQueryHitRatio() const;
   void setFixLayoutIndices(const set<int> &fixLayoutIndices);
+  void setCollAdaptPushdownMetrics(bool collAdaptPushdownMetrics);
 
   void runTest();
 
@@ -104,6 +105,8 @@ private:
   // metrics used for checking in some unit tests
   double crtQueryHitRatio_;
 
+  // used to collect adaptive pushdown metrics
+  bool collAdaptPushdownMetrics_ = false;
 };
 
 }

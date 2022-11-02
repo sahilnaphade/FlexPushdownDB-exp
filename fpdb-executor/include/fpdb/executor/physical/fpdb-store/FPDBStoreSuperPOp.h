@@ -43,6 +43,7 @@ public:
   void setShufflePOp(const std::shared_ptr<PhysicalOp> &op);
   void addFPDBStoreBloomFilterProducer(const std::shared_ptr<PhysicalOp> &fpdbStoreBloomFilterProducer);
   void setForwardConsumers(const std::vector<std::shared_ptr<PhysicalOp>> &consumers);
+  void setGetAdaptPushdownMetrics(bool getAdaptPushdownMetrics);
 
 private:
   void onStart();
@@ -74,6 +75,9 @@ private:
   int numBloomFiltersExpected_ = 0;
   int numBloomFiltersReceived_ = 0;
 
+  // for metrics of adaptive pushdown
+  bool getAdaptPushdownMetrics_ = false;
+
 // caf inspect
 public:
   template <class Inspector>
@@ -96,7 +100,8 @@ public:
                                f.field("receiveByOthers", op.receiveByOthers_),
                                f.field("shufflePOpName", op.shufflePOpName_),
                                f.field("numBloomFiltersExpected", op.numBloomFiltersExpected_),
-                               f.field("numBloomFiltersReceived", op.numBloomFiltersReceived_));
+                               f.field("numBloomFiltersReceived", op.numBloomFiltersReceived_),
+                               f.field("getAdaptPushdownMetrics", op.getAdaptPushdownMetrics_));
   }
 
 };

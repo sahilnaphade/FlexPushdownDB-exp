@@ -18,11 +18,13 @@ public:
   explicit CalciteClient(const shared_ptr<CalciteConfig> &calciteConfig);
   void startClient();
   void startServer();
+  void stopClient();
   void shutdownServer();
   string planQuery(const string& query, const string& schemaName);
 
 private:
   shared_ptr<CalciteConfig> calciteConfig_;
+  shared_ptr<::apache::thrift::transport::TTransport> transport_;
   shared_ptr<CalciteServerClient> calciteServerClient_;
 };
 

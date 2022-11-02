@@ -34,4 +34,8 @@ std::shared_ptr<CmdType> CmdType::clear_bitmap() {
   return std::make_shared<CmdType>(CmdTypeId::CLEAR_BITMAP, ClearBitmapCmdTypeName.data());
 }
 
+std::shared_ptr<CmdType> CmdType::put_adapt_pushdown_metrics() {
+  return std::make_shared<CmdType>(CmdTypeId::PUT_ADAPT_PUSHDOWN_METRICS, PutAdaptPushdownMetricsCmdTypeName.data());
+}
+
 } // namespace fpdb::store::server::flight

@@ -35,6 +35,8 @@ public:
 
   std::string getTypeString() const override;
 
+  void setGetAdaptPushdownMetrics(bool getAdaptPushdownMetrics);
+
 // caf inspect
 public:
   template <class Inspector>
@@ -51,7 +53,8 @@ public:
                                f.field("isSeparated", op.isSeparated_),
                                f.field("kernel", op.kernel_),
                                f.field("scanOnStart", op.scanOnStart_),
-                               f.field("toCache", op.toCache_));
+                               f.field("toCache", op.toCache_),
+                               f.field("getAdaptPushdownMetrics", op.getAdaptPushdownMetrics_));
   }
 
 };

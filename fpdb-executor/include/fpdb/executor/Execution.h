@@ -38,7 +38,7 @@ public:
             bool isDistributed);
   virtual ~Execution();
 
-  shared_ptr<TupleSet> execute();
+  virtual shared_ptr<TupleSet> execute();
 
   long getQueryId() const;
   long getElapsedTime();
@@ -55,6 +55,7 @@ public:
 #endif
 
 protected:
+  virtual void preExecute();
   void boot();
   void start();
   virtual void join();
@@ -62,7 +63,7 @@ protected:
 
   ::caf::actor localSpawn(const shared_ptr<PhysicalOp> &op);
   ::caf::actor remoteSpawn(const shared_ptr<PhysicalOp> &op, int nodeId);
-  static bool useDetached(const shared_ptr<PhysicalOp> &op);
+  bool useDetached(const shared_ptr<PhysicalOp> &op);
 
   long queryId_;
   shared_ptr<::caf::actor_system> actorSystem_;

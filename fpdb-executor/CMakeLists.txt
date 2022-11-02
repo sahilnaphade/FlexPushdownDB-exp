@@ -21,6 +21,7 @@ add_library(fpdb-executor STATIC
         src/message/ErrorMessage.cpp include/fpdb/executor/message/ErrorMessage.h
         src/message/BloomFilterMessage.cpp include/fpdb/executor/message/BloomFilterMessage.h
         src/message/BitmapMessage.cpp include/fpdb/executor/message/BitmapMessage.h
+        src/message/AdaptPushdownMetricsMessage.cpp include/fpdb/executor/message/AdaptPushdownMetricsMessage.h
         src/message/cache/CacheMetricsMessage.cpp include/fpdb/executor/message/cache/CacheMetricsMessage.h
         src/message/cache/LoadRequestMessage.cpp include/fpdb/executor/message/cache/LoadRequestMessage.h
         src/message/cache/LoadResponseMessage.cpp include/fpdb/executor/message/cache/LoadResponseMessage.h
@@ -143,7 +144,8 @@ add_library(fpdb-executor STATIC
 #        executor
         src/Executor.cpp include/fpdb/executor/Executor.h
         src/Execution.cpp include/fpdb/executor/Execution.h
-        src/FPDBStoreExecution.cpp include/fpdb/executor/FPDBStoreExecution.h)
+        src/FPDBStoreExecution.cpp include/fpdb/executor/FPDBStoreExecution.h
+        src/CollAdaptPushdownMetricsExecution.cpp include/fpdb/executor/CollAdaptPushdownMetricsExecution.h)
 
 target_include_directories(fpdb-executor PUBLIC include)
 

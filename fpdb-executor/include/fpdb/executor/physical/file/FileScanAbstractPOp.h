@@ -44,6 +44,8 @@ protected:
   bool scanOnStart_;
   bool toCache_;
 
+  // for metrics of adaptive pushdown
+  bool getAdaptPushdownMetrics_ = false;
 };
 
 }

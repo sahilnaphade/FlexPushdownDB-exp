@@ -128,6 +128,10 @@ void FPDBStoreSuperPOp::setForwardConsumers(const std::vector<std::shared_ptr<Ph
   collatePOp->setEndConsumers(endConsumers);
 }
 
+void FPDBStoreSuperPOp::setGetAdaptPushdownMetrics(bool getAdaptPushdownMetrics) {
+  getAdaptPushdownMetrics_ = getAdaptPushdownMetrics;
+}
+
 void FPDBStoreSuperPOp::onStart() {
   SPDLOG_DEBUG("Starting operator  |  name: '{}'", this->name());
 
@@ -224,6 +228,7 @@ void FPDBStoreSuperPOp::processAtStore() {
     ctx()->tell(tupleSetWaitRemoteMessage);
   }
 
+  auto startTime = std::chrono::steady_clock::now();
   std::unique_ptr<::arrow::flight::FlightStreamReader> reader;
   status = client->DoGet(*expTicket, &reader);
   if (!status.ok()) {
@@ -254,6 +259,20 @@ void FPDBStoreSuperPOp::processAtStore() {
   if (!status.ok()) {
     ctx()->notifyError(status.message());
     return;
+  }
+  auto stopTime = std::chrono::steady_clock::now();
+
+  // for metrics of adaptive pushdown
+  if (getAdaptPushdownMetrics_) {
+    auto expAdaptPushdownMetricsKey = AdaptPushdownMetricsMessage::generateAdaptPushdownMetricsKey(queryId_, name_);
+    if (!expAdaptPushdownMetricsKey.has_value()) {
+      ctx()->notifyError(expAdaptPushdownMetricsKey.error());
+      return;
+    }
+    int64_t execTime = std::chrono::duration_cast<chrono::nanoseconds>(stopTime - startTime).count();
+    std::shared_ptr<Message> adaptPushdownMetricsMessage = std::make_shared<AdaptPushdownMetricsMessage>(
+            *expAdaptPushdownMetricsKey, execTime, name_);
+    ctx()->notifyRoot(adaptPushdownMetricsMessage);
   }
 
   // if pushdown result hasn't been waiting by consumers

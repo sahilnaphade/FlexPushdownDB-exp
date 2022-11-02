@@ -86,11 +86,26 @@ std::shared_ptr<TupleSet> FileScanAbstractPOp::readTuples(const std::vector<std:
   if (columnNames.empty()) {
     readTupleSet = TupleSet::makeWithEmptyTable();
   } else {
+    auto startTime = std::chrono::steady_clock::now();
     auto expectedReadTupleSet = kernel_->scan(columnNames);
     if (!expectedReadTupleSet.has_value()) {
       ctx()->notifyError(expectedReadTupleSet.error());
     }
     readTupleSet = expectedReadTupleSet.value();
+    auto stopTime = std::chrono::steady_clock::now();
+
+    // for metrics of adaptive pushdown
+    if (getAdaptPushdownMetrics_) {
+      auto expAdaptPushdownMetricsKey = AdaptPushdownMetricsMessage::generateAdaptPushdownMetricsKey(queryId_, name_);
+      if (!expAdaptPushdownMetricsKey.has_value()) {
+        ctx()->notifyError(expAdaptPushdownMetricsKey.error());
+        return readTupleSet;
+      }
+      int64_t execTime = std::chrono::duration_cast<chrono::nanoseconds>(stopTime - startTime).count();
+      std::shared_ptr<Message> adaptPushdownMetricsMessage = std::make_shared<AdaptPushdownMetricsMessage>(
+              *expAdaptPushdownMetricsKey, execTime, name_);
+      ctx()->notifyRoot(adaptPushdownMetricsMessage);
+    }
   }
 
   // metrics

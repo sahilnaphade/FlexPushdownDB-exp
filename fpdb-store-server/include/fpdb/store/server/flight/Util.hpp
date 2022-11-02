@@ -26,11 +26,13 @@ static constexpr std::string_view BloomFilterJSONName = "bloom_filter";
 static constexpr std::string_view ProducerJSONName = "producer";
 static constexpr std::string_view ConsumerJSONName = "consumer";
 static constexpr std::string_view WaitNotExistJSONName = "wait_not_exist";
+static constexpr std::string_view AdaptPushdownMetricsJSONName = "adapt_pushdown_metrics";
 
 static constexpr std::string_view GetObjectCmdTypeName = "get_object";
 static constexpr std::string_view SelectObjectContentCmdTypeName = "select_object_content";
 static constexpr std::string_view PutBitmapCmdTypeName = "put_bitmap";
 static constexpr std::string_view ClearBitmapCmdTypeName = "clear_bitmap";
+static constexpr std::string_view PutAdaptPushdownMetricsCmdTypeName = "put_adapt_pushdown_metrics";
 static constexpr std::string_view GetObjectTicketTypeName = "get_object";
 static constexpr std::string_view SelectObjectContentTicketTypeName = "select_object_content";
 static constexpr std::string_view GetBitmapTicketTypeName = "get_bitmap";

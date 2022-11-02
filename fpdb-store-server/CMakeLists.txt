@@ -59,6 +59,7 @@ add_library(fpdb-store-server-flight-api STATIC
         include/fpdb/store/server/flight/BitmapType.h
         src/flight/PutBitmapCmd.cpp include/fpdb/store/server/flight/PutBitmapCmd.hpp
         src/flight/ClearBitmapCmd.cpp include/fpdb/store/server/flight/ClearBitmapCmd.hpp
+        src/flight/PutAdaptPushdownMetricsCmd.cpp include/fpdb/store/server/flight/PutAdaptPushdownMetricsCmd.hpp
         src/flight/TicketType.cpp include/fpdb/store/server/flight/TicketType.hpp
         src/flight/TicketObject.cpp include/fpdb/store/server/flight/TicketObject.hpp
         src/flight/GetObjectTicket.cpp include/fpdb/store/server/flight/GetObjectTicket.hpp
@@ -90,7 +91,8 @@ add_library(fpdb-store-server-objlib OBJECT
         src/flight/HeaderMiddleware.cpp include/fpdb/store/server/flight/HeaderMiddleware.hpp
         src/flight/HeaderMiddlewareFactory.cpp include/fpdb/store/server/flight/HeaderMiddlewareFactory.hpp
         src/flight/BitmapCache.cpp include/fpdb/store/server/flight/BitmapCache.hpp
-        src/flight/BloomFilterCache.cpp include/fpdb/store/server/flight/BloomFilterCache.hpp)
+        src/flight/BloomFilterCache.cpp include/fpdb/store/server/flight/BloomFilterCache.hpp
+        src/flight/AdaptPushdownManager.cpp include/fpdb/store/server/flight/AdaptPushdownManager.hpp)
 
 set_target_properties(fpdb-store-server-objlib PROPERTIES POSITION_INDEPENDENT_CODE ON)
 set_target_properties(fpdb-store-server-objlib PROPERTIES OUTPUT_NAME fpdb-store-server)

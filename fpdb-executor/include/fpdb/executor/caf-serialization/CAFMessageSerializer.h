@@ -20,6 +20,7 @@
 #include <fpdb/executor/message/TupleSetSizeMessage.h>
 #include <fpdb/executor/message/BloomFilterMessage.h>
 #include <fpdb/executor/message/BitmapMessage.h>
+#include <fpdb/executor/message/AdaptPushdownMetricsMessage.h>
 #include <fpdb/executor/message/cache/LoadRequestMessage.h>
 #include <fpdb/executor/message/cache/LoadResponseMessage.h>
 #include <fpdb/executor/message/cache/StoreRequestMessage.h>
@@ -48,6 +49,7 @@ CAF_ADD_TYPE_ID(Message, (TupleSetWaitRemoteMessage))
 CAF_ADD_TYPE_ID(Message, (TupleSetSizeMessage))
 CAF_ADD_TYPE_ID(Message, (BloomFilterMessage))
 CAF_ADD_TYPE_ID(Message, (BitmapMessage))
+CAF_ADD_TYPE_ID(Message, (AdaptPushdownMetricsMessage))
 // For the following cache messages, we have to implement `inspect` for concrete derived shared_ptr type one by one,
 // because SegmentCacheActor directly uses the concrete derived types rather than base type Message used by other actors
 CAF_ADD_TYPE_ID(Message, (LoadRequestMessage))
@@ -85,7 +87,8 @@ struct variant_inspector_traits<MessagePtr> {
           type_id_v<TupleSetWaitRemoteMessage>,
           type_id_v<TupleSetSizeMessage>,
           type_id_v<BloomFilterMessage>,
-          type_id_v<BitmapMessage>
+          type_id_v<BitmapMessage>,
+          type_id_v<AdaptPushdownMetricsMessage>
   };
 
   // Returns which type in allowed_types corresponds to x.
@@ -120,6 +123,8 @@ struct variant_inspector_traits<MessagePtr> {
       return 13;
     else if (x->type() == MessageType::BITMAP)
       return 14;
+    else if (x->type() == MessageType::ADAPT_PUSHDOWN_METRICS)
+      return 15;
     else
       return -1;
   }
@@ -156,6 +161,8 @@ struct variant_inspector_traits<MessagePtr> {
         return f(dynamic_cast<BloomFilterMessage &>(*x));
       case 14:
         return f(dynamic_cast<BitmapMessage &>(*x));
+      case 15:
+        return f(dynamic_cast<AdaptPushdownMetricsMessage &>(*x));
       default: {
         none_t dummy;
         return f(dummy);
@@ -251,6 +258,11 @@ struct variant_inspector_traits<MessagePtr> {
       }
       case type_id_v<BitmapMessage>: {
         auto tmp = BitmapMessage{};
+        continuation(tmp);
+        return true;
+      }
+      case type_id_v<AdaptPushdownMetricsMessage>: {
+        auto tmp = AdaptPushdownMetricsMessage{};
         continuation(tmp);
         return true;
       }

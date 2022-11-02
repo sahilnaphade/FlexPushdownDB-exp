@@ -32,4 +32,8 @@ std::string RemoteFileScanPOp::getTypeString() const {
   return "RemoteFileScanPOp";
 }
 
+void RemoteFileScanPOp::setGetAdaptPushdownMetrics(bool getAdaptPushdownMetrics) {
+  getAdaptPushdownMetrics_ = getAdaptPushdownMetrics;
+}
+
 }
