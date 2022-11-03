@@ -43,7 +43,7 @@ static constexpr std::string_view BucketHeaderKey = "bucket";
 static constexpr std::string_view ObjectHeaderKey = "object";
 
 static constexpr arrow::flight::FlightStatusCode ReqRejectStatusCode = arrow::flight::FlightStatusCode::Unavailable;
-static constexpr bool LimitSelectReq = false;
+static constexpr int NumRequiredCoresForSelect = 1;
 static constexpr int AvailCpuPercent = 100;    // [0, 100], only used when "LimitSelectReq" = true
 
 class Util {

@@ -323,11 +323,6 @@ private:
    */
   int update_scan_drive_id();
 
-  /**
-   * decide whether to reject the incoming select request
-   */
-  bool rej_select_req();
-
   ::arrow::flight::Location location_;
   std::shared_ptr<::caf::actor_system> actor_system_;
   std::string store_root_path_prefix_;
@@ -353,12 +348,7 @@ private:
   std::mutex table_mutex_;
   std::unordered_map<std::string, std::shared_ptr<std::condition_variable_any>> table_cvs_;
 
-  // if resource is limited, restrict the active "select" requests
-  bool limit_select_req_;
-  std::mutex select_req_mutex_;
-  std::counting_semaphore<> select_req_sem_;
-  double select_req_rej_offset_ = 0;  // used in "rej_select_req()"
-  double select_req_rej_thresh_;      // used in "rej_select_req()"
+  // adaptive pushdown
   AdaptPushdownManager adaptPushdownManager_;
 };
 

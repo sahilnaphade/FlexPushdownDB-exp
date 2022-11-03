@@ -5,6 +5,7 @@
 #include <doctest/doctest.h>
 #include <fpdb/store/server/Server.hpp>
 #include <fpdb/store/client/FPDBStoreClientConfig.h>
+#include <fpdb/executor/physical/Globals.h>
 #include "TestUtil.h"
 #include "Globals.h"
 
@@ -1072,6 +1073,8 @@ TEST_CASE ("tpch-sf0.01-1-node-hash-part-hash-join-synthetic-3-table" * doctest:
 TEST_SUITE ("tpch-sf0.01-fpdb-store-same-node-adaptive-pushdown" * doctest::skip(SKIP_SUITE)) {
 
 void test_tpch_sf0_01_fpdb_store_same_node_adaptive_pushdown(const std::string &queryFileName) {
+  bool origFlag = fpdb::executor::physical::ENABLE_ADAPTIVE_PUSHDOWN;
+  fpdb::executor::physical::ENABLE_ADAPTIVE_PUSHDOWN = true;
   startFPDBStoreServer();
 
   // adaptive pushdown metrics of pullup run
@@ -1104,6 +1107,7 @@ void test_tpch_sf0_01_fpdb_store_same_node_adaptive_pushdown(const std::string &
   REQUIRE_NOTHROW(testUtil3.runTest());
 
   stopFPDBStoreServer();
+  fpdb::executor::physical::ENABLE_ADAPTIVE_PUSHDOWN = origFlag;
 }
 
 TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-adaptive-pushdown-19" * doctest::skip(false || SKIP_SUITE)) {

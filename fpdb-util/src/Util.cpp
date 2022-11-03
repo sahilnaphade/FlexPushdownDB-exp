@@ -7,6 +7,7 @@
 #include <filesystem>
 #include <fstream>
 #include <sstream>
+#include <thread>
 
 string fpdb::util::readFile(const string& filePath) {
   ifstream inFile(filePath);
@@ -148,4 +149,9 @@ tl::expected<string, string> fpdb::util::execCmd(const char *cmd) {
 
 tl::expected<string, string> fpdb::util::getLocalIp() {
   return execCmd("curl -s ifconfig.me");
+}
+
+double fpdb::util::getAvailCpuCores() {
+  // TODO
+  return std::thread::hardware_concurrency();
 }

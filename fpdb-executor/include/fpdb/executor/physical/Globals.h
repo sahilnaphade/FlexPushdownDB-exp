@@ -54,6 +54,12 @@ inline bool ENABLE_ADAPTIVE_PUSHDOWN = false;
 inline constexpr int64_t BLOOM_FILTER_MAX_INPUT_SIZE = 20000000;  // won't create bloom filter if input is too large
 
 /**
+ * For adaptive pushdown
+ */
+static constexpr std::string_view PullupOpNamePrefix = "RemoteFileScan";
+static constexpr std::string_view PushdownOpNamePrefix = "FPDBStoreSuper";
+
+/**
  * If we create a client for each DoPut() request, some of them will be blocked at Connect() for ~10s,
  * however this is not an issue for DoGet() requests.
  * So here we keep a single flight client for DoPut() requests for each host.

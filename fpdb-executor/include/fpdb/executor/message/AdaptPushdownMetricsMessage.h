@@ -29,9 +29,6 @@ public:
   int64_t getExecTime() const;
 
 private:
-  static constexpr std::string_view PullupOpNamePrefix = "RemoteFileScan";
-  static constexpr std::string_view PushdownOpNamePrefix = "FPDBStoreSuper";
-
   std::string key_;
   int64_t execTime_;
 

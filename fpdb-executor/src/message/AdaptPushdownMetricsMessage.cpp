@@ -3,7 +3,10 @@
 //
 
 #include <fpdb/executor/message/AdaptPushdownMetricsMessage.h>
+#include <fpdb/executor/physical/Globals.h>
 #include <fmt/format.h>
+
+using namespace fpdb::executor::physical;
 
 namespace fpdb::executor::message {
 
