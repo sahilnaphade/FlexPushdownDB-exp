@@ -152,6 +152,9 @@ tl::expected<string, string> fpdb::util::getLocalIp() {
 }
 
 double fpdb::util::getAvailCpuCores() {
-  // TODO
-  return std::thread::hardware_concurrency();
+  auto expCpuUsage = execCmd("ps -A -o %cpu | awk '{s+=$1} END {print s}'");
+  if (!expCpuUsage.has_value()) {
+    throw runtime_error(expCpuUsage.error());
+  }
+  return ((double) std::thread::hardware_concurrency()) - stod(*expCpuUsage) / 100.0;
 }
