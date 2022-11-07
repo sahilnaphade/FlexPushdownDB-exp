@@ -132,6 +132,7 @@ pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>> PrePToFPDBS
                   vector<string>{},  // never used
                   0,                 // never used
                   make_shared<PhysicalPlan>(opMaps[i], collatePOps[i]),
+                  fpdbStoreParallelDegree_,
                   fpdbStoreConnector_->getHost(i),
                   fpdbStoreConnector_->getFileServicePort(),
                   fpdbStoreConnector_->getFlightPort());
@@ -189,6 +190,7 @@ pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>> PrePToFPDBS
                   collatePOps[i]->getProjectColumnNames(),
                   collatePOps[i]->getNodeId(),
                   subPlan,
+                  1,
                   host,
                   fpdbStoreConnector_->getFileServicePort(),
                   fpdbStoreConnector_->getFlightPort()));

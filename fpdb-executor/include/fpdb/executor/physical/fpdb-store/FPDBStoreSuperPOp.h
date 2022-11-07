@@ -20,6 +20,7 @@ public:
                     const std::vector<std::string> &projectColumnNames,
                     int nodeId,
                     const std::shared_ptr<PhysicalPlan> &subPlan,
+                    int parallelDegree,
                     const std::string &host,
                     int fileServicePort,
                     int flightPort);
@@ -58,6 +59,7 @@ private:
   tl::expected<std::string, std::string> serialize(bool pretty);
 
   std::shared_ptr<PhysicalPlan> subPlan_;
+  int parallelDegree_;
   std::string host_;
   int fileServicePort_;     // for adaptive pushdown
   int flightPort_;
@@ -93,6 +95,7 @@ public:
                                f.field("consumerToBloomFilterInfo", op.consumerToBloomFilterInfo_),
                                f.field("isSeparated", op.isSeparated_),
                                f.field("subPlan", op.subPlan_),
+                               f.field("parallelDegree", op.parallelDegree_),
                                f.field("host", op.host_),
                                f.field("fileServicePort", op.fileServicePort_),
                                f.field("flightPort", op.flightPort_),

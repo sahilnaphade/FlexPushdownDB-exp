@@ -17,15 +17,18 @@ class SelectObjectContentTicket : public TicketObject {
 public:
   SelectObjectContentTicket(long query_id,
                             const std::string &fpdb_store_super_pop,
-                            const std::string &query_plan_string);
+                            const std::string &query_plan_string,
+                            int parallel_degree);
 
   static std::shared_ptr<SelectObjectContentTicket> make(long query_id,
                                                          const std::string &fpdb_store_super_pop,
-                                                         const std::string &query_plan_string);
+                                                         const std::string &query_plan_string,
+                                                         int parallel_degree);
 
   long query_id() const;
   const std::string &fpdb_store_super_pop() const;
   const std::string &query_plan_string() const;
+  int parallel_degree() const;
 
   tl::expected<std::string, std::string> serialize(bool pretty) override;
 
@@ -35,6 +38,7 @@ private:
   long query_id_;
   std::string fpdb_store_super_pop_;
   std::string query_plan_string_;
+  int parallel_degree_;
 };
 
 }

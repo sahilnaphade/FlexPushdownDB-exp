@@ -151,10 +151,10 @@ tl::expected<string, string> fpdb::util::getLocalIp() {
   return execCmd("curl -s ifconfig.me");
 }
 
-double fpdb::util::getAvailCpuCores() {
-  auto expCpuUsage = execCmd("ps -A -o %cpu | awk '{s+=$1} END {print s}'");
-  if (!expCpuUsage.has_value()) {
-    throw runtime_error(expCpuUsage.error());
+double fpdb::util::getCpuUsage() {
+  auto expCpuUsageOverOneCore = execCmd("ps -A -o %cpu | awk '{s+=$1} END {print s}'");
+  if (!expCpuUsageOverOneCore.has_value()) {
+    throw runtime_error(expCpuUsageOverOneCore.error());
   }
-  return ((double) std::thread::hardware_concurrency()) - stod(*expCpuUsage) / 100.0;
+  return stod(*expCpuUsageOverOneCore) / ((double) std::thread::hardware_concurrency());
 }

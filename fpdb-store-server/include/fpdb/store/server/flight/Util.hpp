@@ -18,6 +18,7 @@ static constexpr std::string_view ObjectJSONName = "object";
 static constexpr std::string_view QueryIdJSONName = "query_id";
 static constexpr std::string_view FPDBStoreSuperPOpJSONName = "fpdb_store_super_pop";
 static constexpr std::string_view QueryPlanJSONName = "query_plan";
+static constexpr std::string_view ParallelDegreeJSONName = "parallel_degree";
 static constexpr std::string_view OpJSONName = "op";
 static constexpr std::string_view ValidJSONName = "valid";
 static constexpr std::string_view BitmapTypeJSONName = "bitmap_type";
@@ -43,7 +44,6 @@ static constexpr std::string_view BucketHeaderKey = "bucket";
 static constexpr std::string_view ObjectHeaderKey = "object";
 
 static constexpr arrow::flight::FlightStatusCode ReqRejectStatusCode = arrow::flight::FlightStatusCode::Unavailable;
-static constexpr int NumRequiredCoresForSelect = 1;
 static constexpr int AvailCpuPercent = 100;    // [0, 100], only used when "LimitSelectReq" = true
 
 class Util {

@@ -25,11 +25,13 @@ FPDBStoreSuperPOp::FPDBStoreSuperPOp(const std::string &name,
                                      const std::vector<std::string> &projectColumnNames,
                                      int nodeId,
                                      const std::shared_ptr<PhysicalPlan> &subPlan,
+                                     int parallelDegree,
                                      const std::string &host,
                                      int fileServicePort,
                                      int flightPort):
   PhysicalOp(name, POpType::FPDB_STORE_SUPER, projectColumnNames, nodeId),
   subPlan_(subPlan),
+  parallelDegree_(parallelDegree),
   host_(host),
   fileServicePort_(fileServicePort),
   flightPort_(flightPort) {}
@@ -214,7 +216,7 @@ void FPDBStoreSuperPOp::processAtStore() {
     ctx()->notifyError(expPlanString.error());
     return;
   }
-  auto ticketObj = SelectObjectContentTicket::make(queryId_, name_, *expPlanString);
+  auto ticketObj = SelectObjectContentTicket::make(queryId_, name_, *expPlanString, parallelDegree_);
   auto expTicket = ticketObj->to_ticket(false);
   if (!expTicket.has_value()) {
     ctx()->notifyError(expTicket.error());

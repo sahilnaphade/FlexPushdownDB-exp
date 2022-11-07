@@ -226,7 +226,8 @@ tl::expected<std::unique_ptr<FlightInfo>, ::arrow::Status> FlightHandler::get_fl
   // Create the ticket
   auto ticket_object = SelectObjectContentTicket::make(0,
                                                        "",
-                                                       select_object_content_cmd->query_plan_string());
+                                                       select_object_content_cmd->query_plan_string(),
+                                                       1);
   auto exp_ticket = ticket_object->to_ticket(false);
   if (!exp_ticket.has_value()) {
     return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed, exp_ticket.error()));
@@ -312,12 +313,15 @@ tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::
   auto fpdb_store_super_pop = select_object_content_ticket->fpdb_store_super_pop();
 
   // adaptive pushdown
+  std::shared_ptr<AdaptPushdownReqInfo> req;
   if (ENABLE_ADAPTIVE_PUSHDOWN) {
-    AdaptPushdownReqInfo req{query_id, fpdb_store_super_pop, NumRequiredCoresForSelect,
-                             std::make_shared<std::binary_semaphore>(0)};
+    req = std::make_shared<AdaptPushdownReqInfo>(query_id,
+                                                 fpdb_store_super_pop,
+                                                 select_object_content_ticket->parallel_degree(),
+                                                 std::make_shared<std::binary_semaphore>(0));
     if (adaptPushdownManager_.receiveOne(req)) {
       // execute as pushdown
-      req.sem_->acquire();
+      req->sem_->acquire();
     } else {
       // fall back as pullup
       return tl::make_unexpected(MakeFlightError(ReqRejectStatusCode, "Resource limited"));
@@ -329,7 +333,7 @@ tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::
                                                                  getStoreRootPath(update_scan_drive_id()));
   if (!exp_physical_plan.has_value()) {
     if (ENABLE_ADAPTIVE_PUSHDOWN) {
-      adaptPushdownManager_.finishOne(NumRequiredCoresForSelect);
+      adaptPushdownManager_.finishOne(req);
     }
     return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed, exp_physical_plan.error()));
   }
@@ -357,7 +361,7 @@ tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::
         auto exp_bloom_filter = bloom_filter_cache_.consumeBloomFilter(bloom_filter_key);
         if (!exp_bloom_filter.has_value()) {
           if (ENABLE_ADAPTIVE_PUSHDOWN) {
-            adaptPushdownManager_.finishOne(NumRequiredCoresForSelect);
+            adaptPushdownManager_.finishOne(req);
           }
           return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed, exp_bloom_filter.error()));
         }
@@ -400,13 +404,13 @@ tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::
   auto exp_batches = tuple::util::Util::table_to_record_batches(table);
   if (!exp_batches.has_value()) {
     if (ENABLE_ADAPTIVE_PUSHDOWN) {
-      adaptPushdownManager_.finishOne(NumRequiredCoresForSelect);
+      adaptPushdownManager_.finishOne(req);
     }
     return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed, exp_batches.error()));
   }
   auto rb_reader = ::arrow::RecordBatchReader::Make(*exp_batches);
   if (ENABLE_ADAPTIVE_PUSHDOWN) {
-    adaptPushdownManager_.finishOne(NumRequiredCoresForSelect);
+    adaptPushdownManager_.finishOne(req);
   }
   return std::make_unique<::arrow::flight::RecordBatchStream>(*rb_reader);
 }

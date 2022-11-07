@@ -28,6 +28,7 @@
 #include "fpdb/store/server/flight/Util.hpp"
 #include "fpdb/store/server/caf/ActorManager.hpp"
 #include "fpdb/executor/flight/TableCache.h"
+#include "fpdb/executor/physical/PhysicalPlan.h"
 
 using namespace ::arrow::flight;
 
