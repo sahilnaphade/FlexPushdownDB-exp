@@ -25,7 +25,8 @@ int main(int /*argc*/, char** /*argv*/) {
                                                           10001,
                                                           fpdbStoreServerConfig->getFlightPort(),
                                                           fpdbStoreServerConfig->getFileServicePort(),
-                                                          fpdbStoreServerConfig->getStoreRootPath()},
+                                                          fpdbStoreServerConfig->getStoreRootPathPrefix(),
+                                                          fpdbStoreServerConfig->getNumDrives()},
                                              std::nullopt,
                                              actorManager);
 
