@@ -65,7 +65,6 @@ def format_data_for_table(table, column_names, num_partitions):
 
         # remove '|' at the end of each row
         procs = []
-        print("start")
         for partition_file in partition_files:
             if platform.system() == "Darwin":
                 cmd_remove_end = 'sed -i \'\' \'s/.$//\' {}'.format(partition_file)
