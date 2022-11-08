@@ -94,8 +94,8 @@ int64_t AdaptPushdownManager::getWaitTime() {
   auto currTime = std::chrono::steady_clock::now();
   for (const auto &execReq: execSet_) {
     if (execReq->estExecTime_.has_value()) {
-      waitTime += std::max(0ll, *execReq->estExecTime_ -
-          std::chrono::duration_cast<chrono::nanoseconds>(currTime - *execReq->startTime_).count());
+      waitTime += std::max((int64_t) 0, (int64_t) (*execReq->estExecTime_ -
+          std::chrono::duration_cast<chrono::nanoseconds>(currTime - *execReq->startTime_).count()));
     }
   }
   return waitTime / (std::thread::hardware_concurrency() * AvailCpuPercent / 100.0);
