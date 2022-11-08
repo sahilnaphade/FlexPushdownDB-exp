@@ -69,6 +69,7 @@ public:
   void runTest();
 
 private:
+  void readPushdownFlags();
   void makeObjStoreConnector();
   void makeCatalogueEntry();
   void makeCachingPolicy();

@@ -3,6 +3,7 @@
 //
 
 #include <fpdb/plan/prephysical/separable/SeparableTraits.h>
+#include "fpdb/plan/prephysical/separable/Globals.h"
 
 namespace fpdb::plan::prephysical::separable {
 
@@ -18,13 +19,11 @@ std::shared_ptr<SeparableTraits> SeparableTraits::S3SeparableTraits() {
 std::shared_ptr<SeparableTraits> SeparableTraits::FPDBStoreSeparableTraits() {
   // GROUP is excluded because it's separable only when using two-phase group-by, and only the first phase is separable,
   // so that flag is set by 'StoreTransformTraits'.
-  return std::make_shared<SeparableTraits>(std::set<PrePOpType>{
-    FILTERABLE_SCAN,
-    FILTER,
-    AGGREGATE,
-    PROJECT,
-    HASH_JOIN
-  });
+  std::set<PrePOpType> separablePrePOpTypes{FILTERABLE_SCAN, FILTER, AGGREGATE, PROJECT};
+  if (ENABLE_CO_LOCATED_JOIN_PUSHDOWN) {
+    separablePrePOpTypes.emplace(HASH_JOIN);
+  }
+  return std::make_shared<SeparableTraits>(separablePrePOpTypes);
 }
 
 std::shared_ptr<SeparableTraits> SeparableTraits::localFSSeparableTraits() {

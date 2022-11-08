@@ -24,7 +24,7 @@ void stopFPDBStoreServer();
 TEST_SUITE ("bitmap-pushdown" * doctest::skip(SKIP_SUITE)) {
 
 TEST_CASE ("bitmap-pushdown-all-cached" * doctest::skip(false || SKIP_SUITE)) {
-  fpdb::executor::physical::ENABLE_FPDB_STORE_BITMAP_PUSHDOWN = true;
+  fpdb::executor::physical::ENABLE_FILTER_BITMAP_PUSHDOWN = true;
   std::string testQueryFileName = "test.sql";
   std::string testQuery = "select\n"
                           "    l_returnflag, l_linestatus, l_quantity, l_extendedprice\n"
@@ -57,12 +57,12 @@ TEST_CASE ("bitmap-pushdown-all-cached" * doctest::skip(false || SKIP_SUITE)) {
   stopFPDBStoreServer();
 
   // clear query file
-  fpdb::executor::physical::ENABLE_FPDB_STORE_BITMAP_PUSHDOWN = false;
+  fpdb::executor::physical::ENABLE_FILTER_BITMAP_PUSHDOWN = false;
   TestUtil::removeQueryFile(testQueryFileName);
 }
 
 TEST_CASE ("bitmap-pushdown-none-cached" * doctest::skip(false || SKIP_SUITE)) {
-  fpdb::executor::physical::ENABLE_FPDB_STORE_BITMAP_PUSHDOWN = true;
+  fpdb::executor::physical::ENABLE_FILTER_BITMAP_PUSHDOWN = true;
   std::string cachingQueryFileName = "caching.sql";
   std::string testQueryFileName = "test.sql";
   std::string cachingQuery = "select\n"
@@ -106,7 +106,7 @@ TEST_CASE ("bitmap-pushdown-none-cached" * doctest::skip(false || SKIP_SUITE)) {
   stopFPDBStoreServer();
 
   // clear query file
-  fpdb::executor::physical::ENABLE_FPDB_STORE_BITMAP_PUSHDOWN = false;
+  fpdb::executor::physical::ENABLE_FILTER_BITMAP_PUSHDOWN = false;
   TestUtil::removeQueryFile(cachingQueryFileName);
   TestUtil::removeQueryFile(testQueryFileName);
 }
@@ -115,7 +115,7 @@ TEST_CASE ("bitmap-pushdown-none-cached" * doctest::skip(false || SKIP_SUITE)) {
  * The case when bitmap is constructed at compute side, and both sides have some project column groups
  */
 TEST_CASE ("bitmap-pushdown-partial-cached-compute-bitmap-both-project" * doctest::skip(false || SKIP_SUITE)) {
-  fpdb::executor::physical::ENABLE_FPDB_STORE_BITMAP_PUSHDOWN = true;
+  fpdb::executor::physical::ENABLE_FILTER_BITMAP_PUSHDOWN = true;
   std::string cachingQueryFileName = "caching.sql";
   std::string testQueryFileName = "test.sql";
   std::string cachingQuery = "select\n"
@@ -164,7 +164,7 @@ TEST_CASE ("bitmap-pushdown-partial-cached-compute-bitmap-both-project" * doctes
   stopFPDBStoreServer();
 
   // clear query file
-  fpdb::executor::physical::ENABLE_FPDB_STORE_BITMAP_PUSHDOWN = false;
+  fpdb::executor::physical::ENABLE_FILTER_BITMAP_PUSHDOWN = false;
   TestUtil::removeQueryFile(cachingQueryFileName);
   TestUtil::removeQueryFile(testQueryFileName);
 }
@@ -173,7 +173,7 @@ TEST_CASE ("bitmap-pushdown-partial-cached-compute-bitmap-both-project" * doctes
  * The case when bitmap is constructed at compute side, and only storage side has some project column groups
  */
 TEST_CASE ("bitmap-pushdown-partial-cached-compute-bitmap-only-storage-project" * doctest::skip(false || SKIP_SUITE)) {
-  fpdb::executor::physical::ENABLE_FPDB_STORE_BITMAP_PUSHDOWN = true;
+  fpdb::executor::physical::ENABLE_FILTER_BITMAP_PUSHDOWN = true;
   std::string cachingQueryFileName = "caching.sql";
   std::string testQueryFileName = "test.sql";
   std::string cachingQuery = "select\n"
@@ -222,7 +222,7 @@ TEST_CASE ("bitmap-pushdown-partial-cached-compute-bitmap-only-storage-project" 
   stopFPDBStoreServer();
 
   // clear query file
-  fpdb::executor::physical::ENABLE_FPDB_STORE_BITMAP_PUSHDOWN = false;
+  fpdb::executor::physical::ENABLE_FILTER_BITMAP_PUSHDOWN = false;
   TestUtil::removeQueryFile(cachingQueryFileName);
   TestUtil::removeQueryFile(testQueryFileName);
 }
@@ -231,7 +231,7 @@ TEST_CASE ("bitmap-pushdown-partial-cached-compute-bitmap-only-storage-project" 
  * The case when bitmap is constructed at storage side, and both sides have some project column groups
  */
 TEST_CASE ("bitmap-pushdown-partial-cached-storage-bitmap-both-project" * doctest::skip(false || SKIP_SUITE)) {
-  fpdb::executor::physical::ENABLE_FPDB_STORE_BITMAP_PUSHDOWN = true;
+  fpdb::executor::physical::ENABLE_FILTER_BITMAP_PUSHDOWN = true;
   std::string cachingQueryFileName = "caching.sql";
   std::string testQueryFileName = "test.sql";
   std::string cachingQuery = "select\n"
@@ -280,7 +280,7 @@ TEST_CASE ("bitmap-pushdown-partial-cached-storage-bitmap-both-project" * doctes
   stopFPDBStoreServer();
 
   // clear query file
-  fpdb::executor::physical::ENABLE_FPDB_STORE_BITMAP_PUSHDOWN = false;
+  fpdb::executor::physical::ENABLE_FILTER_BITMAP_PUSHDOWN = false;
   TestUtil::removeQueryFile(cachingQueryFileName);
   TestUtil::removeQueryFile(testQueryFileName);
 }
@@ -289,7 +289,7 @@ TEST_CASE ("bitmap-pushdown-partial-cached-storage-bitmap-both-project" * doctes
  * The case when bitmap is constructed at storage side, and only compute side has some project column groups
  */
 TEST_CASE ("bitmap-pushdown-partial-cached-storage-bitmap-only-compute-project" * doctest::skip(false || SKIP_SUITE)) {
-  fpdb::executor::physical::ENABLE_FPDB_STORE_BITMAP_PUSHDOWN = true;
+  fpdb::executor::physical::ENABLE_FILTER_BITMAP_PUSHDOWN = true;
   std::string cachingQueryFileName = "caching.sql";
   std::string testQueryFileName = "test.sql";
   std::string cachingQuery = "select\n"
@@ -338,7 +338,7 @@ TEST_CASE ("bitmap-pushdown-partial-cached-storage-bitmap-only-compute-project" 
   stopFPDBStoreServer();
 
   // clear query file
-  fpdb::executor::physical::ENABLE_FPDB_STORE_BITMAP_PUSHDOWN = false;
+  fpdb::executor::physical::ENABLE_FILTER_BITMAP_PUSHDOWN = false;
   TestUtil::removeQueryFile(cachingQueryFileName);
   TestUtil::removeQueryFile(testQueryFileName);
 }

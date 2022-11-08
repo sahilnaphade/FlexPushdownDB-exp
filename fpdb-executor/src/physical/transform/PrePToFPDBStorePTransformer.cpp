@@ -657,7 +657,7 @@ PrePToFPDBStorePTransformer::transformPushdownOnlyToHybrid(const vector<shared_p
     }
 
     // enable bitmap pushdown if required
-    if (StoreTransformTraits::FPDBStoreStoreTransformTraits()->isBitmapPushdownEnabled()) {
+    if (StoreTransformTraits::FPDBStoreStoreTransformTraits()->isFilterBitmapPushdownEnabled()) {
       enableBitmapPushdown(storePOpToLocalPOp, typedFPDBStoreSuperPOp);
     }
   }

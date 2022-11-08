@@ -8,9 +8,9 @@
 namespace fpdb::executor::physical {
 
 StoreTransformTraits::StoreTransformTraits(const std::set<POpType> &addiSeparablePOpTypes,
-                                           bool isBitmapPushdownEnabled):
+                                           bool filterBitmapPushdownEnabled):
   addiSeparablePOpTypes_(addiSeparablePOpTypes),
-  isBitmapPushdownEnabled_(isBitmapPushdownEnabled) {}
+  filterBitmapPushdownEnabled_(filterBitmapPushdownEnabled) {}
 
 std::shared_ptr<StoreTransformTraits> StoreTransformTraits::S3StoreTransformTraits() {
   return std::make_shared<StoreTransformTraits>(std::set<POpType>{},
@@ -18,18 +18,25 @@ std::shared_ptr<StoreTransformTraits> StoreTransformTraits::S3StoreTransformTrai
 }
 
 std::shared_ptr<StoreTransformTraits> StoreTransformTraits::FPDBStoreStoreTransformTraits() {
-  return std::make_shared<StoreTransformTraits>(std::set<POpType>{GROUP,
-                                                                  SHUFFLE,
-                                                                  BLOOM_FILTER_USE},
-                                                ENABLE_FPDB_STORE_BITMAP_PUSHDOWN);
+  std::set<POpType> separableOpTypes;
+  if (ENABLE_GROUP_BY_PUSHDOWN) {
+    separableOpTypes.emplace(GROUP);
+  }
+  if (ENABLE_SHUFFLE_PUSHDOWN) {
+    separableOpTypes.emplace(SHUFFLE);
+  }
+  if (ENABLE_BLOOM_FILTER_PUSHDOWN) {
+    separableOpTypes.emplace(BLOOM_FILTER_USE);
+  }
+  return std::make_shared<StoreTransformTraits>(separableOpTypes, ENABLE_FILTER_BITMAP_PUSHDOWN);
 }
 
 bool StoreTransformTraits::isSeparable(POpType pOpType) const {
   return addiSeparablePOpTypes_.find(pOpType) != addiSeparablePOpTypes_.end();
 }
 
-bool StoreTransformTraits::isBitmapPushdownEnabled() const {
-  return isBitmapPushdownEnabled_;
+bool StoreTransformTraits::isFilterBitmapPushdownEnabled() const {
+  return filterBitmapPushdownEnabled_;
 }
 
 }

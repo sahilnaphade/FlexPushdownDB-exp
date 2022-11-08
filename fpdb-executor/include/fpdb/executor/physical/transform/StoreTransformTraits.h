@@ -20,17 +20,17 @@ class StoreTransformTraits {
 
 public:
   StoreTransformTraits(const std::set<POpType> &addiSeparablePOpTypes,
-                       bool isBitmapPushdownEnabled);
+                       bool filterBitmapPushdownEnabled);
 
   static std::shared_ptr<StoreTransformTraits> S3StoreTransformTraits();
   static std::shared_ptr<StoreTransformTraits> FPDBStoreStoreTransformTraits();
 
   bool isSeparable(POpType pOpType) const;
-  bool isBitmapPushdownEnabled() const;
+  bool isFilterBitmapPushdownEnabled() const;
 
 private:
   std::set<POpType> addiSeparablePOpTypes_;
-  bool isBitmapPushdownEnabled_;
+  bool filterBitmapPushdownEnabled_;
 
 };
 

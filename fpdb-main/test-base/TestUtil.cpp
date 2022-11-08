@@ -16,11 +16,13 @@
 #include <fpdb/calcite/CalciteConfig.h>
 #include <fpdb/plan/calcite/CalcitePlanJsonDeserializer.h>
 #include <fpdb/plan/prephysical/separable/SeparablePrePOpTransformer.h>
+#include <fpdb/plan/prephysical/separable/Globals.h>
 #include <fpdb/catalogue/obj-store/ObjStoreCatalogueEntryReader.h>
 #include <fpdb/catalogue/obj-store/s3/S3Connector.h>
 #include <fpdb/catalogue/obj-store/fpdb-store/FPDBStoreConnector.h>
 #include <fpdb/aws/AWSConfig.h>
 #include <fpdb/store/client/FPDBStoreClientConfig.h>
+#include <fpdb/store/server/flight/Util.hpp>
 #include <fpdb/util/Util.h>
 
 using namespace fpdb::executor::physical;
@@ -29,6 +31,7 @@ using namespace fpdb::plan::calcite;
 using namespace fpdb::plan::prephysical::separable;
 using namespace fpdb::catalogue::obj_store;
 using namespace fpdb::store::client;
+using namespace fpdb::store::server::flight;
 using namespace fpdb::util;
 
 namespace fpdb::main::test {
@@ -108,6 +111,9 @@ void TestUtil::setCollAdaptPushdownMetrics(bool collAdaptPushdownMetrics) {
 void TestUtil::runTest() {
   spdlog::set_level(spdlog::level::info);
 
+  // Pushdown feature flags
+  readPushdownFlags();
+
   // Object store connector
   makeObjStoreConnector();
 
@@ -135,6 +141,17 @@ void TestUtil::runTest() {
 
   // stop
   stop();
+}
+
+void TestUtil::readPushdownFlags() {
+  unordered_map<string, string> configMap = readConfig("pushdown.conf");
+  ENABLE_GROUP_BY_PUSHDOWN = parseBool(configMap["GROUP"]);
+  ENABLE_SHUFFLE_PUSHDOWN = parseBool(configMap["SHUFFLE"]);
+  ENABLE_BLOOM_FILTER_PUSHDOWN = parseBool(configMap["BLOOM_FILTER"]);
+  ENABLE_FILTER_BITMAP_PUSHDOWN = parseBool(configMap["FILTER_BITMAP"]);
+  ENABLE_CO_LOCATED_JOIN_PUSHDOWN = parseBool(configMap["CO_LOCATED_JOIN"]);
+  ENABLE_ADAPTIVE_PUSHDOWN = parseBool(configMap["ADAPTIVE"]);
+  AvailCpuPercent = stoi(configMap["ADAPTIVE_AVAIL_CPU_PERCENT"]);
 }
 
 void TestUtil::makeObjStoreConnector() {

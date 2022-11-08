@@ -22,6 +22,7 @@ add_library(fpdb-plan STATIC
         src/prephysical/ProjectPrePOp.cpp include/fpdb/plan/prephysical/ProjectPrePOp.h
         src/prephysical/FilterPrePOp.cpp include/fpdb/plan/prephysical/FilterPrePOp.h
         src/prephysical/FilterableScanPrePOp.cpp include/fpdb/plan/prephysical/FilterableScanPrePOp.h
+        include/fpdb/plan/prephysical/separable/Globals.h
         src/prephysical/separable/SeparableSuperPrePOp.cpp include/fpdb/plan/prephysical/separable/SeparableSuperPrePOp.h
         src/prephysical/separable/SeparablePrePOpTransformer.cpp include/fpdb/plan/prephysical/separable/SeparablePrePOpTransformer.h
         src/prephysical/separable/SeparableTraits.cpp include/fpdb/plan/prephysical/separable/SeparableTraits.h
