@@ -19,7 +19,7 @@ AWSClient::AWSClient(const shared_ptr<AWSConfig> &awsConfig) :
 }
 
 void AWSClient::init() {
-  options_.loggingOptions.logLevel = Aws::Utils::Logging::LogLevel::Debug;
+  options_.loggingOptions.logLevel = Aws::Utils::Logging::LogLevel::Off;
   Aws::InitAPI(options_);
   s3Client_ = makeS3Client();
 }

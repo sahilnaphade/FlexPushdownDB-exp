@@ -18,6 +18,7 @@
 #include <iostream>
 #include <thread>
 #include <mutex>
+#include <condition_variable>
 
 using namespace fpdb::executor::physical::shuffle;
 using namespace fpdb::tuple;
@@ -32,7 +33,8 @@ public:
                   bool recreateMetadataFiles, const std::optional<std::string> &key):
     schema_(schema), table_(table),
     numPartitions_(numPartitions), numNodes_(numNodes), numRowsPerPart_(numRowsPerPart),
-    recreateMetadataFiles_(recreateMetadataFiles), key_(key) {
+    recreateMetadataFiles_(recreateMetadataFiles), key_(key),
+    availSlots_(std::thread::hardware_concurrency()) {
     // Extract 'schemaWoFormat_', format_' and 'suffix_' from "schema_"
     auto schemaWoLastSlash = schema_.substr(0, schema_.length() - 1);
     auto pos = schemaWoLastSlash.rfind('/');
@@ -115,6 +117,15 @@ private:
   }
 
   void readAndPartition(const std::string &object) {
+    // limit concurrency
+    {
+      std::unique_lock lock(parallelMutex_);
+      parallelCv_.wait(lock, [&] {
+        return availSlots_ > 0;
+      });
+      --availSlots_;
+    }
+
     // Read and partition
     std::vector<std::shared_ptr<TupleSet>> partitions;
     auto tupleSet = readObject(object);
@@ -122,6 +133,13 @@ private:
       partitions = hashPartition(tupleSet);
     } else {
       partitions = splitPartition(tupleSet);
+    }
+
+    // limit concurrency
+    {
+      std::unique_lock lock(parallelMutex_);
+      ++availSlots_;
+      parallelCv_.notify_all();
     }
 
     // Save
@@ -268,6 +286,7 @@ private:
       }
       outputTupleSets_.emplace_back(outputTupleSetsOneNode);
     }
+    partitionsVec_.clear();
 
     fprintf(log_, "Done\n");
     fflush(log_);
@@ -386,6 +405,15 @@ private:
   }
 
   void writeObject(const std::string &object, const std::shared_ptr<TupleSet> &tupleSet) {
+    // limit concurrency
+    {
+      std::unique_lock lock(parallelMutex_);
+      parallelCv_.wait(lock, [&] {
+        return availSlots_ > 0;
+      });
+      --availSlots_;
+    }
+
     // write table as parquet into arrow buffer
     auto expBufferOutputStream = arrow::io::BufferOutputStream::Create();
     if (!expBufferOutputStream.ok()) {
@@ -426,6 +454,13 @@ private:
     if (!putObjectOutcome.IsSuccess()) {
       throw std::runtime_error(putObjectOutcome.GetError().GetMessage().c_str());
     }
+
+    // limit concurrency
+    {
+      std::unique_lock lock(parallelMutex_);
+      ++availSlots_;
+      parallelCv_.notify_all();
+    }
   }
 
   std::string schema_;
@@ -444,6 +479,10 @@ private:
   std::vector<std::vector<std::shared_ptr<TupleSet>>> outputTupleSets_;  // final partitions for each node
   std::mutex mutex_;
   FILE *log_;
+
+  int availSlots_;
+  std::mutex parallelMutex_;
+  std::condition_variable_any parallelCv_;
 };
 
 int main(int argc, char *argv[]) {
