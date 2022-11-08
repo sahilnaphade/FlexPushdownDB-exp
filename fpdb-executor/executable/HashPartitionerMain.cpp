@@ -168,23 +168,16 @@ private:
   // Partition the table into 'numNodes_' pieces evenly
   std::vector<std::shared_ptr<TupleSet>>
   splitPartition(const std::shared_ptr<TupleSet> &tupleSet) {
-    // Combine chunks
-    auto res = tupleSet->combine();
-    if (!res.has_value()) {
-      throw std::runtime_error(res.error());
-    }
-
     // split evenly
     int64_t splitSize = tupleSet->numRows() / numNodes_;
-    std::vector<arrow::ArrayVector> splitArrays{(size_t) numNodes_};
-    for (const auto &column: tupleSet->table()->columns()) {
-      auto inputArray = column->chunk(0);
+    std::vector<arrow::ChunkedArrayVector> splitColumns{(size_t) numNodes_};
+    for (const auto &inputColumn: tupleSet->table()->columns()) {
       for (int i = 0; i < numNodes_; ++i) {
         int64_t offset = i * splitSize;
         if (i < numNodes_ - 1) {
-          splitArrays[i].emplace_back(inputArray->Slice(offset, splitSize));
+          splitColumns[i].emplace_back(inputColumn->Slice(offset, splitSize));
         } else {
-          splitArrays[i].emplace_back(inputArray->Slice(offset));
+          splitColumns[i].emplace_back(inputColumn->Slice(offset));
         }
       }
     }
@@ -192,7 +185,12 @@ private:
     // make output tupleSets
     std::vector<std::shared_ptr<TupleSet>> outputTupleSets;
     for (int i = 0; i < numNodes_; ++i) {
-      outputTupleSets.emplace_back(TupleSet::make(tupleSet->schema(), splitArrays[i]));
+      auto outputTupleSet = TupleSet::make(tupleSet->schema(), splitColumns[i]);
+      auto res = outputTupleSet->combine();
+      if (!res.has_value()) {
+        throw std::runtime_error(res.error());
+      }
+      outputTupleSets.emplace_back(outputTupleSet);
     }
     return outputTupleSets;
   }
@@ -219,52 +217,54 @@ private:
       }
     }
 
-    // Concatenate and combine partitions that belong to the same node
-    std::vector<std::shared_ptr<TupleSet>> combinedTupleSets;
+    // Concatenate partitions that belong to the same node
+    std::vector<std::shared_ptr<TupleSet>> concatenatedTupleSets;
     for (const auto &rotatedPartitions: rotatedPartitionsVec) {
       auto expConcatenatedTupleSet = TupleSet::concatenate(rotatedPartitions);
       if (!expConcatenatedTupleSet.has_value()) {
         throw std::runtime_error(expConcatenatedTupleSet.error());
       }
       auto concatenatedTupleSet = *expConcatenatedTupleSet;
-      auto res = concatenatedTupleSet->combine();
-      if (!res.has_value()) {
-        throw std::runtime_error(res.error());
-      }
-      combinedTupleSets.emplace_back(concatenatedTupleSet);
+      concatenatedTupleSets.emplace_back(concatenatedTupleSet);
     }
 
     // Split combined tupleSet into 'num_rows_per_part' for each node
-    for (const auto &tupleSet: combinedTupleSets) {
+    for (const auto &tupleSet: concatenatedTupleSets) {
       // split on 'num_rows_per_part'
-      std::vector<arrow::ArrayVector> splitArrays;
+      std::vector<arrow::ChunkedArrayVector> splitColumns;
+
       for (int c = 0; c < tupleSet->numColumns(); ++c) {
-        auto inputArray = tupleSet->table()->column(c)->chunk(0);
+        auto inputColumn = tupleSet->table()->column(c);
         int64_t offset = 0;
         int num_part = 0;
         while (offset + numRowsPerPart_ < tupleSet->numRows()) {
-          auto arraySlice = inputArray->Slice(offset, numRowsPerPart_);
+          auto columnSlice = inputColumn->Slice(offset, numRowsPerPart_);
           if (c == 0) {
-            splitArrays.emplace_back(arrow::ArrayVector{arraySlice});
+            splitColumns.emplace_back(arrow::ChunkedArrayVector{columnSlice});
           } else {
-            splitArrays[num_part++].emplace_back(arraySlice);
+            splitColumns[num_part++].emplace_back(columnSlice);
           }
           offset += numRowsPerPart_;
         }
         if (offset < tupleSet->numRows()) {
-          auto arraySlice = inputArray->Slice(offset);
+          auto columnSlice = inputColumn->Slice(offset);
           if (c == 0) {
-            splitArrays.emplace_back(arrow::ArrayVector{arraySlice});
+            splitColumns.emplace_back(arrow::ChunkedArrayVector{columnSlice});
           } else {
-            splitArrays[num_part++].emplace_back(arraySlice);
+            splitColumns[num_part++].emplace_back(columnSlice);
           }
         }
       }
 
       // make output tupleSets
       std::vector<std::shared_ptr<TupleSet>> outputTupleSetsOneNode;
-      for (const auto &arrayVec: splitArrays) {
-        outputTupleSetsOneNode.emplace_back(TupleSet::make(tupleSet->schema(), arrayVec));
+      for (const auto &columnVec: splitColumns) {
+        auto outputTupleSet = TupleSet::make(tupleSet->schema(), columnVec);
+        auto res = outputTupleSet->combine();
+        if (!res.has_value()) {
+          throw std::runtime_error(res.error());
+        }
+        outputTupleSetsOneNode.emplace_back(outputTupleSet);
       }
       outputTupleSets_.emplace_back(outputTupleSetsOneNode);
     }

@@ -49,6 +49,7 @@ try:
     is_first_table = True
     for table in partition_map:
         # params
+        print("Partition table: " + table + "... ", end='', flush=True)
         params = "{} {} {} {} {} {}".format(schema,
                                             table,
                                             partition_map[table],
@@ -60,8 +61,10 @@ try:
             params = "{} {}".format(params, hash_keys[table])
         # run exec
         os.system("./fpdb-executor-hash-partitioner-exec {}".format(params))
+        print("done")
 except Exception as e:
     print("Error: {}".format(e))
+print("Tables partitioned.")
 
 # go back
 os.chdir(my_cwd)
