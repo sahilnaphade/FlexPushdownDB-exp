@@ -318,10 +318,14 @@ tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::
     req = std::make_shared<AdaptPushdownReqInfo>(query_id,
                                                  fpdb_store_super_pop,
                                                  select_object_content_ticket->parallel_degree(),
-                                                 std::make_shared<std::binary_semaphore>(0));
+                                                 std::make_shared<std::mutex>(),
+                                                 std::make_shared<std::condition_variable_any>());
     if (adaptPushdownManager_.receiveOne(req)) {
       // execute as pushdown
-      req->sem_->acquire();
+      std::unique_lock lock(*req->mutex_);
+      req->cv_->wait(lock, [&] {
+        return req->status_ == AdaptPushdownReqInfo::STATUS::RUN;
+      });
     } else {
       // fall back as pullup
       return tl::make_unexpected(MakeFlightError(ReqRejectStatusCode, "Resource limited"));

@@ -51,7 +51,11 @@ TestUtil::TestUtil(const string &schemaName,
   objStoreType_(objStoreType),
   mode_(mode),
   cachingPolicyType_(cachingPolicyType),
-  cacheSize_(cacheSize) {}
+  cacheSize_(cacheSize) {
+
+  // Set pushdown feature flags
+  readPushdownFlags();
+}
 
 bool TestUtil::e2eNoStartCalciteServer(const string &schemaName,
                                        const vector<string> &queryFileNames,
@@ -110,9 +114,6 @@ void TestUtil::setCollAdaptPushdownMetrics(bool collAdaptPushdownMetrics) {
 
 void TestUtil::runTest() {
   spdlog::set_level(spdlog::level::info);
-
-  // Pushdown feature flags
-  readPushdownFlags();
 
   // Object store connector
   makeObjStoreConnector();

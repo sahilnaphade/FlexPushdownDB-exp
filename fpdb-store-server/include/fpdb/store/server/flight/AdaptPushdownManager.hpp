@@ -12,7 +12,7 @@
 #include "vector"
 #include "string"
 #include "mutex"
-#include "semaphore"
+#include "condition_variable"
 #include "queue"
 
 namespace fpdb::store::server::flight {
@@ -21,13 +21,17 @@ struct AdaptPushdownReqInfo {
   AdaptPushdownReqInfo(long queryId,
                        const std::string &op,
                        int numRequiredCpuCores,
-                       const std::shared_ptr<std::binary_semaphore> &sem):
-  queryId_(queryId), op_(op), numRequiredCpuCores_(numRequiredCpuCores), sem_(sem) {}
+                       const std::shared_ptr<std::mutex> &mutex,
+                       const std::shared_ptr<std::condition_variable_any> &cv):
+  queryId_(queryId), op_(op), numRequiredCpuCores_(numRequiredCpuCores),
+  mutex_(mutex), cv_(cv) {}
 
   long queryId_;
   std::string op_;
   int numRequiredCpuCores_;
-  std::shared_ptr<std::binary_semaphore> sem_;
+  std::shared_ptr<std::mutex> mutex_;
+  std::shared_ptr<std::condition_variable_any> cv_;
+  enum STATUS {WAIT, RUN, FINISH} status_ = STATUS::WAIT;
   std::optional<std::chrono::steady_clock::time_point> startTime_ = std::nullopt;
   std::optional<int64_t> estExecTime_ = std::nullopt;
 };

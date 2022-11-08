@@ -52,7 +52,8 @@ bool AdaptPushdownManager::receiveOne(const std::shared_ptr<AdaptPushdownReqInfo
 void AdaptPushdownManager::finishOne(const std::shared_ptr<AdaptPushdownReqInfo> &req) {
   std::unique_lock lock(waitQueueMutex_);
 
-  // remove from execution set
+  // set status and remove from execution set
+  req->status_ = AdaptPushdownReqInfo::STATUS::FINISH;
   execSet_.erase(req);
 
   // skip if no request is waiting
@@ -80,7 +81,10 @@ void AdaptPushdownManager::finishOne(const std::shared_ptr<AdaptPushdownReqInfo>
 }
 
 void AdaptPushdownManager::admit(const std::shared_ptr<AdaptPushdownReqInfo> &req) {
-  req->sem_->release();
+  req->mutex_->lock();
+  req->status_ = AdaptPushdownReqInfo::STATUS::RUN;
+  req->cv_->notify_one();
+  req->mutex_->unlock();
   req->startTime_ = std::chrono::steady_clock::now();
   execSet_.emplace(req);
 }

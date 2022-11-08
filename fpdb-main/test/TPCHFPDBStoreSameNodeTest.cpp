@@ -1073,8 +1073,6 @@ TEST_CASE ("tpch-sf0.01-1-node-hash-part-hash-join-synthetic-3-table" * doctest:
 TEST_SUITE ("tpch-sf0.01-fpdb-store-same-node-adaptive-pushdown" * doctest::skip(SKIP_SUITE)) {
 
 void test_tpch_sf0_01_fpdb_store_same_node_adaptive_pushdown(const std::string &queryFileName) {
-  bool origFlag = fpdb::executor::physical::ENABLE_ADAPTIVE_PUSHDOWN;
-  fpdb::executor::physical::ENABLE_ADAPTIVE_PUSHDOWN = true;
   startFPDBStoreServer();
 
   // adaptive pushdown metrics of pullup run
@@ -1084,6 +1082,7 @@ void test_tpch_sf0_01_fpdb_store_same_node_adaptive_pushdown(const std::string &
                      false,
                      ObjStoreType::FPDB_STORE,
                      Mode::pullupMode());
+  fpdb::executor::physical::ENABLE_ADAPTIVE_PUSHDOWN = true;
   testUtil1.setCollAdaptPushdownMetrics(true);
   REQUIRE_NOTHROW(testUtil1.runTest());
 
@@ -1094,6 +1093,7 @@ void test_tpch_sf0_01_fpdb_store_same_node_adaptive_pushdown(const std::string &
                      false,
                      ObjStoreType::FPDB_STORE,
                      Mode::pushdownOnlyMode());
+  fpdb::executor::physical::ENABLE_ADAPTIVE_PUSHDOWN = true;
   testUtil2.setCollAdaptPushdownMetrics(true);
   REQUIRE_NOTHROW(testUtil2.runTest());
 
@@ -1104,10 +1104,10 @@ void test_tpch_sf0_01_fpdb_store_same_node_adaptive_pushdown(const std::string &
                      false,
                      ObjStoreType::FPDB_STORE,
                      Mode::pushdownOnlyMode());
+  fpdb::executor::physical::ENABLE_ADAPTIVE_PUSHDOWN = true;
   REQUIRE_NOTHROW(testUtil3.runTest());
 
   stopFPDBStoreServer();
-  fpdb::executor::physical::ENABLE_ADAPTIVE_PUSHDOWN = origFlag;
 }
 
 TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-adaptive-pushdown-19" * doctest::skip(false || SKIP_SUITE)) {
