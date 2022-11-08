@@ -39,6 +39,7 @@ import org.apache.calcite.tools.Programs;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.tools.RuleSets;
 
+import java.io.FileInputStream;
 import java.nio.file.Path;
 import java.util.*;
 
@@ -55,7 +56,7 @@ public class Optimizer {
   // assigned during query parsing
   private SqlValidator sqlValidator = null;
 
-  public Optimizer(Path resourcePath) {
+  public Optimizer(Path resourcePath) throws Exception {
     // Initialize
     this.resourcePath = resourcePath;
     this.typeFactory = new JavaTypeFactoryImpl();
@@ -63,7 +64,7 @@ public class Optimizer {
     this.planner = cluster.getPlanner();
     this.relBuilder = RelBuilder.proto(planner.getContext()).create(cluster, null);
     this.rootSchema = CalciteSchema.createRootSchema(false, true);
-    this.findPushableHashJoins = true;
+    this.findPushableHashJoins = isHashJoinPushable();
   }
 
   public OptimizeResult planQuery(String query, String schemaName) throws Exception {
@@ -204,6 +205,14 @@ public class Optimizer {
       return new HashSet<>();
     } else {
       return PushableHashJoinFinder.find(relNode, hashKeys);
+    }
+  }
+
+  private boolean isHashJoinPushable() throws Exception {
+    Properties props = new Properties();
+    try (FileInputStream in = new FileInputStream(resourcePath.resolve("config/pushdown.conf").toFile())) {
+      props.load(in);
+      return Boolean.parseBoolean(props.getProperty("CO_LOCATED_JOIN"));
     }
   }
 

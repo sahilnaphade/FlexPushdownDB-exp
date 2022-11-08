@@ -19,7 +19,7 @@ public class CalciteServerHandler implements CalciteServer.Iface{
   private TServerTransport serverTransport;
   private TServer server;
 
-  public CalciteServerHandler(Path resourcePath) {
+  public CalciteServerHandler(Path resourcePath) throws Exception {
     this.optimizer = new Optimizer(resourcePath);
   }
 
