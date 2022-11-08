@@ -1,4 +1,4 @@
-# Build 'fpdb-tuple-converted-exec' before running this
+# Build 'fpdb-tuple-converter-exec' before running this
 # Example usage: 'python convert_whole_directory.py
 # ~/Desktop/FlexPushdownDB-Dev/fpdb-main/test-resources/flexpushdowndb/tpch-sf0.01/csv
 # parquet tpch/schema_format ~/Desktop/FlexPushdownDB-Dev/cmake-build-debug'
