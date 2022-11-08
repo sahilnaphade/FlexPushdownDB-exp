@@ -10,7 +10,6 @@
 #include <tl/expected.hpp>
 #include "mutex"
 #include "condition_variable"
-#include "semaphore"
 
 #include "fpdb/store/server/flight/SelectObjectContentCmd.hpp"
 #include "fpdb/store/server/flight/PutBitmapCmd.hpp"
