@@ -39,7 +39,7 @@ TEST_CASE ("bitmap-pushdown-bench-tpch-fpdb-store-diff-node-compute-bitmap" * do
 
   for (bool enableBitMapPushdown: enableBitMapPushdownConfigs) {
     std::cout << fmt::format("Enable Bitmap Pushdown: {}", enableBitMapPushdown) << std::endl;
-    fpdb::executor::physical::ENABLE_FPDB_STORE_BITMAP_PUSHDOWN = enableBitMapPushdown;
+    fpdb::executor::physical::ENABLE_FILTER_BITMAP_PUSHDOWN = enableBitMapPushdown;
 
     for (uint predicateNum = 1; predicateNum <= allPredicates.size(); ++predicateNum) {
       // create queries
@@ -87,7 +87,7 @@ TEST_CASE ("bitmap-pushdown-bench-tpch-fpdb-store-diff-node-compute-bitmap" * do
     }
   }
 
-  fpdb::executor::physical::ENABLE_FPDB_STORE_BITMAP_PUSHDOWN = false;
+  fpdb::executor::physical::ENABLE_FILTER_BITMAP_PUSHDOWN = false;
 }
 
 TEST_CASE ("bitmap-pushdown-bench-tpch-fpdb-store-diff-node-storage-bitmap" * doctest::skip(false || SKIP_SUITE)) {
@@ -109,7 +109,7 @@ TEST_CASE ("bitmap-pushdown-bench-tpch-fpdb-store-diff-node-storage-bitmap" * do
 
   for (bool enableBitMapPushdown: enableBitMapPushdownConfigs) {
     std::cout << fmt::format("Enable Bitmap Pushdown: {}", enableBitMapPushdown) << std::endl;
-    fpdb::executor::physical::ENABLE_FPDB_STORE_BITMAP_PUSHDOWN = enableBitMapPushdown;
+    fpdb::executor::physical::ENABLE_FILTER_BITMAP_PUSHDOWN = enableBitMapPushdown;
 
     for (uint projectColumnNum = 1; projectColumnNum <= projectColumns.size(); ++projectColumnNum) {
       // create queries, test query with ~20% selectivity
@@ -157,7 +157,7 @@ TEST_CASE ("bitmap-pushdown-bench-tpch-fpdb-store-diff-node-storage-bitmap" * do
     }
   }
 
-  fpdb::executor::physical::ENABLE_FPDB_STORE_BITMAP_PUSHDOWN = false;
+  fpdb::executor::physical::ENABLE_FILTER_BITMAP_PUSHDOWN = false;
 }
 
 }
