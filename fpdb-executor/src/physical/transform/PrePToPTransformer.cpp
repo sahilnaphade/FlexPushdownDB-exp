@@ -356,9 +356,10 @@ PrePToPTransformer::transformGroupOnePhase(const shared_ptr<GroupPrePOp> &groupP
       PrePToPTransformerUtil::connectOneToOne(upConnPOps, shufflePOps);
       upConnPOps = shufflePOps;
     }
+    bool shufflePushed = upConnPOps[0]->getType() != POpType::SHUFFLE;
 
     // connect to downstream
-    if (withHashJoinPushdown) {
+    if (withHashJoinPushdown && shufflePushed) {
       PrePToPTransformerUtil::connectOneToOne(upConnPOps, groupPOps);
     } else {
       PrePToPTransformerUtil::connectManyToMany(upConnPOps, groupPOps);
@@ -479,6 +480,7 @@ PrePToPTransformer::transformGroupTwoPhase(const shared_ptr<GroupPrePOp> &groupP
       PrePToPTransformerUtil::connectOneToOne(upConnPOps, shufflePOps);
       upConnPOps = shufflePOps;
     }
+    bool shufflePushed = upConnPOps[0]->getType() != POpType::SHUFFLE;
 
     // phase 2: parallel group reduce ops
     vector<shared_ptr<PhysicalOp>> groupReducePOps;
@@ -501,7 +503,7 @@ PrePToPTransformer::transformGroupTwoPhase(const shared_ptr<GroupPrePOp> &groupP
               aggReduceFunctions));
     }
     allPOps.insert(allPOps.end(), groupReducePOps.begin(), groupReducePOps.end());
-    if (withHashJoinPushdown) {
+    if (withHashJoinPushdown && shufflePushed) {
       PrePToPTransformerUtil::connectOneToOne(upConnPOps, groupReducePOps);
     } else {
       PrePToPTransformerUtil::connectManyToMany(upConnPOps, groupReducePOps);
@@ -691,6 +693,8 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
     upLeftConnPOps = shuffleLeftPOps;
     upRightConnPOps = shuffleRightPOps;
   }
+  bool leftShufflePushed = upLeftConnPOps[0]->getType() != POpType::SHUFFLE;
+  bool rightShufflePushed = upRightConnPOps[0]->getType() != POpType::SHUFFLE;
 
   // add the first part, because "physicalOps_" needs to be updated before pushing bf after hash-join pushdown
   PrePToPTransformerUtil::addPhysicalOps(allPOps, physicalOps_);
@@ -725,7 +729,7 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
     //          consumer (node j)
     // because BloomFilterCreatePOp is made at the same node of consumer (joinBuild) instead of producer (shuffle),
     // 2) incurs double network transfer for each cross-node tupleSet message (i != j), so we pick 1) here
-    if (leftWithHashJoinPushdown) {
+    if (leftWithHashJoinPushdown && leftShufflePushed) {
       PrePToPTransformerUtil::connectOneToOne(upLeftConnPOps, bloomFilterCreatePOps);
     } else {
       PrePToPTransformerUtil::connectManyToMany(upLeftConnPOps, bloomFilterCreatePOps);
@@ -779,7 +783,7 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
                           rightColumnNames, rightWithHashJoinPushdown);
 
       // connect upRightConnPOps (FPDBStoreSuperPOp/FPDBStoreTableCacheLoadPOp) to downstream (joinProbePOps)
-      if (rightWithHashJoinPushdown) {
+      if (rightWithHashJoinPushdown && rightShufflePushed) {
         if (USE_ARROW_HASH_JOIN_IMPL) {
           for (uint i = 0; i < upRightConnPOps.size(); ++i) {
             upRightConnPOps[i]->produce(joinProbePOps[i]);
@@ -820,7 +824,7 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
       }
 
       // connect bloom filter use to upstream and downstream (joinProbePOps)
-      if (rightWithHashJoinPushdown) {
+      if (rightWithHashJoinPushdown && rightShufflePushed) {
         PrePToPTransformerUtil::connectOneToOne(upRightConnPOps, bloomFilterUsePOps);
       } else {
         PrePToPTransformerUtil::connectManyToMany(upRightConnPOps, bloomFilterUsePOps);
@@ -837,7 +841,7 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
   } else {
     // connect hash join to upstream
     if (USE_ARROW_HASH_JOIN_IMPL) {
-      if (leftWithHashJoinPushdown) {
+      if (leftWithHashJoinPushdown && leftShufflePushed) {
         for (uint i = 0; i < upLeftConnPOps.size(); ++i) {
           upLeftConnPOps[i]->produce(hashJoinArrowPOps[i]);
           static_pointer_cast<join::HashJoinArrowPOp>(hashJoinArrowPOps[i])->addBuildProducer(upLeftConnPOps[i]);
@@ -850,7 +854,7 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
           }
         }
       }
-      if (rightWithHashJoinPushdown) {
+      if (rightWithHashJoinPushdown && rightShufflePushed) {
         for (uint i = 0; i < upRightConnPOps.size(); ++i) {
           upRightConnPOps[i]->produce(hashJoinArrowPOps[i]);
           static_pointer_cast<join::HashJoinArrowPOp>(hashJoinArrowPOps[i])->addProbeProducer(upRightConnPOps[i]);
@@ -864,12 +868,12 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
         }
       }
     } else {
-      if (leftWithHashJoinPushdown) {
+      if (leftWithHashJoinPushdown && leftShufflePushed) {
         PrePToPTransformerUtil::connectOneToOne(upLeftConnPOps, hashJoinBuildPOps);
       } else {
         PrePToPTransformerUtil::connectManyToMany(upLeftConnPOps, hashJoinBuildPOps);
       }
-      if (rightWithHashJoinPushdown) {
+      if (rightWithHashJoinPushdown && rightShufflePushed) {
         PrePToPTransformerUtil::connectOneToOne(upRightConnPOps, hashJoinProbePOps);
       } else {
         PrePToPTransformerUtil::connectManyToMany(upRightConnPOps, hashJoinProbePOps);

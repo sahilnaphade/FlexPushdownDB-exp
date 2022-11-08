@@ -44,6 +44,7 @@ public:
   void setShufflePOp(const std::shared_ptr<PhysicalOp> &op);
   void addFPDBStoreBloomFilterProducer(const std::shared_ptr<PhysicalOp> &fpdbStoreBloomFilterProducer);
   void setForwardConsumers(const std::vector<std::shared_ptr<PhysicalOp>> &consumers);
+  void resetForwardConsumers();
   void setGetAdaptPushdownMetrics(bool getAdaptPushdownMetrics);
 
 private:

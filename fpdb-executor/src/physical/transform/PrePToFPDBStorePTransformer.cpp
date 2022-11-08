@@ -406,6 +406,7 @@ PrePToFPDBStorePTransformer::addSeparablePOpWithHashJoinPushdown(vector<shared_p
       vector<shared_ptr<PhysicalOp>> subOps = {separablePOps.begin() + separablePOpsOffset,
                                                separablePOps.begin() + separablePOpsOffset + rootNumProducers};
       fpdbStoreSuperPOp->getSubPlan()->addAsLasts(subOps);
+      fpdbStoreSuperPOp->resetForwardConsumers();
       separablePOpsOffset += rootNumProducers;
     }
     return {producers, {}};

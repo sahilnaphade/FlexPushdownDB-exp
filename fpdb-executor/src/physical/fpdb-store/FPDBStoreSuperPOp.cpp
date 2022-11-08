@@ -113,7 +113,7 @@ void FPDBStoreSuperPOp::setForwardConsumers(const std::vector<std::shared_ptr<Ph
   auto collatePOp = std::static_pointer_cast<collate::CollatePOp>(*expRootPOp);
   const auto &producers = collatePOp->producers();
   if (producers.size() != consumers.size()) {
-    throw std::runtime_error(fmt::format("num producers ({}) and num forward consumers ({}) mismatch on \"set\"",
+    throw std::runtime_error(fmt::format("num producers ({}) and num forward consumers ({}) mismatch on \"set()\"",
                              producers.size(), consumers.size()));
   }
   // set both forwardConsumers and endConsumers for root
@@ -128,6 +128,27 @@ void FPDBStoreSuperPOp::setForwardConsumers(const std::vector<std::shared_ptr<Ph
   collatePOp->setForward(true);
   collatePOp->setForwardConsumers(forwardConsumerMap);
   collatePOp->setEndConsumers(endConsumers);
+}
+
+void FPDBStoreSuperPOp::resetForwardConsumers() {
+  auto expRootPOp = subPlan_->getRootPOp();
+  if (!expRootPOp.has_value()) {
+    throw std::runtime_error(expRootPOp.error());
+  }
+  auto collatePOp = std::static_pointer_cast<collate::CollatePOp>(*expRootPOp);
+  const auto &producers = collatePOp->producers();
+  const auto &endConsumers = collatePOp->getEndConsumers();
+  if (producers.size() != endConsumers.size()) {
+    throw std::runtime_error(fmt::format("num producers ({}) and num forward consumers ({}) mismatch on \"reset()\"",
+                                         producers.size(), endConsumers.size()));
+  }
+  // reset forwardConsumers
+  std::unordered_map<std::string, std::string> forwardConsumerMap;
+  int i = 0;
+  for (const auto &producer: producers) {
+    forwardConsumerMap[producer] = endConsumers[i++];
+  }
+  collatePOp->setForwardConsumers(forwardConsumerMap);
 }
 
 void FPDBStoreSuperPOp::setGetAdaptPushdownMetrics(bool getAdaptPushdownMetrics) {
