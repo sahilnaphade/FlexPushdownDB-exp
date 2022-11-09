@@ -24,7 +24,7 @@ std::shared_ptr<FPDBStoreServerConfig> FPDBStoreServerConfig::parseFPDBStoreServ
   auto fileServicePort = std::stoi(configMap["FILE_SERVICE_PORT"]);
   auto flightPort = std::stoi(configMap["FLIGHT_PORT"]);
   auto storeRootPath = configMap["STORE_ROOT_PATH_PREFIX"];
-  auto numDrives = std::stoi("NUM_DRIVES");
+  auto numDrives = std::stoi(configMap["NUM_DRIVES"]);
   return std::make_shared<FPDBStoreServerConfig>(fileServicePort, flightPort, storeRootPath, numDrives);
 }
 
