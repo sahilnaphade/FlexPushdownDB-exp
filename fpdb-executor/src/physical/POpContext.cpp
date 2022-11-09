@@ -111,7 +111,7 @@ void POpContext::send_regular(const std::shared_ptr<message::Message> &msg, cons
       std::shared_ptr<Message> execMetricsMsg = std::make_shared<DebugMetricsMessage>(
               metrics::DebugMetrics(0, 0, std::static_pointer_cast<TupleSetMessage>(appliedMsg)->tuples()->size()),
               operatorActor_->name_);
-      operatorActor_->anon_send(rootActor_, execMetricsMsg);
+      operatorActor_->anon_send(rootActor_, Envelope(execMetricsMsg));
     }
 #endif
   }
