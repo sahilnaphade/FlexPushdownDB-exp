@@ -3,10 +3,10 @@
 //
 
 #include <fpdb/executor/CollAdaptPushdownMetricsExecution.h>
-#include <fpdb/executor/physical/Globals.h>
 #include <fpdb/executor/physical/filter/FilterPOp.h>
 #include <fpdb/executor/physical/file/RemoteFileScanPOp.h>
 #include <fpdb/executor/physical/fpdb-store/FPDBStoreSuperPOp.h>
+#include <fpdb/executor/flight/FlightClients.h>
 #include <fpdb/store/server/flight/PutAdaptPushdownMetricsCmd.hpp>
 
 namespace fpdb::executor {
@@ -128,7 +128,7 @@ void CollAdaptPushdownMetricsExecution::sendAdaptPushdownMetricsToStore() {
 
   for (const auto &host: fpdbStoreConnector_->getHosts()) {
     // make flight client and connect
-    auto client = makeDoPutFlightClient(host, fpdbStoreConnector_->getFlightPort());
+    auto client = flight::GlobalFlightClients.getFlightClient(host, fpdbStoreConnector_->getFlightPort());
 
     // send to host
     auto descriptor = ::arrow::flight::FlightDescriptor::Command(*expCmd);

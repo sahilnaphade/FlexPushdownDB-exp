@@ -3,6 +3,7 @@
 //
 
 #include <fpdb/executor/physical/fpdb-store/FPDBStoreTableCacheLoadPOp.h>
+#include <fpdb/executor/flight/FlightClients.h>
 #include <fpdb/executor/metrics/Globals.h>
 #include <fpdb/store/server/flight/GetTableTicket.hpp>
 #include <fpdb/store/server/flight/Util.hpp>
@@ -54,20 +55,7 @@ void FPDBStoreTableCacheLoadPOp::onStart() {
 
 void FPDBStoreTableCacheLoadPOp::onTupleSetWaitRemote(const TupleSetWaitRemoteMessage &msg) {
   // make flight client and connect
-  arrow::flight::Location clientLocation;
-  auto status = arrow::flight::Location::ForGrpcTcp(msg.getHost(), msg.getPort(), &clientLocation);
-  if (!status.ok()) {
-    ctx()->notifyError(status.message());
-    return;
-  }
-
-  arrow::flight::FlightClientOptions clientOptions = arrow::flight::FlightClientOptions::Defaults();
-  std::unique_ptr<arrow::flight::FlightClient> client;
-  status = arrow::flight::FlightClient::Connect(clientLocation, clientOptions, &client);
-  if (!status.ok()) {
-    ctx()->notifyError(status.message());
-    return;
-  }
+  auto client = flight::GlobalFlightClients.getFlightClient(msg.getHost(), msg.getPort());
 
   // make request
   auto ticketObj = fpdb::store::server::flight::GetTableTicket::make(queryId_, msg.sender(), name_, true);
@@ -81,7 +69,7 @@ void FPDBStoreTableCacheLoadPOp::onTupleSetWaitRemote(const TupleSetWaitRemoteMe
   // load table until receive the "end table"
   while (true) {
     std::unique_ptr<::arrow::flight::FlightStreamReader> reader;
-    status = client->DoGet(ticket, &reader);
+    auto status = client->DoGet(ticket, &reader);
     if (!status.ok()) {
       ctx()->notifyError(status.message());
       return;

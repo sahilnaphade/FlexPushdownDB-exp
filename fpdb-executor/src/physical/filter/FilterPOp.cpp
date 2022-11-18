@@ -8,6 +8,7 @@
 #include <fpdb/executor/message/CompleteMessage.h>
 #include <fpdb/executor/message/BitmapMessage.h>
 #include <fpdb/executor/message/cache/WeightRequestMessage.h>
+#include <fpdb/executor/flight/FlightClients.h>
 #include <fpdb/store/server/flight/PutBitmapCmd.hpp>
 #include <fpdb/store/server/flight/GetBitmapTicket.hpp>
 #include <fpdb/expression/gandiva/BinaryExpression.h>
@@ -530,7 +531,7 @@ void FilterPOp::putBitmapToFPDBStore() {
   }
 
   // make flight client and connect
-  auto client = makeDoPutFlightClient(bitmapWrapper_->host_, bitmapWrapper_->port_);
+  auto client = flight::GlobalFlightClients.getFlightClient(bitmapWrapper_->host_, bitmapWrapper_->port_);
 
   // send request to store
   bool valid = isBitmapSet();
@@ -583,18 +584,7 @@ void FilterPOp::getBitmapFromFPDBStore() {
   }
 
   // make flight client and connect
-  arrow::flight::Location clientLocation;
-  auto status = arrow::flight::Location::ForGrpcTcp(bitmapWrapper_->host_, bitmapWrapper_->port_, &clientLocation);
-  if (!status.ok()) {
-    ctx()->notifyError(status.message());
-  }
-
-  arrow::flight::FlightClientOptions clientOptions = arrow::flight::FlightClientOptions::Defaults();
-  std::unique_ptr<arrow::flight::FlightClient> client;
-  status = arrow::flight::FlightClient::Connect(clientLocation, clientOptions, &client);
-  if (!status.ok()) {
-    ctx()->notifyError(status.message());
-  }
+  auto client = flight::GlobalFlightClients.getFlightClient(bitmapWrapper_->host_, bitmapWrapper_->port_);
 
   // send request to store
   auto ticketObj = GetBitmapTicket::make(queryId_, bitmapWrapper_->mirrorOp_);
@@ -604,7 +594,7 @@ void FilterPOp::getBitmapFromFPDBStore() {
   }
 
   std::unique_ptr<::arrow::flight::FlightStreamReader> reader;
-  status = client->DoGet(*expTicket, &reader);
+  auto status = client->DoGet(*expTicket, &reader);
   if (!status.ok()) {
     ctx()->notifyError(status.message());
   }

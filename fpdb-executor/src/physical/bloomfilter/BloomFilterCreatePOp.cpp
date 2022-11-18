@@ -3,7 +3,7 @@
 //
 
 #include <fpdb/executor/physical/bloomfilter/BloomFilterCreatePOp.h>
-#include <fpdb/executor/physical/Globals.h>
+#include <fpdb/executor/flight/FlightClients.h>
 #include <fpdb/store/server/flight/PutBitmapCmd.hpp>
 #include <fpdb/tuple/util/Util.h>
 
@@ -134,7 +134,7 @@ void BloomFilterCreatePOp::putBloomFilterToStore(const std::shared_ptr<BloomFilt
   // send request to all hosts
   for (const auto &hostIt: bloomFilterInfo_->hosts_) {
     // make flight client and connect
-    auto client = makeDoPutFlightClient(hostIt.first, bloomFilterInfo_->port_);
+    auto client = flight::GlobalFlightClients.getFlightClient(hostIt.first, bloomFilterInfo_->port_);
 
     // make flight descriptor
     auto cmdObj = PutBitmapCmd::make(BitmapType::BLOOM_FILTER_COMPUTE, queryId_, name_, true,

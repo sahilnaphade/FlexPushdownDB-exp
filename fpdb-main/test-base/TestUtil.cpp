@@ -8,6 +8,7 @@
 #include <fpdb/executor/caf/CAFAdaptPushdownUtil.h>
 #include <fpdb/executor/physical/transform/PrePToPTransformer.h>
 #include <fpdb/executor/physical/Globals.h>
+#include <fpdb/executor/Globals.h>
 #include <fpdb/cache/Globals.h>
 #include <fpdb/cache/policy/LRUCachingPolicy.h>
 #include <fpdb/cache/policy/LFUCachingPolicy.h>
@@ -330,7 +331,7 @@ void TestUtil::stop() {
   }
 
   // clear global states
-  fpdb::executor::physical::clearGlobal();
+  fpdb::executor::clearGlobal();
 
   // reset flag for cache layout
   fpdb::cache::FIX_CACHE_LAYOUT = false;

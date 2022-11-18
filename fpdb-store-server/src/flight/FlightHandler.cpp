@@ -224,10 +224,10 @@ tl::expected<std::unique_ptr<FlightInfo>, ::arrow::Status> FlightHandler::get_fl
   const std::shared_ptr<SelectObjectContentCmd>& select_object_content_cmd) {
 
   // Create the ticket
-  auto ticket_object = SelectObjectContentTicket::make(0,
-                                                       "",
+  auto ticket_object = SelectObjectContentTicket::make(select_object_content_cmd->query_id(),
+                                                       select_object_content_cmd->fpdb_store_super_pop(),
                                                        select_object_content_cmd->query_plan_string(),
-                                                       1);
+                                                       select_object_content_cmd->parallel_degree());
   auto exp_ticket = ticket_object->to_ticket(false);
   if (!exp_ticket.has_value()) {
     return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed, exp_ticket.error()));
@@ -308,16 +308,35 @@ FlightHandler::do_get_get_object(const ServerCallContext&,
 tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::do_get_select_object_content(
   const ServerCallContext&, const std::shared_ptr<SelectObjectContentTicket>& select_object_content_ticket) {
 
-  // query id and FPDBStoreSuperPOp
-  auto query_id = select_object_content_ticket->query_id();
-  auto fpdb_store_super_pop = select_object_content_ticket->fpdb_store_super_pop();
+  // run select_object_content
+  auto exp_table = run_select_object_content(select_object_content_ticket->query_id(),
+                                             select_object_content_ticket->fpdb_store_super_pop(),
+                                             select_object_content_ticket->query_plan_string(),
+                                             select_object_content_ticket->parallel_degree());
+  if (!exp_table.has_value()) {
+    return tl::make_unexpected(exp_table.error());
+  }
 
+  // make record batch stream and return
+  auto exp_batches = tuple::util::Util::table_to_record_batches(*exp_table);
+  if (!exp_batches.has_value()) {
+    return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed, exp_batches.error()));
+  }
+  auto rb_reader = ::arrow::RecordBatchReader::Make(*exp_batches);
+  return std::make_unique<::arrow::flight::RecordBatchStream>(*rb_reader);
+}
+
+tl::expected<std::shared_ptr<arrow::Table>, ::arrow::Status>
+FlightHandler::run_select_object_content(long query_id,
+                                         const std::string &fpdb_store_super_pop,
+                                         const std::string &query_plan_string,
+                                         int parallel_degree) {
   // adaptive pushdown
   std::shared_ptr<AdaptPushdownReqInfo> req;
   if (ENABLE_ADAPTIVE_PUSHDOWN) {
     req = std::make_shared<AdaptPushdownReqInfo>(query_id,
                                                  fpdb_store_super_pop,
-                                                 select_object_content_ticket->parallel_degree(),
+                                                 parallel_degree,
                                                  std::make_shared<std::mutex>(),
                                                  std::make_shared<std::condition_variable_any>());
     if (adaptPushdownManager_.receiveOne(req)) {
@@ -333,7 +352,7 @@ tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::
   }
 
   // deserialize the query plan
-  auto exp_physical_plan = PhysicalPlanDeserializer::deserialize(select_object_content_ticket->query_plan_string(),
+  auto exp_physical_plan = PhysicalPlanDeserializer::deserialize(query_plan_string,
                                                                  getStoreRootPath(update_scan_drive_id()));
   if (!exp_physical_plan.has_value()) {
     if (ENABLE_ADAPTIVE_PUSHDOWN) {
@@ -401,22 +420,11 @@ tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::
             put_bitmap_into_cache(bitmap_key, bitmap, BitmapType::FILTER_STORAGE, true);
           });
 
-  // get query result
-  auto table = execution->execute()->table();
-
-  // make record batch stream and return
-  auto exp_batches = tuple::util::Util::table_to_record_batches(table);
-  if (!exp_batches.has_value()) {
-    if (ENABLE_ADAPTIVE_PUSHDOWN) {
-      adaptPushdownManager_.finishOne(req);
-    }
-    return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed, exp_batches.error()));
-  }
-  auto rb_reader = ::arrow::RecordBatchReader::Make(*exp_batches);
+  // return query result
   if (ENABLE_ADAPTIVE_PUSHDOWN) {
     adaptPushdownManager_.finishOne(req);
   }
-  return std::make_unique<::arrow::flight::RecordBatchStream>(*rb_reader);
+  return execution->execute()->table();
 }
 
 tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::do_get_get_bitmap(
@@ -490,6 +498,10 @@ FlightHandler::do_put_for_cmd(const ServerCallContext& context,
   auto cmd_object = expected_cmd_object.value();
 
   switch (cmd_object->type()->id()) {
+    case CmdTypeId::SELECT_OBJECT_CONTENT: {
+      auto select_object_content_cmd = std::static_pointer_cast<SelectObjectContentCmd>(cmd_object);
+      return do_put_select_object_content(context, select_object_content_cmd, reader);
+    }
     case CmdTypeId::PUT_BITMAP: {
       auto put_bitmap_cmd = std::static_pointer_cast<PutBitmapCmd>(cmd_object);
       return do_put_put_bitmap(context, put_bitmap_cmd, reader);
@@ -508,6 +520,21 @@ FlightHandler::do_put_for_cmd(const ServerCallContext& context,
                                                              cmd_object->type()->name())));;
     }
   }
+}
+
+tl::expected<void, ::arrow::Status> FlightHandler::do_put_select_object_content(
+        const ServerCallContext&,
+        const std::shared_ptr<SelectObjectContentCmd>& select_object_content_cmd,
+        const std::unique_ptr<FlightMessageReader>&) {
+  // run select_object_content
+  auto exp_table = run_select_object_content(select_object_content_cmd->query_id(),
+                                             select_object_content_cmd->fpdb_store_super_pop(),
+                                             select_object_content_cmd->query_plan_string(),
+                                             select_object_content_cmd->parallel_degree());
+  if (!exp_table.has_value()) {
+    return tl::make_unexpected(exp_table.error());
+  }
+  return {};
 }
 
 tl::expected<void, ::arrow::Status>

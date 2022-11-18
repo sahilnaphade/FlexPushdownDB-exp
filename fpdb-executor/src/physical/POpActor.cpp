@@ -7,6 +7,7 @@
 #include <fpdb/executor/message/ConnectMessage.h>
 #include <fpdb/executor/message/CompleteMessage.h>
 #include <fpdb/executor/metrics/Globals.h>
+#include <fpdb/executor/flight/FlightClients.h>
 #include <fpdb/store/server/flight/GetTableTicket.hpp>
 #include <arrow/flight/api.h>
 #include <spdlog/spdlog.h>
@@ -135,18 +136,7 @@ void POpActor::on_regular_message(const fpdb::executor::message::Envelope &msg) 
 std::shared_ptr<TupleSet>
 POpActor::read_remote_table(const std::string &host, int port, const std::string &sender) {
   // make flight client and connect
-  arrow::flight::Location clientLocation;
-  auto status = arrow::flight::Location::ForGrpcTcp(host, port, &clientLocation);
-  if (!status.ok()) {
-    opBehaviour_->ctx()->notifyError(status.message());
-  }
-
-  arrow::flight::FlightClientOptions clientOptions = arrow::flight::FlightClientOptions::Defaults();
-  std::unique_ptr<arrow::flight::FlightClient> client;
-  status = arrow::flight::FlightClient::Connect(clientLocation, clientOptions, &client);
-  if (!status.ok()) {
-    opBehaviour_->ctx()->notifyError(status.message());
-  }
+  auto client = flight::GlobalFlightClients.getFlightClient(host, port);
 
   // send request to store
   auto ticketObj = fpdb::store::server::flight::GetTableTicket::make(opBehaviour_->getQueryId(),
@@ -158,7 +148,7 @@ POpActor::read_remote_table(const std::string &host, int port, const std::string
   }
 
   std::unique_ptr<::arrow::flight::FlightStreamReader> reader;
-  status = client->DoGet(*expTicket, &reader);
+  auto status = client->DoGet(*expTicket, &reader);
   if (!status.ok()) {
     opBehaviour_->ctx()->notifyError(status.message());
   }
@@ -175,8 +165,8 @@ POpActor::read_remote_table(const std::string &host, int port, const std::string
   }
 
   // FIXME: arrow flight may produce unaligned buffers after transferring, which may crash if the table is used
-  // in GroupArrowKernel (at arrow::util::CheckAlignment).
-  // Here is a temp fix that recreates the table by a round of serialization and deserialization.
+  //  in GroupArrowKernel (at arrow::util::CheckAlignment).
+  //  Here is a temp fix that recreates the table by a round of serialization and deserialization.
   if (opBehaviour_->name().substr(0, 5) == "Group") {
     table = ArrowSerializer::align_table_by_copy(table);
   }

@@ -1,17 +1,18 @@
 //
-// Created by Yifei Yang on 4/18/22.
+// Created by Yifei Yang on 11/17/22.
 //
 
-#include <fpdb/executor/physical/Globals.h>
+#include <fpdb/executor/flight/FlightClients.h>
 
-namespace fpdb::executor::physical {
+namespace fpdb::executor::flight {
 
-arrow::flight::FlightClient* makeDoPutFlightClient(const std::string &host, int port) {
-  std::lock_guard<std::mutex> g(DoPutFlightClientLock);
+arrow::flight::FlightClient* FlightClients::getFlightClient(const std::string &host, int port) {
+  std::unique_lock lock(mutex_);
 
   // check if already made before
-  auto clientIt = DoPutFlightClients.find(host);
-  if (clientIt != DoPutFlightClients.end()) {
+  std::string key = generateFlightClientKey(host, port);
+  auto clientIt = clients_.find(key);
+  if (clientIt != clients_.end()) {
     return clientIt->second.get();
   }
 
@@ -30,12 +31,16 @@ arrow::flight::FlightClient* makeDoPutFlightClient(const std::string &host, int 
   }
 
   auto clientRawPtr = client.get();
-  DoPutFlightClients[host] = std::move(client);
+  clients_[key] = std::move(client);
   return clientRawPtr;
 }
 
-void clearGlobal() {
-  DoPutFlightClients.clear();
+void FlightClients::reset() {
+  clients_.clear();
+}
+
+std::string FlightClients::generateFlightClientKey(const std::string &host, int port) {
+  return host + ":" + std::to_string(port);
 }
 
 }

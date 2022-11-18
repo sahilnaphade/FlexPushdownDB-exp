@@ -14,18 +14,30 @@ namespace fpdb::store::server::flight {
  */
 class SelectObjectContentCmd : public CmdObject {
 public:
-  explicit SelectObjectContentCmd(std::string query_plan_string);
+  explicit SelectObjectContentCmd(long query_id,
+                                  const std::string &fpdb_store_super_pop,
+                                  const std::string &query_plan_string,
+                                  int parallel_degree);
 
-  static std::shared_ptr<SelectObjectContentCmd> make(std::string query_plan_string);
+  static std::shared_ptr<SelectObjectContentCmd> make(long query_id,
+                                                      const std::string &fpdb_store_super_pop,
+                                                      const std::string &query_plan_string,
+                                                      int parallel_degree);
 
-  [[nodiscard]] const std::string& query_plan_string() const;
+  long query_id() const;
+  const std::string &fpdb_store_super_pop() const;
+  const std::string &query_plan_string() const;
+  int parallel_degree() const;
 
   tl::expected<std::string, std::string> serialize(bool pretty) override;
 
   static tl::expected<std::shared_ptr<SelectObjectContentCmd>, std::string> from_json(const nlohmann::json& jObj);
 
 private:
+  long query_id_;
+  std::string fpdb_store_super_pop_;
   std::string query_plan_string_;
+  int parallel_degree_;
 };
 
 }

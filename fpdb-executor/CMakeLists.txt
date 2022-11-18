@@ -43,9 +43,10 @@ add_library(fpdb-executor STATIC
         include/fpdb/executor/physical/POpType.h
 #        table communication across the compute cluster using flight
         src/flight/FlightHandler.cpp include/fpdb/executor/flight/FlightHandler.h
+        src/flight/FlightClients.cpp include/fpdb/executor/flight/FlightClients.h
         src/flight/TableCache.cpp include/fpdb/executor/flight/TableCache.h
 #        physical operators
-        src/physical/Globals.cpp include/fpdb/executor/physical/Globals.h
+        include/fpdb/executor/physical/Globals.h
         src/physical/sort/SortPOp.cpp include/fpdb/executor/physical/sort/SortPOp.h
         src/physical/limitsort/LimitSortPOp.cpp include/fpdb/executor/physical/limitsort/LimitSortPOp.h
         src/physical/aggregate/AggregatePOp.cpp include/fpdb/executor/physical/aggregate/AggregatePOp.h
@@ -142,6 +143,7 @@ add_library(fpdb-executor STATIC
         include/fpdb/executor/metrics/Globals.h
         src/metrics/DebugMetrics.cpp include/fpdb/executor/metrics/DebugMetrics.h
 #        executor
+        src/Globals.cpp include/fpdb/executor/Globals.h
         src/Executor.cpp include/fpdb/executor/Executor.h
         src/Execution.cpp include/fpdb/executor/Execution.h
         src/FPDBStoreExecution.cpp include/fpdb/executor/FPDBStoreExecution.h

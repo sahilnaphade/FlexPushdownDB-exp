@@ -5,10 +5,6 @@
 #ifndef FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_GLOBALS_H
 #define FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_GLOBALS_H
 
-#include <arrow/flight/api.h>
-#include <mutex>
-#include <unordered_map>
-
 namespace fpdb::executor::physical {
 
 /**
@@ -63,20 +59,6 @@ inline bool ENABLE_FILTER_BITMAP_PUSHDOWN;
 inline bool ENABLE_ADAPTIVE_PUSHDOWN;
 static constexpr std::string_view PullupOpNamePrefix = "RemoteFileScan";
 static constexpr std::string_view PushdownOpNamePrefix = "FPDBStoreSuper";
-
-/**
- * If we create a client for each DoPut() request, some of them will be blocked at Connect() for ~10s,
- * however this is not an issue for DoGet() requests.
- * So here we keep a single flight client for DoPut() requests for each host.
- */
-inline std::mutex DoPutFlightClientLock;
-inline std::unordered_map<std::string, std::unique_ptr<arrow::flight::FlightClient>> DoPutFlightClients;
-arrow::flight::FlightClient* makeDoPutFlightClient(const std::string &host, int port);
-
-/**
- * Clear global states
- */
-void clearGlobal();
 
 }
 

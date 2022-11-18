@@ -6,6 +6,7 @@
 #include <fpdb/executor/physical/filter/FilterPOp.h>
 #include <fpdb/executor/physical/serialization/PhysicalPlanSerializer.h>
 #include <fpdb/executor/physical/Globals.h>
+#include <fpdb/executor/flight/FlightClients.h>
 #include <fpdb/executor/message/DebugMetricsMessage.h>
 #include <fpdb/executor/metrics/Globals.h>
 #include <fpdb/executor/caf/CAFAdaptPushdownUtil.h>
@@ -216,20 +217,7 @@ bool FPDBStoreSuperPOp::readyToProcess() {
 
 void FPDBStoreSuperPOp::processAtStore() {
   // make flight client and connect
-  arrow::flight::Location clientLocation;
-  auto status = arrow::flight::Location::ForGrpcTcp(host_, flightPort_, &clientLocation);
-  if (!status.ok()) {
-    ctx()->notifyError(status.message());
-    return;
-  }
-
-  arrow::flight::FlightClientOptions clientOptions = arrow::flight::FlightClientOptions::Defaults();
-  std::unique_ptr<arrow::flight::FlightClient> client;
-  status = arrow::flight::FlightClient::Connect(clientLocation, clientOptions, &client);
-  if (!status.ok()) {
-    ctx()->notifyError(status.message());
-    return;
-  }
+  auto client = flight::GlobalFlightClients.getFlightClient(host_, flightPort_);
 
   // send request to store
   auto expPlanString = serialize(false);
@@ -253,7 +241,7 @@ void FPDBStoreSuperPOp::processAtStore() {
 
   auto startTime = std::chrono::steady_clock::now();
   std::unique_ptr<::arrow::flight::FlightStreamReader> reader;
-  status = client->DoGet(*expTicket, &reader);
+  auto status = client->DoGet(*expTicket, &reader);
   if (!status.ok()) {
     auto flightStatusDetail = std::static_pointer_cast<arrow::flight::FlightStatusDetail>(status.detail());
     // the request is rejected by storage due to resource limitation
@@ -278,10 +266,12 @@ void FPDBStoreSuperPOp::processAtStore() {
   }
 
   std::shared_ptr<::arrow::Table> table;
-  status = reader->ReadAll(&table);
-  if (!status.ok()) {
-    ctx()->notifyError(status.message());
-    return;
+  if (!receiveByOthers_ && !shufflePOpName_.has_value()) {
+    status = reader->ReadAll(&table);
+    if (!status.ok()) {
+      ctx()->notifyError(status.message());
+      return;
+    }
   }
   auto stopTime = std::chrono::steady_clock::now();
 
@@ -326,7 +316,7 @@ void FPDBStoreSuperPOp::processAtStore() {
 #endif
     }
 
-      // if having shuffle op
+    // if having shuffle op
     else {
       std::shared_ptr<Message> tupleSetReadyRemoteMessage =
               std::make_shared<TupleSetReadyRemoteMessage>(host_, flightPort_, true, name_);
@@ -345,7 +335,7 @@ void FPDBStoreSuperPOp::processEmpty() {
 
   // need to clear bitmaps cached at storage if bitmap pushdown is enabled for some ops
   // make flight client and connect
-  auto client = makeDoPutFlightClient(host_, flightPort_);
+  auto client = flight::GlobalFlightClients.getFlightClient(host_, flightPort_);
 
   for (const auto &opIt: subPlan_->getPhysicalOps()) {
     auto op = opIt.second;

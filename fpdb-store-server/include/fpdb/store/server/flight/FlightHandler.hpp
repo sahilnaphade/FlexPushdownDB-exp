@@ -205,6 +205,20 @@ private:
 
   /**
    *
+   * @param query_id
+   * @param fpdb_store_super_pop
+   * @param query_plan_string
+   * @param parallel_degree
+   * @return
+   */
+  tl::expected<std::shared_ptr<arrow::Table>, ::arrow::Status> run_select_object_content(
+          long query_id,
+          const std::string &fpdb_store_super_pop,
+          const std::string &query_plan_string,
+          int parallel_degree);
+
+  /**
+   *
    * @param context
    * @param get_bitmap_ticket
    * @return
@@ -240,6 +254,18 @@ private:
    */
   tl::expected<void, ::arrow::Status> do_put_for_cmd(const ServerCallContext& context,
                                                      const std::unique_ptr<FlightMessageReader> &reader);
+
+  /**
+   *
+   * @param context
+   * @param put_bitmap_cmd
+   * @param reader
+   * @return
+   */
+  tl::expected<void, ::arrow::Status> do_put_select_object_content(
+          const ServerCallContext& context,
+          const std::shared_ptr<SelectObjectContentCmd>& put_bitmap_cmd,
+          const std::unique_ptr<FlightMessageReader> &reader);
 
   /**
    *
