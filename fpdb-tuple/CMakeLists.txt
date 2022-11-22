@@ -16,6 +16,7 @@ add_library(fpdb-tuple STATIC
         src/ArrayAppender.cpp include/fpdb/tuple/ArrayAppender.h
         src/ArrayAppenderWrapper.cpp include/fpdb/tuple/ArrayAppenderWrapper.h
         src/ArrayHasher.cpp include/fpdb/tuple/ArrayHasher.h
+        src/RecordBatchHasher.cpp include/fpdb/tuple/RecordBatchHasher.h
         include/fpdb/tuple/TupleKey.h
         src/TupleSetIndex.cpp include/fpdb/tuple/TupleSetIndex.h
         src/TupleSetIndexFinder.cpp include/fpdb/tuple/TupleSetIndexFinder.h

@@ -4,6 +4,7 @@
 
 #include <fpdb/executor/physical/shuffle/ShufflePOp.h>
 #include <fpdb/executor/physical/shuffle/ShuffleKernel.h>
+#include <fpdb/executor/physical/shuffle/ShuffleKernel2.h>
 #include <fpdb/executor/physical/Globals.h>
 #include <fpdb/tuple/TupleSet.h>
 #include <fpdb/tuple/ColumnBuilder.h>
@@ -145,7 +146,12 @@ void ShufflePOp::onTupleSet(const TupleSetMessage &message) {
 
   else {
     // Shuffle the tuple set
-    auto expectedShuffledTupleSets = ShuffleKernel::shuffle(shuffleColumnNames_, consumerVec_.size(), *tupleSet);
+    tl::expected<std::vector<std::shared_ptr<TupleSet>>, std::string> expectedShuffledTupleSets;
+    if (USE_SHUFFLE_KERNEL_2) {
+      expectedShuffledTupleSets = ShuffleKernel2::shuffle(shuffleColumnNames_, consumerVec_.size(), tupleSet);
+    } else {
+      expectedShuffledTupleSets = ShuffleKernel::shuffle(shuffleColumnNames_, consumerVec_.size(), *tupleSet);
+    }
     if (!expectedShuffledTupleSets.has_value()) {
       ctx()->notifyError(fmt::format("{}, {}", expectedShuffledTupleSets.error(), name()));
     }

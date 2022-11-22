@@ -103,6 +103,7 @@ add_library(fpdb-executor STATIC
         src/physical/project/ProjectPOp.cpp include/fpdb/executor/physical/project/ProjectPOp.h
         src/physical/shuffle/ShufflePOp.cpp include/fpdb/executor/physical/shuffle/ShufflePOp.h
         src/physical/shuffle/ShuffleKernel.cpp include/fpdb/executor/physical/shuffle/ShuffleKernel.h
+        src/physical/shuffle/ShuffleKernel2.cpp include/fpdb/executor/physical/shuffle/ShuffleKernel2.h
         src/physical/shuffle/RecordBatchShuffler.cpp include/fpdb/executor/physical/shuffle/RecordBatchShuffler.h
         src/physical/split/SplitPOp.cpp include/fpdb/executor/physical/split/SplitPOp.h
         src/physical/s3/S3GetPOp.cpp include/fpdb/executor/physical/s3/S3GetPOp.h
@@ -170,7 +171,8 @@ add_executable(fpdb-executor-bench
         bench/Globals.h
         bench/MainBenchmark.cpp
         bench/GroupBenchmark.cpp
-        bench/HashJoinBenchmark.cpp)
+        bench/HashJoinBenchmark.cpp
+        bench/ShuffleBenchmark.cpp)
 
 target_include_directories(fpdb-executor-bench PRIVATE include)
 
