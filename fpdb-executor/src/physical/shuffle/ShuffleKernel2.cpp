@@ -49,7 +49,7 @@ ShuffleKernel2::shuffle(const std::vector<std::string> &columnNames,
   uint32_t* hashes = (uint32_t*) malloc(sizeof(uint32_t) * tupleSet->numRows());
 
   // allocate for partition row ids
-  int estMaxPartitionSize = tupleSet->numRows() / numSlots * 1.5;
+  int64_t estMaxPartitionSize = std::max((int64_t) 1, (int64_t) (tupleSet->numRows() / numSlots));
   PartitionRowIdInfo* partitionRowIdInfos = new PartitionRowIdInfo[numSlots];
   for (size_t i = 0; i < numSlots; ++i) {
     partitionRowIdInfos[i].init(estMaxPartitionSize);
@@ -113,9 +113,9 @@ ShuffleKernel2::shuffle(const std::vector<std::string> &columnNames,
   }
 
   // clear
-//  free(hashes);
-//  delete[] partitionRowIdInfos;
-//  free(mergedIndices);
+  free(hashes);
+  delete[] partitionRowIdInfos;
+  free(mergedIndices);
 
   return outputTupleSets;
 }
