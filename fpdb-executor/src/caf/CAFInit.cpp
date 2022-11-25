@@ -16,6 +16,8 @@
 #include <fpdb/executor/caf-serialization/CAFHashJoinProbeAbstractKernelSerializer.h>
 #include <fpdb/executor/caf-serialization/CAFFileScanKernelSerializer.h>
 #include <fpdb/executor/caf-serialization/CAFGroupAbstractKernelSerializer.h>
+#include <fpdb/executor/caf-serialization/CAFBloomFilterCreateAbstractKernelSerializer.h>
+#include <fpdb/executor/caf-serialization/CAFBloomFilterSerializer.h>
 #include <fpdb/cache/caf-serialization/CAFCachingPolicySerializer.h>
 #include <fpdb/catalogue/caf-serialization/CAFTableSerializer.h>
 #include <fpdb/catalogue/caf-serialization/CAFObjStoreConnectorSerializer.h>
@@ -58,6 +60,7 @@ void CAFInit::initCAFGlobalMetaObjects() {
   ::caf::init_global_meta_objects<::caf::id_block::FPDBStoreBloomFilterUseInfo>();
   ::caf::init_global_meta_objects<::caf::id_block::Mode>();
   ::caf::init_global_meta_objects<::caf::id_block::CachingPolicy>();
+  ::caf::init_global_meta_objects<::caf::id_block::BloomFilterCreateAbstractKernel>();
 
   ::caf::core::init_global_meta_objects();
   ::caf::io::middleman::init_global_meta_objects();

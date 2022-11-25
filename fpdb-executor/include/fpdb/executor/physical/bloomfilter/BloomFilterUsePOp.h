@@ -37,7 +37,7 @@ public:
   std::string getTypeString() const override;
 
   const std::vector<std::string> &getBloomFilterColumnNames() const;
-  const std::optional<std::shared_ptr<BloomFilter>> &getBloomFilter() const;
+  const std::optional<std::shared_ptr<BloomFilterBase>> &getBloomFilter() const;
 
   /**
    * This is used when pushing bloom filter to store, we need to set bloom filter without using actors
@@ -57,7 +57,7 @@ private:
   std::vector<std::string> bloomFilterColumnNames_;
 
   std::optional<std::shared_ptr<TupleSet>> receivedTupleSet_;
-  std::optional<std::shared_ptr<BloomFilter>> bloomFilter_;
+  std::optional<std::shared_ptr<BloomFilterBase>> bloomFilter_;
 
 // caf inspect
 public:

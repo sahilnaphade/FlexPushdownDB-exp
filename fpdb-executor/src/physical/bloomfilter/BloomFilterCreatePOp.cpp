@@ -3,6 +3,9 @@
 //
 
 #include <fpdb/executor/physical/bloomfilter/BloomFilterCreatePOp.h>
+#include <fpdb/executor/physical/bloomfilter/BloomFilterCreateKernel.h>
+#include <fpdb/executor/physical/bloomfilter/BloomFilterCreateArrowKernel.h>
+#include <fpdb/executor/physical/Globals.h>
 #include <fpdb/executor/flight/FlightClients.h>
 #include <fpdb/store/server/flight/PutBitmapCmd.hpp>
 #include <fpdb/tuple/util/Util.h>
@@ -16,8 +19,13 @@ BloomFilterCreatePOp::BloomFilterCreatePOp(const std::string &name,
                                            int nodeId,
                                            const std::vector<std::string> &bloomFilterColumnNames,
                                            double desiredFalsePositiveRate):
-  PhysicalOp(name, BLOOM_FILTER_CREATE, projectColumnNames, nodeId),
-  kernel_(BloomFilterCreateKernel::make(bloomFilterColumnNames, desiredFalsePositiveRate)) {}
+  PhysicalOp(name, BLOOM_FILTER_CREATE, projectColumnNames, nodeId) {
+  if (USE_ARROW_BLOOM_FILTER_IMPL) {
+    kernel_ = BloomFilterCreateArrowKernel::make(bloomFilterColumnNames);
+  } else {
+    kernel_ = BloomFilterCreateKernel::make(bloomFilterColumnNames, desiredFalsePositiveRate);
+  }
+}
 
 std::string BloomFilterCreatePOp::getTypeString() const {
   return "BloomFilterCreatePOp";
@@ -44,7 +52,7 @@ void BloomFilterCreatePOp::produce(const std::shared_ptr<PhysicalOp> &op) {
   PhysicalOp::produce(op);
 }
 
-const BloomFilterCreateKernel &BloomFilterCreatePOp::getKernel() const {
+const std::shared_ptr<BloomFilterCreateAbstractKernel> &BloomFilterCreatePOp::getKernel() const {
   return kernel_;
 }
 
@@ -86,7 +94,7 @@ void BloomFilterCreatePOp::onStart() {
 void BloomFilterCreatePOp::onTupleSet(const TupleSetMessage &msg) {
   // add tupleSet to kernel
   auto tupleSet = msg.tuples();
-  auto result = kernel_.bufferTupleSet(tupleSet);
+  auto result = kernel_->bufferTupleSet(tupleSet);
   if (!result.has_value()) {
     ctx()->notifyError(result.error());
   }
@@ -99,11 +107,11 @@ void BloomFilterCreatePOp::onTupleSet(const TupleSetMessage &msg) {
 void BloomFilterCreatePOp::onComplete(const CompleteMessage &) {
   if (!ctx()->isComplete() && ctx()->operatorMap().allComplete(POpRelationshipType::Producer)) {
     // build and get bloom filter
-    auto res = kernel_.buildBloomFilter();
+    auto res = kernel_->buildBloomFilter();
     if (!res.has_value()) {
       ctx()->notifyError(res.error());
     }
-    auto bloomFilter = kernel_.getBloomFilter();
+    auto bloomFilter = kernel_->getBloomFilter();
     if (!bloomFilter.has_value()) {
       ctx()->notifyError("Bloom filter not created on complete");
     }
@@ -112,11 +120,11 @@ void BloomFilterCreatePOp::onComplete(const CompleteMessage &) {
     std::shared_ptr<Message> bloomFilterMessage = std::make_shared<BloomFilterMessage>(*bloomFilter, name_);
     ctx()->tell(bloomFilterMessage, bloomFilterUsePOps_);
 
-    // send bloom filter to fpdb-store if needed
-    if (bloomFilterInfo_.has_value()) {
-      putBloomFilterToStore(*bloomFilter);
-      notifyFPDBStoreBloomFilterUsers();
-    }
+    // TODO: send bloom filter to fpdb-store if needed
+//    if (bloomFilterInfo_.has_value()) {
+//      putBloomFilterToStore(*bloomFilter);
+//      notifyFPDBStoreBloomFilterUsers();
+//    }
 
     ctx()->notifyComplete();
   }
@@ -183,7 +191,7 @@ void BloomFilterCreatePOp::notifyFPDBStoreBloomFilterUsers() {
 }
 
 void BloomFilterCreatePOp::clear() {
-  kernel_.clear();
+  kernel_->clear();
 }
 
 }

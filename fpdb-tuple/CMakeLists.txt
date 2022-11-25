@@ -50,6 +50,9 @@ add_library(fpdb-tuple STATIC
         src/arrow/CSVToArrowSIMDChunkParser.cpp include/fpdb/tuple/arrow/CSVToArrowSIMDChunkParser.h
         src/arrow/exec/DummyNode.cpp include/fpdb/tuple/arrow/exec/DummyNode.h
         src/arrow/exec/BufferedSinkNode.cpp include/fpdb/tuple/arrow/exec/BufferedSinkNode.h
+        include/fpdb/tuple/arrow/exec/Util.h
+        src/arrow/exec/BloomFilter.cpp include/fpdb/tuple/arrow/exec/BloomFilter.h
+        src/arrow/exec/PartitionUtil.cpp include/fpdb/tuple/arrow/exec/PartitionUtil.h
         src/serialization/ArrowSerializer.cpp include/fpdb/tuple/serialization/ArrowSerializer.h
         include/fpdb/tuple/caf-serialization/CAFTupleKeyElementSerializer.h
         include/fpdb/tuple/caf-serialization/CAFFileFormatSerializer.h)

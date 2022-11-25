@@ -6,7 +6,7 @@
 #define FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_BLOOMFILTER_BLOOMFILTERCREATEPOP_H
 
 #include <fpdb/executor/physical/PhysicalOp.h>
-#include <fpdb/executor/physical/bloomfilter/BloomFilterCreateKernel.h>
+#include <fpdb/executor/physical/bloomfilter/BloomFilterCreateAbstractKernel.h>
 #include <fpdb/executor/physical/fpdb-store/FPDBStoreBloomFilterInfo.h>
 
 namespace fpdb::executor::physical::bloomfilter {
@@ -29,7 +29,7 @@ public:
   std::string getTypeString() const override;
   void produce(const std::shared_ptr<PhysicalOp> &op) override;
 
-  const BloomFilterCreateKernel &getKernel() const;
+  const std::shared_ptr<BloomFilterCreateAbstractKernel> &getKernel() const;
   const std::set<std::string> &getBloomFilterUsePOps() const;
   const std::set<std::string> &getPassTupleSetConsumers() const;
 
@@ -46,7 +46,7 @@ private:
   void putBloomFilterToStore(const std::shared_ptr<BloomFilter> &bloomFilter);
   void notifyFPDBStoreBloomFilterUsers();
 
-  BloomFilterCreateKernel kernel_;
+  std::shared_ptr<BloomFilterCreateAbstractKernel> kernel_;
   std::set<std::string> bloomFilterUsePOps_;
   std::set<std::string> passTupleSetConsumers_;
 

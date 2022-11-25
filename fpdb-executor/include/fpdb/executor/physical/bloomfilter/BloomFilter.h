@@ -5,6 +5,7 @@
 #ifndef FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_BLOOMFILTER_BLOOMFILTER_H
 #define FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_BLOOMFILTER_BLOOMFILTER_H
 
+#include <fpdb/executor/physical/bloomfilter/BloomFilterBase.h>
 #include <fpdb/executor/physical/bloomfilter/UniversalHashFunction.h>
 #include <fpdb/caf/CAFUtil.h>
 #include <tl/expected.hpp>
@@ -12,7 +13,7 @@
 
 namespace fpdb::executor::physical::bloomfilter {
 
-class BloomFilter {
+class BloomFilter: public BloomFilterBase {
 
 public:
   inline static constexpr double DefaultDesiredFalsePositiveRate = 0.01;
@@ -41,7 +42,7 @@ public:
   BloomFilter() = default;
   BloomFilter(const BloomFilter&) = default;
   BloomFilter& operator=(const BloomFilter&) = default;
-  virtual ~BloomFilter() = default;
+  ~BloomFilter() override = default;
 
   void init();
   void add(int64_t key);
@@ -49,7 +50,6 @@ public:
 
   const std::vector<int64_t> getBitArray() const;
   void setBitArray(const std::vector<int64_t> &bitArray);
-  bool valid() const;
 
   /**
    * Merge another bloom filter into this
@@ -57,14 +57,11 @@ public:
    */
   tl::expected<void, std::string> merge(const std::shared_ptr<BloomFilter> &other);
 
-  ::nlohmann::json toJson() const;
+  ::nlohmann::json toJson() const override;
   static tl::expected<std::shared_ptr<BloomFilter>, std::string> fromJson(const nlohmann::json &jObj);
 
 private:
-  int64_t capacity_;
   double falsePositiveRate_;
-
-  bool valid_;    // whether this bloom filter will be used after runtime checking (i.e. false if input is too large)
 
   int64_t numHashFunctions_;
   int64_t numBits_;
@@ -104,7 +101,7 @@ private:
    */
   static int64_t m_from_np(int64_t n, double p);
 
-// caf inspect
+// caf inspect (currently bloom filter is never sent across compute nodes, so this is never called)
 public:
   template <class Inspector>
   friend bool inspect(Inspector& f, BloomFilter& bf) {
@@ -114,19 +111,6 @@ public:
 };
 
 }
-
-using BloomFilterPtr = std::shared_ptr<fpdb::executor::physical::bloomfilter::BloomFilter>;
-
-CAF_BEGIN_TYPE_ID_BLOCK(BloomFilter, fpdb::caf::CAFUtil::BloomFilter_first_custom_type_id)
-CAF_ADD_TYPE_ID(BloomFilter, (fpdb::executor::physical::bloomfilter::BloomFilter))
-CAF_END_TYPE_ID_BLOCK(BloomFilter)
-
-namespace caf {
-template <>
-struct inspector_access<BloomFilterPtr> : variant_inspector_access<BloomFilterPtr> {
-  // nop
-};
-} // namespace caf
 
 
 #endif //FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_BLOOMFILTER_BLOOMFILTER_H

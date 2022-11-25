@@ -43,6 +43,7 @@ inline constexpr int variableSleepRetryTimeMS = 15;
 inline bool USE_BLOOM_FILTER = true;
 inline bool USE_ARROW_GROUP_BY_IMPL = true;
 inline bool USE_ARROW_HASH_JOIN_IMPL = true;
+inline bool USE_ARROW_BLOOM_FILTER_IMPL = true;
 inline bool USE_TWO_PHASE_GROUP_BY = true;
 inline bool USE_SHUFFLE_KERNEL_2 = true;
 inline bool USE_FLIGHT_COMM = true;

@@ -6,7 +6,7 @@
 #define FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_MESSAGE_BLOOMFILTERMESSAGE_H
 
 #include <fpdb/executor/message/Message.h>
-#include <fpdb/executor/physical/bloomfilter/BloomFilter.h>
+#include <fpdb/executor/physical/bloomfilter/BloomFilterBase.h>
 
 using namespace fpdb::executor::physical::bloomfilter;
 
@@ -18,7 +18,7 @@ namespace fpdb::executor::message {
 class BloomFilterMessage: public Message {
 
 public:
-  explicit BloomFilterMessage(const std::shared_ptr<BloomFilter> &bloomFilter,
+  explicit BloomFilterMessage(const std::shared_ptr<BloomFilterBase> &bloomFilter,
                               const std::string &sender);
   BloomFilterMessage() = default;
   BloomFilterMessage(const BloomFilterMessage&) = default;
@@ -27,10 +27,10 @@ public:
 
   std::string getTypeString() const override;
 
-  const std::shared_ptr<BloomFilter> &getBloomFilter() const;
+  const std::shared_ptr<BloomFilterBase> &getBloomFilter() const;
 
 private:
-  std::shared_ptr<BloomFilter> bloomFilter_;
+  std::shared_ptr<BloomFilterBase> bloomFilter_;
 
 // caf inspect
 public:

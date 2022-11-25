@@ -3,6 +3,7 @@
 //
 
 #include <fpdb/executor/physical/serialization/PhysicalPlanSerializer.h>
+#include <fpdb/executor/physical/bloomfilter/BloomFilterCreateKernel.h>
 #include <fpdb/tuple/serialization/ArrowSerializer.h>
 
 using namespace fpdb::tuple;
@@ -153,8 +154,11 @@ tl::expected<::nlohmann::json, std::string> PhysicalPlanSerializer::serializeBlo
         const std::shared_ptr<bloomfilter::BloomFilterCreatePOp> &bloomFilterCreatePOp) {
   auto jObj = serializePOpCommon(bloomFilterCreatePOp);
 
-  jObj.emplace("bloomFilterColumnNames", bloomFilterCreatePOp->getKernel().getColumnNames());
-  jObj.emplace("desiredFalsePositiveRate", bloomFilterCreatePOp->getKernel().getDesiredFalsePositiveRate());
+  const auto &kernel = bloomFilterCreatePOp->getKernel();
+  jObj.emplace("bloomFilterColumnNames", kernel->getColumnNames());
+  jObj.emplace("desiredFalsePositiveRate", kernel->getType() == BloomFilterCreateKernelType::BLOOM_FILTER_KERNEL ?
+        std::static_pointer_cast<BloomFilterCreateKernel>(kernel)->getDesiredFalsePositiveRate() :
+        BloomFilter::DefaultDesiredFalsePositiveRate);
   jObj.emplace("bloomFilterUsePOps", bloomFilterCreatePOp->getBloomFilterUsePOps());
   jObj.emplace("passTupleSetConsumers", bloomFilterCreatePOp->getPassTupleSetConsumers());
 

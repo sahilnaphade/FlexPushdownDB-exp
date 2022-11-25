@@ -7,39 +7,18 @@
 
 namespace fpdb::executor::physical::bloomfilter {
 
-BloomFilterCreateKernel::BloomFilterCreateKernel(const std::vector<std::string> columnNames,
+BloomFilterCreateKernel::BloomFilterCreateKernel(const std::vector<std::string> &columnNames,
                                                  double desiredFalsePositiveRate):
-  columnNames_(columnNames),
+  BloomFilterCreateAbstractKernel(BloomFilterCreateKernelType::BLOOM_FILTER_KERNEL, columnNames),
   desiredFalsePositiveRate_(desiredFalsePositiveRate) {}
 
-BloomFilterCreateKernel BloomFilterCreateKernel::make(const std::vector<std::string> columnNames,
-                                                      double desiredFalsePositiveRate) {
-  return {columnNames, desiredFalsePositiveRate};
-}
-
-const std::vector<std::string> BloomFilterCreateKernel::getColumnNames() const {
-  return columnNames_;
+std::shared_ptr<BloomFilterCreateKernel> BloomFilterCreateKernel::make(const std::vector<std::string> &columnNames,
+                                                                       double desiredFalsePositiveRate) {
+  return std::make_shared<BloomFilterCreateKernel>(columnNames, desiredFalsePositiveRate);
 }
 
 double BloomFilterCreateKernel::getDesiredFalsePositiveRate() const {
   return desiredFalsePositiveRate_;
-}
-
-tl::expected<void, std::string> BloomFilterCreateKernel::bufferTupleSet(const std::shared_ptr<TupleSet> &tupleSet) {
-  // buffer tupleSet
-  if (!receivedTupleSet_.has_value()) {
-    receivedTupleSet_ = tupleSet;
-  }
-  else {
-    // here we should use "concatenate" instead of "append" to avoid modification on the original tupleSet,
-    // because the original one is also passed to downstream operators
-    auto expConcatenatedTupleSet = TupleSet::concatenate({(*receivedTupleSet_), tupleSet});
-    if (!expConcatenatedTupleSet.has_value()) {
-      return tl::make_unexpected(expConcatenatedTupleSet.error());
-    }
-    receivedTupleSet_ = *expConcatenatedTupleSet;
-  }
-  return {};
 }
 
 tl::expected<void, std::string> BloomFilterCreateKernel::buildBloomFilter() {
@@ -94,7 +73,7 @@ tl::expected<void, std::string> BloomFilterCreateKernel::buildBloomFilter() {
   return {};
 }
 
-const std::optional<std::shared_ptr<BloomFilter>> &BloomFilterCreateKernel::getBloomFilter() const {
+std::optional<std::shared_ptr<BloomFilterBase>> BloomFilterCreateKernel::getBloomFilter() const {
   return bloomFilter_;
 }
 
@@ -120,7 +99,7 @@ BloomFilterCreateKernel::addRecordBatchToBloomFilter(const ::arrow::RecordBatch 
 }
 
 void BloomFilterCreateKernel::clear() {
-  receivedTupleSet_.reset();
+  BloomFilterCreateAbstractKernel::clear();
   bloomFilter_.reset();
 }
 

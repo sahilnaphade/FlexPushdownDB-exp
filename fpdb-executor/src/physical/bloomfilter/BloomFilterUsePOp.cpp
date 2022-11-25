@@ -50,7 +50,7 @@ const std::vector<std::string> &BloomFilterUsePOp::getBloomFilterColumnNames() c
   return bloomFilterColumnNames_;
 }
 
-const std::optional<std::shared_ptr<BloomFilter>> &BloomFilterUsePOp::getBloomFilter() const {
+const std::optional<std::shared_ptr<BloomFilterBase>> &BloomFilterUsePOp::getBloomFilter() const {
   return bloomFilter_;
 }
 

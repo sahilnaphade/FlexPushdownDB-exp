@@ -11,9 +11,8 @@
 namespace fpdb::executor::physical::bloomfilter {
 
 BloomFilter::BloomFilter(int64_t capacity, double falsePositiveRate) :
-  capacity_(capacity),
-  falsePositiveRate_(falsePositiveRate),
-  valid_(capacity <= BLOOM_FILTER_MAX_INPUT_SIZE) {
+  BloomFilterBase(BloomFilterType::BLOOM_FILTER, capacity, capacity <= BLOOM_FILTER_MAX_INPUT_SIZE),
+  falsePositiveRate_(falsePositiveRate) {
 
   assert(falsePositiveRate >= 0.0 && falsePositiveRate <= 1.0);
 }
@@ -25,9 +24,8 @@ BloomFilter::BloomFilter(int64_t capacity,
                          int64_t numBits,
                          const std::vector<std::shared_ptr<UniversalHashFunction>> &hashFunctions,
                          const std::vector<int64_t> &bitArray) :
-  capacity_(capacity),
+  BloomFilterBase(BloomFilterType::BLOOM_FILTER, capacity, valid),
   falsePositiveRate_(falsePositiveRate),
-  valid_(valid),
   numHashFunctions_(numHashFunctions),
   numBits_(numBits),
   hashFunctions_(hashFunctions),
@@ -97,10 +95,6 @@ void BloomFilter::setBitArray(const std::vector<int64_t> &bitArray) {
   bitArray_ = bitArray;
 };
 
-bool BloomFilter::valid() const {
-  return valid_;
-}
-
 tl::expected<void, std::string> BloomFilter::merge(const std::shared_ptr<BloomFilter> &other) {
   // check
   if (capacity_ != other->capacity_) {
@@ -125,6 +119,7 @@ tl::expected<void, std::string> BloomFilter::merge(const std::shared_ptr<BloomFi
 
 ::nlohmann::json BloomFilter::toJson() const {
   ::nlohmann::json jObj;
+  jObj.emplace("type", type_);
   jObj.emplace("capacity", capacity_);
   jObj.emplace("falsePositiveRate", falsePositiveRate_);
   jObj.emplace("valid", valid_);

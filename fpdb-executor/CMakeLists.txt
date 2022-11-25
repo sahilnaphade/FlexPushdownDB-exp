@@ -60,10 +60,14 @@ add_library(fpdb-executor STATIC
         src/physical/aggregate/function/Avg.cpp include/fpdb/executor/physical/aggregate/function/Avg.h
         src/physical/aggregate/function/AvgReduce.cpp include/fpdb/executor/physical/aggregate/function/AvgReduce.h
         src/physical/bloomfilter/BloomFilterCreatePOp.cpp include/fpdb/executor/physical/bloomfilter/BloomFilterCreatePOp.h
+        src/physical/bloomfilter/BloomFilterCreateAbstractKernel.cpp include/fpdb/executor/physical/bloomfilter/BloomFilterCreateAbstractKernel.h
         src/physical/bloomfilter/BloomFilterCreateKernel.cpp include/fpdb/executor/physical/bloomfilter/BloomFilterCreateKernel.h
+        src/physical/bloomfilter/BloomFilterCreateArrowKernel.cpp include/fpdb/executor/physical/bloomfilter/BloomFilterCreateArrowKernel.h
         src/physical/bloomfilter/BloomFilterUsePOp.cpp include/fpdb/executor/physical/bloomfilter/BloomFilterUsePOp.h
         src/physical/bloomfilter/BloomFilterUseKernel.cpp include/fpdb/executor/physical/bloomfilter/BloomFilterUseKernel.h
         src/physical/bloomfilter/BloomFilter.cpp include/fpdb/executor/physical/bloomfilter/BloomFilter.h
+        src/physical/bloomfilter/BloomFilterBase.cpp include/fpdb/executor/physical/bloomfilter/BloomFilterBase.h
+        src/physical/bloomfilter/ArrowBloomFilter.cpp include/fpdb/executor/physical/bloomfilter/ArrowBloomFilter.h
         src/physical/bloomfilter/UniversalHashFunction.cpp include/fpdb/executor/physical/bloomfilter/UniversalHashFunction.h
         src/physical/cache/CacheLoadPOp.cpp include/fpdb/executor/physical/cache/CacheLoadPOp.h
         src/physical/cache/CacheHelper.cpp include/fpdb/executor/physical/cache/CacheHelper.h
@@ -134,6 +138,8 @@ add_library(fpdb-executor STATIC
         include/fpdb/executor/caf-serialization/CAFHashJoinProbeAbstractKernelSerializer.h
         include/fpdb/executor/caf-serialization/CAFFileScanKernelSerializer.h
         include/fpdb/executor/caf-serialization/CAFGroupAbstractKernelSerializer.h
+        include/fpdb/executor/caf-serialization/CAFBloomFilterCreateAbstractKernelSerializer.h
+        include/fpdb/executor/caf-serialization/CAFBloomFilterSerializer.h
 #        serialization
         src/physical/serialization/PhysicalPlanSerializer.cpp include/fpdb/executor/physical/serialization/PhysicalPlanSerializer.h
         src/physical/serialization/PhysicalPlanDeserializer.cpp include/fpdb/executor/physical/serialization/PhysicalPlanDeserializer.h
@@ -172,7 +178,8 @@ add_executable(fpdb-executor-bench
         bench/MainBenchmark.cpp
         bench/GroupBenchmark.cpp
         bench/HashJoinBenchmark.cpp
-        bench/ShuffleBenchmark.cpp)
+        bench/ShuffleBenchmark.cpp
+        bench/BloomFilterBenchmark.cpp)
 
 target_include_directories(fpdb-executor-bench PRIVATE include)
 
