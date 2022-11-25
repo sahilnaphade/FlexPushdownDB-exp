@@ -72,6 +72,10 @@ ShuffleKernel2::shuffle(const std::vector<std::string> &columnNames,
     offset += recordBatch->num_rows();
     expRecordBatch = reader.Next();
     if (!expRecordBatch.ok()) {
+      // clear
+      free(hashes);
+      delete[] partitionRowIdInfos;
+      free(mergedIndices);
       return tl::make_unexpected(expRecordBatch.status().message());
     }
     recordBatch = *expRecordBatch;
@@ -90,6 +94,10 @@ ShuffleKernel2::shuffle(const std::vector<std::string> &columnNames,
   auto indicesArray = std::make_shared<arrow::NumericArray<arrow::Int64Type>>(indicesArrayData);
   auto expTable = arrow::compute::Take(tupleSet->table(), indicesArray);
   if (!expTable.ok()) {
+    // clear
+    free(hashes);
+    delete[] partitionRowIdInfos;
+    free(mergedIndices);
     return tl::make_unexpected(expTable.status().message());
   }
   auto table = (*expTable).table();
