@@ -14,15 +14,6 @@ BloomFilterUsePOp::BloomFilterUsePOp(const std::string &name,
   PhysicalOp(name, BLOOM_FILTER_USE, projectColumnNames, nodeId),
   bloomFilterColumnNames_(bloomFilterColumnNames) {}
 
-BloomFilterUsePOp::BloomFilterUsePOp(const std::string &name,
-                                     const std::vector<std::string> &projectColumnNames,
-                                     int nodeId,
-                                     const std::vector<std::string> &bloomFilterColumnNames,
-                                     const std::shared_ptr<BloomFilter> &bloomFilter):
-  PhysicalOp(name, BLOOM_FILTER_USE, projectColumnNames, nodeId),
-  bloomFilterColumnNames_(bloomFilterColumnNames),
-  bloomFilter_(bloomFilter) {}
-
 std::string BloomFilterUsePOp::getTypeString() const {
   return "BloomFilterUsePOp";
 }
@@ -54,7 +45,7 @@ const std::optional<std::shared_ptr<BloomFilterBase>> &BloomFilterUsePOp::getBlo
   return bloomFilter_;
 }
 
-void BloomFilterUsePOp::setBloomFilter(const std::shared_ptr<BloomFilter> &bloomFilter) {
+void BloomFilterUsePOp::setBloomFilter(const std::shared_ptr<BloomFilterBase> &bloomFilter) {
   bloomFilter_ = bloomFilter;
 }
 

@@ -7,6 +7,7 @@
 
 #include <fpdb/executor/physical/PhysicalOp.h>
 #include <fpdb/executor/physical/bloomfilter/BloomFilterCreateAbstractKernel.h>
+#include <fpdb/executor/physical/bloomfilter/BloomFilter.h>
 #include <fpdb/executor/physical/fpdb-store/FPDBStoreBloomFilterInfo.h>
 
 namespace fpdb::executor::physical::bloomfilter {
@@ -43,7 +44,7 @@ private:
   void onStart();
   void onTupleSet(const TupleSetMessage &msg);
   void onComplete(const CompleteMessage &);
-  void putBloomFilterToStore(const std::shared_ptr<BloomFilter> &bloomFilter);
+  void putBloomFilterToStore(const std::shared_ptr<BloomFilterBase> &bloomFilter);
   void notifyFPDBStoreBloomFilterUsers();
 
   std::shared_ptr<BloomFilterCreateAbstractKernel> kernel_;

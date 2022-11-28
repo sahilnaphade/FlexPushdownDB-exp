@@ -120,24 +120,23 @@ void BloomFilterCreatePOp::onComplete(const CompleteMessage &) {
     std::shared_ptr<Message> bloomFilterMessage = std::make_shared<BloomFilterMessage>(*bloomFilter, name_);
     ctx()->tell(bloomFilterMessage, bloomFilterUsePOps_);
 
-    // TODO: send bloom filter to fpdb-store if needed
-//    if (bloomFilterInfo_.has_value()) {
-//      putBloomFilterToStore(*bloomFilter);
-//      notifyFPDBStoreBloomFilterUsers();
-//    }
+    // send bloom filter to fpdb-store if needed
+    if (bloomFilterInfo_.has_value()) {
+      putBloomFilterToStore(*bloomFilter);
+      notifyFPDBStoreBloomFilterUsers();
+    }
 
     ctx()->notifyComplete();
   }
 }
 
-void BloomFilterCreatePOp::putBloomFilterToStore(const std::shared_ptr<BloomFilter> &bloomFilter) {
+void BloomFilterCreatePOp::putBloomFilterToStore(const std::shared_ptr<BloomFilterBase> &bloomFilter) {
   // bitmap to record batch
-  auto bitmap = bloomFilter->getBitArray();
-  auto expRecordBatch = ArrowSerializer::bitmap_to_recordBatch(bitmap);
-  if (!expRecordBatch.has_value()) {
-    ctx()->notifyError(expRecordBatch.error());
+  auto expRecordBatches = bloomFilter->makeBitmapRecordBatches();
+  if (!expRecordBatches.has_value()) {
+    ctx()->notifyError(expRecordBatches.error());
   }
-  auto recordBatch = *expRecordBatch;
+  auto recordBatches = *expRecordBatches;
 
   // send request to all hosts
   for (const auto &hostIt: bloomFilterInfo_->hosts_) {
@@ -156,14 +155,16 @@ void BloomFilterCreatePOp::putBloomFilterToStore(const std::shared_ptr<BloomFilt
     // send to host
     std::unique_ptr<arrow::flight::FlightStreamWriter> writer;
     std::unique_ptr<arrow::flight::FlightMetadataReader> metadataReader;
-    auto status = client->DoPut(descriptor, recordBatch->schema(), &writer, &metadataReader);
+    auto status = client->DoPut(descriptor, recordBatches[0]->schema(), &writer, &metadataReader);
     if (!status.ok()) {
       ctx()->notifyError(status.message());
     }
 
-    status = writer->WriteRecordBatch(*recordBatch);
-    if (!status.ok()) {
-      ctx()->notifyError(status.message());
+    for (const auto &batch: recordBatches) {
+      status = writer->WriteRecordBatch(*batch);
+      if (!status.ok()) {
+        ctx()->notifyError(status.message());
+      }
     }
     status = writer->DoneWriting();
     if (!status.ok()) {
@@ -177,9 +178,12 @@ void BloomFilterCreatePOp::putBloomFilterToStore(const std::shared_ptr<BloomFilt
 
   // metrics
 #if SHOW_DEBUG_METRICS == true
+  int64_t recordBatchesSize = 0;
+  for (const auto &batch: recordBatches) {
+    recordBatchesSize += fpdb::tuple::util::Util::getSize(batch);
+  }
   std::shared_ptr<Message> execMetricsMsg = std::make_shared<DebugMetricsMessage>(
-          metrics::DebugMetrics(0, fpdb::tuple::util::Util::getSize(recordBatch) * bloomFilterInfo_->hosts_.size(), 0),
-          name_);
+          metrics::DebugMetrics(0, recordBatchesSize * bloomFilterInfo_->hosts_.size(), 0), name_);
   ctx()->notifyRoot(execMetricsMsg);
 #endif
 }

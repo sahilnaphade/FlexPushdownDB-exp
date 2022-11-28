@@ -57,6 +57,8 @@ public:
    */
   tl::expected<void, std::string> merge(const std::shared_ptr<BloomFilter> &other);
 
+  tl::expected<void, std::string> saveBitmapRecordBatches(const arrow::RecordBatchVector &batches) override;
+  tl::expected<arrow::RecordBatchVector, std::string> makeBitmapRecordBatches() const override;
   ::nlohmann::json toJson() const override;
   static tl::expected<std::shared_ptr<BloomFilter>, std::string> fromJson(const nlohmann::json &jObj);
 

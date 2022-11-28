@@ -23,6 +23,8 @@
 #include "arrow/memory_pool.h"
 #include "arrow/result.h"
 #include "arrow/status.h"
+#include "nlohmann/json.hpp"
+#include "tl/expected.hpp"
 
 namespace arrow {
 namespace compute {
@@ -42,6 +44,9 @@ struct ARROW_EXPORT BloomFilterMasks {
   // kMinBitsSet and kMaxBitsSet bits set.
   //
   BloomFilterMasks();
+
+  // Use existing masks
+  BloomFilterMasks(const uint8_t* masks, int64_t totalBytes);
 
   inline uint64_t mask(int bit_offset) {
 #if ARROW_LITTLE_ENDIAN
@@ -103,7 +108,8 @@ class ARROW_EXPORT BlockedBloomFilter {
   friend class BloomFilterBuilder_Parallel;
 
 public:
-  BlockedBloomFilter() : log_num_blocks_(0), num_blocks_(0), blocks_(NULLPTR) {}
+  BlockedBloomFilter() : private_masks_(std::nullopt), log_num_blocks_(0), num_blocks_(0), blocks_(NULLPTR) {}
+  BlockedBloomFilter(int log_num_blocks) : log_num_blocks_(log_num_blocks), num_blocks_(1ULL << log_num_blocks_) {}
 
   inline bool Find(uint64_t hash) const {
     uint64_t m = mask(hash);
@@ -120,6 +126,12 @@ public:
             uint8_t* result_bit_vector, bool enable_prefetch = true) const;
 
   int log_num_blocks() const { return log_num_blocks_; }
+
+  int64_t num_blocks() const { return num_blocks_; }
+
+  const std::shared_ptr<Buffer> &buf() const { return buf_; }
+
+  static const BloomFilterMasks &GetGlobalMasks() { return masks_; }
 
   int NumHashBitsUsed() const;
 
@@ -152,6 +164,19 @@ public:
   //
   void Fold();
 
+  void SetPrivateMasks(const std::shared_ptr<BloomFilterMasks> &masks) {
+    private_masks_ = masks;
+  }
+
+  void SetBuf(const std::shared_ptr<Buffer> &buf) {
+    buf_ = buf;
+    blocks_ = reinterpret_cast<uint64_t*>(const_cast<uint8_t*>(buf_->data()));
+  }
+
+  // Serialization
+  ::nlohmann::json toJson() const;
+  static tl::expected<std::shared_ptr<BlockedBloomFilter>, std::string> fromJson(const nlohmann::json &jObj);
+
 private:
   Status CreateEmpty(int64_t num_rows_to_insert, MemoryPool* pool);
 
@@ -165,10 +190,13 @@ private:
   void Insert(int64_t hardware_flags, int64_t num_rows, const uint64_t* hashes);
 
   inline uint64_t mask(uint64_t hash) const {
+    // Pick the proper masks
+    auto &masks = private_masks_.has_value() ? (**private_masks_) : masks_;
+
     // The lowest bits of hash are used to pick mask index.
     //
     int mask_id = static_cast<int>(hash & (BloomFilterMasks::kNumMasks - 1));
-    uint64_t result = masks_.mask(mask_id);
+    uint64_t result = masks.mask(mask_id);
 
     // The next set of hash bits is used to pick the amount of bit
     // rotation of the mask.
@@ -219,6 +247,10 @@ int64_t FindImp_avx2(int64_t num_rows, const T* hashes,
   static constexpr int64_t kPrefetchLimitBytes = 256 * 1024;
 
   static BloomFilterMasks masks_;
+
+  // Used when receiving bloom filters from other nodes, where
+  // the same masks should be used instead of the static one.
+  std::optional<std::shared_ptr<BloomFilterMasks>> private_masks_;
 
   // Total number of bits used by block Bloom filter must be a power
   // of 2.

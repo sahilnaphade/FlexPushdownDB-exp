@@ -9,7 +9,7 @@ namespace fpdb::executor::physical::fpdb_store {
 
 FPDBStoreBloomFilterUseInfo::FPDBStoreBloomFilterUseInfo(
         const std::string bloomFilterCreatePOp, const std::vector<std::string> &columnNames,
-        const std::optional<std::shared_ptr<bloomfilter::BloomFilter>>& bloomFilter):
+        const std::optional<std::shared_ptr<bloomfilter::BloomFilterBase>>& bloomFilter):
   bloomFilterCreatePOp_(bloomFilterCreatePOp),
   columnNames_(columnNames),
   bloomFilter_(bloomFilter) {}

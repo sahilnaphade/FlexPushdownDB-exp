@@ -5,7 +5,7 @@
 #ifndef FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_FPDB_STORE_FPDBSTOREBLOOMFILTERINFO_H
 #define FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_FPDB_STORE_FPDBSTOREBLOOMFILTERINFO_H
 
-#include <fpdb/executor/physical/bloomfilter/BloomFilter.h>
+#include <fpdb/executor/physical/bloomfilter/BloomFilterBase.h>
 #include <fpdb/caf/CAFUtil.h>
 #include <string>
 
@@ -33,7 +33,7 @@ struct FPDBStoreBloomFilterCreateInfo {
  */
 struct FPDBStoreBloomFilterUseInfo {
   FPDBStoreBloomFilterUseInfo(const std::string bloomFilterCreatePOp, const std::vector<std::string> &columnNames,
-          const std::optional<std::shared_ptr<bloomfilter::BloomFilter>>& bloomFilter = std::nullopt);
+          const std::optional<std::shared_ptr<bloomfilter::BloomFilterBase>>& bloomFilter = std::nullopt);
   FPDBStoreBloomFilterUseInfo() = default;
   FPDBStoreBloomFilterUseInfo(const FPDBStoreBloomFilterUseInfo&) = default;
   FPDBStoreBloomFilterUseInfo& operator=(const FPDBStoreBloomFilterUseInfo&) = default;
@@ -49,7 +49,7 @@ struct FPDBStoreBloomFilterUseInfo {
   std::vector<std::string> columnNames_;
 
   // bloom filter (only set at storage side)
-  std::optional<std::shared_ptr<bloomfilter::BloomFilter>> bloomFilter_;
+  std::optional<std::shared_ptr<bloomfilter::BloomFilterBase>> bloomFilter_;
 
   // caf inspect
   template <class Inspector>

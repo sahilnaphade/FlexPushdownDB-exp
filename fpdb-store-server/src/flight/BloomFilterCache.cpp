@@ -11,7 +11,8 @@ std::string BloomFilterCache::generateBloomFilterKey(long queryId, const std::st
   return fmt::format("{}-{}", std::to_string(queryId), op);
 }
 
-tl::expected<std::shared_ptr<BloomFilter>, std::string> BloomFilterCache::consumeBloomFilter(const std::string &key) {
+tl::expected<std::shared_ptr<BloomFilterBase>, std::string>
+BloomFilterCache::consumeBloomFilter(const std::string &key) {
   std::unique_lock lock(mutex_);
 
   const auto &bloomFilterIt = bloom_filters_.find(key);
@@ -26,8 +27,9 @@ tl::expected<std::shared_ptr<BloomFilter>, std::string> BloomFilterCache::consum
   }
 }
 
-void BloomFilterCache::produceBloomFilter(
-        const std::string &key, const std::shared_ptr<BloomFilter> &bloomFilter, int num_copies) {
+void BloomFilterCache::produceBloomFilter(const std::string &key,
+                                          const std::shared_ptr<BloomFilterBase> &bloomFilter,
+                                          int num_copies) {
   std::unique_lock lock(mutex_);
 
   bloom_filters_[key] = {bloomFilter, num_copies};

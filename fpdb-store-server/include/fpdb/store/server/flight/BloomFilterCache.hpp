@@ -10,7 +10,7 @@
 #include <shared_mutex>
 #include <tl/expected.hpp>
 
-#include "fpdb/executor/physical/bloomfilter/BloomFilter.h"
+#include "fpdb/executor/physical/bloomfilter/BloomFilterBase.h"
 
 using namespace fpdb::executor::physical::bloomfilter;
 
@@ -26,13 +26,13 @@ public:
 
   static std::string generateBloomFilterKey(long queryId, const std::string &op);
 
-  tl::expected<std::shared_ptr<BloomFilter>, std::string> consumeBloomFilter(const std::string &key);
-  void produceBloomFilter(const std::string &key, const std::shared_ptr<BloomFilter> &bloomFilter, int num_copies);
+  tl::expected<std::shared_ptr<BloomFilterBase>, std::string> consumeBloomFilter(const std::string &key);
+  void produceBloomFilter(const std::string &key, const std::shared_ptr<BloomFilterBase> &bloomFilter, int num_copies);
 
 private:
   // bloom filter is in the form of <bloom filter, counter>,
   // when the counter reaches 0, the bloom filter will be deleted
-  std::unordered_map<std::string, std::pair<std::shared_ptr<BloomFilter>, int>> bloom_filters_;
+  std::unordered_map<std::string, std::pair<std::shared_ptr<BloomFilterBase>, int>> bloom_filters_;
   std::shared_mutex mutex_;
 
 };

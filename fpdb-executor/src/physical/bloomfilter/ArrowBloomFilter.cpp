@@ -4,6 +4,7 @@
 
 #include <fpdb/executor/physical/bloomfilter/ArrowBloomFilter.h>
 #include <fpdb/executor/physical/Globals.h>
+#include <fpdb/tuple/serialization/ArrowSerializer.h>
 
 namespace fpdb::executor::physical::bloomfilter {
 
@@ -18,6 +19,11 @@ std::shared_ptr<ArrowBloomFilter> ArrowBloomFilter::make(int64_t capacity,
 
 const std::shared_ptr<arrow::compute::BlockedBloomFilter> &ArrowBloomFilter::getBlockedBloomFilter() const {
   return blockedBloomFilter_;
+}
+
+void ArrowBloomFilter::setBlockedBloomFilter(
+        const std::shared_ptr<arrow::compute::BlockedBloomFilter> &blockedBloomFilter) {
+  blockedBloomFilter_ = blockedBloomFilter;
 }
 
 tl::expected<void, std::string> ArrowBloomFilter::build(const std::shared_ptr<TupleSet> &tupleSet) {
@@ -68,15 +74,78 @@ tl::expected<void, std::string> ArrowBloomFilter::build(const std::shared_ptr<Tu
   return {};
 }
 
+tl::expected<void, std::string>
+ArrowBloomFilter::saveBitmapRecordBatches(const arrow::RecordBatchVector &batches) {
+  // should contain exactly two batches
+  if (batches.size() != 2) {
+    return tl::make_unexpected("RecordBatch stream for ArrowBloomFilter's bitmap should contain two recordBatches");
+  }
+  const auto &masksBatch = batches[0];
+  const auto &bitmapBatch = batches[1];
+
+  // masks
+  const auto &masksBuffer = masksBatch->column(0)->data()->buffers[1];
+  blockedBloomFilter_->SetPrivateMasks(
+          std::make_shared<arrow::compute::BloomFilterMasks>(masksBuffer->data(), masksBuffer->size()));
+
+  // bitmap
+  blockedBloomFilter_->SetBuf(bitmapBatch->column(0)->data()->buffers[1]);
+
+  return {};
+}
+
+tl::expected<arrow::RecordBatchVector, std::string> ArrowBloomFilter::makeBitmapRecordBatches() const {
+  // schema: one uint_8 column
+  auto schema = arrow::schema({{field(ArrowSerializer::BITMAP_FIELD_NAME.data(), arrow::uint8())}});
+
+  // masks batch
+  const auto &masks = arrow::compute::BlockedBloomFilter::GetGlobalMasks();
+  int numBytes = arrow::compute::BloomFilterMasks::kTotalBytes;
+  auto buffer = std::make_shared<arrow::Buffer>(masks.masks_, numBytes);
+  auto masksArray = std::make_shared<arrow::NumericArray<arrow::UInt8Type>>(
+          arrow::ArrayData::Make(arrow::uint8(), numBytes, {nullptr, buffer}));
+  auto masksBatch = arrow::RecordBatch::Make(schema, numBytes, {masksArray});
+
+  // bitmap array
+  numBytes = sizeof(uint64_t) * blockedBloomFilter_->num_blocks();
+  auto bitmapArray = std::make_shared<arrow::NumericArray<arrow::UInt8Type>>(arrow::ArrayData::Make(
+          arrow::uint8(), numBytes, {nullptr, blockedBloomFilter_->buf()}));
+  auto bitmapBatch = arrow::RecordBatch::Make(schema, numBytes, {bitmapArray});
+
+  return arrow::RecordBatchVector{masksBatch, bitmapBatch};
+}
+
 ::nlohmann::json ArrowBloomFilter::toJson() const {
-  // TODO
   ::nlohmann::json jObj;
+  jObj.emplace("type", type_);
+  jObj.emplace("capacity", capacity_);
+  jObj.emplace("columnNames", columnNames_);
+  jObj.emplace("blockedBloomFilter", blockedBloomFilter_->toJson());
   return jObj;
 }
 
 tl::expected<std::shared_ptr<ArrowBloomFilter>, std::string> ArrowBloomFilter::fromJson(const nlohmann::json &jObj) {
-  // TODO
-  return make(0, {});
+  if (!jObj.contains("capacity")) {
+    return tl::make_unexpected(fmt::format("Capacity not specified in ArrowBloomFilter JSON '{}'", jObj));
+  }
+  auto capacity = jObj["capacity"].get<int64_t>();
+
+  if (!jObj.contains("columnNames")) {
+    return tl::make_unexpected(fmt::format("ColumnNames not specified in ArrowBloomFilter JSON '{}'", jObj));
+  }
+  auto columnNames = jObj["columnNames"].get<std::vector<std::string>>();
+  auto arrowBloomFilter = make(capacity, columnNames);
+
+  if (!jObj.contains("blockedBloomFilter")) {
+    return tl::make_unexpected(fmt::format("BlockedBloomFilter not specified in ArrowBloomFilter JSON '{}'", jObj));
+  }
+  auto expBlockedBloomFilter = arrow::compute::BlockedBloomFilter::fromJson(jObj["blockedBloomFilter"]);
+  if (!expBlockedBloomFilter.has_value()) {
+    return tl::make_unexpected(expBlockedBloomFilter.error());
+  }
+  arrowBloomFilter->setBlockedBloomFilter(*expBlockedBloomFilter);
+
+  return arrowBloomFilter;
 }
 
 }

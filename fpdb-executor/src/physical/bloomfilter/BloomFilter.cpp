@@ -4,9 +4,12 @@
 
 #include <fpdb/executor/physical/bloomfilter/BloomFilter.h>
 #include <fpdb/executor/physical/Globals.h>
+#include <fpdb/tuple/serialization/ArrowSerializer.h>
 #include <fmt/format.h>
 #include <cmath>
 #include <cassert>
+
+using namespace fpdb::tuple;
 
 namespace fpdb::executor::physical::bloomfilter {
 
@@ -115,6 +118,29 @@ tl::expected<void, std::string> BloomFilter::merge(const std::shared_ptr<BloomFi
   bitArray_ = mergedBitArray;
 
   return {};
+}
+
+tl::expected<void, std::string>
+BloomFilter::saveBitmapRecordBatches(const arrow::RecordBatchVector &batches) {
+  // should only contain one batch
+  if (batches.size() != 1) {
+    return tl::make_unexpected("RecordBatch stream for BloomFilter's bitmap should only contain one recordBatch");
+  }
+
+  auto exp_bitmap = ArrowSerializer::recordBatch_to_bitmap(batches[0]);
+  if (!exp_bitmap.has_value()) {
+    return tl::make_unexpected(exp_bitmap.error());
+  }
+  bitArray_ = *exp_bitmap;
+  return {};
+}
+
+tl::expected<arrow::RecordBatchVector, std::string> BloomFilter::makeBitmapRecordBatches() const {
+  auto expRecordBatch = ArrowSerializer::bitmap_to_recordBatch(bitArray_);
+  if (!expRecordBatch.has_value()) {
+    return tl::make_unexpected(expRecordBatch.error());
+  }
+  return arrow::RecordBatchVector{*expRecordBatch};
 }
 
 ::nlohmann::json BloomFilter::toJson() const {

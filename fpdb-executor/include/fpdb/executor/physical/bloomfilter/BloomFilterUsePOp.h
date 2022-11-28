@@ -18,15 +18,6 @@ public:
                              int nodeId,
                              const std::vector<std::string> &bloomFilterColumnNames);
 
-  /**
-   * Used when reconstructing at store during pushdown
-   */
-  explicit BloomFilterUsePOp(const std::string &name,
-                             const std::vector<std::string> &projectColumnNames,
-                             int nodeId,
-                             const std::vector<std::string> &bloomFilterColumnNames,
-                             const std::shared_ptr<BloomFilter> &bloomFilter);
-
   BloomFilterUsePOp() = default;
   BloomFilterUsePOp(const BloomFilterUsePOp&) = default;
   BloomFilterUsePOp& operator=(const BloomFilterUsePOp&) = default;
@@ -38,12 +29,7 @@ public:
 
   const std::vector<std::string> &getBloomFilterColumnNames() const;
   const std::optional<std::shared_ptr<BloomFilterBase>> &getBloomFilter() const;
-
-  /**
-   * This is used when pushing bloom filter to store, we need to set bloom filter without using actors
-   * @param bloomFilter
-   */
-  void setBloomFilter(const std::shared_ptr<BloomFilter> &bloomFilter);
+  void setBloomFilter(const std::shared_ptr<BloomFilterBase> &bloomFilter);
   bool receivedBloomFilter() const;
 
 private:

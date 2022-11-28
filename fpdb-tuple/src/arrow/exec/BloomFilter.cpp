@@ -8,6 +8,7 @@
 #include "arrow/compute/exec/util.h"  // PREFETCH
 #include "arrow/util/bit_util.h"      // Log2
 #include "arrow/util/bitmap_ops.h"    // CountSetBits
+#include "fmt/format.h"
 
 namespace arrow {
 namespace compute {
@@ -77,6 +78,10 @@ BloomFilterMasks::BloomFilterMasks() {
   }
 }
 
+BloomFilterMasks::BloomFilterMasks(const uint8_t* masks, int64_t totalBytes) {
+  memcpy(masks_, masks, sizeof(uint8_t) * totalBytes);
+}
+
 BloomFilterMasks BlockedBloomFilter::masks_;
 
 Status BlockedBloomFilter::CreateEmpty(int64_t num_rows_to_insert, MemoryPool* pool) {
@@ -108,7 +113,7 @@ void BlockedBloomFilter::InsertImp(int64_t num_rows, const T* hashes) {
   }
 }
 
-void BlockedBloomFilter::Insert(int64_t hardware_flags, int64_t num_rows,
+void BlockedBloomFilter::Insert(int64_t, int64_t num_rows,
                                 const uint32_t* hashes) {
   int64_t num_processed = 0;
 #if defined(ARROW_HAVE_AVX2)
@@ -119,7 +124,7 @@ num_processed = Insert_avx2(num_rows, hashes);
   InsertImp(num_rows - num_processed, hashes + num_processed);
 }
 
-void BlockedBloomFilter::Insert(int64_t hardware_flags, int64_t num_rows,
+void BlockedBloomFilter::Insert(int64_t, int64_t num_rows,
                                 const uint64_t* hashes) {
   int64_t num_processed = 0;
 #if defined(ARROW_HAVE_AVX2)
@@ -164,7 +169,7 @@ void BlockedBloomFilter::FindImp(int64_t num_rows, const T* hashes,
   }
 }
 
-void BlockedBloomFilter::Find(int64_t hardware_flags, int64_t num_rows,
+void BlockedBloomFilter::Find(int64_t, int64_t num_rows,
                               const uint32_t* hashes, uint8_t* result_bit_vector,
                               bool enable_prefetch) const {
   int64_t num_processed = 0;
@@ -185,7 +190,7 @@ num_processed -= (num_processed % 8);
           result_bit_vector + num_processed / 8, enable_prefetch);
 }
 
-void BlockedBloomFilter::Find(int64_t hardware_flags, int64_t num_rows,
+void BlockedBloomFilter::Find(int64_t, int64_t num_rows,
                               const uint64_t* hashes, uint8_t* result_bit_vector,
                               bool enable_prefetch) const {
   int64_t num_processed = 0;
@@ -279,6 +284,22 @@ bool BlockedBloomFilter::IsSameAs(const BlockedBloomFilter* other) const {
     return false;
   }
   return true;
+}
+
+::nlohmann::json BlockedBloomFilter::toJson() const {
+  ::nlohmann::json jObj;
+  jObj.emplace("log_num_blocks", log_num_blocks_);
+  return jObj;
+}
+
+tl::expected<std::shared_ptr<BlockedBloomFilter>, std::string>
+BlockedBloomFilter::fromJson(const nlohmann::json &jObj) {
+  if (!jObj.contains("log_num_blocks")) {
+    return tl::make_unexpected(fmt::format("log_num_blocks not specified in BlockedBloomFilter JSON '{}'", jObj));
+  }
+  auto log_num_blocks = jObj["log_num_blocks"].get<int>();
+
+  return std::make_shared<BlockedBloomFilter>(log_num_blocks);
 }
 
 int64_t BlockedBloomFilter::NumBitsSet() const {

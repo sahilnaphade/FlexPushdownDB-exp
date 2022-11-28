@@ -364,7 +364,7 @@ FlightHandler::run_select_object_content(long query_id,
 
   // wait for bitmaps ready if required
   // need to maintain a map for fetched bloom filters, bc each request should consume the same bloom filter only once
-  std::unordered_map<std::string, std::shared_ptr<bloomfilter::BloomFilter>> consumed_bloom_filters;
+  std::unordered_map<std::string, std::shared_ptr<bloomfilter::BloomFilterBase>> consumed_bloom_filters;
   for (const auto &op_it: physical_plan->getPhysicalOps()) {
     auto op = op_it.second;
 
@@ -375,7 +375,7 @@ FlightHandler::run_select_object_content(long query_id,
       auto bloom_filter_info = consumerToBloomFilterIt.second;
       auto bloom_filter_key = BloomFilterCache::generateBloomFilterKey(query_id,
                                                                        bloom_filter_info->bloomFilterCreatePOp_);
-      std::shared_ptr<bloomfilter::BloomFilter> bloom_filter;
+      std::shared_ptr<bloomfilter::BloomFilterBase> bloom_filter;
       // check "consumed_bloom_filters" first
       auto consumed_bf_it = consumed_bloom_filters.find(bloom_filter_key);
       if (consumed_bf_it != consumed_bloom_filters.end()) {
@@ -544,40 +544,39 @@ FlightHandler::do_put_put_bitmap(const ServerCallContext&,
   // bitmap type
   auto bitmap_type = put_bitmap_cmd->bitmap_type();
 
-  // bitmap
+  // read bitmap record batch
   ::arrow::RecordBatchVector recordBatches;
   auto status = reader->ReadAll(&recordBatches);
   if (!status.ok()) {
     return tl::make_unexpected(status);
   }
-  if (recordBatches.size() != 1) {
-    return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed,
-                                               "Bitmap recordBatch stream should only contain one recordBatch"));
-  }
-  auto exp_bitmap = ArrowSerializer::recordBatch_to_bitmap(recordBatches[0]);
-  if (!exp_bitmap.has_value()) {
-    return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed, exp_bitmap.error()));
-  }
 
   // treat filter bitmap and bloom filter bitmap separately
   if (bitmap_type == BitmapType::BLOOM_FILTER_COMPUTE) {
-    // num copies and bloom filter
+    // num copies and
     auto num_copies = put_bitmap_cmd->num_copies();
     if (!num_copies.has_value()) {
       return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed,
                                                  "Num copies not set when putting bloom filter bitmap"));
     }
+
+    // bloom filter json object
     auto bloom_filter_jobj = put_bitmap_cmd->bloom_filter();
     if (!bloom_filter_jobj.has_value()) {
       return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed,
                                                  "Bloom filter not set when putting bloom filter bitmap"));
     }
-    auto exp_bloom_filter = BloomFilter::fromJson(*bloom_filter_jobj);
+    auto exp_bloom_filter = BloomFilterBase::fromJson(*bloom_filter_jobj);
     if (!exp_bloom_filter.has_value()) {
       return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed, exp_bloom_filter.error()));
     }
     auto bloom_filter = *exp_bloom_filter;
-    bloom_filter->setBitArray(*exp_bitmap);
+
+    // bloom filter bitmap
+    auto res = bloom_filter->saveBitmapRecordBatches(recordBatches);
+    if (!res.has_value()) {
+      return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed, res.error()));
+    }
 
     // bloom filter key
     auto bloom_filter_key = BloomFilterCache::generateBloomFilterKey(put_bitmap_cmd->query_id(), put_bitmap_cmd->op());
@@ -585,6 +584,18 @@ FlightHandler::do_put_put_bitmap(const ServerCallContext&,
     // put bloom filter
     bloom_filter_cache_.produceBloomFilter(bloom_filter_key, bloom_filter, *num_copies);
   } else {
+    // check if only contains one batch
+    if (recordBatches.size() != 1) {
+      return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed,
+              "RecordBatch stream for filter bitmap should only contain one recordBatch"));
+    }
+
+    // record batch to bitmap
+    auto exp_bitmap = ArrowSerializer::recordBatch_to_bitmap(recordBatches[0]);
+    if (!exp_bitmap.has_value()) {
+      return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed, exp_bitmap.error()));
+    }
+
     // bitmap key
     auto bitmap_key = BitmapCache::generateBitmapKey(put_bitmap_cmd->query_id(), put_bitmap_cmd->op());
     auto valid = put_bitmap_cmd->valid();

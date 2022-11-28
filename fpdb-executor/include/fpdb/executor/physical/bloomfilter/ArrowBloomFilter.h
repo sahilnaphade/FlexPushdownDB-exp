@@ -27,13 +27,19 @@ public:
   ~ArrowBloomFilter() override = default;
 
   const std::shared_ptr<arrow::compute::BlockedBloomFilter> &getBlockedBloomFilter() const;
+  void setBlockedBloomFilter(const std::shared_ptr<arrow::compute::BlockedBloomFilter> &blockedBloomFilter);
 
   tl::expected<void, std::string> build(const std::shared_ptr<TupleSet> &tupleSet);
 
+  tl::expected<void, std::string> saveBitmapRecordBatches(const arrow::RecordBatchVector &batches) override;
+  tl::expected<arrow::RecordBatchVector, std::string> makeBitmapRecordBatches() const override;
   ::nlohmann::json toJson() const override;
   static tl::expected<std::shared_ptr<ArrowBloomFilter>, std::string> fromJson(const nlohmann::json &jObj);
 
 private:
+  static constexpr std::string_view SER_MASKS_COLUMN = "masks";
+  static constexpr std::string_view SER_BITMAP_COLUMN = "bitmap";
+
   std::vector<std::string> columnNames_;
 
   std::shared_ptr<arrow::compute::BlockedBloomFilter> blockedBloomFilter_;
