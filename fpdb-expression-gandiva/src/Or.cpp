@@ -65,7 +65,7 @@ set<string> Or::involvedColumnNames() {
 
 tl::expected<std::shared_ptr<Or>, std::string> Or::fromJson(const nlohmann::json &jObj) {
   if (!jObj.contains("exprs")) {
-    return tl::make_unexpected(fmt::format("Exprs not specified in Or expression JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("Exprs not specified in Or expression JSON '{}'", to_string(jObj)));
   }
   auto exprsJArr = jObj["exprs"].get<std::vector<nlohmann::json>>();
 

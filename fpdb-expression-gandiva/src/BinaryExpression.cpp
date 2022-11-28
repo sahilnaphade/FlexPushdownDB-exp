@@ -36,7 +36,7 @@ BinaryExpression::fromJson(const nlohmann::json &jObj) {
   auto type = jObj["type"].get<std::string>();
 
   if (!jObj.contains("left")) {
-    return tl::make_unexpected(fmt::format("Left expression not specified in '{}' expression JSON '{}'", type, jObj));
+    return tl::make_unexpected(fmt::format("Left expression not specified in '{}' expression JSON '{}'", type, to_string(jObj)));
   }
   auto expLeft = Expression::fromJson(jObj["left"]);
   if (!expLeft.has_value()) {
@@ -44,7 +44,7 @@ BinaryExpression::fromJson(const nlohmann::json &jObj) {
   }
 
   if (!jObj.contains("right")) {
-    return tl::make_unexpected(fmt::format("Right expression not specified in '{}' expression JSON '{}'", type, jObj));
+    return tl::make_unexpected(fmt::format("Right expression not specified in '{}' expression JSON '{}'", type, to_string(jObj)));
   }
   auto expRight = Expression::fromJson(jObj["right"]);
   if (!expRight.has_value()) {

@@ -57,12 +57,12 @@ set<string> AggregateFunction::involvedColumnNames() const {
 
 tl::expected<std::shared_ptr<AggregateFunction>, std::string> AggregateFunction::fromJson(const nlohmann::json &jObj) {
   if (!jObj.contains("type")) {
-    return tl::make_unexpected(fmt::format("Type not specified in aggregate function JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("Type not specified in aggregate function JSON '{}'", to_string(jObj)));
   }
   auto type = jObj["type"].get<std::string>();
 
   if (!jObj.contains("outputColumnName")) {
-    return tl::make_unexpected(fmt::format("OutputColumnName not specified in aggregate function JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("OutputColumnName not specified in aggregate function JSON '{}'", to_string(jObj)));
   }
   auto outputColumnName = jObj["outputColumnName"].get<std::string>();
 

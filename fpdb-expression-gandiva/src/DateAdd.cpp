@@ -54,7 +54,7 @@ tl::expected<std::shared_ptr<DateAdd>, std::string> DateAdd::fromJson(const nloh
   }
 
   if (!jObj.contains("intervalType")) {
-    return tl::make_unexpected(fmt::format("IntervalType not specified in DateAdd expression JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("IntervalType not specified in DateAdd expression JSON '{}'", to_string(jObj)));
   }
   auto expIntervalType = stringToIntervalType(jObj["intervalType"]);
   if (!expIntervalType.has_value()) {

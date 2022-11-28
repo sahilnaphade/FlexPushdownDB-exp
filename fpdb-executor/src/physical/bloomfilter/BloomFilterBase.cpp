@@ -23,7 +23,11 @@ bool BloomFilterBase::valid() const {
 }
 
 tl::expected<std::shared_ptr<BloomFilterBase>, std::string> BloomFilterBase::fromJson(const nlohmann::json &jObj) {
+  if (!jObj.contains("type")) {
+    return tl::make_unexpected(fmt::format("Type not specified in BloomFilterBase JSON '{}'", to_string(jObj)));
+  }
   auto type = jObj["type"].get<BloomFilterType>();
+
   switch (type) {
     case BLOOM_FILTER: {
       return BloomFilter::fromJson(jObj);

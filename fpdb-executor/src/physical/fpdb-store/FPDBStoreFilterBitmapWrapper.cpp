@@ -25,22 +25,22 @@ tl::expected<FPDBStoreFilterBitmapWrapper, std::string> FPDBStoreFilterBitmapWra
   FPDBStoreFilterBitmapWrapper fpdbStoreFilterBitmapWrapper{};
 
   if (!jObj.contains("fpdbStoreSuperPOp")) {
-    return tl::make_unexpected(fmt::format("FpdbStoreSuperPOp not specified in FPDBStoreFilterBitmapWrapper JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("FpdbStoreSuperPOp not specified in FPDBStoreFilterBitmapWrapper JSON '{}'", to_string(jObj)));
   }
   fpdbStoreFilterBitmapWrapper.fpdbStoreSuperPOp_ = jObj["fpdbStoreSuperPOp"].get<std::string>();
 
   if (!jObj.contains("mirrorOp")) {
-    return tl::make_unexpected(fmt::format("MirrorOp not specified in FPDBStoreFilterBitmapWrapper JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("MirrorOp not specified in FPDBStoreFilterBitmapWrapper JSON '{}'", to_string(jObj)));
   }
   fpdbStoreFilterBitmapWrapper.mirrorOp_ = jObj["mirrorOp"].get<std::string>();
 
   if (!jObj.contains("isComputeSide")) {
-    return tl::make_unexpected(fmt::format("IsComputeSide not specified in FPDBStoreFilterBitmapWrapper JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("IsComputeSide not specified in FPDBStoreFilterBitmapWrapper JSON '{}'", to_string(jObj)));
   }
   fpdbStoreFilterBitmapWrapper.isComputeSide_ = jObj["isComputeSide"].get<bool>();
 
   if (!jObj.contains("isBitmapSent")) {
-    return tl::make_unexpected(fmt::format("IsBitmapSent not specified in FPDBStoreFilterBitmapWrapper JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("IsBitmapSent not specified in FPDBStoreFilterBitmapWrapper JSON '{}'", to_string(jObj)));
   }
   fpdbStoreFilterBitmapWrapper.isBitmapSent_ = jObj["isBitmapSent"].get<bool>();
 

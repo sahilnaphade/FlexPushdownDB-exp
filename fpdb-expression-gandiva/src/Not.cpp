@@ -41,7 +41,7 @@ set<string> Not::involvedColumnNames() {
 
 tl::expected<std::shared_ptr<Not>, std::string> Not::fromJson(const nlohmann::json &jObj) {
   if (!jObj.contains("expr")) {
-    return tl::make_unexpected(fmt::format("Expr not specified in Not expression JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("Expr not specified in Not expression JSON '{}'", to_string(jObj)));
   }
   auto expExpr = Expression::fromJson(jObj["expr"]);
   if (!expExpr) {

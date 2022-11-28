@@ -17,7 +17,7 @@ FileFormatType FileFormat::getType() const {
 
 tl::expected<std::shared_ptr<FileFormat>, std::string> FileFormat::fromJson(const nlohmann::json &jObj) {
   if (!jObj.contains("type")) {
-    return tl::make_unexpected(fmt::format("Type not specified in file format JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("Type not specified in file format JSON '{}'", to_string(jObj)));
   }
   auto type = jObj["type"].get<std::string>();
 

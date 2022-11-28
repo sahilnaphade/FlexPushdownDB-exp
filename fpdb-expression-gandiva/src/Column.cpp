@@ -50,7 +50,7 @@ std::string Column::getTypeString() const {
 
 tl::expected<std::shared_ptr<Column>, std::string> Column::fromJson(const nlohmann::json &jObj) {
   if (!jObj.contains("columnName")) {
-    return tl::make_unexpected(fmt::format("ColumnName not specified in Column expression JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("ColumnName not specified in Column expression JSON '{}'", to_string(jObj)));
   }
   auto columnName = jObj["columnName"].get<std::string>();
   return std::make_shared<Column>(columnName);

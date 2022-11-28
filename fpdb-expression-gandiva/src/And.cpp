@@ -66,7 +66,7 @@ set<string> And::involvedColumnNames() {
 
 tl::expected<std::shared_ptr<And>, std::string> And::fromJson(const nlohmann::json &jObj) {
   if (!jObj.contains("exprs")) {
-    return tl::make_unexpected(fmt::format("Exprs not specified in And expression JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("Exprs not specified in And expression JSON '{}'", to_string(jObj)));
   }
   auto exprsJArr = jObj["exprs"].get<std::vector<nlohmann::json>>();
 

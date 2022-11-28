@@ -538,7 +538,7 @@ shared_ptr<LimitSortPrePOp> CalcitePlanJsonDeserializer::deserializeLimitSort(co
   // deserialize limit
   const auto &limitJObj = jObj["limit"];
   if (!limitJObj.contains("literal")) {
-    throw runtime_error(fmt::format("Invalid sort limit, not an literal, from: {}",to_string(limitJObj)));
+    throw runtime_error(fmt::format("Invalid sort limit, not an literal, from: {}", to_string(limitJObj)));
   }
   const auto &limitLiteralJObj = limitJObj["literal"];
   if (limitLiteralJObj["type"].get<string>() != "INTEGER") {

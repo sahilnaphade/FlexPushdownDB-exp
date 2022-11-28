@@ -295,7 +295,7 @@ bool BlockedBloomFilter::IsSameAs(const BlockedBloomFilter* other) const {
 tl::expected<std::shared_ptr<BlockedBloomFilter>, std::string>
 BlockedBloomFilter::fromJson(const nlohmann::json &jObj) {
   if (!jObj.contains("log_num_blocks")) {
-    return tl::make_unexpected(fmt::format("log_num_blocks not specified in BlockedBloomFilter JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("log_num_blocks not specified in BlockedBloomFilter JSON '{}'", to_string(jObj)));
   }
   auto log_num_blocks = jObj["log_num_blocks"].get<int>();
 

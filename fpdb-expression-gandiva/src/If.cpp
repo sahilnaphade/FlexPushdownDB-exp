@@ -57,7 +57,7 @@ set<string> If::involvedColumnNames() {
 
 tl::expected<std::shared_ptr<If>, std::string> If::fromJson(const nlohmann::json &jObj) {
   if (!jObj.contains("ifExpr")) {
-    return tl::make_unexpected(fmt::format("IfExpr not specified in If expression JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("IfExpr not specified in If expression JSON '{}'", to_string(jObj)));
   }
   auto expIfExpr = Expression::fromJson(jObj["ifExpr"]);
   if (!expIfExpr) {
@@ -65,7 +65,7 @@ tl::expected<std::shared_ptr<If>, std::string> If::fromJson(const nlohmann::json
   }
 
   if (!jObj.contains("thenExpr")) {
-    return tl::make_unexpected(fmt::format("ThenExpr not specified in If expression JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("ThenExpr not specified in If expression JSON '{}'", to_string(jObj)));
   }
   auto expThenExpr = Expression::fromJson(jObj["thenExpr"]);
   if (!expThenExpr) {
@@ -73,7 +73,7 @@ tl::expected<std::shared_ptr<If>, std::string> If::fromJson(const nlohmann::json
   }
 
   if (!jObj.contains("elseExpr")) {
-    return tl::make_unexpected(fmt::format("ElseExpr not specified in If expression JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("ElseExpr not specified in If expression JSON '{}'", to_string(jObj)));
   }
   auto expElseExpr = Expression::fromJson(jObj["elseExpr"]);
   if (!expElseExpr) {

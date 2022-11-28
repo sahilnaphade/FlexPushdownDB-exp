@@ -37,12 +37,12 @@ json CSVFormat::toJson() const {
 
 tl::expected<std::shared_ptr<CSVFormat>, std::string> CSVFormat::fromJson(const nlohmann::json &jObj) {
   if (!jObj.contains("fieldDelimiter")) {
-    return tl::make_unexpected(fmt::format("FieldDelimiter not specified in CSV format JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("FieldDelimiter not specified in CSV format JSON '{}'", to_string(jObj)));
   }
   auto fieldDelimiter = jObj["fieldDelimiter"].get<char>();
 
   if (!jObj.contains("skipRows")) {
-    return tl::make_unexpected(fmt::format("SkipRows not specified in CSV format JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("SkipRows not specified in CSV format JSON '{}'", to_string(jObj)));
   }
   auto skipRows = jObj["skipRows"].get<int>();
 

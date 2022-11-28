@@ -56,7 +56,7 @@ set<string> Substr::involvedColumnNames() {
 
 tl::expected<std::shared_ptr<Substr>, std::string> Substr::fromJson(const nlohmann::json &jObj) {
   if (!jObj.contains("expr")) {
-    return tl::make_unexpected(fmt::format("Expr not specified in Substr expression JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("Expr not specified in Substr expression JSON '{}'", to_string(jObj)));
   }
   auto expExpr = Expression::fromJson(jObj["expr"]);
   if (!expExpr) {
@@ -64,7 +64,7 @@ tl::expected<std::shared_ptr<Substr>, std::string> Substr::fromJson(const nlohma
   }
 
   if (!jObj.contains("fromLit")) {
-    return tl::make_unexpected(fmt::format("FromLit not specified in Substr expression JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("FromLit not specified in Substr expression JSON '{}'", to_string(jObj)));
   }
   auto expFromLit = Expression::fromJson(jObj["fromLit"]);
   if (!expFromLit) {
@@ -72,7 +72,7 @@ tl::expected<std::shared_ptr<Substr>, std::string> Substr::fromJson(const nlohma
   }
 
   if (!jObj.contains("forLit")) {
-    return tl::make_unexpected(fmt::format("ForLit not specified in Substr expression JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("ForLit not specified in Substr expression JSON '{}'", to_string(jObj)));
   }
   auto expForLit = Expression::fromJson(jObj["forLit"]);
   if (!expForLit) {

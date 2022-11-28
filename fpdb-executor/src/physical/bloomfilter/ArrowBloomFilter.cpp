@@ -126,18 +126,18 @@ tl::expected<arrow::RecordBatchVector, std::string> ArrowBloomFilter::makeBitmap
 
 tl::expected<std::shared_ptr<ArrowBloomFilter>, std::string> ArrowBloomFilter::fromJson(const nlohmann::json &jObj) {
   if (!jObj.contains("capacity")) {
-    return tl::make_unexpected(fmt::format("Capacity not specified in ArrowBloomFilter JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("Capacity not specified in ArrowBloomFilter JSON '{}'", to_string(jObj)));
   }
   auto capacity = jObj["capacity"].get<int64_t>();
 
   if (!jObj.contains("columnNames")) {
-    return tl::make_unexpected(fmt::format("ColumnNames not specified in ArrowBloomFilter JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("ColumnNames not specified in ArrowBloomFilter JSON '{}'", to_string(jObj)));
   }
   auto columnNames = jObj["columnNames"].get<std::vector<std::string>>();
   auto arrowBloomFilter = make(capacity, columnNames);
 
   if (!jObj.contains("blockedBloomFilter")) {
-    return tl::make_unexpected(fmt::format("BlockedBloomFilter not specified in ArrowBloomFilter JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("BlockedBloomFilter not specified in ArrowBloomFilter JSON '{}'", to_string(jObj)));
   }
   auto expBlockedBloomFilter = arrow::compute::BlockedBloomFilter::fromJson(jObj["blockedBloomFilter"]);
   if (!expBlockedBloomFilter.has_value()) {

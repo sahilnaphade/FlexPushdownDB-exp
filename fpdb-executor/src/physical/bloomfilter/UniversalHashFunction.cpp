@@ -68,22 +68,22 @@ int64_t UniversalHashFunction::hash(int64_t x) const {
 tl::expected<std::shared_ptr<UniversalHashFunction>, std::string>
 UniversalHashFunction::fromJson(const nlohmann::json &jObj) {
   if (!jObj.contains("a")) {
-    return tl::make_unexpected(fmt::format("A not specified in universal hash function JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("A not specified in universal hash function JSON '{}'", to_string(jObj)));
   }
   int64_t a = jObj["a"].get<int64_t>();
 
   if (!jObj.contains("b")) {
-    return tl::make_unexpected(fmt::format("B not specified in universal hash function JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("B not specified in universal hash function JSON '{}'", to_string(jObj)));
   }
   int64_t b = jObj["b"].get<int64_t>();
 
   if (!jObj.contains("m")) {
-    return tl::make_unexpected(fmt::format("M not specified in universal hash function JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("M not specified in universal hash function JSON '{}'", to_string(jObj)));
   }
   int64_t m = jObj["m"].get<int64_t>();
 
   if (!jObj.contains("p")) {
-    return tl::make_unexpected(fmt::format("P not specified in universal hash function JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("P not specified in universal hash function JSON '{}'", to_string(jObj)));
   }
   int64_t p = jObj["p"].get<int64_t>();
 

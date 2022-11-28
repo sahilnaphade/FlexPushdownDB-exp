@@ -42,13 +42,13 @@ tl::expected<std::shared_ptr<PhysicalPlan>, std::string> PhysicalPlanDeserialize
 
     // root
     if (!jObj.contains("root")) {
-      return tl::make_unexpected(fmt::format("Root not specified in physical plan JSON '{}'", jObj));
+      return tl::make_unexpected(fmt::format("Root not specified in physical plan JSON '{}'", planString_));
     }
     auto root = jObj["root"].get<std::string>();
 
     // ops
     if (!jObj.contains("operators")) {
-      return tl::make_unexpected(fmt::format("Operators not specified in physical plan JSON '{}'", jObj));
+      return tl::make_unexpected(fmt::format("Operators not specified in physical plan JSON '{}'", planString_));
     }
     auto opJArr = jObj["operators"].get<std::vector<json>>();
     std::unordered_map<std::string, std::shared_ptr<PhysicalOp>> opMap;
@@ -68,7 +68,7 @@ tl::expected<std::shared_ptr<PhysicalPlan>, std::string> PhysicalPlanDeserialize
 tl::expected<std::shared_ptr<PhysicalOp>, std::string>
 PhysicalPlanDeserializer::deserializePOp(const ::nlohmann::json &jObj) {
   if (!jObj.contains("type")) {
-    return tl::make_unexpected(fmt::format("Type not specified in physical operator JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("Type not specified in physical operator JSON '{}'", to_string(jObj)));
   }
 
   auto type = jObj["type"].get<std::string>();
@@ -114,17 +114,17 @@ PhysicalPlanDeserializer::deserializeFPDBStoreFileScanPOp(const ::nlohmann::json
 
   // deserialize other
   if (!jObj.contains("bucket")) {
-    return tl::make_unexpected(fmt::format("Bucket not specified in FileScanPOp JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("Bucket not specified in FileScanPOp JSON '{}'", to_string(jObj)));
   }
   auto bucket = jObj["bucket"].get<std::string>();
 
   if (!jObj.contains("object")) {
-    return tl::make_unexpected(fmt::format("Object not specified in FileScanPOp JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("Object not specified in FileScanPOp JSON '{}'", to_string(jObj)));
   }
   auto object = jObj["object"].get<std::string>();
 
   if (!jObj.contains("format")) {
-    return tl::make_unexpected(fmt::format("Format not specified in FileScanPOp JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("Format not specified in FileScanPOp JSON '{}'", to_string(jObj)));
   }
   auto expFormat = FileFormat::fromJson(jObj["format"]);
   if (!expFormat) {
@@ -133,12 +133,12 @@ PhysicalPlanDeserializer::deserializeFPDBStoreFileScanPOp(const ::nlohmann::json
   auto format = *expFormat;
 
   if (!jObj.contains("schema")) {
-    return tl::make_unexpected(fmt::format("Schema not specified in FileScanPOp JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("Schema not specified in FileScanPOp JSON '{}'", to_string(jObj)));
   }
   auto schema = ArrowSerializer::bytes_to_schema(jObj["schema"].get<std::vector<uint8_t>>());
 
   if (!jObj.contains("fileSize")) {
-    return tl::make_unexpected(fmt::format("FileSize not specified in FileScanPOp JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("FileSize not specified in FileScanPOp JSON '{}'", to_string(jObj)));
   }
   auto fileSize = jObj["fileSize"].get<int64_t>();
 
@@ -146,11 +146,11 @@ PhysicalPlanDeserializer::deserializeFPDBStoreFileScanPOp(const ::nlohmann::json
   if (jObj.contains("byteRange")) {
     auto byteRangeJObj = jObj["byteRange"];
     if (!byteRangeJObj.contains("startOffset")) {
-      return tl::make_unexpected(fmt::format("StartOffset not specified in byteRange JSON '{}'", byteRangeJObj));
+      return tl::make_unexpected(fmt::format("StartOffset not specified in byteRange JSON '{}'", to_string(byteRangeJObj)));
     }
     auto startOffset = byteRangeJObj["startOffset"].get<int64_t>();
     if (!byteRangeJObj.contains("finishOffset")) {
-      return tl::make_unexpected(fmt::format("FinishOffset not specified in byteRange JSON '{}'", byteRangeJObj));
+      return tl::make_unexpected(fmt::format("FinishOffset not specified in byteRange JSON '{}'", to_string(byteRangeJObj)));
     }
     auto finishOffset = byteRangeJObj["finishOffset"].get<int64_t>();
     byteRange = {startOffset, finishOffset};
@@ -191,7 +191,7 @@ PhysicalPlanDeserializer::deserializeFilterPOp(const ::nlohmann::json &jObj) {
 
   // deserialize other
   if (!jObj.contains("predicate")) {
-    return tl::make_unexpected(fmt::format("Predicate not specified in FilterPOp JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("Predicate not specified in FilterPOp JSON '{}'", to_string(jObj)));
   }
   auto expPredicate = fpdb::expression::gandiva::Expression::fromJson(jObj["predicate"]);
   if (!expPredicate.has_value()) {
@@ -236,7 +236,7 @@ PhysicalPlanDeserializer::deserializeProjectPOp(const ::nlohmann::json &jObj) {
 
   // deserialize other
   if (!jObj.contains("exprs")) {
-    return tl::make_unexpected(fmt::format("Exprs not specified in ProjectPOp JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("Exprs not specified in ProjectPOp JSON '{}'", to_string(jObj)));
   }
   std::vector<std::shared_ptr<fpdb::expression::gandiva::Expression>> exprs;
   auto exprsJArr = jObj["exprs"].get<std::vector<json>>();
@@ -249,12 +249,12 @@ PhysicalPlanDeserializer::deserializeProjectPOp(const ::nlohmann::json &jObj) {
   }
 
   if (!jObj.contains("exprNames")) {
-    return tl::make_unexpected(fmt::format("ExprNames not specified in ProjectPOp JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("ExprNames not specified in ProjectPOp JSON '{}'", to_string(jObj)));
   }
   auto exprNames = jObj["exprNames"].get<std::vector<std::string>>();
 
   if (!jObj.contains("projectColumnNamePairs")) {
-    return tl::make_unexpected(fmt::format("ProjectColumnNamePairs not specified in ProjectPOp JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("ProjectColumnNamePairs not specified in ProjectPOp JSON '{}'", to_string(jObj)));
   }
   auto projectColumnPairs = jObj["projectColumnNamePairs"].get<std::vector<std::pair<std::string, std::string>>>();
 
@@ -289,7 +289,7 @@ PhysicalPlanDeserializer::deserializeAggregatePOp(const ::nlohmann::json &jObj) 
 
   // deserialize other
   if (!jObj.contains("functions")) {
-    return tl::make_unexpected(fmt::format("Aggregate functions not specified in AggregatePOp JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("Aggregate functions not specified in AggregatePOp JSON '{}'", to_string(jObj)));
   }
   std::vector<std::shared_ptr<aggregate::AggregateFunction>> functions;
   auto functionsJArr = jObj["functions"].get<std::vector<json>>();
@@ -330,7 +330,7 @@ PhysicalPlanDeserializer::deserializeGroupPOp(const ::nlohmann::json &jObj) {
 
   // deserialize other
   if (!jObj.contains("kernel")) {
-    return tl::make_unexpected(fmt::format("Kernel not specified in GroupPOp JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("Kernel not specified in GroupPOp JSON '{}'", to_string(jObj)));
   }
   auto expKernel = group::GroupAbstractKernel::fromJson(jObj["kernel"]);
   if (!expKernel.has_value()) {
@@ -366,12 +366,12 @@ PhysicalPlanDeserializer::deserializeShufflePOp(const ::nlohmann::json &jObj) {
 
   // deserialize other
   if (!jObj.contains("shuffleColumnNames")) {
-    return tl::make_unexpected(fmt::format("ShuffleColumnNames not specified in ShufflePOp JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("ShuffleColumnNames not specified in ShufflePOp JSON '{}'", to_string(jObj)));
   }
   auto shuffleColumnNames = jObj["shuffleColumnNames"].get<std::vector<std::string>>();
 
   if (!jObj.contains("consumerVec")) {
-    return tl::make_unexpected(fmt::format("ConsumerVec not specified in ShufflePOp JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("ConsumerVec not specified in ShufflePOp JSON '{}'", to_string(jObj)));
   }
   auto consumerVec = jObj["consumerVec"].get<std::vector<std::string>>();
 
@@ -405,22 +405,22 @@ PhysicalPlanDeserializer::deserializeBloomFilterCreatePOp(const ::nlohmann::json
 
   // deserialize other
   if (!jObj.contains("bloomFilterColumnNames")) {
-    return tl::make_unexpected(fmt::format("BloomFilterColumnNames not specified in BloomFilterCreatePOp JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("BloomFilterColumnNames not specified in BloomFilterCreatePOp JSON '{}'", to_string(jObj)));
   }
   auto bloomFilterColumnNames = jObj["bloomFilterColumnNames"].get<std::vector<std::string>>();
 
   if (!jObj.contains("desiredFalsePositiveRate")) {
-    return tl::make_unexpected(fmt::format("DesiredFalsePositiveRate not specified in BloomFilterCreatePOp JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("DesiredFalsePositiveRate not specified in BloomFilterCreatePOp JSON '{}'", to_string(jObj)));
   }
   auto desiredFalsePositiveRate = jObj["desiredFalsePositiveRate"].get<double>();
 
   if (!jObj.contains("bloomFilterUsePOps")) {
-    return tl::make_unexpected(fmt::format("BloomFilterUsePOps not specified in BloomFilterCreatePOp JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("BloomFilterUsePOps not specified in BloomFilterCreatePOp JSON '{}'", to_string(jObj)));
   }
   auto bloomFilterUsePOps = jObj["bloomFilterUsePOps"].get<std::set<std::string>>();
 
   if (!jObj.contains("passTupleSetConsumers")) {
-    return tl::make_unexpected(fmt::format("PassTupleSetConsumers not specified in BloomFilterCreatePOp JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("PassTupleSetConsumers not specified in BloomFilterCreatePOp JSON '{}'", to_string(jObj)));
   }
   auto passTupleSetConsumers = jObj["passTupleSetConsumers"].get<std::set<std::string>>();
 
@@ -456,7 +456,7 @@ PhysicalPlanDeserializer::deserializeBloomFilterUsePOp(const ::nlohmann::json &j
 
   // deserialize other
   if (!jObj.contains("bloomFilterColumnNames")) {
-    return tl::make_unexpected(fmt::format("BloomFilterColumnNames not specified in BloomFilterUsePOp JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("BloomFilterColumnNames not specified in BloomFilterUsePOp JSON '{}'", to_string(jObj)));
   }
   auto bloomFilterColumnNames = jObj["bloomFilterColumnNames"].get<std::vector<std::string>>();
 
@@ -489,7 +489,7 @@ PhysicalPlanDeserializer::deserializeHashJoinArrowPOp(const ::nlohmann::json &jO
 
   // deserialize other
   if (!jObj.contains("pred")) {
-    return tl::make_unexpected(fmt::format("Pred not specified in HashJoinArrowPOp JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("Pred not specified in HashJoinArrowPOp JSON '{}'", to_string(jObj)));
   }
   auto expPred = join::HashJoinPredicate::fromJson(jObj["pred"]);
   if (!expPred.has_value()) {
@@ -497,17 +497,17 @@ PhysicalPlanDeserializer::deserializeHashJoinArrowPOp(const ::nlohmann::json &jO
   }
 
   if (!jObj.contains("joinType")) {
-    return tl::make_unexpected(fmt::format("JoinType not specified in HashJoinArrowPOp JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("JoinType not specified in HashJoinArrowPOp JSON '{}'", to_string(jObj)));
   }
   auto joinType = jObj["joinType"].get<JoinType>();
 
   if (!jObj.contains("buildProducers")) {
-    return tl::make_unexpected(fmt::format("BuildProducers not specified in HashJoinArrowPOp JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("BuildProducers not specified in HashJoinArrowPOp JSON '{}'", to_string(jObj)));
   }
   auto buildProducers = jObj["buildProducers"].get<std::set<std::string>>();
 
   if (!jObj.contains("probeProducers")) {
-    return tl::make_unexpected(fmt::format("ProbeProducers not specified in HashJoinArrowPOp JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("ProbeProducers not specified in HashJoinArrowPOp JSON '{}'", to_string(jObj)));
   }
   auto probeProducers = jObj["probeProducers"].get<std::set<std::string>>();
 
@@ -543,17 +543,17 @@ PhysicalPlanDeserializer::deserializeCollatePOp(const ::nlohmann::json &jObj) {
 
   // deserialize other
   if (!jObj.contains("forward")) {
-    return tl::make_unexpected(fmt::format("Forward not specified in CollatePOp JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("Forward not specified in CollatePOp JSON '{}'", to_string(jObj)));
   }
   auto forward = jObj["forward"].get<bool>();
 
   if (!jObj.contains("forwardConsumers")) {
-    return tl::make_unexpected(fmt::format("ForwardConsumers not specified in CollatePOp JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("ForwardConsumers not specified in CollatePOp JSON '{}'", to_string(jObj)));
   }
   auto forwardConsumers = jObj["forwardConsumers"].get<std::unordered_map<std::string, std::string>>();
 
   if (!jObj.contains("endConsumers")) {
-    return tl::make_unexpected(fmt::format("EndConsumers not specified in CollatePOp JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("EndConsumers not specified in CollatePOp JSON '{}'", to_string(jObj)));
   }
   auto endConsumers = jObj["endConsumers"].get<std::vector<std::string>>();
 
@@ -580,33 +580,33 @@ tl::expected<std::tuple<std::string,
              std::string>
 PhysicalPlanDeserializer::deserializePOpCommon(const ::nlohmann::json &jObj) {
   if (!jObj.contains("name")) {
-    return tl::make_unexpected(fmt::format("Name not specified in physical operator JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("Name not specified in physical operator JSON '{}'", to_string(jObj)));
   }
   auto name = jObj["name"].get<std::string>();
 
   if (!jObj.contains("projectColumnNames")) {
-    return tl::make_unexpected(fmt::format("ProjectColumnNames not specified in physical operator JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("ProjectColumnNames not specified in physical operator JSON '{}'", to_string(jObj)));
   }
   auto projectColumnNames = jObj["projectColumnNames"].get<std::vector<std::string>>();
 
   if (!jObj.contains("producers")) {
-    return tl::make_unexpected(fmt::format("Producers not specified in physical operator JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("Producers not specified in physical operator JSON '{}'", to_string(jObj)));
   }
   auto producers = jObj["producers"].get<std::set<std::string>>();
 
   if (!jObj.contains("consumers")) {
-    return tl::make_unexpected(fmt::format("Consumers not specified in physical operator JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("Consumers not specified in physical operator JSON '{}'", to_string(jObj)));
   }
   auto consumers = jObj["consumers"].get<std::set<std::string>>();
 
   if (!jObj.contains("isSeparated")) {
-    return tl::make_unexpected(fmt::format("IsSeparated not specified in physical operator JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("IsSeparated not specified in physical operator JSON '{}'", to_string(jObj)));
   }
   auto isSeparated = jObj["isSeparated"].get<bool>();
 
   if (!jObj.contains("consumerToBloomFilterInfo")) {
     return tl::make_unexpected(
-            fmt::format("ConsumerToBloomFilterInfo not specified in physical operator JSON '{}'", jObj));
+            fmt::format("ConsumerToBloomFilterInfo not specified in physical operator JSON '{}'", to_string(jObj)));
   }
   std::unordered_map<std::string, std::shared_ptr<fpdb_store::FPDBStoreBloomFilterUseInfo>> consumerToBloomFilterInfo;
   const auto &consumerToBloomFilterInfoJMap =

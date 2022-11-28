@@ -47,12 +47,12 @@ string HashJoinPredicate::toString() const {
 
 tl::expected<HashJoinPredicate, std::string> HashJoinPredicate::fromJson(const nlohmann::json &jObj) {
   if (!jObj.contains("leftColumnNames")) {
-    return tl::make_unexpected(fmt::format("LeftColumnNames not specified in HashJoinPredicate JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("LeftColumnNames not specified in HashJoinPredicate JSON '{}'", to_string(jObj)));
   }
   auto leftColumnNames = jObj["leftColumnNames"].get<vector<string>>();
 
   if (!jObj.contains("rightColumnNames")) {
-    return tl::make_unexpected(fmt::format("RightColumnNames not specified in HashJoinPredicate JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("RightColumnNames not specified in HashJoinPredicate JSON '{}'", to_string(jObj)));
   }
   auto rightColumnNames = jObj["rightColumnNames"].get<vector<string>>();
 

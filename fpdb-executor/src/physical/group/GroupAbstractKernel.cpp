@@ -34,17 +34,17 @@ GroupKernelType GroupAbstractKernel::getType() const {
 tl::expected<std::shared_ptr<GroupAbstractKernel>, std::string>
 GroupAbstractKernel::fromJson(const nlohmann::json &jObj) {
   if (!jObj.contains("type")) {
-    return tl::make_unexpected(fmt::format("Type not specified in group abstract kernel JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("Type not specified in group abstract kernel JSON '{}'", to_string(jObj)));
   }
   auto type = jObj["type"].get<GroupKernelType>();
 
   if (!jObj.contains("groupColumnNames")) {
-    return tl::make_unexpected(fmt::format("GroupColumnNames not specified in group abstract kernel JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("GroupColumnNames not specified in group abstract kernel JSON '{}'", to_string(jObj)));
   }
   auto groupColumnNames = jObj["groupColumnNames"].get<std::vector<std::string>>();
 
   if (!jObj.contains("aggregateFunctions")) {
-    return tl::make_unexpected(fmt::format("AggregateFunctions not specified in group abstract kernel JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("AggregateFunctions not specified in group abstract kernel JSON '{}'", to_string(jObj)));
   }
   auto functionsJArr = jObj["aggregateFunctions"].get<std::vector<::nlohmann::json>>();
   std::vector<std::shared_ptr<AggregateFunction>> aggregateFunctions;
@@ -64,7 +64,7 @@ GroupAbstractKernel::fromJson(const nlohmann::json &jObj) {
       return std::make_shared<GroupKernel>(groupColumnNames, aggregateFunctions);
     }
     default:
-      return tl::make_unexpected(fmt::format("Unknown type in group abstract kernel JSON '{}'", jObj));
+      return tl::make_unexpected(fmt::format("Unknown type in group abstract kernel JSON '{}'", to_string(jObj)));
   }
 }
 

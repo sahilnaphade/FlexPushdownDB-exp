@@ -187,7 +187,7 @@ std::string Cast::getTypeString() const {
 
 tl::expected<std::shared_ptr<Cast>, std::string> Cast::fromJson(const nlohmann::json &jObj) {
   if (!jObj.contains("expr")) {
-    return tl::make_unexpected(fmt::format("Expr not specified in Cast expression JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("Expr not specified in Cast expression JSON '{}'", to_string(jObj)));
   }
   auto expExpr = Expression::fromJson(jObj["expr"]);
   if (!expExpr.has_value()) {
@@ -195,7 +195,7 @@ tl::expected<std::shared_ptr<Cast>, std::string> Cast::fromJson(const nlohmann::
   }
 
   if (!jObj.contains("dataType")) {
-    return tl::make_unexpected(fmt::format("DataType not specified in Cast expression JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("DataType not specified in Cast expression JSON '{}'", to_string(jObj)));
   }
   auto dataType = fpdb::tuple::ArrowSerializer::bytes_to_dataType(jObj["dataType"].get<std::vector<uint8_t>>());
 

@@ -45,7 +45,7 @@ set<string> DateExtract::involvedColumnNames() {
 
 tl::expected<std::shared_ptr<DateExtract>, std::string> DateExtract::fromJson(const nlohmann::json &jObj) {
   if (!jObj.contains("dateExpr")) {
-    return tl::make_unexpected(fmt::format("DateExpr not specified in DateExtract expression JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("DateExpr not specified in DateExtract expression JSON '{}'", to_string(jObj)));
   }
   auto expDateExpr = Expression::fromJson(jObj["dateExpr"]);
   if (!expDateExpr) {
@@ -53,7 +53,7 @@ tl::expected<std::shared_ptr<DateExtract>, std::string> DateExtract::fromJson(co
   }
 
   if (!jObj.contains("intervalType")) {
-    return tl::make_unexpected(fmt::format("IntervalType not specified in DateExtract expression JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("IntervalType not specified in DateExtract expression JSON '{}'", to_string(jObj)));
   }
   auto expIntervalType = stringToIntervalType(jObj["intervalType"]);
   if (!expIntervalType.has_value()) {

@@ -165,32 +165,32 @@ tl::expected<arrow::RecordBatchVector, std::string> BloomFilter::makeBitmapRecor
 
 tl::expected<std::shared_ptr<BloomFilter>, std::string> BloomFilter::fromJson(const nlohmann::json &jObj) {
   if (!jObj.contains("capacity")) {
-    return tl::make_unexpected(fmt::format("Capacity not specified in bloom filter JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("Capacity not specified in bloom filter JSON '{}'", to_string(jObj)));
   }
   int64_t capacity = jObj["capacity"].get<int64_t>();
 
   if (!jObj.contains("falsePositiveRate")) {
-    return tl::make_unexpected(fmt::format("FalsePositiveRate not specified in bloom filter JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("FalsePositiveRate not specified in bloom filter JSON '{}'", to_string(jObj)));
   }
   double falsePositiveRate = jObj["falsePositiveRate"].get<double>();
 
   if (!jObj.contains("valid")) {
-    return tl::make_unexpected(fmt::format("Valid not specified in bloom filter JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("Valid not specified in bloom filter JSON '{}'", to_string(jObj)));
   }
   bool valid = jObj["valid"].get<bool>();
 
   if (!jObj.contains("numHashFunctions")) {
-    return tl::make_unexpected(fmt::format("NumHashFunctions not specified in bloom filter JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("NumHashFunctions not specified in bloom filter JSON '{}'", to_string(jObj)));
   }
   int64_t numHashFunctions = jObj["numHashFunctions"].get<int64_t>();
 
   if (!jObj.contains("numBits")) {
-    return tl::make_unexpected(fmt::format("NumBits not specified in bloom filter JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("NumBits not specified in bloom filter JSON '{}'", to_string(jObj)));
   }
   int64_t numBits = jObj["numBits"].get<int64_t>();
 
   if (!jObj.contains("hashFunctions")) {
-    return tl::make_unexpected(fmt::format("HashFunctions not specified in bloom filter JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("HashFunctions not specified in bloom filter JSON '{}'", to_string(jObj)));
   }
   std::vector<std::shared_ptr<UniversalHashFunction>> hashFunctions;
   auto hashFunctionsJArr = jObj["hashFunctions"].get<std::vector<nlohmann::json>>();

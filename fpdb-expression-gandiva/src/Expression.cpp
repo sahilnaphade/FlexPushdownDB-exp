@@ -52,7 +52,7 @@ std::string Expression::showString() {
 tl::expected<std::shared_ptr<fpdb::expression::gandiva::Expression>, std::string>
 Expression::fromJson(const nlohmann::json &jObj) {
   if (!jObj.contains("type")) {
-    return tl::make_unexpected(fmt::format("Type not specified in file format JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("Type not specified in file format JSON '{}'", to_string(jObj)));
   }
   auto type = jObj["type"].get<std::string>();
 
@@ -104,7 +104,7 @@ Expression::fromJson(const nlohmann::json &jObj) {
 
   else if (type == "In") {
     if (!jObj.contains("dataType")) {
-      return tl::make_unexpected(fmt::format("Data type not specified in In expression JSON '{}'", jObj));
+      return tl::make_unexpected(fmt::format("Data type not specified in In expression JSON '{}'", to_string(jObj)));
     }
     auto dataType = fpdb::tuple::ArrowSerializer::bytes_to_dataType(jObj["dataType"].get<std::vector<uint8_t>>());
     if (dataType->id() == ::arrow::int32()->id()) {
@@ -124,7 +124,7 @@ Expression::fromJson(const nlohmann::json &jObj) {
 
   else if (type == "NumericLiteral") {
     if (!jObj.contains("dataType")) {
-      return tl::make_unexpected(fmt::format("Data type not specified in NumericLiteral expression JSON '{}'", jObj));
+      return tl::make_unexpected(fmt::format("Data type not specified in NumericLiteral expression JSON '{}'", to_string(jObj)));
     }
     auto dataType = fpdb::tuple::ArrowSerializer::bytes_to_dataType(jObj["dataType"].get<std::vector<uint8_t>>());
     if (dataType->id() == ::arrow::int32()->id()) {

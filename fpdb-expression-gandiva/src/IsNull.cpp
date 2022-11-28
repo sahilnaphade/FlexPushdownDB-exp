@@ -41,7 +41,7 @@ set<string> IsNull::involvedColumnNames() {
 
 tl::expected<std::shared_ptr<IsNull>, std::string> IsNull::fromJson(const nlohmann::json &jObj) {
   if (!jObj.contains("expr")) {
-    return tl::make_unexpected(fmt::format("Expr not specified in IsNull expression JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("Expr not specified in IsNull expression JSON '{}'", to_string(jObj)));
   }
   auto expExpr = Expression::fromJson(jObj["expr"]);
   if (!expExpr) {

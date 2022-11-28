@@ -25,13 +25,13 @@ tl::expected<std::shared_ptr<FPDBStoreBloomFilterUseInfo>, std::string>
 FPDBStoreBloomFilterUseInfo::fromJson(const ::nlohmann::json &jObj) {
   if (!jObj.contains("bloomFilterCreatePOp")) {
     return tl::make_unexpected(
-            fmt::format("BloomFilterCreatePOp not specified in FPDBStoreBloomFilterUseInfo JSON '{}'", jObj));
+            fmt::format("BloomFilterCreatePOp not specified in FPDBStoreBloomFilterUseInfo JSON '{}'", to_string(jObj)));
   }
   auto bloomFilterCreatePOp = jObj["bloomFilterCreatePOp"].get<std::string>();
 
   if (!jObj.contains("columnNames")) {
     return tl::make_unexpected(
-            fmt::format("ColumnNames not specified in FPDBStoreBloomFilterUseInfo JSON '{}'", jObj));
+            fmt::format("ColumnNames not specified in FPDBStoreBloomFilterUseInfo JSON '{}'", to_string(jObj)));
   }
   auto columnNames = jObj["columnNames"].get<std::vector<std::string>>();
 
