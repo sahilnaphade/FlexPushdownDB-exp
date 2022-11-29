@@ -7,6 +7,7 @@
 #include <fpdb/executor/physical/POpDirectoryEntry.h>
 #include <fpdb/executor/physical/POpConnection.h>
 #include <fpdb/executor/physical/POpRelationshipType.h>
+#include <fpdb/executor/physical/Globals.h>
 #include <fpdb/executor/physical/filter/FilterPOp.h>
 #include <fpdb/executor/caf-serialization/CAFPOpSerializer.h>
 #include <fpdb/executor/message/DebugMetricsMessage.h>
@@ -162,7 +163,7 @@ bool Execution::useDetached(const shared_ptr<PhysicalOp> &op) {
   return op->getType() == POpType::LOCAL_FILE_SCAN
          || op->getType() == POpType::REMOTE_FILE_SCAN
 //         || op->getType() == POpType::FPDB_STORE_FILE_SCAN
-//         || op->getType() == POpType::FPDB_STORE_SUPER
+         || (op->getType() == POpType::FPDB_STORE_SUPER && ENABLE_BLOOM_FILTER_PUSHDOWN)
          || op->getType() == POpType::FPDB_STORE_TABLE_CACHE_LOAD
          || op->getType() == POpType::S3_GET
          || op->getType() == POpType::S3_SELECT
