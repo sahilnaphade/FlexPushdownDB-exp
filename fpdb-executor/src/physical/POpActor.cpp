@@ -100,7 +100,8 @@ POpActor::POpActor(::caf::actor_config &cfg, std::shared_ptr<PhysicalOp> opBehav
 }
 
 void POpActor::on_regular_message(const fpdb::executor::message::Envelope &msg) {
-  if (msg.message().type() == MessageType::TUPLESET_READY_REMOTE) {
+  if (msg.message().type() == MessageType::TUPLESET_READY_REMOTE
+      && opBehaviour_->getType() != POpType::SHUFFLE_BATCH_LOAD) {    // ShuffleBatchLoadPOp handles this itself
     const auto &typedMessage = dynamic_cast<const TupleSetReadyRemoteMessage &>(msg.message());
     auto tupleSet = read_remote_table(typedMessage.getHost(), typedMessage.getPort(), typedMessage.sender());
 

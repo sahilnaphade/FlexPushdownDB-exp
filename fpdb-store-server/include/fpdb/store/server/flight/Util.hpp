@@ -26,6 +26,8 @@ static constexpr std::string_view NumCopiesJSONName = "num_copies";
 static constexpr std::string_view BloomFilterJSONName = "bloom_filter";
 static constexpr std::string_view ProducerJSONName = "producer";
 static constexpr std::string_view ConsumerJSONName = "consumer";
+static constexpr std::string_view ConsumersJSONName = "consumers";
+static constexpr std::string_view BatchLoadPOpJSONName = "batch_load_pop";
 static constexpr std::string_view WaitNotExistJSONName = "wait_not_exist";
 static constexpr std::string_view AdaptPushdownMetricsJSONName = "adapt_pushdown_metrics";
 
@@ -38,6 +40,7 @@ static constexpr std::string_view GetObjectTicketTypeName = "get_object";
 static constexpr std::string_view SelectObjectContentTicketTypeName = "select_object_content";
 static constexpr std::string_view GetBitmapTicketTypeName = "get_bitmap";
 static constexpr std::string_view GetTableTicketTypeName = "get_table";
+static constexpr std::string_view GetBatchLoadInfoTicketTypeName = "get_batch_load_info";
 
 static constexpr std::string_view HeaderMiddlewareKey = "header_middleware";
 static constexpr std::string_view BucketHeaderKey = "bucket";
@@ -56,9 +59,18 @@ public:
   static tl::expected<std::shared_ptr<arrow::Table>, std::string> getEndTable();
   static bool isEndTable(const std::shared_ptr<arrow::Table> &table);
 
+  /**
+   * Used to batch load tables constructed at storage side.
+   */
+  static tl::expected<std::shared_ptr<arrow::RecordBatch>, arrow::Status>
+  makeTableLengthBatch(const std::vector<int64_t> &lengths);
+  static tl::expected<void, std::string> readTableLengthBatch(const std::shared_ptr<arrow::RecordBatch> &recordBatch,
+                                                              std::vector<int64_t> *lengths);
+
 private:
   static constexpr std::string_view EndTableColumnName = "complete_col";
   static constexpr std::string_view EndTableRowValue = "complete";
+  static constexpr std::string_view TableLengthColumnName = "table_length";
 
 };
 

@@ -254,9 +254,8 @@ tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::
                                                                                        const Ticket& request) {
 
   auto expected_ticket_object = TicketObject::deserialize(request);
-  if(!expected_ticket_object.has_value()) {
-    return tl::make_unexpected(
-            MakeFlightError(FlightStatusCode::Failed, fmt::format("Cannot parse Flight Ticket '{}'", request.ticket)));
+  if (!expected_ticket_object.has_value()) {
+    return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed, expected_ticket_object.error()));
   }
   auto ticket_object = expected_ticket_object.value();
 
@@ -276,6 +275,10 @@ tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::
     case TicketTypeId::GET_TABLE: {
       auto get_table_ticket = std::static_pointer_cast<GetTableTicket>(ticket_object);
       return do_get_get_table(context, get_table_ticket);
+    }
+    case TicketTypeId::GET_BATCH_LOAD_INFO: {
+      auto get_batch_load_info_ticket = std::static_pointer_cast<GetBatchLoadInfoTicket>(ticket_object);
+      return do_get_get_batch_load_info(context, get_batch_load_info_ticket);
     }
   }
 
@@ -470,6 +473,46 @@ tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::
     return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed, exp_batches.error()));
   }
   auto rb_reader = ::arrow::RecordBatchReader::Make(*exp_batches);
+  return std::make_unique<::arrow::flight::RecordBatchStream>(*rb_reader);
+}
+
+tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::do_get_get_batch_load_info(
+        const ServerCallContext&, const std::shared_ptr<GetBatchLoadInfoTicket>& get_batch_load_info_ticket) {
+  auto query_id = get_batch_load_info_ticket->query_id();
+  auto producer = get_batch_load_info_ticket->producer();
+  auto consumers = get_batch_load_info_ticket->consumers();
+  size_t num_consumers = consumers.size();
+  std::vector<std::shared_ptr<arrow::Table>> tables{num_consumers};
+  std::vector<int64_t> lengths;
+  lengths.resize(num_consumers);
+  std::optional<std::shared_ptr<arrow::Schema>> schema = std::nullopt;
+
+  // load tables and record lengths
+  for (size_t i = 0; i < num_consumers; ++i) {
+    auto table_key = executor::flight::TableCache::generateTableKey(query_id, producer, consumers[i]);
+    auto exp_table = get_table_from_cache(table_key, false);
+    if (!exp_table.has_value()) {
+      return tl::make_unexpected(exp_table.error());
+    }
+    tables[i] = *exp_table;
+    lengths[i] = (*exp_table)->num_rows();
+  }
+
+  // concatenate tables as a whole and store
+  auto exp_concatenated_table = arrow::ConcatenateTables(tables);
+  if (!exp_concatenated_table.ok()) {
+    return tl::make_unexpected(exp_concatenated_table.status());
+  }
+  auto table_key = executor::flight::TableCache::generateTableKey(
+          query_id, get_batch_load_info_ticket->batch_load_pop(), "");
+  table_cache_.produceTable(table_key, *exp_concatenated_table);
+
+  // make lengths as a record batch and return
+  auto exp_length_batch = Util::makeTableLengthBatch(lengths);
+  if (!exp_length_batch.has_value()) {
+    return tl::make_unexpected(exp_length_batch.error());
+  }
+  auto rb_reader = ::arrow::RecordBatchReader::Make({*exp_length_batch});
   return std::make_unique<::arrow::flight::RecordBatchStream>(*rb_reader);
 }
 

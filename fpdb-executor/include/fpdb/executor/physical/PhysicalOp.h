@@ -58,6 +58,8 @@ public:
   virtual void unConsume(const std::shared_ptr<PhysicalOp> &op);
   virtual void reProduce(const std::string &oldOp, const std::string &newOp);
   virtual void reConsume(const std::string &oldOp, const std::string &newOp);
+  virtual void clearProducers();
+  virtual void clearConsumers();
   void clearConnections();
   void addConsumerToBloomFilterInfo(const std::string &consumer,
                                     const std::string &bloomFilterCreatePOp,

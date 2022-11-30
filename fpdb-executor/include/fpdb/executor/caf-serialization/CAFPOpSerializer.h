@@ -25,6 +25,7 @@
 //#include <fpdb/executor/physical/s3/S3SelectPOp.h>
 #include <fpdb/executor/physical/s3/SelectPOp.h>
 #include <fpdb/executor/physical/shuffle/ShufflePOp.h>
+#include <fpdb/executor/physical/shuffle/ShuffleBatchLoadPOp.h>
 #include <fpdb/executor/physical/sort/SortPOp.h>
 #include <fpdb/executor/physical/split/SplitPOp.h>
 #include <fpdb/executor/physical/bloomfilter/BloomFilterCreatePOp.h>
@@ -60,6 +61,7 @@ CAF_ADD_TYPE_ID(POp, (fpdb::executor::physical::s3::S3GetPOp))
 //CAF_ADD_TYPE_ID(POp, (fpdb::executor::physical::s3::S3SelectPOp))
 CAF_ADD_TYPE_ID(POp, (fpdb::executor::physical::s3::SelectPOp))
 CAF_ADD_TYPE_ID(POp, (shuffle::ShufflePOp))
+CAF_ADD_TYPE_ID(POp, (shuffle::ShuffleBatchLoadPOp))
 CAF_ADD_TYPE_ID(POp, (sort::SortPOp))
 CAF_ADD_TYPE_ID(POp, (split::SplitPOp))
 CAF_ADD_TYPE_ID(POp, (bloomfilter::BloomFilterCreatePOp))
@@ -99,6 +101,7 @@ struct variant_inspector_traits<POpPtr> {
 //          type_id_v<fpdb::executor::physical::s3::S3SelectPOp>,
           type_id_v<fpdb::executor::physical::s3::SelectPOp>,
           type_id_v<shuffle::ShufflePOp>,
+          type_id_v<shuffle::ShuffleBatchLoadPOp>,
           type_id_v<sort::SortPOp>,
           type_id_v<split::SplitPOp>,
           type_id_v<bloomfilter::BloomFilterCreatePOp>,
@@ -148,20 +151,22 @@ struct variant_inspector_traits<POpPtr> {
       return 17;
     else if (x->getType() == POpType::SHUFFLE)
       return 18;
-    else if (x->getType() == POpType::SORT)
+    else if (x->getType() == POpType::SHUFFLE_BATCH_LOAD)
       return 19;
-    else if (x->getType() == POpType::SPLIT)
+    else if (x->getType() == POpType::SORT)
       return 20;
-    else if (x->getType() == POpType::BLOOM_FILTER_CREATE)
+    else if (x->getType() == POpType::SPLIT)
       return 21;
-    else if (x->getType() == POpType::BLOOM_FILTER_USE)
+    else if (x->getType() == POpType::BLOOM_FILTER_CREATE)
       return 22;
-    else if (x->getType() == POpType::FPDB_STORE_FILE_SCAN)
+    else if (x->getType() == POpType::BLOOM_FILTER_USE)
       return 23;
-    else if (x->getType() == POpType::FPDB_STORE_SUPER)
+    else if (x->getType() == POpType::FPDB_STORE_FILE_SCAN)
       return 24;
-    else if (x->getType() == POpType::FPDB_STORE_TABLE_CACHE_LOAD)
+    else if (x->getType() == POpType::FPDB_STORE_SUPER)
       return 25;
+    else if (x->getType() == POpType::FPDB_STORE_TABLE_CACHE_LOAD)
+      return 26;
     else
       return -1;
   }
@@ -209,18 +214,20 @@ struct variant_inspector_traits<POpPtr> {
       case 18:
         return f(dynamic_cast<shuffle::ShufflePOp &>(*x));
       case 19:
-        return f(dynamic_cast<sort::SortPOp &>(*x));
+        return f(dynamic_cast<shuffle::ShuffleBatchLoadPOp &>(*x));
       case 20:
-        return f(dynamic_cast<split::SplitPOp &>(*x));
+        return f(dynamic_cast<sort::SortPOp &>(*x));
       case 21:
-        return f(dynamic_cast<bloomfilter::BloomFilterCreatePOp &>(*x));
+        return f(dynamic_cast<split::SplitPOp &>(*x));
       case 22:
-        return f(dynamic_cast<bloomfilter::BloomFilterUsePOp &>(*x));
+        return f(dynamic_cast<bloomfilter::BloomFilterCreatePOp &>(*x));
       case 23:
-        return f(dynamic_cast<fpdb_store::FPDBStoreFileScanPOp &>(*x));
+        return f(dynamic_cast<bloomfilter::BloomFilterUsePOp &>(*x));
       case 24:
-        return f(dynamic_cast<fpdb_store::FPDBStoreSuperPOp &>(*x));
+        return f(dynamic_cast<fpdb_store::FPDBStoreFileScanPOp &>(*x));
       case 25:
+        return f(dynamic_cast<fpdb_store::FPDBStoreSuperPOp &>(*x));
+      case 26:
         return f(dynamic_cast<fpdb_store::FPDBStoreTableCacheLoadPOp &>(*x));
       default: {
         none_t dummy;

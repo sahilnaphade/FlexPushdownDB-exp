@@ -69,6 +69,14 @@ void PhysicalOp::reConsume(const std::string &oldOp, const std::string &newOp) {
   producers_.emplace(newOp);
 }
 
+void PhysicalOp::clearProducers() {
+  producers_.clear();
+}
+
+void PhysicalOp::clearConsumers() {
+  consumers_.clear();
+}
+
 void PhysicalOp::clearConnections() {
   producers_.clear();
   consumers_.clear();

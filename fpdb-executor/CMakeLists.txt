@@ -109,6 +109,7 @@ add_library(fpdb-executor STATIC
         src/physical/shuffle/ShuffleKernel.cpp include/fpdb/executor/physical/shuffle/ShuffleKernel.h
         src/physical/shuffle/ShuffleKernel2.cpp include/fpdb/executor/physical/shuffle/ShuffleKernel2.h
         src/physical/shuffle/RecordBatchShuffler.cpp include/fpdb/executor/physical/shuffle/RecordBatchShuffler.h
+        src/physical/shuffle/ShuffleBatchLoadPOp.cpp include/fpdb/executor/physical/shuffle/ShuffleBatchLoadPOp.h
         src/physical/split/SplitPOp.cpp include/fpdb/executor/physical/split/SplitPOp.h
         src/physical/s3/S3GetPOp.cpp include/fpdb/executor/physical/s3/S3GetPOp.h
         src/physical/s3/S3SelectPOp.cpp include/fpdb/executor/physical/s3/S3SelectPOp.h

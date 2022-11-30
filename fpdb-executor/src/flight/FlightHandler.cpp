@@ -79,8 +79,7 @@ tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::
 
   auto expected_ticket_object = TicketObject::deserialize(request);
   if (!expected_ticket_object.has_value()) {
-    return tl::make_unexpected(
-            MakeFlightError(FlightStatusCode::Failed, fmt::format("Cannot parse Flight Ticket '{}'", request.ticket)));
+    return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed, expected_ticket_object.error()));
   }
   auto ticket_object = expected_ticket_object.value();
 

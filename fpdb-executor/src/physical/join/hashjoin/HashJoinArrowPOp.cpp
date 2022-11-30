@@ -32,6 +32,12 @@ void HashJoinArrowPOp::onReceive(const Envelope &msg) {
   }
 }
 
+void HashJoinArrowPOp::clearProducers() {
+  PhysicalOp::clearProducers();
+  buildProducers_.clear();
+  probeProducers_.clear();
+}
+
 const HashJoinArrowKernel &HashJoinArrowPOp::getKernel() const {
   return kernel_;
 }
@@ -60,6 +66,16 @@ void HashJoinArrowPOp::addBuildProducer(const std::shared_ptr<PhysicalOp> &build
 void HashJoinArrowPOp::addProbeProducer(const std::shared_ptr<PhysicalOp> &probeProducer) {
   probeProducers_.emplace(probeProducer->name());
   consume(probeProducer);
+}
+
+void HashJoinArrowPOp::clearBuildProducers() {
+  buildProducers_.clear();
+  producers_ = probeProducers_;
+}
+
+void HashJoinArrowPOp::clearProbeProducers() {
+  probeProducers_.clear();
+  producers_ = buildProducers_;
 }
 
 void HashJoinArrowPOp::onStart() {

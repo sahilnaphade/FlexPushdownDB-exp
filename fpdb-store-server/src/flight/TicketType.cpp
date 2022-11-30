@@ -26,6 +26,10 @@ std::shared_ptr<TicketType> TicketType::get_table() {
   return std::make_shared<TicketType>(TicketTypeId::GET_TABLE, GetTableTicketTypeName.data());
 }
 
+std::shared_ptr<TicketType> TicketType::get_batch_load_info() {
+  return std::make_shared<TicketType>(TicketTypeId::GET_BATCH_LOAD_INFO, GetBatchLoadInfoTicketTypeName.data());
+}
+
 TicketTypeId TicketType::id() const {
   return id_;
 }

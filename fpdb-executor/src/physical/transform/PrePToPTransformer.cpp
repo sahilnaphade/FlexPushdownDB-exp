@@ -17,6 +17,7 @@
 #include <fpdb/executor/physical/join/hashjoin/HashJoinPredicate.h>
 #include <fpdb/executor/physical/join/nestedloopjoin/NestedLoopJoinPOp.h>
 #include <fpdb/executor/physical/shuffle/ShufflePOp.h>
+#include <fpdb/executor/physical/shuffle/ShuffleBatchLoadPOp.h>
 #include <fpdb/executor/physical/split/SplitPOp.h>
 #include <fpdb/executor/physical/bloomfilter/BloomFilterCreatePOp.h>
 #include <fpdb/executor/physical/bloomfilter/BloomFilterUsePOp.h>
@@ -364,6 +365,11 @@ PrePToPTransformer::transformGroupOnePhase(const shared_ptr<GroupPrePOp> &groupP
     } else {
       PrePToPTransformerUtil::connectManyToMany(upConnPOps, groupPOps);
     }
+
+    // shuffle batch load
+    if (shufflePushed && USE_SHUFFLE_BATCH_LOAD) {
+      batchLoadShuffle(upConnPOps, groupPOps, allPOps);
+    }
   }
 
   // add and return
@@ -508,6 +514,12 @@ PrePToPTransformer::transformGroupTwoPhase(const shared_ptr<GroupPrePOp> &groupP
     } else {
       PrePToPTransformerUtil::connectManyToMany(upConnPOps, groupReducePOps);
     }
+
+    // shuffle batch load
+    if (shufflePushed && USE_SHUFFLE_BATCH_LOAD) {
+      batchLoadShuffle(upConnPOps, groupReducePOps, allPOps);
+    }
+
     selfConnDownPOps = groupReducePOps;
   }
 
@@ -734,6 +746,10 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
     } else {
       PrePToPTransformerUtil::connectManyToMany(upLeftConnPOps, bloomFilterCreatePOps);
     }
+    // shuffle batch load
+    if (leftShufflePushed && USE_SHUFFLE_BATCH_LOAD) {
+      batchLoadShuffle(upLeftConnPOps, bloomFilterCreatePOps, allPOps);
+    }
     if (USE_ARROW_HASH_JOIN_IMPL) {
       for (int i = 0; i < parallelDegree_ * numNodes_; ++i) {
         bloomFilterCreatePOps[i]->produce(joinBuildPOps[i]);
@@ -804,6 +820,12 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
           PrePToPTransformerUtil::connectManyToMany(upRightConnPOps, joinProbePOps);
         }
       }
+
+      // shuffle batch load
+      if (rightShufflePushed && USE_SHUFFLE_BATCH_LOAD) {
+        bool isJoinLeftConn = false;
+        batchLoadShuffle(upRightConnPOps, joinProbePOps, allPOps, &isJoinLeftConn);
+      }
     } else {
       // we cannot push down bloom filter
       // BloomFilterUsePOp
@@ -837,6 +859,11 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
       } else {
         PrePToPTransformerUtil::connectOneToOne(bloomFilterUsePOps, joinProbePOps);
       }
+
+      // shuffle batch load
+      if (rightShufflePushed && USE_SHUFFLE_BATCH_LOAD) {
+        batchLoadShuffle(upRightConnPOps, bloomFilterUsePOps, allPOps);
+      }
     }
   } else {
     // connect hash join to upstream
@@ -867,6 +894,15 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
           }
         }
       }
+      // shuffle batch load
+      if (leftShufflePushed && USE_SHUFFLE_BATCH_LOAD) {
+        bool isJoinLeftConn = true;
+        batchLoadShuffle(upLeftConnPOps, hashJoinArrowPOps, allPOps, &isJoinLeftConn);
+      }
+      if (rightShufflePushed && USE_SHUFFLE_BATCH_LOAD) {
+        bool isJoinLeftConn = false;
+        batchLoadShuffle(upRightConnPOps, hashJoinArrowPOps, allPOps, &isJoinLeftConn);
+      }
     } else {
       if (leftWithHashJoinPushdown && leftShufflePushed) {
         PrePToPTransformerUtil::connectOneToOne(upLeftConnPOps, hashJoinBuildPOps);
@@ -878,105 +914,19 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
       } else {
         PrePToPTransformerUtil::connectManyToMany(upRightConnPOps, hashJoinProbePOps);
       }
+      // shuffle batch load
+      if (leftShufflePushed && USE_SHUFFLE_BATCH_LOAD) {
+        batchLoadShuffle(upLeftConnPOps, hashJoinBuildPOps, allPOps);
+      }
+      if (rightShufflePushed && USE_SHUFFLE_BATCH_LOAD) {
+        batchLoadShuffle(upRightConnPOps, hashJoinProbePOps, allPOps);
+      }
     }
   }
 
   // add the second part and return
   PrePToPTransformerUtil::addPhysicalOps(allPOps, physicalOps_);
   return USE_ARROW_HASH_JOIN_IMPL ? hashJoinArrowPOps : hashJoinProbePOps;
-}
-
-void PrePToPTransformer::pushdownBloomFilter(const vector<shared_ptr<PhysicalOp>> &bloomFilterCreatePOps,
-                                             vector<shared_ptr<PhysicalOp>> &upRightConnPOps,
-                                             vector<shared_ptr<PhysicalOp>> &joinProbePOps,
-                                             const vector<string> &rightColumnNames,
-                                             bool withHashJoinPushdown) {
-  if (withHashJoinPushdown) {
-    pushdownBloomFilterWithHashJoinPushdown(bloomFilterCreatePOps, upRightConnPOps, rightColumnNames);
-  } else {
-    pushdownBloomFilterNoHashJoinPushdown(bloomFilterCreatePOps, upRightConnPOps, joinProbePOps, rightColumnNames);
-  }
-}
-
-void PrePToPTransformer::pushdownBloomFilterNoHashJoinPushdown(
-        const vector<shared_ptr<PhysicalOp>> &bloomFilterCreatePOps,
-        vector<shared_ptr<PhysicalOp>> &upRightConnPOps,
-        vector<shared_ptr<PhysicalOp>> &joinProbePOps,
-        const vector<string> &rightColumnNames) {
-  // set bloom filter create info
-  auto fpdbStoreConnector = static_pointer_cast<FPDBStoreConnector>(objStoreConnector_);
-  for (const auto &bloomFilterCreatePOp: bloomFilterCreatePOps) {
-    static_pointer_cast<bloomfilter::BloomFilterCreatePOp>(bloomFilterCreatePOp)->setBloomFilterInfo(
-            FPDBStoreBloomFilterCreateInfo{PrePToPTransformerUtil::getHostToNumOps(upRightConnPOps),
-                                           fpdbStoreConnector->getFlightPort()});
-  }
-
-  // set bloom filter use info (embedded bloom filter) to last sub op inside upConnRightPOps
-  // also connect bloom filter create with fpdb store super
-  for (const auto &upRightConnPOp: upRightConnPOps) {
-    auto subPlan = static_pointer_cast<FPDBStoreSuperPOp>(upRightConnPOp)->getSubPlan();
-    auto expLast = subPlan->getLast();
-    if (!expLast.has_value()) {
-      throw runtime_error(expLast.error());
-    }
-    for (int i = 0; i < parallelDegree_ * numNodes_; ++i) {
-      (*expLast)->addConsumerToBloomFilterInfo(joinProbePOps[i]->name(),
-                                               bloomFilterCreatePOps[i]->name(),
-                                               rightColumnNames);
-      // connect
-      static_pointer_cast<bloomfilter::BloomFilterCreatePOp>(bloomFilterCreatePOps[i])
-              ->addFPDBStoreBloomFilterConsumer(upRightConnPOp);
-      static_pointer_cast<FPDBStoreSuperPOp>(upRightConnPOp)
-              ->addFPDBStoreBloomFilterProducer(bloomFilterCreatePOps[i]);
-    }
-  }
-}
-
-void PrePToPTransformer::pushdownBloomFilterWithHashJoinPushdown(
-        const vector<shared_ptr<PhysicalOp>> &bloomFilterCreatePOps,
-        vector<shared_ptr<PhysicalOp>> &upRightConnPOps,
-        const vector<string> &rightColumnNames) {
-  // get all FPDBStoreSuperPOps, here "upRightConnPOps" are CollectPOps
-  vector<shared_ptr<PhysicalOp>> fpdbStoreSuperPOps;
-  for (const auto &fpdbStoreTableCacheLoadPOpName:
-        static_pointer_cast<collect::CollectPOp>(upRightConnPOps[0])->getOrderedProducers()) {
-    auto fpdbStoreTableCacheLoadPOp = physicalOps_.find(fpdbStoreTableCacheLoadPOpName)->second;
-    auto fpdbStoreSuperPOpName =
-            static_pointer_cast<fpdb_store::FPDBStoreTableCacheLoadPOp>(fpdbStoreTableCacheLoadPOp)->getProducer();
-    fpdbStoreSuperPOps.emplace_back(physicalOps_.find(fpdbStoreSuperPOpName)->second);
-  }
-
-  // set bloom filter create info
-  auto fpdbStoreConnector = static_pointer_cast<FPDBStoreConnector>(objStoreConnector_);
-  for (const auto &bloomFilterCreatePOp: bloomFilterCreatePOps) {
-    static_pointer_cast<bloomfilter::BloomFilterCreatePOp>(bloomFilterCreatePOp)->setBloomFilterInfo(
-            FPDBStoreBloomFilterCreateInfo{PrePToPTransformerUtil::getHostToNumOps(fpdbStoreSuperPOps),
-                                           fpdbStoreConnector->getFlightPort()});
-  }
-
-  // set bloom filter use info (embedded bloom filter) to last sub op inside upConnRightPOps
-  // also connect bloom filter create with fpdb store super
-  for (uint i = 0; i < fpdbStoreSuperPOps.size(); ++i) {
-    const auto &expLasts =
-            static_pointer_cast<fpdb_store::FPDBStoreSuperPOp>(fpdbStoreSuperPOps[i])->getSubPlan()->getLasts();
-    if (!expLasts.has_value()) {
-      throw runtime_error(expLasts.error());
-    }
-    for (int j = 0; j < parallelDegree_ * numNodes_; ++j) {
-      for (const auto &last: *expLasts) {
-        last->addConsumerToBloomFilterInfo(
-                static_pointer_cast<collect::CollectPOp>(upRightConnPOps[j])->getOrderedProducers()[i],
-                bloomFilterCreatePOps[j]->name(),
-                rightColumnNames);
-      }
-
-      // connect
-      static_pointer_cast<bloomfilter::BloomFilterCreatePOp>(bloomFilterCreatePOps[j])
-              ->addFPDBStoreBloomFilterConsumer(fpdbStoreSuperPOps[i]);
-      static_pointer_cast<fpdb_store::FPDBStoreSuperPOp>(fpdbStoreSuperPOps[i])
-              ->addFPDBStoreBloomFilterProducer(bloomFilterCreatePOps[j]);
-    }
-  }
 }
 
 vector<shared_ptr<PhysicalOp>>
@@ -1099,6 +1049,153 @@ PrePToPTransformer::transformSeparableSuper(const shared_ptr<SeparableSuperPrePO
     default:
       throw runtime_error(fmt::format("Unsupported object store type for separable super prephysical operator: {}",
                                       objStoreCatalogueEntry->getStoreTypeName()));
+  }
+}
+
+void PrePToPTransformer::pushdownBloomFilter(const vector<shared_ptr<PhysicalOp>> &bloomFilterCreatePOps,
+                                             vector<shared_ptr<PhysicalOp>> &upRightConnPOps,
+                                             vector<shared_ptr<PhysicalOp>> &joinProbePOps,
+                                             const vector<string> &rightColumnNames,
+                                             bool withHashJoinPushdown) {
+  if (withHashJoinPushdown) {
+    pushdownBloomFilterWithHashJoinPushdown(bloomFilterCreatePOps, upRightConnPOps, rightColumnNames);
+  } else {
+    pushdownBloomFilterNoHashJoinPushdown(bloomFilterCreatePOps, upRightConnPOps, joinProbePOps, rightColumnNames);
+  }
+}
+
+void PrePToPTransformer::pushdownBloomFilterNoHashJoinPushdown(
+        const vector<shared_ptr<PhysicalOp>> &bloomFilterCreatePOps,
+        vector<shared_ptr<PhysicalOp>> &upRightConnPOps,
+        vector<shared_ptr<PhysicalOp>> &joinProbePOps,
+        const vector<string> &rightColumnNames) {
+  // set bloom filter create info
+  auto fpdbStoreConnector = static_pointer_cast<FPDBStoreConnector>(objStoreConnector_);
+  for (const auto &bloomFilterCreatePOp: bloomFilterCreatePOps) {
+    static_pointer_cast<bloomfilter::BloomFilterCreatePOp>(bloomFilterCreatePOp)->setBloomFilterInfo(
+            FPDBStoreBloomFilterCreateInfo{PrePToPTransformerUtil::getHostToNumOps(upRightConnPOps),
+                                           fpdbStoreConnector->getFlightPort()});
+  }
+
+  // set bloom filter use info (embedded bloom filter) to last sub op inside upConnRightPOps
+  // also connect bloom filter create with fpdb store super
+  for (const auto &upRightConnPOp: upRightConnPOps) {
+    auto subPlan = static_pointer_cast<FPDBStoreSuperPOp>(upRightConnPOp)->getSubPlan();
+    auto expLast = subPlan->getLast();
+    if (!expLast.has_value()) {
+      throw runtime_error(expLast.error());
+    }
+    for (int i = 0; i < parallelDegree_ * numNodes_; ++i) {
+      (*expLast)->addConsumerToBloomFilterInfo(joinProbePOps[i]->name(),
+                                               bloomFilterCreatePOps[i]->name(),
+                                               rightColumnNames);
+      // connect
+      static_pointer_cast<bloomfilter::BloomFilterCreatePOp>(bloomFilterCreatePOps[i])
+              ->addFPDBStoreBloomFilterConsumer(upRightConnPOp);
+      static_pointer_cast<FPDBStoreSuperPOp>(upRightConnPOp)
+              ->addFPDBStoreBloomFilterProducer(bloomFilterCreatePOps[i]);
+    }
+  }
+}
+
+void PrePToPTransformer::pushdownBloomFilterWithHashJoinPushdown(
+        const vector<shared_ptr<PhysicalOp>> &bloomFilterCreatePOps,
+        vector<shared_ptr<PhysicalOp>> &upRightConnPOps,
+        const vector<string> &rightColumnNames) {
+  // get all FPDBStoreSuperPOps, here "upRightConnPOps" are CollectPOps
+  vector<shared_ptr<PhysicalOp>> fpdbStoreSuperPOps;
+  for (const auto &fpdbStoreTableCacheLoadPOpName:
+          static_pointer_cast<collect::CollectPOp>(upRightConnPOps[0])->getOrderedProducers()) {
+    auto fpdbStoreTableCacheLoadPOp = physicalOps_.find(fpdbStoreTableCacheLoadPOpName)->second;
+    auto fpdbStoreSuperPOpName =
+            static_pointer_cast<fpdb_store::FPDBStoreTableCacheLoadPOp>(fpdbStoreTableCacheLoadPOp)->getProducer();
+    fpdbStoreSuperPOps.emplace_back(physicalOps_.find(fpdbStoreSuperPOpName)->second);
+  }
+
+  // set bloom filter create info
+  auto fpdbStoreConnector = static_pointer_cast<FPDBStoreConnector>(objStoreConnector_);
+  for (const auto &bloomFilterCreatePOp: bloomFilterCreatePOps) {
+    static_pointer_cast<bloomfilter::BloomFilterCreatePOp>(bloomFilterCreatePOp)->setBloomFilterInfo(
+            FPDBStoreBloomFilterCreateInfo{PrePToPTransformerUtil::getHostToNumOps(fpdbStoreSuperPOps),
+                                           fpdbStoreConnector->getFlightPort()});
+  }
+
+  // set bloom filter use info (embedded bloom filter) to last sub op inside upConnRightPOps
+  // also connect bloom filter create with fpdb store super
+  for (uint i = 0; i < fpdbStoreSuperPOps.size(); ++i) {
+    const auto &expLasts =
+            static_pointer_cast<fpdb_store::FPDBStoreSuperPOp>(fpdbStoreSuperPOps[i])->getSubPlan()->getLasts();
+    if (!expLasts.has_value()) {
+      throw runtime_error(expLasts.error());
+    }
+    for (int j = 0; j < parallelDegree_ * numNodes_; ++j) {
+      for (const auto &last: *expLasts) {
+        last->addConsumerToBloomFilterInfo(
+                static_pointer_cast<collect::CollectPOp>(upRightConnPOps[j])->getOrderedProducers()[i],
+                bloomFilterCreatePOps[j]->name(),
+                rightColumnNames);
+      }
+
+      // connect
+      static_pointer_cast<bloomfilter::BloomFilterCreatePOp>(bloomFilterCreatePOps[j])
+              ->addFPDBStoreBloomFilterConsumer(fpdbStoreSuperPOps[i]);
+      static_pointer_cast<fpdb_store::FPDBStoreSuperPOp>(fpdbStoreSuperPOps[i])
+              ->addFPDBStoreBloomFilterProducer(bloomFilterCreatePOps[j]);
+    }
+  }
+}
+
+void PrePToPTransformer::batchLoadShuffle(const vector<shared_ptr<PhysicalOp>> &opsForShuffle,
+                                          const vector<shared_ptr<PhysicalOp>> &shuffleConsumers,
+                                          vector<shared_ptr<PhysicalOp>> &allPOps,
+                                          bool* isHashJoinArrowLeftConn) {
+  // split shuffle's consumers by nodes
+  vector<vector<shared_ptr<PhysicalOp>>> shuffleConsumersByNode{(size_t) numNodes_};
+  for (const auto &shuffleConsumer: shuffleConsumers) {
+    shuffleConsumersByNode[shuffleConsumer->getNodeId()].emplace_back(shuffleConsumer);
+    // reset producers
+    if (isHashJoinArrowLeftConn == nullptr) {
+      shuffleConsumer->clearProducers();
+    } else {
+      if (*isHashJoinArrowLeftConn) {
+        static_pointer_cast<join::HashJoinArrowPOp>(shuffleConsumer)->clearBuildProducers();
+      } else {
+        static_pointer_cast<join::HashJoinArrowPOp>(shuffleConsumer)->clearProbeProducers();
+      }
+    }
+  }
+
+  for (const auto &opForShuffle: opsForShuffle) {
+    // shuffle batch load
+    vector<shared_ptr<PhysicalOp>> shuffleBatchLoadPOps{(size_t) numNodes_};
+    set<string> shuffleBatchLoadPOpNames;
+    for (int i = 0; i < numNodes_; ++i) {
+      shared_ptr<PhysicalOp> shuffleBatchLoadPOp = make_shared<shuffle::ShuffleBatchLoadPOp>(
+              fmt::format("ShuffleBatchLoad-{}-node-{}", opForShuffle->name(), i),
+              vector<string>{},      // never used
+              i);
+      shuffleBatchLoadPOps[i] = shuffleBatchLoadPOp;
+      shuffleBatchLoadPOpNames.emplace(shuffleBatchLoadPOp->name());
+      // connect to upConnPOp
+      shuffleBatchLoadPOp->consume(opForShuffle);
+      // connect to shuffle's consumers, need to specially handle when HashJoinArrowPOp is shuffle's consumer
+      if (isHashJoinArrowLeftConn == nullptr) {
+        PrePToPTransformerUtil::connectOneToMany(shuffleBatchLoadPOp, shuffleConsumersByNode[i]);
+      } else {
+        for (const auto &shuffleConsumer: shuffleConsumersByNode[i]) {
+          shuffleBatchLoadPOp->produce(shuffleConsumer);
+          if (*isHashJoinArrowLeftConn) {
+            static_pointer_cast<join::HashJoinArrowPOp>(shuffleConsumer)->addBuildProducer(shuffleBatchLoadPOp);
+          } else {
+            static_pointer_cast<join::HashJoinArrowPOp>(shuffleConsumer)->addProbeProducer(shuffleBatchLoadPOp);
+          }
+        }
+      }
+    }
+    allPOps.insert(allPOps.end(), shuffleBatchLoadPOps.begin(), shuffleBatchLoadPOps.end());
+
+    // reset consumers of upConnPOp
+    opForShuffle->setConsumers(shuffleBatchLoadPOpNames);
   }
 }
 

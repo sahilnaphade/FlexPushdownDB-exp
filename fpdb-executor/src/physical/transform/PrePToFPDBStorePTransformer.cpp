@@ -354,7 +354,7 @@ PrePToFPDBStorePTransformer::addSeparablePOpWithHashJoinPushdown(vector<shared_p
     for (uint i = 0; i < fpdbStoreSuperPOpNames.size(); ++i) {
       auto fpdbStoreSuperPOp = opMap->find(fpdbStoreSuperPOpNames[i])->second;
       // clear consumers of fpdbStoreSuperPOp first
-      fpdbStoreSuperPOp->setConsumers({});
+      fpdbStoreSuperPOp->clearConsumers();
       // make new FPDBStoreTableCacheLoadPOps
       vector<string> newFPDBStoreTableCacheLoadPOpNamesPerStoreNode;
       for (int j = 0; j < computeParallelDegree * numComputeNodes; ++j) {

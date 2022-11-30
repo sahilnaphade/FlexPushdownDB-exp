@@ -65,7 +65,8 @@ add_library(fpdb-store-server-flight-api STATIC
         src/flight/GetObjectTicket.cpp include/fpdb/store/server/flight/GetObjectTicket.hpp
         src/flight/SelectObjectContentTicket.cpp include/fpdb/store/server/flight/SelectObjectContentTicket.hpp
         src/flight/GetBitmapTicket.cpp include/fpdb/store/server/flight/GetBitmapTicket.hpp
-        src/flight/GetTableTicket.cpp include/fpdb/store/server/flight/GetTableTicket.hpp)
+        src/flight/GetTableTicket.cpp include/fpdb/store/server/flight/GetTableTicket.hpp
+        src/flight/GetBatchLoadInfoTicket.cpp include/fpdb/store/server/flight/GetBatchLoadInfoTicket.hpp)
 
 target_include_directories(fpdb-store-server-flight-api PUBLIC include)
 

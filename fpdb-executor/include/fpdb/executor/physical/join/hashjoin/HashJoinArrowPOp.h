@@ -28,6 +28,7 @@ public:
 
   void onReceive(const Envelope &msg) override;
   void clear() override;
+  void clearProducers() override;
   std::string getTypeString() const override;
 
   const HashJoinArrowKernel &getKernel() const;
@@ -37,6 +38,8 @@ public:
   void setProbeProducers(const std::set<std::string> &probeProducers);
   void addBuildProducer(const std::shared_ptr<PhysicalOp> &buildProducer);
   void addProbeProducer(const std::shared_ptr<PhysicalOp> &probeProducer);
+  void clearBuildProducers();
+  void clearProbeProducers();
 
 private:
   void onStart();

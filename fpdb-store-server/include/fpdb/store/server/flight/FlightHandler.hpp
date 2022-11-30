@@ -19,6 +19,7 @@
 #include "fpdb/store/server/flight/SelectObjectContentTicket.hpp"
 #include "fpdb/store/server/flight/GetBitmapTicket.hpp"
 #include "fpdb/store/server/flight/GetTableTicket.hpp"
+#include "fpdb/store/server/flight/GetBatchLoadInfoTicket.hpp"
 #include "fpdb/store/server/flight/HeaderMiddleware.hpp"
 #include "fpdb/store/server/flight/BitmapType.h"
 #include "fpdb/store/server/flight/BitmapCache.hpp"
@@ -236,6 +237,17 @@ private:
   tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status>
   do_get_get_table(const ServerCallContext& context,
                    const std::shared_ptr<GetTableTicket>& get_table_ticket);
+
+
+  /**
+   *
+   * @param context
+   * @param get_batch_load_info_ticket
+   * @return
+   */
+  tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status>
+  do_get_get_batch_load_info(const ServerCallContext& context,
+                             const std::shared_ptr<GetBatchLoadInfoTicket>& get_batch_load_info_ticket);
 
   /**
    *

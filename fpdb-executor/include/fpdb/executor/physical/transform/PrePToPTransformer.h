@@ -80,6 +80,12 @@ private:
 
   vector<shared_ptr<PhysicalOp>> transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoinPrePOp);
 
+  vector<shared_ptr<PhysicalOp>> transformNestedLoopJoin(const shared_ptr<NestedLoopJoinPrePOp> &nestedLoopJoinPrePOp);
+
+  vector<shared_ptr<PhysicalOp>> transformFilterableScan(const shared_ptr<FilterableScanPrePOp> &filterableScanPrePOp);
+
+  vector<shared_ptr<PhysicalOp>> transformSeparableSuper(const shared_ptr<SeparableSuperPrePOp> &separableSuperPrePOp);
+
   void pushdownBloomFilter(const vector<shared_ptr<PhysicalOp>> &bloomFilterCreatePOps,
                            vector<shared_ptr<PhysicalOp>> &upRightConnPOps,
                            vector<shared_ptr<PhysicalOp>> &joinProbePOps,
@@ -95,11 +101,10 @@ private:
                                                vector<shared_ptr<PhysicalOp>> &upRightConnPOps,
                                                const vector<string> &rightColumnNames);
 
-  vector<shared_ptr<PhysicalOp>> transformNestedLoopJoin(const shared_ptr<NestedLoopJoinPrePOp> &nestedLoopJoinPrePOp);
-
-  vector<shared_ptr<PhysicalOp>> transformFilterableScan(const shared_ptr<FilterableScanPrePOp> &filterableScanPrePOp);
-
-  vector<shared_ptr<PhysicalOp>> transformSeparableSuper(const shared_ptr<SeparableSuperPrePOp> &separableSuperPrePOp);
+  void batchLoadShuffle(const vector<shared_ptr<PhysicalOp>> &opsForShuffle,
+                        const vector<shared_ptr<PhysicalOp>> &shuffleConsumers,
+                        vector<shared_ptr<PhysicalOp>> &allPOps,
+                        bool* isHashJoinArrowLeftConn = nullptr);
 
   shared_ptr<PrePhysicalPlan> prePhysicalPlan_;
   shared_ptr<CatalogueEntry> catalogueEntry_;

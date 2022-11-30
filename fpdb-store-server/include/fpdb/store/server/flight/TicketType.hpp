@@ -14,7 +14,8 @@ enum class TicketTypeId {
   GET_OBJECT,
   SELECT_OBJECT_CONTENT,
   GET_BITMAP,
-  GET_TABLE
+  GET_TABLE,
+  GET_BATCH_LOAD_INFO
 };
 
 class TicketType {
@@ -32,6 +33,8 @@ public:
   static std::shared_ptr<TicketType> get_bitmap();
 
   static std::shared_ptr<TicketType> get_table();
+
+  static std::shared_ptr<TicketType> get_batch_load_info();
 
 private:
   TicketTypeId id_;
