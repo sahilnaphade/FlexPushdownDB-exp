@@ -31,6 +31,7 @@ public:
   const std::optional<std::shared_ptr<BloomFilterBase>> &getBloomFilter() const;
   void setBloomFilter(const std::shared_ptr<BloomFilterBase> &bloomFilter);
   bool receivedBloomFilter() const;
+  void clearProducersExceptBloomFilterCreate();
 
 private:
   void onStart();

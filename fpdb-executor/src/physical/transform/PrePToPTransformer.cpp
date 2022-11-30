@@ -1155,7 +1155,11 @@ void PrePToPTransformer::batchLoadShuffle(const vector<shared_ptr<PhysicalOp>> &
     shuffleConsumersByNode[shuffleConsumer->getNodeId()].emplace_back(shuffleConsumer);
     // reset producers
     if (isHashJoinArrowLeftConn == nullptr) {
-      shuffleConsumer->clearProducers();
+      if (shuffleConsumer->getType() == POpType::BLOOM_FILTER_USE) {
+        static_pointer_cast<bloomfilter::BloomFilterUsePOp>(shuffleConsumer)->clearProducersExceptBloomFilterCreate();
+      } else {
+        shuffleConsumer->clearProducers();
+      }
     } else {
       if (*isHashJoinArrowLeftConn) {
         static_pointer_cast<join::HashJoinArrowPOp>(shuffleConsumer)->clearBuildProducers();

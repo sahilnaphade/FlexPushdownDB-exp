@@ -53,6 +53,17 @@ bool BloomFilterUsePOp::receivedBloomFilter() const {
   return bloomFilter_.has_value();
 }
 
+void BloomFilterUsePOp::clearProducersExceptBloomFilterCreate() {
+  for (auto it = producers_.begin(); it != producers_.end(); ) {
+    if (it->substr(0, 17) != "BloomFilterCreate") {
+      it = producers_.erase(it);
+    }
+    else {
+      ++it;
+    }
+  }
+}
+
 void BloomFilterUsePOp::onStart() {
   SPDLOG_DEBUG("Starting operator  |  name: '{}'", this->name());
 }
