@@ -55,22 +55,22 @@ tl::expected<std::string, std::string> SelectObjectContentTicket::serialize(bool
 tl::expected<std::shared_ptr<SelectObjectContentTicket>, std::string>
 SelectObjectContentTicket::from_json(const nlohmann::json &jObj) {
   if (!jObj.contains(QueryIdJSONName.data())) {
-    return tl::make_unexpected(fmt::format("Query id not specified in SelectObjectContentTicket JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("Query id not specified in SelectObjectContentTicket JSON '{}'", to_string(jObj)));
   }
   auto query_id = jObj[QueryIdJSONName.data()].get<int64_t>();
 
   if (!jObj.contains(FPDBStoreSuperPOpJSONName.data())) {
-    return tl::make_unexpected(fmt::format("FPDBStoreSuperPOp not specified in SelectObjectContentTicket JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("FPDBStoreSuperPOp not specified in SelectObjectContentTicket JSON '{}'", to_string(jObj)));
   }
   auto fpdb_store_super_pop = jObj[FPDBStoreSuperPOpJSONName.data()].get<std::string>();
 
   if (!jObj.contains(QueryPlanJSONName.data())) {
-    return tl::make_unexpected(fmt::format("Query plan not specified in SelectObjectContentTicket JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("Query plan not specified in SelectObjectContentTicket JSON '{}'", to_string(jObj)));
   }
   auto query_plan_string = jObj[QueryPlanJSONName.data()].get<std::string>();
 
   if (!jObj.contains(ParallelDegreeJSONName.data())) {
-    return tl::make_unexpected(fmt::format("Parallel degree not specified in SelectObjectContentTicket JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("Parallel degree not specified in SelectObjectContentTicket JSON '{}'", to_string(jObj)));
   }
   auto parallel_degree = jObj[ParallelDegreeJSONName.data()].get<int>();
 

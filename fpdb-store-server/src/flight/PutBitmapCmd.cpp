@@ -68,22 +68,22 @@ tl::expected<std::string, std::string> PutBitmapCmd::serialize(bool pretty) {
 
 tl::expected<std::shared_ptr<PutBitmapCmd>, std::string> PutBitmapCmd::from_json(const nlohmann::json& jObj) {
   if (!jObj.contains(BitmapTypeJSONName.data())) {
-    return tl::make_unexpected(fmt::format("Bitmap type name not specified in PutBitmapCmd JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("Bitmap type name not specified in PutBitmapCmd JSON '{}'", to_string(jObj)));
   }
   auto bitmap_type = jObj[BitmapTypeJSONName.data()].get<BitmapType>();
 
   if (!jObj.contains(QueryIdJSONName.data())) {
-    return tl::make_unexpected(fmt::format("Query id not specified in PutBitmapCmd JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("Query id not specified in PutBitmapCmd JSON '{}'", to_string(jObj)));
   }
   auto query_id = jObj[QueryIdJSONName.data()].get<long>();
 
   if (!jObj.contains(OpJSONName.data())) {
-    return tl::make_unexpected(fmt::format("Op not specified in PutBitmapCmd JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("Op not specified in PutBitmapCmd JSON '{}'", to_string(jObj)));
   }
   auto op = jObj[OpJSONName.data()].get<std::string>();
 
   if (!jObj.contains(ValidJSONName.data())) {
-    return tl::make_unexpected(fmt::format("Valid not specified in PutBitmapCmd JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("Valid not specified in PutBitmapCmd JSON '{}'", to_string(jObj)));
   }
   auto valid = jObj[ValidJSONName.data()].get<bool>();
 

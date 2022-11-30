@@ -32,7 +32,7 @@ tl::expected<std::string, std::string> PutAdaptPushdownMetricsCmd::serialize(boo
 tl::expected<std::shared_ptr<PutAdaptPushdownMetricsCmd>, std::string>
 PutAdaptPushdownMetricsCmd::from_json(const nlohmann::json& jObj) {
   if (!jObj.contains(AdaptPushdownMetricsJSONName.data())) {
-    return tl::make_unexpected(fmt::format("AdaptPushdownMetrics not specified in PutAdaptPushdownMetricsCmd JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("AdaptPushdownMetrics not specified in PutAdaptPushdownMetricsCmd JSON '{}'", to_string(jObj)));
   }
   auto adaptPushdownMetrics = jObj[AdaptPushdownMetricsJSONName.data()].get<std::unordered_map<std::string, int64_t>>();
 

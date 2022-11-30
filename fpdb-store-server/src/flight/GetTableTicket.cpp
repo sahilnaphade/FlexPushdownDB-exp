@@ -54,22 +54,22 @@ tl::expected<std::string, std::string> GetTableTicket::serialize(bool pretty) {
 
 tl::expected<std::shared_ptr<GetTableTicket>, std::string> GetTableTicket::from_json(const nlohmann::json &jObj) {
   if (!jObj.contains(QueryIdJSONName.data())) {
-    return tl::make_unexpected(fmt::format("Query id not specified in GetTableTicket JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("Query id not specified in GetTableTicket JSON '{}'", to_string(jObj)));
   }
   auto query_id = jObj[QueryIdJSONName.data()].get<int64_t>();
 
   if (!jObj.contains(ProducerJSONName.data())) {
-    return tl::make_unexpected(fmt::format("Producer not specified in GetTableTicket JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("Producer not specified in GetTableTicket JSON '{}'", to_string(jObj)));
   }
   auto producer = jObj[ProducerJSONName.data()].get<std::string>();
 
   if (!jObj.contains(ConsumerJSONName.data())) {
-    return tl::make_unexpected(fmt::format("Consumer not specified in GetTableTicket JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("Consumer not specified in GetTableTicket JSON '{}'", to_string(jObj)));
   }
   auto consumer = jObj[ConsumerJSONName.data()].get<std::string>();
 
   if (!jObj.contains(WaitNotExistJSONName)) {
-    return tl::make_unexpected(fmt::format("WaitNotExist not specified in GetTableTicket JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("WaitNotExist not specified in GetTableTicket JSON '{}'", to_string(jObj)));
   }
   auto wait_not_exist = jObj[WaitNotExistJSONName.data()].get<bool>();
 

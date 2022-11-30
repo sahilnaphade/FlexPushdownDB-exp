@@ -35,12 +35,12 @@ tl::expected<std::string, std::string> GetBitmapTicket::serialize(bool pretty) {
 
 tl::expected<std::shared_ptr<GetBitmapTicket>, std::string> GetBitmapTicket::from_json(const nlohmann::json &jObj) {
   if (!jObj.contains(QueryIdJSONName.data())) {
-    return tl::make_unexpected(fmt::format("Query id not specified in GetBitmapTicket JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("Query id not specified in GetBitmapTicket JSON '{}'", to_string(jObj)));
   }
   auto query_id = jObj[QueryIdJSONName.data()].get<int64_t>();
 
   if (!jObj.contains(OpJSONName.data())) {
-    return tl::make_unexpected(fmt::format("Op not specified in GetBitmapTicket JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("Op not specified in GetBitmapTicket JSON '{}'", to_string(jObj)));
   }
   auto op = jObj[OpJSONName.data()].get<std::string>();
 

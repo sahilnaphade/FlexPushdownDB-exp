@@ -35,12 +35,12 @@ tl::expected<std::string, std::string> GetObjectTicket::serialize(bool pretty) {
 
 tl::expected<std::shared_ptr<GetObjectTicket>, std::string> GetObjectTicket::from_json(const nlohmann::json &jObj) {
   if (!jObj.contains(BucketJSONName.data())) {
-    return tl::make_unexpected(fmt::format("Bucket not specified in GetObjectTicket JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("Bucket not specified in GetObjectTicket JSON '{}'", to_string(jObj)));
   }
   auto bucket = jObj[BucketJSONName.data()].get<std::string>();
 
   if (!jObj.contains(ObjectJSONName.data())) {
-    return tl::make_unexpected(fmt::format("Object not specified in GetObjectTicket JSON '{}'", jObj));
+    return tl::make_unexpected(fmt::format("Object not specified in GetObjectTicket JSON '{}'", to_string(jObj)));
   }
   auto object = jObj[ObjectJSONName.data()].get<std::string>();
 
