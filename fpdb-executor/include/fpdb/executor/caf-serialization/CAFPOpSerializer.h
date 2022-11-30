@@ -352,6 +352,11 @@ struct variant_inspector_traits<POpPtr> {
         continuation(tmp);
         return true;
       }
+      case type_id_v<shuffle::ShuffleBatchLoadPOp>: {
+        auto tmp = shuffle::ShuffleBatchLoadPOp{};
+        continuation(tmp);
+        return true;
+      }
       case type_id_v<sort::SortPOp>: {
         auto tmp = sort::SortPOp{};
         continuation(tmp);
