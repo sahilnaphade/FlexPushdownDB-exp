@@ -2,7 +2,7 @@
 // Created by Yifei Yang on 10/2/22.
 //
 
-#include <fpdb/executor/physical/shuffle/ShuffleKernel.h>
+#include <fpdb/executor/physical/shuffle/ShuffleKernel2.h>
 #include <fpdb/tuple/TupleSet.h>
 #include <fpdb/aws/AWSClient.h>
 #include <fpdb/util/Util.h>
@@ -176,7 +176,7 @@ private:
 
   // Partition the table into 'numNodes_' pieces on the hash 'key_'
   std::vector<std::shared_ptr<TupleSet>> hashPartition(const std::shared_ptr<TupleSet> &tupleSet) {
-    auto expPartitions = ShuffleKernel::shuffle({*key_}, numNodes_, *tupleSet);
+    auto expPartitions = ShuffleKernel2::shuffle({*key_}, numNodes_, tupleSet);
     if (!expPartitions.has_value()) {
       throw std::runtime_error(expPartitions.error());
     }
