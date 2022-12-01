@@ -1,11 +1,10 @@
 {
-  "schemaName": "ssb-sf0.01/csv/",
+  "schemaName": "ssb-sf0.01/parquet/",
   "tables": [
     {
       "name": "date",
       "format": {
-        "name": "csv",
-        "fieldDelimiter": "|"
+        "name": "parquet"
       },
       "numPartitions": 1,
       "fields": [
@@ -82,8 +81,7 @@
     {
       "name": "supplier",
       "format": {
-        "name": "csv",
-        "fieldDelimiter": "|"
+        "name": "parquet"
       },
       "numPartitions": 1,
       "fields": [
@@ -120,8 +118,7 @@
     {
       "name": "customer",
       "format": {
-        "name": "csv",
-        "fieldDelimiter": "|"
+        "name": "parquet"
       },
       "numPartitions": 1,
       "fields": [
@@ -162,8 +159,7 @@
     {
       "name": "part",
       "format": {
-        "name": "csv",
-        "fieldDelimiter": "|"
+        "name": "parquet"
       },
       "numPartitions": 1,
       "fields": [
@@ -208,8 +204,7 @@
     {
       "name": "lineorder",
       "format": {
-        "name": "csv",
-        "fieldDelimiter": "|"
+        "name": "parquet"
       },
       "numPartitions": 2,
       "fields": [
