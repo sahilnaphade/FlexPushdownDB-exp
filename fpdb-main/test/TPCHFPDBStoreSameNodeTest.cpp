@@ -55,7 +55,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-csv-pullup-01" * doctest::skip(fals
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/",
                                             {"tpch/original/01.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE));
   stopFPDBStoreServer();
@@ -65,7 +65,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-csv-pullup-02" * doctest::skip(fals
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/",
                                             {"tpch/original/02.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE));
   stopFPDBStoreServer();
@@ -75,7 +75,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-csv-pullup-03" * doctest::skip(fals
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/",
                                             {"tpch/original/03.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE));
   stopFPDBStoreServer();
@@ -85,7 +85,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-csv-pullup-04" * doctest::skip(fals
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/",
                                             {"tpch/original/04.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE));
   stopFPDBStoreServer();
@@ -95,7 +95,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-csv-pullup-05" * doctest::skip(fals
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/",
                                             {"tpch/original/05.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE));
   stopFPDBStoreServer();
@@ -105,7 +105,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-csv-pullup-06" * doctest::skip(fals
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/",
                                             {"tpch/original/06.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE));
   stopFPDBStoreServer();
@@ -115,7 +115,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-csv-pullup-07" * doctest::skip(fals
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/",
                                             {"tpch/original/07.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE));
   stopFPDBStoreServer();
@@ -125,7 +125,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-csv-pullup-08" * doctest::skip(fals
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/",
                                             {"tpch/original/08.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE));
   stopFPDBStoreServer();
@@ -135,7 +135,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-csv-pullup-09" * doctest::skip(fals
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/",
                                             {"tpch/original/09.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE));
   stopFPDBStoreServer();
@@ -145,7 +145,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-csv-pullup-10" * doctest::skip(fals
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/",
                                             {"tpch/original/10.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE));
   stopFPDBStoreServer();
@@ -155,7 +155,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-csv-pullup-11" * doctest::skip(fals
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/",
                                             {"tpch/original/11.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE));
   stopFPDBStoreServer();
@@ -165,7 +165,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-csv-pullup-12" * doctest::skip(fals
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/",
                                             {"tpch/original/12.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE));
   stopFPDBStoreServer();
@@ -175,7 +175,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-csv-pullup-13" * doctest::skip(fals
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/",
                                             {"tpch/original/13.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE));
   stopFPDBStoreServer();
@@ -185,7 +185,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-csv-pullup-14" * doctest::skip(fals
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/",
                                             {"tpch/original/14.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE));
   stopFPDBStoreServer();
@@ -195,7 +195,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-csv-pullup-15" * doctest::skip(fals
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/",
                                             {"tpch/original/15.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE));
   stopFPDBStoreServer();
@@ -205,7 +205,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-csv-pullup-16" * doctest::skip(fals
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/",
                                             {"tpch/original/16.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE));
   stopFPDBStoreServer();
@@ -215,7 +215,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-csv-pullup-17" * doctest::skip(fals
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/",
                                             {"tpch/original/17.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE));
   stopFPDBStoreServer();
@@ -225,7 +225,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-csv-pullup-18" * doctest::skip(fals
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/",
                                             {"tpch/original/18.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE));
   stopFPDBStoreServer();
@@ -235,7 +235,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-csv-pullup-19" * doctest::skip(fals
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/",
                                             {"tpch/original/19.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE));
   stopFPDBStoreServer();
@@ -245,7 +245,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-csv-pullup-20" * doctest::skip(fals
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/",
                                             {"tpch/original/20.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE));
   stopFPDBStoreServer();
@@ -255,7 +255,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-csv-pullup-21" * doctest::skip(fals
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/",
                                             {"tpch/original/21.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE));
   stopFPDBStoreServer();
@@ -265,7 +265,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-csv-pullup-22" * doctest::skip(fals
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/",
                                             {"tpch/original/22.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE));
   stopFPDBStoreServer();
@@ -279,7 +279,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-csv-pushdown-only-01" * doctest::sk
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/",
                                             {"tpch/original/01.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE,
                                             Mode::pushdownOnlyMode()));
@@ -290,7 +290,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-csv-pushdown-only-02" * doctest::sk
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/",
                                             {"tpch/original/02.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE,
                                             Mode::pushdownOnlyMode()));
@@ -301,7 +301,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-csv-pushdown-only-03" * doctest::sk
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/",
                                             {"tpch/original/03.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE,
                                             Mode::pushdownOnlyMode()));
@@ -312,7 +312,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-csv-pushdown-only-04" * doctest::sk
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/",
                                             {"tpch/original/04.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE,
                                             Mode::pushdownOnlyMode()));
@@ -323,7 +323,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-csv-pushdown-only-05" * doctest::sk
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/",
                                             {"tpch/original/05.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE,
                                             Mode::pushdownOnlyMode()));
@@ -334,7 +334,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-csv-pushdown-only-06" * doctest::sk
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/",
                                             {"tpch/original/06.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE,
                                             Mode::pushdownOnlyMode()));
@@ -345,7 +345,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-csv-pushdown-only-07" * doctest::sk
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/",
                                             {"tpch/original/07.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE,
                                             Mode::pushdownOnlyMode()));
@@ -356,7 +356,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-csv-pushdown-only-08" * doctest::sk
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/",
                                             {"tpch/original/08.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE,
                                             Mode::pushdownOnlyMode()));
@@ -367,7 +367,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-csv-pushdown-only-09" * doctest::sk
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/",
                                             {"tpch/original/09.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE,
                                             Mode::pushdownOnlyMode()));
@@ -378,7 +378,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-csv-pushdown-only-10" * doctest::sk
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/",
                                             {"tpch/original/10.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE,
                                             Mode::pushdownOnlyMode()));
@@ -389,7 +389,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-csv-pushdown-only-11" * doctest::sk
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/",
                                             {"tpch/original/11.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE,
                                             Mode::pushdownOnlyMode()));
@@ -400,7 +400,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-csv-pushdown-only-12" * doctest::sk
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/",
                                             {"tpch/original/12.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE,
                                             Mode::pushdownOnlyMode()));
@@ -411,7 +411,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-csv-pushdown-only-13" * doctest::sk
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/",
                                             {"tpch/original/13.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE,
                                             Mode::pushdownOnlyMode()));
@@ -422,7 +422,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-csv-pushdown-only-14" * doctest::sk
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/",
                                             {"tpch/original/14.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE,
                                             Mode::pushdownOnlyMode()));
@@ -433,7 +433,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-csv-pushdown-only-15" * doctest::sk
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/",
                                             {"tpch/original/15.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE,
                                             Mode::pushdownOnlyMode()));
@@ -444,7 +444,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-csv-pushdown-only-16" * doctest::sk
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/",
                                             {"tpch/original/16.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE,
                                             Mode::pushdownOnlyMode()));
@@ -455,7 +455,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-csv-pushdown-only-17" * doctest::sk
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/",
                                             {"tpch/original/17.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE,
                                             Mode::pushdownOnlyMode()));
@@ -466,7 +466,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-csv-pushdown-only-18" * doctest::sk
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/",
                                             {"tpch/original/18.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE,
                                             Mode::pushdownOnlyMode()));
@@ -477,7 +477,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-csv-pushdown-only-19" * doctest::sk
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/",
                                             {"tpch/original/19.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE,
                                             Mode::pushdownOnlyMode()));
@@ -488,7 +488,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-csv-pushdown-only-20" * doctest::sk
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/",
                                             {"tpch/original/20.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE,
                                             Mode::pushdownOnlyMode()));
@@ -499,7 +499,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-csv-pushdown-only-21" * doctest::sk
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/",
                                             {"tpch/original/21.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE,
                                             Mode::pushdownOnlyMode()));
@@ -510,7 +510,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-csv-pushdown-only-22" * doctest::sk
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/",
                                             {"tpch/original/22.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE,
                                             Mode::pushdownOnlyMode()));
@@ -525,7 +525,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pullup-01" * doctest::skip(
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/parquet/",
                                             {"tpch/original/01.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE));
   stopFPDBStoreServer();
@@ -535,7 +535,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pullup-02" * doctest::skip(
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/parquet/",
                                             {"tpch/original/02.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE));
   stopFPDBStoreServer();
@@ -545,7 +545,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pullup-03" * doctest::skip(
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/parquet/",
                                             {"tpch/original/03.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE));
   stopFPDBStoreServer();
@@ -555,7 +555,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pullup-04" * doctest::skip(
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/parquet/",
                                             {"tpch/original/04.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE));
   stopFPDBStoreServer();
@@ -565,7 +565,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pullup-05" * doctest::skip(
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/parquet/",
                                             {"tpch/original/05.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE));
   stopFPDBStoreServer();
@@ -575,7 +575,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pullup-06" * doctest::skip(
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/parquet/",
                                             {"tpch/original/06.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE));
   stopFPDBStoreServer();
@@ -585,7 +585,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pullup-07" * doctest::skip(
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/parquet/",
                                             {"tpch/original/07.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE));
   stopFPDBStoreServer();
@@ -595,7 +595,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pullup-08" * doctest::skip(
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/parquet/",
                                             {"tpch/original/08.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE));
   stopFPDBStoreServer();
@@ -605,7 +605,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pullup-09" * doctest::skip(
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/parquet/",
                                             {"tpch/original/09.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE));
   stopFPDBStoreServer();
@@ -615,7 +615,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pullup-10" * doctest::skip(
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/parquet/",
                                             {"tpch/original/10.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE));
   stopFPDBStoreServer();
@@ -625,7 +625,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pullup-11" * doctest::skip(
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/parquet/",
                                             {"tpch/original/11.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE));
   stopFPDBStoreServer();
@@ -635,7 +635,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pullup-12" * doctest::skip(
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/parquet/",
                                             {"tpch/original/12.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE));
   stopFPDBStoreServer();
@@ -645,7 +645,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pullup-13" * doctest::skip(
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/parquet/",
                                             {"tpch/original/13.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE));
   stopFPDBStoreServer();
@@ -655,7 +655,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pullup-14" * doctest::skip(
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/parquet/",
                                             {"tpch/original/14.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE));
   stopFPDBStoreServer();
@@ -665,7 +665,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pullup-15" * doctest::skip(
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/parquet/",
                                             {"tpch/original/15.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE));
   stopFPDBStoreServer();
@@ -675,7 +675,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pullup-16" * doctest::skip(
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/parquet/",
                                             {"tpch/original/16.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE));
   stopFPDBStoreServer();
@@ -685,7 +685,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pullup-17" * doctest::skip(
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/parquet/",
                                             {"tpch/original/17.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE));
   stopFPDBStoreServer();
@@ -695,7 +695,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pullup-18" * doctest::skip(
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/parquet/",
                                             {"tpch/original/18.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE));
   stopFPDBStoreServer();
@@ -705,7 +705,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pullup-19" * doctest::skip(
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/parquet/",
                                             {"tpch/original/19.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE));
   stopFPDBStoreServer();
@@ -715,7 +715,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pullup-20" * doctest::skip(
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/parquet/",
                                             {"tpch/original/20.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE));
   stopFPDBStoreServer();
@@ -725,7 +725,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pullup-21" * doctest::skip(
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/parquet/",
                                             {"tpch/original/21.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE));
   stopFPDBStoreServer();
@@ -735,7 +735,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pullup-22" * doctest::skip(
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/parquet/",
                                             {"tpch/original/22.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE));
   stopFPDBStoreServer();
@@ -747,7 +747,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pullup-multi-query" * docte
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/parquet/",
                                             queryFileNames,
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE));
   stopFPDBStoreServer();
@@ -761,7 +761,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pushdown-only-01" * doctest
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/parquet/",
                                             {"tpch/original/01.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE,
                                             Mode::pushdownOnlyMode()));
@@ -772,7 +772,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pushdown-only-02" * doctest
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/parquet/",
                                             {"tpch/original/02.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE,
                                             Mode::pushdownOnlyMode()));
@@ -783,7 +783,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pushdown-only-03" * doctest
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/parquet/",
                                             {"tpch/original/03.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE,
                                             Mode::pushdownOnlyMode()));
@@ -794,7 +794,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pushdown-only-04" * doctest
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/parquet/",
                                             {"tpch/original/04.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE,
                                             Mode::pushdownOnlyMode()));
@@ -805,7 +805,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pushdown-only-05" * doctest
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/parquet/",
                                             {"tpch/original/05.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE,
                                             Mode::pushdownOnlyMode()));
@@ -816,7 +816,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pushdown-only-06" * doctest
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/parquet/",
                                             {"tpch/original/06.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE,
                                             Mode::pushdownOnlyMode()));
@@ -827,7 +827,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pushdown-only-07" * doctest
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/parquet/",
                                             {"tpch/original/07.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE,
                                             Mode::pushdownOnlyMode()));
@@ -838,7 +838,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pushdown-only-08" * doctest
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/parquet/",
                                             {"tpch/original/08.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE,
                                             Mode::pushdownOnlyMode()));
@@ -849,7 +849,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pushdown-only-09" * doctest
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/parquet/",
                                             {"tpch/original/09.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE,
                                             Mode::pushdownOnlyMode()));
@@ -860,7 +860,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pushdown-only-10" * doctest
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/parquet/",
                                             {"tpch/original/10.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE,
                                             Mode::pushdownOnlyMode()));
@@ -871,7 +871,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pushdown-only-11" * doctest
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/parquet/",
                                             {"tpch/original/11.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE,
                                             Mode::pushdownOnlyMode()));
@@ -882,7 +882,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pushdown-only-12" * doctest
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/parquet/",
                                             {"tpch/original/12.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE,
                                             Mode::pushdownOnlyMode()));
@@ -893,7 +893,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pushdown-only-13" * doctest
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/parquet/",
                                             {"tpch/original/13.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE,
                                             Mode::pushdownOnlyMode()));
@@ -904,7 +904,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pushdown-only-14" * doctest
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/parquet/",
                                             {"tpch/original/14.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE,
                                             Mode::pushdownOnlyMode()));
@@ -915,7 +915,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pushdown-only-15" * doctest
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/parquet/",
                                             {"tpch/original/15.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE,
                                             Mode::pushdownOnlyMode()));
@@ -926,7 +926,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pushdown-only-16" * doctest
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/parquet/",
                                             {"tpch/original/16.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE,
                                             Mode::pushdownOnlyMode()));
@@ -937,7 +937,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pushdown-only-17" * doctest
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/parquet/",
                                             {"tpch/original/17.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE,
                                             Mode::pushdownOnlyMode()));
@@ -948,7 +948,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pushdown-only-18" * doctest
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/parquet/",
                                             {"tpch/original/18.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE,
                                             Mode::pushdownOnlyMode()));
@@ -959,7 +959,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pushdown-only-19" * doctest
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/parquet/",
                                             {"tpch/original/19.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE,
                                             Mode::pushdownOnlyMode()));
@@ -970,7 +970,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pushdown-only-20" * doctest
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/parquet/",
                                             {"tpch/original/20.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE,
                                             Mode::pushdownOnlyMode()));
@@ -981,7 +981,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pushdown-only-21" * doctest
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/parquet/",
                                             {"tpch/original/21.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE,
                                             Mode::pushdownOnlyMode()));
@@ -992,7 +992,7 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pushdown-only-22" * doctest
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/parquet/",
                                             {"tpch/original/22.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE,
                                             Mode::pushdownOnlyMode()));
@@ -1009,7 +1009,7 @@ TEST_CASE ("tpch-sf0.01-1-node-hash-part-hash-join-pushable-04" * doctest::skip(
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01-1-node-hash-part/parquet/",
                                             {"tpch/original/04.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE,
                                             Mode::pushdownOnlyMode()));
@@ -1022,7 +1022,7 @@ TEST_CASE ("tpch-sf0.01-1-node-hash-part-hash-join-not-pushable-19" * doctest::s
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01-1-node-hash-part/parquet/",
                                             {"tpch/original/19.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE,
                                             Mode::pushdownOnlyMode()));
@@ -1036,7 +1036,7 @@ TEST_CASE ("tpch-sf0.01-1-node-hash-part-hash-join-pullup-04" * doctest::skip(fa
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01-1-node-hash-part/parquet/",
                                             {"tpch/original/04.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE));
   stopFPDBStoreServer();
@@ -1048,7 +1048,7 @@ TEST_CASE ("tpch-sf0.01-1-node-hash-part-hash-join-synthetic-2-table" * doctest:
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01-1-node-hash-part/parquet/",
                                             {"tpch/synthetic/co-join-2-table.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE,
                                             Mode::pushdownOnlyMode()));
@@ -1061,7 +1061,7 @@ TEST_CASE ("tpch-sf0.01-1-node-hash-part-hash-join-synthetic-3-table" * doctest:
   startFPDBStoreServer();
   REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01-1-node-hash-part/parquet/",
                                             {"tpch/synthetic/co-join-3-table.sql"},
-                                            PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE,
                                             Mode::pushdownOnlyMode()));
@@ -1078,7 +1078,7 @@ void test_tpch_sf0_01_fpdb_store_same_node_adaptive_pushdown(const std::string &
   // adaptive pushdown metrics of pullup run
   TestUtil testUtil1("tpch-sf0.01/parquet/",
                      {queryFileName},
-                     PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                     PARALLEL_FPDB_STORE_SAME_NODE,
                      false,
                      ObjStoreType::FPDB_STORE,
                      Mode::pullupMode());
@@ -1089,7 +1089,7 @@ void test_tpch_sf0_01_fpdb_store_same_node_adaptive_pushdown(const std::string &
   // adaptive pushdown metrics of pushdown run
   TestUtil testUtil2("tpch-sf0.01/parquet/",
                      {queryFileName},
-                     PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                     PARALLEL_FPDB_STORE_SAME_NODE,
                      false,
                      ObjStoreType::FPDB_STORE,
                      Mode::pushdownOnlyMode());
@@ -1100,7 +1100,7 @@ void test_tpch_sf0_01_fpdb_store_same_node_adaptive_pushdown(const std::string &
   // test run
   TestUtil testUtil3("tpch-sf0.01/parquet/",
                      {queryFileName},
-                     PARALLEL_TPCH_FPDB_STORE_SAME_NODE,
+                     PARALLEL_FPDB_STORE_SAME_NODE,
                      false,
                      ObjStoreType::FPDB_STORE,
                      Mode::pushdownOnlyMode());

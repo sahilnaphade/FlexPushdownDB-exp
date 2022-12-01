@@ -13,11 +13,11 @@
 
 namespace fpdb::main::test {
 
-inline constexpr int PARALLEL_TPCH_DIST_SF0_01 = 2;
-inline constexpr int PARALLEL_TPCH_DIST_SF10 = 17;    // set to 2^n may cause skewness
-inline constexpr int PARALLEL_TPCH_DIST_SF100 = 17;
-inline constexpr int PARALLEL_TPCH_FPDB_STORE_SAME_NODE = 3;
-inline constexpr int PARALLEL_TPCH_FPDB_STORE_DIFF_NODE = 17;
+inline constexpr int PARALLEL_DIST_SF0_01 = 2;
+inline constexpr int PARALLEL_DIST_SF10 = 17;    // set to 2^n may cause skewness
+inline constexpr int PARALLEL_DIST_SF100 = 17;
+inline constexpr int PARALLEL_FPDB_STORE_SAME_NODE = 3;
+inline constexpr int PARALLEL_FPDB_STORE_DIFF_NODE = 17;
 
 }
 

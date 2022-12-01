@@ -43,6 +43,7 @@ add_executable(fpdb-main-test
         test-base/TestUtil.cpp test-base/TestUtil.h
         test-base/MainTest.cpp
         test/SSBTest.cpp
+        test/SSBFPDBStoreSameNodeTest.cpp
         test/TPCHTest.cpp
         test/TPCHDistTest.cpp
         test/TPCHFPDBStoreSameNodeTest.cpp

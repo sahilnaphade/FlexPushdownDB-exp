@@ -52,7 +52,7 @@ TEST_CASE ("bytes-read-tpch-sf10-fpdb-store-diff-node" * doctest::skip(false || 
       writeQueryToFileBytesReadTest(queryFileName, l_discount);
       REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
                                                 {std::string(queryFileName)},
-                                                PARALLEL_TPCH_FPDB_STORE_DIFF_NODE,
+                                                PARALLEL_FPDB_STORE_DIFF_NODE,
                                                 false,
                                                 ObjStoreType::FPDB_STORE,
                                                 mode));
