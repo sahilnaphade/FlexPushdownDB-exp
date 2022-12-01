@@ -1,6 +1,6 @@
 # Build 'fpdb-tuple-converter-exec' before running this
 # Example usage: 'python convert_whole_directory.py
-# ~/Desktop/FlexPushdownDB-Dev/fpdb-main/test-resources/flexpushdowndb/tpch-sf0.01/csv
+# ~/Desktop/FlexPushdownDB-Dev/fpdb-main/test-resources/fpdb-store-0/flexpushdowndb/tpch-sf0.01/csv
 # parquet tpch/schema_format ~/Desktop/FlexPushdownDB-Dev/cmake-build-debug'
 
 import sys
@@ -19,13 +19,13 @@ parquet_path = sys.argv[2]
 schema_format_path = sys.argv[3]
 fpdb_build_path = sys.argv[4]
 
-tables = ['nation', 'region', 'supplier', 'part', 'partsupp', 'customer', 'orders', 'lineitem']
 partition_folder_prefix = '_sharded'
 csv_file_suffix = '.tbl'
 parquet_file_suffix = '.parquet'
 schema_format_file_suffix = '.json'
 converter_exec_path = fpdb_build_path + "/fpdb-tuple/fpdb-tuple-converter-exec"
 root_files = os.listdir(csv_path)
+tables = [schema_format_file[:-len(schema_format_file_suffix)] for schema_format_file in os.listdir(schema_format_path)]
 
 os.system("rm -rf " + parquet_path)
 os.system("mkdir -p " + parquet_path)
@@ -44,9 +44,10 @@ for table in tables:
                                               parquet_file_path,
                                               'uncompressed',
                                               schema_format_file_path)
-        p = Process(target=run_command, args=(convert_cmd,))
-        procs.append(p)
-        p.start()
+        if __name__ == '__main__':
+            p = Process(target=run_command, args=(convert_cmd,))
+            procs.append(p)
+            p.start()
 
     else:
         csv_partitions_folder = "{}/{}{}".format(csv_path, table, partition_folder_prefix)
@@ -62,9 +63,10 @@ for table in tables:
                                                   parquet_partition_file_path,
                                                   'uncompressed',
                                                   schema_format_file_path)
-            p = Process(target=run_command, args=(convert_cmd,))
-            procs.append(p)
-            p.start()
+            if __name__ == '__main__':
+                p = Process(target=run_command, args=(convert_cmd,))
+                procs.append(p)
+                p.start()
 
 for p in procs:
     p.join()
