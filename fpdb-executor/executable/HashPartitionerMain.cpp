@@ -28,10 +28,10 @@ using namespace fpdb::util;
 class HashPartitioner {
 
 public:
-  HashPartitioner(const std::string &schema, const std::string &table,
+  HashPartitioner(const std::string &schema, const std::string &newSchema, const std::string &table,
                   int numPartitions, int numNodes, int64_t numRowsPerPart,
                   bool recreateMetadataFiles, const std::optional<std::string> &key):
-    schema_(schema), table_(table),
+    schema_(schema), newSchema_(newSchema), table_(table),
     numPartitions_(numPartitions), numNodes_(numNodes), numRowsPerPart_(numRowsPerPart),
     recreateMetadataFiles_(recreateMetadataFiles), key_(key),
     availSlots_(std::thread::hardware_concurrency()) {
@@ -40,12 +40,12 @@ public:
     auto pos = schemaWoLastSlash.rfind('/');
     auto schemaWoFormat = schemaWoLastSlash.substr(0, pos);
     format_ = schemaWoLastSlash.substr(pos + 1);
-    newSchema_ = schemaWoFormat + "-" + std::to_string(numNodes_) + "-node-hash-part/" + format_ + "/";
-    if (format_ == "parquet") {
-      suffix_ = ".parquet";
+    if (format_.substr(0, 7) == "parquet") {
+      format_ = "parquet";
     } else {
       throw std::runtime_error("Currently only implemented for parquet");
     }
+    suffix_ = "." + format_;
   }
 
   // Entry function
@@ -464,6 +464,7 @@ private:
   }
 
   std::string schema_;
+  std::string newSchema_;
   std::string table_;
   int numPartitions_;   // #partitions of the original data
   int numNodes_;
@@ -471,7 +472,6 @@ private:
   bool recreateMetadataFiles_;
   std::optional<std::string> key_;
 
-  std::string newSchema_;
   std::string format_;
   std::string suffix_;
   std::shared_ptr<AWSClient> awsClient_;
@@ -486,8 +486,8 @@ private:
 };
 
 int main(int argc, char *argv[]) {
-  if (argc < 7) {
-    fprintf(stderr, "Usage: %s <schema> <table> <num_partitions> <num nodes> <num_rows_per_part> "
+  if (argc < 8) {
+    fprintf(stderr, "Usage: %s <schema> <new_schema> <table> <num_partitions> <num nodes> <num_rows_per_part> "
                     "<recreate_metadata_files> (<key>)",
             argv[0]);
     return 1;
@@ -495,18 +495,20 @@ int main(int argc, char *argv[]) {
 
   // input parameters
   auto schema = std::string(argv[1]);
-  auto table = std::string(argv[2]);
-  int numPartitions = std::stoi(argv[3]);
-  int numNodes = std::stoi(argv[4]);
-  int64_t numRowsPerPart = std::stoll(argv[5]);
-  auto strArgv6 = std::string(argv[6]);
+  auto newSchema = std::string(argv[2]);
+  auto table = std::string(argv[3]);
+  int numPartitions = std::stoi(argv[4]);
+  int numNodes = std::stoi(argv[5]);
+  int64_t numRowsPerPart = std::stoll(argv[6]);
+  auto strArgv6 = std::string(argv[7]);
   bool recreateMetadataFiles = (strArgv6 == "true" || strArgv6 == "True" || strArgv6 == "TRUE") ? true : false;
   std::optional<std::string> key = std::nullopt;
-  if (argc > 7) {
-    key = std::string(argv[7]);
+  if (argc > 8) {
+    key = std::string(argv[8]);
   }
 
   // run partitioner
-  HashPartitioner partitioner(schema, table, numPartitions, numNodes, numRowsPerPart, recreateMetadataFiles, key);
+  HashPartitioner partitioner(schema, newSchema, table, numPartitions, numNodes, numRowsPerPart,
+                              recreateMetadataFiles, key);
   partitioner.doPartition();
 }

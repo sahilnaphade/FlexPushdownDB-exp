@@ -12,6 +12,7 @@ bucket = "flexpushdowndb"
 num_rows_per_part = 20000
 num_nodes = 1
 schema = "tpch-sf0.01/parquet/"
+new_schema = "tpch-sf0.01-{}-node-hash-part/parquet/".format(num_nodes)
 hash_keys = {
     "lineitem": "l_orderkey",
     "orders": "o_orderkey",
@@ -50,12 +51,13 @@ try:
     for table in partition_map:
         # params
         print("Partition table: " + table + "... ", end='', flush=True)
-        params = "{} {} {} {} {} {}".format(schema,
-                                            table,
-                                            partition_map[table],
-                                            num_nodes,
-                                            num_rows_per_part,
-                                            is_first_table)
+        params = "{} {} {} {} {} {} {}".format(schema,
+                                               new_schema,
+                                               table,
+                                               partition_map[table],
+                                               num_nodes,
+                                               num_rows_per_part,
+                                               is_first_table)
         is_first_table = False
         if table in hash_keys:
             params = "{} {}".format(params, hash_keys[table])
