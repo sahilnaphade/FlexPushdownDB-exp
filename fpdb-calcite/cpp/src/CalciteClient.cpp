@@ -52,10 +52,10 @@ void CalciteClient::shutdownServer() {
   calciteServerClient_->shutdown();
 }
 
-string CalciteClient::planQuery(const string &query, const string &schemaName) {
+string CalciteClient::planQuery(const string &query, const string &schemaName, bool useHeuristicJoinOrdering) {
   TPlanResult planResult;
   try {
-    calciteServerClient_->sql2Plan(planResult, query, schemaName);
+    calciteServerClient_->sql2Plan(planResult, query, schemaName, useHeuristicJoinOrdering);
   } catch (const ::apache::thrift::TException &e) {
     throw runtime_error(fmt::format("Calcite planning error: {}", e.what()));
   }

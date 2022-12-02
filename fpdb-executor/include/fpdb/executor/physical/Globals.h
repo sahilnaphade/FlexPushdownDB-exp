@@ -5,6 +5,9 @@
 #ifndef FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_GLOBALS_H
 #define FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_GLOBALS_H
 
+#include <stdint.h>
+#include <string>
+
 namespace fpdb::executor::physical {
 
 /**

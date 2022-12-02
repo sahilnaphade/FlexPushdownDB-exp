@@ -67,7 +67,7 @@ public class Optimizer {
     this.findPushableHashJoins = isHashJoinPushable();
   }
 
-  public OptimizeResult planQuery(String query, String schemaName) throws Exception {
+  public OptimizeResult planQuery(String query, String schemaName, boolean useHeuristicJoinOrdering) throws Exception {
     // Parse and Validate
     RelNode logicalPlan = parseAndValidate(query, schemaName);
 
@@ -78,7 +78,7 @@ public class Optimizer {
     RelNode preFilterPushdownPlan = filterPushdown(decorrelatedPlan);
 
     // Join optimization
-    RelNode joinOptPlan = joinOptimize(preFilterPushdownPlan, schemaName);
+    RelNode joinOptPlan = joinOptimize(preFilterPushdownPlan, schemaName, useHeuristicJoinOrdering);
 
     // Post-join filter pushdown
     RelNode postFilterPushdownPlan = filterPushdown(joinOptPlan);
@@ -153,21 +153,25 @@ public class Optimizer {
     return hepPlanner.findBestExp();
   }
 
-  private RelNode joinOptimize(RelNode relNode, String schemaName) {
-    // set config
-    FPDBRelMdRowCount.THREAD_HASH_KEYS.set(getHashKeys(schemaName));
-    FPDBRelMdRowCount.THREAD_FIND_PUSHABLE_HASH_JOINS.set(findPushableHashJoins);
+  private RelNode joinOptimize(RelNode relNode, String schemaName, boolean useHeuristicJoinOrdering) {
+    if (useHeuristicJoinOrdering) {
+      // set config
+      FPDBRelMdRowCount.THREAD_HASH_KEYS.set(getHashKeys(schemaName));
+      FPDBRelMdRowCount.THREAD_FIND_PUSHABLE_HASH_JOINS.set(findPushableHashJoins);
 
-    // join optimize
-    Program program = MorePrograms.heuristicJoinOrder(
-            getJoinOptimizeRules(), false, 0, FPDBRelMetadataProvider.INSTANCE);
-    return program.run(
-            planner,
-            relNode,
-            relNode.getTraitSet().plus(EnumerableConvention.INSTANCE),
-            Collections.emptyList(),
-            Collections.emptyList()
-    );
+      // join optimize
+      Program program = MorePrograms.heuristicJoinOrder(
+              getJoinOptimizeRules(), false, 0, FPDBRelMetadataProvider.INSTANCE);
+      return program.run(
+              planner,
+              relNode,
+              relNode.getTraitSet().plus(EnumerableConvention.INSTANCE),
+              Collections.emptyList(),
+              Collections.emptyList()
+      );
+    } else {
+      return relNode;
+    }
   }
 
   private RelNode trim(RelNode relNode) {

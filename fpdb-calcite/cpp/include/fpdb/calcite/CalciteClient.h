@@ -20,7 +20,7 @@ public:
   void startServer();
   void stopClient();
   void shutdownServer();
-  string planQuery(const string& query, const string& schemaName);
+  string planQuery(const string& query, const string& schemaName, bool useHeuristicJoinOrdering = true);
 
 private:
   shared_ptr<CalciteConfig> calciteConfig_;

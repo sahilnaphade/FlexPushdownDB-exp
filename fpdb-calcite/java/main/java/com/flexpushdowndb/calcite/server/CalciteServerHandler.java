@@ -44,11 +44,11 @@ public class CalciteServerHandler implements CalciteServer.Iface{
   }
 
   @Override
-  public TPlanResult sql2Plan(String query, String schemaName) throws TException {
+  public TPlanResult sql2Plan(String query, String schemaName, boolean useHeuristicJoinOrdering) throws TException {
     long startTime = System.currentTimeMillis();
     TPlanResult tPlanResult = new TPlanResult();
     try {
-      OptimizeResult optimizeResult = optimizer.planQuery(query, schemaName);
+      OptimizeResult optimizeResult = optimizer.planQuery(query, schemaName, useHeuristicJoinOrdering);
       tPlanResult.plan_result = RelJsonSerializer
               .serialize(optimizeResult.getPlan(), optimizeResult.getPushableHashJoins())
               .toString(2);

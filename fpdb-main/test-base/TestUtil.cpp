@@ -83,6 +83,29 @@ bool TestUtil::e2eNoStartCalciteServer(const string &schemaName,
   }
 }
 
+bool TestUtil::e2eNoStartCalciteServerNoHeuristicJoinOrdering(const string &schemaName,
+                                                              const vector<string> &queryFileNames, int parallelDegree,
+                                                              bool isDistributed, ObjStoreType objStoreType,
+                                                              const shared_ptr<Mode> &mode,
+                                                              CachingPolicyType cachingPolicyType, size_t cacheSize) {
+  TestUtil testUtil(schemaName,
+                    queryFileNames,
+                    parallelDegree,
+                    isDistributed,
+                    objStoreType,
+                    mode,
+                    cachingPolicyType,
+                    cacheSize);
+  testUtil.setUseHeuristicJoinOrdering(false);
+  try {
+    testUtil.runTest();
+    return true;
+  } catch (const runtime_error &err) {
+    cout << err.what() << endl;
+    return false;
+  }
+}
+
 void TestUtil::writeQueryToFile(const std::string queryFileName, const std::string query) {
   std::string queryFilePath = std::filesystem::current_path()
           .parent_path()
@@ -103,6 +126,10 @@ void TestUtil::removeQueryFile(const std::string queryFileName) {
 
 double TestUtil::getCrtQueryHitRatio() const {
   return crtQueryHitRatio_;
+}
+
+void TestUtil::setUseHeuristicJoinOrdering(bool useHeuristicJoinOrdering) {
+  useHeuristicJoinOrdering_ = useHeuristicJoinOrdering;
 }
 
 void TestUtil::setFixLayoutIndices(const set<int> &fixLayoutIndices) {
@@ -275,7 +302,7 @@ void TestUtil::executeQueryFile(const string &queryFileName) {
           .append(queryFileName)
           .string();
   string query = readFile(queryPath);
-  string planResult = calciteClient_->planQuery(query, schemaName_);
+  string planResult = calciteClient_->planQuery(query, schemaName_, useHeuristicJoinOrdering_);
 
   // deserialize plan json string into prephysical plan
   auto prePhysicalPlan = CalcitePlanJsonDeserializer::deserialize(planResult, catalogueEntry_);
