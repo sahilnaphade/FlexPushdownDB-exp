@@ -74,6 +74,7 @@ add_executable(fpdb-main-bench
         test-base/Globals.h
         test-base/TestUtil.cpp test-base/TestUtil.h
         test-base/MainTest.cpp
+        bench/SSBDistFPDBStoreBench.cpp
         bench/TPCHBench.cpp
         bench/TPCHDistBench.cpp
         bench/TPCHFPDBStoreDiffNodeBench.cpp
