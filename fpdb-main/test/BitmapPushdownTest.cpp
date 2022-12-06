@@ -361,7 +361,7 @@ TEST_CASE ("bitmap-pushdown-test-benchmark-query-storage-bitmap-ssb-1.1" * docte
   BitmapPushdownTestUtil::run_bitmap_pushdown_benchmark_query(cachingQuery,
                                                               testQuery,
                                                               true,
-                                                              0.01,
+                                                              "0.01",
                                                               PARALLEL_FPDB_STORE_SAME_NODE,
                                                               true);
 }
@@ -397,7 +397,7 @@ TEST_CASE ("bitmap-pushdown-test-benchmark-query-storage-bitmap-tpch-03" * docte
   BitmapPushdownTestUtil::run_bitmap_pushdown_benchmark_query(cachingQuery,
                                                               testQuery,
                                                               false,
-                                                              0.01,
+                                                              "0.01",
                                                               PARALLEL_FPDB_STORE_SAME_NODE,
                                                               true);
 }
@@ -415,7 +415,7 @@ TEST_CASE ("bitmap-pushdown-test-benchmark-query-storage-bitmap-tpch-04" * docte
   BitmapPushdownTestUtil::run_bitmap_pushdown_benchmark_query(cachingQuery,
                                                               testQuery,
                                                               false,
-                                                              0.01,
+                                                              "0.01",
                                                               PARALLEL_FPDB_STORE_SAME_NODE,
                                                               true);
 }
@@ -452,7 +452,7 @@ TEST_CASE ("bitmap-pushdown-test-benchmark-query-storage-bitmap-tpch-12" * docte
   BitmapPushdownTestUtil::run_bitmap_pushdown_benchmark_query(cachingQuery,
                                                               testQuery,
                                                               false,
-                                                              0.01,
+                                                              "0.01",
                                                               PARALLEL_FPDB_STORE_SAME_NODE,
                                                               true);
 }
@@ -478,7 +478,7 @@ TEST_CASE ("bitmap-pushdown-test-benchmark-query-storage-bitmap-tpch-14" * docte
   BitmapPushdownTestUtil::run_bitmap_pushdown_benchmark_query(cachingQuery,
                                                               testQuery,
                                                               false,
-                                                              0.01,
+                                                              "0.01",
                                                               PARALLEL_FPDB_STORE_SAME_NODE,
                                                               true);
 }
@@ -526,7 +526,7 @@ TEST_CASE ("bitmap-pushdown-test-benchmark-query-storage-bitmap-tpch-19" * docte
   BitmapPushdownTestUtil::run_bitmap_pushdown_benchmark_query(cachingQuery,
                                                               testQuery,
                                                               false,
-                                                              0.01,
+                                                              "0.01",
                                                               PARALLEL_FPDB_STORE_SAME_NODE,
                                                               true);
 }
@@ -548,7 +548,7 @@ TEST_CASE ("bitmap-pushdown-test-benchmark-query-compute-bitmap-ssb-1.1" * docte
   BitmapPushdownTestUtil::run_bitmap_pushdown_benchmark_query(cachingQuery,
                                                               testQuery,
                                                               true,
-                                                              0.01,
+                                                              "0.01",
                                                               PARALLEL_FPDB_STORE_SAME_NODE,
                                                               true);
 }
@@ -586,7 +586,7 @@ TEST_CASE ("bitmap-pushdown-test-benchmark-query-compute-bitmap-tpch-03" * docte
   BitmapPushdownTestUtil::run_bitmap_pushdown_benchmark_query(cachingQuery,
                                                               testQuery,
                                                               false,
-                                                              0.01,
+                                                              "0.01",
                                                               PARALLEL_FPDB_STORE_SAME_NODE,
                                                               true);
 }
@@ -604,7 +604,7 @@ TEST_CASE ("bitmap-pushdown-test-benchmark-query-compute-bitmap-tpch-04" * docte
   BitmapPushdownTestUtil::run_bitmap_pushdown_benchmark_query(cachingQuery,
                                                               testQuery,
                                                               false,
-                                                              0.01,
+                                                              "0.01",
                                                               PARALLEL_FPDB_STORE_SAME_NODE,
                                                               true);
 }
@@ -622,7 +622,7 @@ TEST_CASE ("bitmap-pushdown-test-benchmark-query-compute-bitmap-tpch-12" * docte
   BitmapPushdownTestUtil::run_bitmap_pushdown_benchmark_query(cachingQuery,
                                                               testQuery,
                                                               false,
-                                                              0.01,
+                                                              "0.01",
                                                               PARALLEL_FPDB_STORE_SAME_NODE,
                                                               true);
 }
@@ -648,7 +648,7 @@ TEST_CASE ("bitmap-pushdown-test-benchmark-query-compute-bitmap-tpch-14" * docte
   BitmapPushdownTestUtil::run_bitmap_pushdown_benchmark_query(cachingQuery,
                                                               testQuery,
                                                               false,
-                                                              0.01,
+                                                              "0.01",
                                                               PARALLEL_FPDB_STORE_SAME_NODE,
                                                               true);
 }
@@ -666,7 +666,7 @@ TEST_CASE ("bitmap-pushdown-test-benchmark-query-compute-bitmap-tpch-19" * docte
   BitmapPushdownTestUtil::run_bitmap_pushdown_benchmark_query(cachingQuery,
                                                               testQuery,
                                                               false,
-                                                              0.01,
+                                                              "0.01",
                                                               PARALLEL_FPDB_STORE_SAME_NODE,
                                                               true);
 }

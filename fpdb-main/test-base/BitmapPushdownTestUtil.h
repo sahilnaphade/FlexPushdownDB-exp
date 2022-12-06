@@ -18,7 +18,7 @@ public:
   static void run_bitmap_pushdown_benchmark_query(const std::string &cachingQuery,
                                                   const std::string &testQuery,
                                                   bool isSsb,
-                                                  double sf,
+                                                  const std::string &sf,
                                                   int parallelDegree,
                                                   bool startFPDBStore);
 
