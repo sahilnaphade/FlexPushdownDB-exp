@@ -567,6 +567,112 @@ TEST_CASE ("bitmap-pushdown-benchmark-query-storage-bitmap-tpch-19" * doctest::s
 
 TEST_SUITE ("bitmap-pushdown-benchmark-query-compute-bitmap" * doctest::skip(SKIP_SUITE)) {
 
+TEST_CASE ("bitmap-pushdown-benchmark-query-storage-bitmap-ssb-1.1" * doctest::skip(false || SKIP_SUITE)) {
+  std::string cachingQuery = "select lo_discount, lo_quantity\n"
+                             "from lineorder\n"
+                             "order by lo_discount\n"
+                             "limit 10";
+  string testQuery = readFile(std::filesystem::current_path()
+                                      .parent_path()
+                                      .append("resources/query")
+                                      .append("ssb/original/1.1.sql")
+                                      .string());
+  run_bitmap_pushdown_benchmark_query_test(cachingQuery, testQuery, true);
+}
+
+TEST_CASE ("bitmap-pushdown-benchmark-query-storage-bitmap-tpch-03" * doctest::skip(false || SKIP_SUITE)) {
+  std::string cachingQuery = "select l_shipdate, l_commitdate, l_quantity\n"
+                             "from lineitem\n"
+                             "order by l_shipdate\n"
+                             "limit 10";
+  string testQuery = "select\n"
+                     "  l.l_orderkey,\n"
+                     "  sum(l.l_extendedprice * (1 - l.l_discount)) as revenue,\n"
+                     "  o.o_orderdate,\n"
+                     "  o.o_shippriority\n"
+                     "from\n"
+                     "  customer c,\n"
+                     "  orders o,\n"
+                     "  lineitem l\n"
+                     "where\n"
+                     "  c.c_mktsegment = 'HOUSEHOLD'\n"
+                     "  and c.c_custkey = o.o_custkey\n"
+                     "  and l.l_orderkey = o.o_orderkey\n"
+                     "  and o.o_orderdate < date '1995-03-25'\n"
+                     "  and l.l_shipdate > date '1995-03-25'\n"
+                     "  and l.l_commitdate < date '1996-03-25'\n"
+                     "  and l.l_quantity < 35\n"
+                     "group by\n"
+                     "  l.l_orderkey,\n"
+                     "  o.o_orderdate,\n"
+                     "  o.o_shippriority\n"
+                     "order by\n"
+                     "  revenue desc,\n"
+                     "  o.o_orderdate\n"
+                     "limit 10";
+  run_bitmap_pushdown_benchmark_query_test(cachingQuery, testQuery, false);
+}
+
+TEST_CASE ("bitmap-pushdown-benchmark-query-storage-bitmap-tpch-04" * doctest::skip(false || SKIP_SUITE)) {
+  std::string cachingQuery = "select l_commitdate, l_receiptdate\n"
+                             "from lineitem\n"
+                             "order by l_commitdate\n"
+                             "limit 10";
+  string testQuery = readFile(std::filesystem::current_path()
+                                      .parent_path()
+                                      .append("resources/query")
+                                      .append("tpch/original/04.sql")
+                                      .string());
+  run_bitmap_pushdown_benchmark_query_test(cachingQuery, testQuery, false);
+}
+
+TEST_CASE ("bitmap-pushdown-benchmark-query-storage-bitmap-tpch-12" * doctest::skip(false || SKIP_SUITE)) {
+  std::string cachingQuery = "select l_shipmode, l_commitdate, l_receiptdate, l_shipdate\n"
+                             "from lineitem\n"
+                             "order by l_commitdate\n"
+                             "limit 10";
+  string testQuery = readFile(std::filesystem::current_path()
+                                      .parent_path()
+                                      .append("resources/query")
+                                      .append("tpch/original/12.sql")
+                                      .string());
+  run_bitmap_pushdown_benchmark_query_test(cachingQuery, testQuery, false);
+}
+
+TEST_CASE ("bitmap-pushdown-benchmark-query-storage-bitmap-tpch-14" * doctest::skip(false || SKIP_SUITE)) {
+  std::string cachingQuery = "select l_commitdate, l_shipdate\n"
+                             "from lineitem\n"
+                             "order by l_commitdate\n"
+                             "limit 10";
+  string testQuery = "select\n"
+                     "  100.00 * sum(case\n"
+                     "    when p.p_type like 'PROMO%'\n"
+                     "      then l.l_extendedprice * (1 - l.l_discount)\n"
+                     "    else 0\n"
+                     "  end) / sum(l.l_extendedprice * (1 - l.l_discount)) as promo_revenue\n"
+                     "from\n"
+                     "  lineitem l,\n"
+                     "  part p\n"
+                     "where\n"
+                     "  l.l_partkey = p.p_partkey\n"
+                     "  and l.l_shipdate >= date '1994-08-01'\n"
+                     "  and l.l_commitdate < date '1994-08-01' + interval '3' month";
+  run_bitmap_pushdown_benchmark_query_test(cachingQuery, testQuery, false);
+}
+
+TEST_CASE ("bitmap-pushdown-benchmark-query-storage-bitmap-tpch-19" * doctest::skip(false || SKIP_SUITE)) {
+  std::string cachingQuery = "select l_quantity, l_shipmode, l_shipinstruct\n"
+                             "from lineitem\n"
+                             "order by l_quantity\n"
+                             "limit 10";
+  string testQuery = readFile(std::filesystem::current_path()
+                                      .parent_path()
+                                      .append("resources/query")
+                                      .append("tpch/original/19.sql")
+                                      .string());
+  run_bitmap_pushdown_benchmark_query_test(cachingQuery, testQuery, false);
+}
+
 }
 
 }

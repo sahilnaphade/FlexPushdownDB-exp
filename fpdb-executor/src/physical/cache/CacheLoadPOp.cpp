@@ -16,7 +16,7 @@ using namespace fpdb::util;
 namespace fpdb::executor::physical::cache {
 
 CacheLoadPOp::CacheLoadPOp(const std::string &name,
-                           const std::vector<std::string> &projectColumnNames,
+                           const std::vector<std::string> &,
                            int nodeId,
                            const std::vector<std::string> &predicateColumnNames,
                            const std::vector<std::set<std::string>> &projectColumnGroups,
@@ -25,7 +25,7 @@ CacheLoadPOp::CacheLoadPOp(const std::string &name,
                            int64_t startOffset,
                            int64_t finishOffset,
                            const std::optional<std::shared_ptr<ObjStoreConnector>> &objStoreConnector) :
-  PhysicalOp(name, CACHE_LOAD, projectColumnNames, nodeId),
+  PhysicalOp(name, CACHE_LOAD, union_(projectColumnGroups), nodeId),
   predicateColumnNames_(predicateColumnNames),
   projectColumnGroups_(projectColumnGroups),
   allColumnNames_(allColumnNames),

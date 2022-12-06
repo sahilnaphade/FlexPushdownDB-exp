@@ -45,7 +45,7 @@ namespace fpdb::util {
   bool parseBool(const string& stringToParse);
 
   /**
-   * Union two vectors or one vector with one set
+   * Union func
    */
   template<typename T>
   vector<T> union_(const vector<T> &vec1, const set<T> &set2) {
@@ -58,6 +58,15 @@ namespace fpdb::util {
   vector<T> union_(const vector<T> &vec1, const vector<T> &vec2) {
     set<T> unionSet{vec1.begin(), vec1.end()};
     unionSet.insert(vec2.begin(), vec2.end());
+    return vector<T>{unionSet.begin(), unionSet.end()};
+  }
+
+  template<typename T>
+  vector<T> union_(const vector<set<T>> &sets) {
+    set<T> unionSet;
+    for (const auto &set: sets) {
+      unionSet.insert(set.begin(), set.end());
+    }
     return vector<T>{unionSet.begin(), unionSet.end()};
   }
 
