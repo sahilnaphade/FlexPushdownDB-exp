@@ -4,9 +4,9 @@
 
 #include <doctest/doctest.h>
 #include "TestUtil.h"
+#include "BitmapPushdownTestUtil.h"
 #include "Globals.h"
 #include <fpdb/executor/physical/Globals.h>
-#include <fpdb/plan/prephysical/separable/Globals.h>
 
 using namespace fpdb::util;
 
@@ -346,71 +346,9 @@ TEST_CASE ("bitmap-pushdown-partial-cached-storage-bitmap-only-compute-project" 
 
 }
 
-void set_pushdown_flags(std::unordered_map<std::string, bool> &flags) {
-  flags["group"] = fpdb::executor::physical::ENABLE_GROUP_BY_PUSHDOWN;
-  flags["bloom_filter"] = fpdb::executor::physical::ENABLE_BLOOM_FILTER_PUSHDOWN;
-  flags["shuffle"] = fpdb::executor::physical::ENABLE_SHUFFLE_PUSHDOWN;
-  flags["co_located_join"] = fpdb::plan::prephysical::separable::ENABLE_CO_LOCATED_JOIN_PUSHDOWN;
-  flags["filter_bitmap"] = fpdb::executor::physical::ENABLE_FILTER_BITMAP_PUSHDOWN;
-  fpdb::executor::physical::ENABLE_GROUP_BY_PUSHDOWN = false;
-  fpdb::executor::physical::ENABLE_BLOOM_FILTER_PUSHDOWN = false;
-  fpdb::executor::physical::ENABLE_SHUFFLE_PUSHDOWN = false;
-  fpdb::plan::prephysical::separable::ENABLE_CO_LOCATED_JOIN_PUSHDOWN = false;
-  fpdb::executor::physical::ENABLE_FILTER_BITMAP_PUSHDOWN = true;
-}
+TEST_SUITE ("bitmap-pushdown-test-benchmark-query-storage-bitmap" * doctest::skip(SKIP_SUITE)) {
 
-void reset_pushdown_flags(std::unordered_map<std::string, bool> &flags) {
-  fpdb::executor::physical::ENABLE_GROUP_BY_PUSHDOWN = flags["group"];
-  fpdb::executor::physical::ENABLE_BLOOM_FILTER_PUSHDOWN = flags["bloom_filter"];
-  fpdb::executor::physical::ENABLE_SHUFFLE_PUSHDOWN = flags["shuffle"];
-  fpdb::plan::prephysical::separable::ENABLE_CO_LOCATED_JOIN_PUSHDOWN = flags["co_located_join"];
-  fpdb::executor::physical::ENABLE_FILTER_BITMAP_PUSHDOWN = flags["filter_bitmap"];
-}
-
-void run_bitmap_pushdown_benchmark_query_test(const std::string &cachingQuery, const std::string &testQuery,
-                                              bool isSsb) {
-  std::string cachingQueryFileName = "caching.sql";
-  std::string testQueryFileName = "test.sql";
-
-  // write query to file
-  TestUtil::writeQueryToFile(cachingQueryFileName, cachingQuery);
-  TestUtil::writeQueryToFile(testQueryFileName, testQuery);
-
-  // test
-  startFPDBStoreServer();
-  TestUtil testUtil(isSsb ? "ssb-sf0.01/parquet/" : "tpch-sf0.01/parquet/",
-                    {cachingQueryFileName,
-                     testQueryFileName},
-                    PARALLEL_FPDB_STORE_SAME_NODE,
-                    false,
-                    ObjStoreType::FPDB_STORE,
-                    Mode::hybridMode(),
-                    CachingPolicyType::LFU,
-                    1L * 1024 * 1024 * 1024);
-
-  // enable filter bitmap pushdown
-  std::unordered_map<std::string, bool> flags;
-  set_pushdown_flags(flags);
-
-  // fix cache layout after caching query, otherwise it keeps fetching new segments
-  // which is not intra-partition hybrid execution (i.e. hit data + loaded new cache data is enough for execution,
-  // pushdown part actually does nothing)
-  testUtil.setFixLayoutIndices({0});
-
-  REQUIRE_NOTHROW(testUtil.runTest());
-  stopFPDBStoreServer();
-
-  // reset pushdown flags
-  reset_pushdown_flags(flags);
-
-  // clear query file
-  TestUtil::removeQueryFile(cachingQueryFileName);
-  TestUtil::removeQueryFile(testQueryFileName);
-}
-
-TEST_SUITE ("bitmap-pushdown-benchmark-query-storage-bitmap" * doctest::skip(SKIP_SUITE)) {
-
-TEST_CASE ("bitmap-pushdown-benchmark-query-storage-bitmap-ssb-1.1" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("bitmap-pushdown-test-benchmark-query-storage-bitmap-ssb-1.1" * doctest::skip(false || SKIP_SUITE)) {
   std::string cachingQuery = "select lo_extendedprice, lo_discount, lo_orderdate\n"
                              "from lineorder\n"
                              "order by lo_discount\n"
@@ -420,10 +358,15 @@ TEST_CASE ("bitmap-pushdown-benchmark-query-storage-bitmap-ssb-1.1" * doctest::s
                                       .append("resources/query")
                                       .append("ssb/original/1.1.sql")
                                       .string());
-  run_bitmap_pushdown_benchmark_query_test(cachingQuery, testQuery, true);
+  BitmapPushdownTestUtil::run_bitmap_pushdown_benchmark_query(cachingQuery,
+                                                              testQuery,
+                                                              true,
+                                                              0.01,
+                                                              PARALLEL_FPDB_STORE_SAME_NODE,
+                                                              true);
 }
 
-TEST_CASE ("bitmap-pushdown-benchmark-query-storage-bitmap-tpch-03" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("bitmap-pushdown-test-benchmark-query-storage-bitmap-tpch-03" * doctest::skip(false || SKIP_SUITE)) {
   std::string cachingQuery = "select l_orderkey, l_extendedprice, l_discount\n"
                              "from lineitem\n"
                              "order by l_discount\n"
@@ -451,10 +394,15 @@ TEST_CASE ("bitmap-pushdown-benchmark-query-storage-bitmap-tpch-03" * doctest::s
                      "  revenue desc,\n"
                      "  o.o_orderdate\n"
                      "limit 10";
-  run_bitmap_pushdown_benchmark_query_test(cachingQuery, testQuery, false);
+  BitmapPushdownTestUtil::run_bitmap_pushdown_benchmark_query(cachingQuery,
+                                                              testQuery,
+                                                              false,
+                                                              0.01,
+                                                              PARALLEL_FPDB_STORE_SAME_NODE,
+                                                              true);
 }
 
-TEST_CASE ("bitmap-pushdown-benchmark-query-storage-bitmap-tpch-04" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("bitmap-pushdown-test-benchmark-query-storage-bitmap-tpch-04" * doctest::skip(false || SKIP_SUITE)) {
   std::string cachingQuery = "select l_orderkey\n"
                              "from lineitem\n"
                              "order by l_orderkey\n"
@@ -464,10 +412,15 @@ TEST_CASE ("bitmap-pushdown-benchmark-query-storage-bitmap-tpch-04" * doctest::s
                                       .append("resources/query")
                                       .append("tpch/original/04.sql")
                                       .string());
-  run_bitmap_pushdown_benchmark_query_test(cachingQuery, testQuery, false);
+  BitmapPushdownTestUtil::run_bitmap_pushdown_benchmark_query(cachingQuery,
+                                                              testQuery,
+                                                              false,
+                                                              0.01,
+                                                              PARALLEL_FPDB_STORE_SAME_NODE,
+                                                              true);
 }
 
-TEST_CASE ("bitmap-pushdown-benchmark-query-storage-bitmap-tpch-12" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("bitmap-pushdown-test-benchmark-query-storage-bitmap-tpch-12" * doctest::skip(false || SKIP_SUITE)) {
   std::string cachingQuery = "select l_orderkey, l_shipmode\n"
                              "from lineitem\n"
                              "order by l_orderkey\n"
@@ -496,10 +449,15 @@ TEST_CASE ("bitmap-pushdown-benchmark-query-storage-bitmap-tpch-12" * doctest::s
                      "  l.l_shipmode\n"
                      "order by\n"
                      "  l.l_shipmode";
-  run_bitmap_pushdown_benchmark_query_test(cachingQuery, testQuery, false);
+  BitmapPushdownTestUtil::run_bitmap_pushdown_benchmark_query(cachingQuery,
+                                                              testQuery,
+                                                              false,
+                                                              0.01,
+                                                              PARALLEL_FPDB_STORE_SAME_NODE,
+                                                              true);
 }
 
-TEST_CASE ("bitmap-pushdown-benchmark-query-storage-bitmap-tpch-14" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("bitmap-pushdown-test-benchmark-query-storage-bitmap-tpch-14" * doctest::skip(false || SKIP_SUITE)) {
   std::string cachingQuery = "select l_partkey, l_extendedprice, l_discount\n"
                              "from lineitem\n"
                              "order by l_discount\n"
@@ -517,10 +475,15 @@ TEST_CASE ("bitmap-pushdown-benchmark-query-storage-bitmap-tpch-14" * doctest::s
                      "  l.l_partkey = p.p_partkey\n"
                      "  and l.l_shipdate >= date '1994-08-01'\n"
                      "  and l.l_shipdate < date '1994-08-01' + interval '2' year";
-  run_bitmap_pushdown_benchmark_query_test(cachingQuery, testQuery, false);
+  BitmapPushdownTestUtil::run_bitmap_pushdown_benchmark_query(cachingQuery,
+                                                              testQuery,
+                                                              false,
+                                                              0.01,
+                                                              PARALLEL_FPDB_STORE_SAME_NODE,
+                                                              true);
 }
 
-TEST_CASE ("bitmap-pushdown-benchmark-query-storage-bitmap-tpch-19" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("bitmap-pushdown-test-benchmark-query-storage-bitmap-tpch-19" * doctest::skip(false || SKIP_SUITE)) {
   std::string cachingQuery = "select l_partkey, l_extendedprice, l_discount, l_quantity\n"
                              "from lineitem\n"
                              "order by l_discount\n"
@@ -560,14 +523,19 @@ TEST_CASE ("bitmap-pushdown-benchmark-query-storage-bitmap-tpch-19" * doctest::s
                      "    and l.l_shipmode in ('AIR', 'AIR REG', 'TRUCK', 'MAIL')\n"
                      "    and l.l_shipinstruct in ('DELIVER IN PERSON', 'COLLECT COD')\n"
                      "  )";
-  run_bitmap_pushdown_benchmark_query_test(cachingQuery, testQuery, false);
+  BitmapPushdownTestUtil::run_bitmap_pushdown_benchmark_query(cachingQuery,
+                                                              testQuery,
+                                                              false,
+                                                              0.01,
+                                                              PARALLEL_FPDB_STORE_SAME_NODE,
+                                                              true);
 }
 
 }
 
-TEST_SUITE ("bitmap-pushdown-benchmark-query-compute-bitmap" * doctest::skip(SKIP_SUITE)) {
+TEST_SUITE ("bitmap-pushdown-test-benchmark-query-compute-bitmap" * doctest::skip(SKIP_SUITE)) {
 
-TEST_CASE ("bitmap-pushdown-benchmark-query-storage-bitmap-ssb-1.1" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("bitmap-pushdown-test-benchmark-query-compute-bitmap-ssb-1.1" * doctest::skip(false || SKIP_SUITE)) {
   std::string cachingQuery = "select lo_discount, lo_quantity\n"
                              "from lineorder\n"
                              "order by lo_discount\n"
@@ -577,10 +545,15 @@ TEST_CASE ("bitmap-pushdown-benchmark-query-storage-bitmap-ssb-1.1" * doctest::s
                                       .append("resources/query")
                                       .append("ssb/original/1.1.sql")
                                       .string());
-  run_bitmap_pushdown_benchmark_query_test(cachingQuery, testQuery, true);
+  BitmapPushdownTestUtil::run_bitmap_pushdown_benchmark_query(cachingQuery,
+                                                              testQuery,
+                                                              true,
+                                                              0.01,
+                                                              PARALLEL_FPDB_STORE_SAME_NODE,
+                                                              true);
 }
 
-TEST_CASE ("bitmap-pushdown-benchmark-query-storage-bitmap-tpch-03" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("bitmap-pushdown-test-benchmark-query-compute-bitmap-tpch-03" * doctest::skip(false || SKIP_SUITE)) {
   std::string cachingQuery = "select l_shipdate, l_commitdate, l_quantity\n"
                              "from lineitem\n"
                              "order by l_shipdate\n"
@@ -610,10 +583,15 @@ TEST_CASE ("bitmap-pushdown-benchmark-query-storage-bitmap-tpch-03" * doctest::s
                      "  revenue desc,\n"
                      "  o.o_orderdate\n"
                      "limit 10";
-  run_bitmap_pushdown_benchmark_query_test(cachingQuery, testQuery, false);
+  BitmapPushdownTestUtil::run_bitmap_pushdown_benchmark_query(cachingQuery,
+                                                              testQuery,
+                                                              false,
+                                                              0.01,
+                                                              PARALLEL_FPDB_STORE_SAME_NODE,
+                                                              true);
 }
 
-TEST_CASE ("bitmap-pushdown-benchmark-query-storage-bitmap-tpch-04" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("bitmap-pushdown-test-benchmark-query-compute-bitmap-tpch-04" * doctest::skip(false || SKIP_SUITE)) {
   std::string cachingQuery = "select l_commitdate, l_receiptdate\n"
                              "from lineitem\n"
                              "order by l_commitdate\n"
@@ -623,10 +601,15 @@ TEST_CASE ("bitmap-pushdown-benchmark-query-storage-bitmap-tpch-04" * doctest::s
                                       .append("resources/query")
                                       .append("tpch/original/04.sql")
                                       .string());
-  run_bitmap_pushdown_benchmark_query_test(cachingQuery, testQuery, false);
+  BitmapPushdownTestUtil::run_bitmap_pushdown_benchmark_query(cachingQuery,
+                                                              testQuery,
+                                                              false,
+                                                              0.01,
+                                                              PARALLEL_FPDB_STORE_SAME_NODE,
+                                                              true);
 }
 
-TEST_CASE ("bitmap-pushdown-benchmark-query-storage-bitmap-tpch-12" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("bitmap-pushdown-test-benchmark-query-compute-bitmap-tpch-12" * doctest::skip(false || SKIP_SUITE)) {
   std::string cachingQuery = "select l_shipmode, l_commitdate, l_receiptdate, l_shipdate\n"
                              "from lineitem\n"
                              "order by l_commitdate\n"
@@ -636,10 +619,15 @@ TEST_CASE ("bitmap-pushdown-benchmark-query-storage-bitmap-tpch-12" * doctest::s
                                       .append("resources/query")
                                       .append("tpch/original/12.sql")
                                       .string());
-  run_bitmap_pushdown_benchmark_query_test(cachingQuery, testQuery, false);
+  BitmapPushdownTestUtil::run_bitmap_pushdown_benchmark_query(cachingQuery,
+                                                              testQuery,
+                                                              false,
+                                                              0.01,
+                                                              PARALLEL_FPDB_STORE_SAME_NODE,
+                                                              true);
 }
 
-TEST_CASE ("bitmap-pushdown-benchmark-query-storage-bitmap-tpch-14" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("bitmap-pushdown-test-benchmark-query-compute-bitmap-tpch-14" * doctest::skip(false || SKIP_SUITE)) {
   std::string cachingQuery = "select l_commitdate, l_shipdate\n"
                              "from lineitem\n"
                              "order by l_commitdate\n"
@@ -657,10 +645,15 @@ TEST_CASE ("bitmap-pushdown-benchmark-query-storage-bitmap-tpch-14" * doctest::s
                      "  l.l_partkey = p.p_partkey\n"
                      "  and l.l_shipdate >= date '1994-08-01'\n"
                      "  and l.l_commitdate < date '1994-08-01' + interval '3' month";
-  run_bitmap_pushdown_benchmark_query_test(cachingQuery, testQuery, false);
+  BitmapPushdownTestUtil::run_bitmap_pushdown_benchmark_query(cachingQuery,
+                                                              testQuery,
+                                                              false,
+                                                              0.01,
+                                                              PARALLEL_FPDB_STORE_SAME_NODE,
+                                                              true);
 }
 
-TEST_CASE ("bitmap-pushdown-benchmark-query-storage-bitmap-tpch-19" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("bitmap-pushdown-test-benchmark-query-compute-bitmap-tpch-19" * doctest::skip(false || SKIP_SUITE)) {
   std::string cachingQuery = "select l_quantity, l_shipmode, l_shipinstruct\n"
                              "from lineitem\n"
                              "order by l_quantity\n"
@@ -670,7 +663,12 @@ TEST_CASE ("bitmap-pushdown-benchmark-query-storage-bitmap-tpch-19" * doctest::s
                                       .append("resources/query")
                                       .append("tpch/original/19.sql")
                                       .string());
-  run_bitmap_pushdown_benchmark_query_test(cachingQuery, testQuery, false);
+  BitmapPushdownTestUtil::run_bitmap_pushdown_benchmark_query(cachingQuery,
+                                                              testQuery,
+                                                              false,
+                                                              0.01,
+                                                              PARALLEL_FPDB_STORE_SAME_NODE,
+                                                              true);
 }
 
 }

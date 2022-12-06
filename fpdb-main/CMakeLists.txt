@@ -40,8 +40,9 @@ add_dependencies(fpdb-main-server resources)
 
 add_executable(fpdb-main-test
         test-base/Globals.h
-        test-base/TestUtil.cpp test-base/TestUtil.h
         test-base/MainTest.cpp
+        test-base/TestUtil.cpp test-base/TestUtil.h
+        test-base/BitmapPushdownTestUtil.cpp test-base/BitmapPushdownTestUtil.h
         test/SSBTest.cpp
         test/SSBFPDBStoreSameNodeTest.cpp
         test/TPCHTest.cpp
@@ -72,8 +73,9 @@ add_custom_command(
 
 add_executable(fpdb-main-bench
         test-base/Globals.h
-        test-base/TestUtil.cpp test-base/TestUtil.h
         test-base/MainTest.cpp
+        test-base/TestUtil.cpp test-base/TestUtil.h
+        test-base/BitmapPushdownTestUtil.cpp test-base/BitmapPushdownTestUtil.h
         bench/SSBDistFPDBStoreBench.cpp
         bench/TPCHBench.cpp
         bench/TPCHDistBench.cpp
