@@ -430,8 +430,9 @@ std::shared_ptr<TupleSet> SelectPOp::readTuples() {
 
 void SelectPOp::processScanMessage(const ScanMessage &message) {
   // This is for hybrid caching as we later determine which columns to pull up
-  setProjectColumnNames(message.getColumnNames());
-  columnsReadFromS3_ = std::vector<std::shared_ptr<std::pair<std::string, ::arrow::ArrayVector>>>(message.getColumnNames().size());
+  auto projectColumnNames = message.getProjectColumnNames();
+  setProjectColumnNames(projectColumnNames);
+  columnsReadFromS3_ = std::vector<std::shared_ptr<std::pair<std::string, ::arrow::ArrayVector>>>(projectColumnNames.size());
 }
 
 int subStrNum(const std::string& str, const std::string& sub) {

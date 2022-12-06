@@ -234,9 +234,10 @@ PrePToFPDBStorePTransformer::addSeparablePOp(vector<shared_ptr<PhysicalOp>> &pro
     PrePToPTransformerUtil::connectOneToOne(producers, separablePOps);
     return {separablePOps, separablePOps, false};
   }
-  // currently only pushdown-only mode is supported
+  // TODO: support hybrid
   if (mode->id() != ModeId::PUSHDOWN_ONLY) {
-    throw runtime_error("Hybrid mode for adding separablePOp to FPDBStoreSuperPOp is not implemented");
+    PrePToPTransformerUtil::connectOneToOne(producers, separablePOps);
+    return {separablePOps, separablePOps, false};
   }
 
   // check if hash-join is pushed
@@ -646,6 +647,10 @@ PrePToFPDBStorePTransformer::transformPushdownOnlyToHybrid(const vector<shared_p
     auto storeLastPOpName = *storeCollatePOp->producers().begin();
     auto storeLastPOp = storePOpMap.find(storeLastPOpName)->second;
     auto localLastPOp = storePOpToLocalPOp.find(storeLastPOp)->second;
+    if (localLastPOp->getType() == POpType::CACHE_LOAD) {
+      // this means the separable part is just a scan operator, so needs to set mergePOp1 as the last local op
+      localLastPOp = *mergePOp1;
+    }
 
     (*mergePOp2)->setLeftProducer(localLastPOp);
     localLastPOp->produce(*mergePOp2);

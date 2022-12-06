@@ -55,8 +55,9 @@ void FileScanAbstractPOp::onStart() {
 }
 
 void FileScanAbstractPOp::onCacheLoadResponse(const ScanMessage &message) {
+  auto projectColumnNames = message.getProjectColumnNames();
   if (message.isResultNeeded()) {
-    readAndSendTuples(message.getColumnNames());
+    readAndSendTuples(projectColumnNames);
   } else {
     // send empty tupleSet and complete first
     auto emptyTupleSet = TupleSet::makeWithEmptyTable();
@@ -65,7 +66,7 @@ void FileScanAbstractPOp::onCacheLoadResponse(const ScanMessage &message) {
     ctx()->notifyComplete();
 
     // just to cache
-    readTuples(message.getColumnNames());
+    readTuples(projectColumnNames);
   }
 }
 

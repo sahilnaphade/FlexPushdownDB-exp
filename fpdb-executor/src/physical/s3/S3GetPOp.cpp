@@ -512,7 +512,7 @@ std::shared_ptr<TupleSet> S3GetPOp::readTuples() {
 void S3GetPOp::processScanMessage(const ScanMessage &message) {
   // This is for hybrid caching as we later determine which columns to pull up
   // Though currently this is only called for SELECT in our system
-  setProjectColumnNames(message.getColumnNames());
+  setProjectColumnNames(message.getProjectColumnNames());
 }
 
 void S3GetPOp::clear() {

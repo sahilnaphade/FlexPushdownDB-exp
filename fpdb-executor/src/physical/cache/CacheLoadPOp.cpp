@@ -188,11 +188,15 @@ void CacheLoadPOp::onCacheLoadResponse(const LoadResponseMessage &message) {
   ctx()->send(hitMessage, *hitOperatorName_);
 
   // To missOperatorToCache
-  auto missCachingMessage = std::make_shared<ScanMessage>(missCachingColumnNames, this->name(), cachingColumnsNeeded);
+  auto missCachingMessage = std::make_shared<ScanMessage>(std::vector<std::string>{},
+                                                          missCachingColumnNames,
+                                                          this->name(),
+                                                          cachingColumnsNeeded);
   ctx()->send(missCachingMessage, *missOperatorToCacheName_);
 
   // To missOperatorToPushdown, need to distinguish between S3 and fpdb-store, and whether bitmap pushdown is enabled
   if (missOperatorToPushdownName_.has_value()) {
+    std::vector<std::string> scanColumnNames;   // columns to scan at fpdb-store may be different to columns returned
     switch ((*objStoreConnector_)->getStoreType()) {
       case ObjStoreType::S3: {
         missPushdownColumnNames = cachingColumnsNeeded ?
@@ -207,16 +211,18 @@ void CacheLoadPOp::onCacheLoadResponse(const LoadResponseMessage &message) {
                                     std::vector<std::string>(missPushdownProjectColumnNameSet.begin(),
                                                              missPushdownProjectColumnNameSet.end()) :
                                     projectColumnNames_;
+          scanColumnNames = missPushdownColumnNames;
           // Need to add predicateColumnNames for fpdb-store because we push query plan rather than sql
           if (!missPushdownColumnNames.empty()) {
-            missPushdownColumnNames = union_(missPushdownColumnNames, predicateColumnNames_);
+            scanColumnNames = union_(missPushdownColumnNames, predicateColumnNames_);
           }
         } else {
           missPushdownColumnNames = std::vector<std::string>(missPushdownProjectColumnNameSet.begin(),
                                                              missPushdownProjectColumnNameSet.end());
+          scanColumnNames = missPushdownColumnNames;
           // If bitmap cannot be constructed at compute side, need to add predicateColumnNames
           if (!coverAllPredicateColumns) {
-            missPushdownColumnNames = union_(missPushdownColumnNames, predicateColumnNames_);
+            scanColumnNames = union_(missPushdownColumnNames, predicateColumnNames_);
           }
         }
         break;
@@ -226,7 +232,10 @@ void CacheLoadPOp::onCacheLoadResponse(const LoadResponseMessage &message) {
       }
     }
 
-    auto missPushdownMessage = std::make_shared<ScanMessage>(missPushdownColumnNames, this->name(), true);
+    auto missPushdownMessage = std::make_shared<ScanMessage>(scanColumnNames,
+                                                             missPushdownColumnNames,
+                                                             this->name(),
+                                                             true);
     ctx()->send(missPushdownMessage, *missOperatorToPushdownName_);
   }
 

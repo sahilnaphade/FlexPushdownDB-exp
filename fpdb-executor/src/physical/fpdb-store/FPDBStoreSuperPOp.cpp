@@ -166,14 +166,17 @@ void FPDBStoreSuperPOp::onStart() {
 }
 
 void FPDBStoreSuperPOp::onCacheLoadResponse(const ScanMessage &msg) {
-  // check if nothing to process (i.e. no columns in scan message)
-  auto scanColumnNames = msg.getColumnNames();
+  // check if nothing to process (i.e. no columns to scan)
+  // note: it's possible that scan columns is not empty but project columns is, when the storage side purely
+  // constructs filter bitmap without returning any data
+  auto scanColumnNames = msg.getScanColumnNames();
   if (scanColumnNames.empty()) {
     processEmpty();
     return;
   }
+  auto projectColumnNames = msg.getProjectColumnNames();
 
-  // set project column names
+  // set scan column names
   for (const auto &opIt: subPlan_->getPhysicalOps()) {
     auto op = opIt.second;
     if (op->getType() == POpType::FPDB_STORE_FILE_SCAN) {
@@ -181,6 +184,14 @@ void FPDBStoreSuperPOp::onCacheLoadResponse(const ScanMessage &msg) {
       break;
     }
   }
+
+  // set project column names
+  auto expRootOp = subPlan_->getRootPOp();
+  if (!expRootOp.has_value()) {
+    ctx()->notifyError(expRootOp.error());
+    return;
+  }
+  (*expRootOp)->setProjectColumnNames(projectColumnNames);
 
   // set flag
   waitForScanMessage_ = false;

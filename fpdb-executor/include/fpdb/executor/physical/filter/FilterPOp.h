@@ -91,6 +91,7 @@ private:
   void filterTuplesUsingBitmap();
 
   void sendTuples();
+  void sendEmpty();
   void sendSegmentWeight();
   void sendBitmapToRoot();
   void putBitmapToFPDBStore();

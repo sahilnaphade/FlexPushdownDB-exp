@@ -127,11 +127,7 @@ void FilterPOp::onTupleSetRegular() {
   } else {
     // if not applicable, only hybrid execution allows this to happen, where we just send an empty table
     if (isSeparated_) {
-      // empty table
-      auto emptyTupleSet = fpdb::tuple::TupleSet::makeWithEmptyTable();
-      std::shared_ptr<fpdb::executor::message::Message> tupleSetMessage =
-              std::make_shared<TupleSetMessage>(emptyTupleSet, name());
-      ctx()->tell(tupleSetMessage);
+      sendEmpty();
       ctx()->notifyComplete();
     } else {
       ctx()->notifyError("Filter predicate is inapplicable to input tupleSet");
@@ -207,12 +203,17 @@ void FilterPOp::onCompleteBitmapPushdown() {
       // if bitmap is set, it means compute side needs to send constructed bitmap to storage side
       putBitmapToFPDBStore();
     } else {
-      // fetch bitmap from storage side
-      getBitmapFromFPDBStore();
+      // filter using bitmap constructed from storage side, only when there is data to filter
+      if ((*received_)->numColumns() > 0) {
+        // fetch bitmap from storage side
+        getBitmapFromFPDBStore();
 
-      // filter using bitmap
-      filterTuplesUsingBitmap();
-      sendTuples();
+        // filter using bitmap
+        filterTuplesUsingBitmap();
+        sendTuples();
+      } else {
+        sendEmpty();
+      }
     }
 
     // send segment weights if required
@@ -474,6 +475,13 @@ void FilterPOp::sendTuples() {
   ctx()->tell(tupleSetMessage);
 
   filtered_.reset();
+}
+
+void FilterPOp::sendEmpty() {
+  auto emptyTupleSet = fpdb::tuple::TupleSet::makeWithEmptyTable();
+  std::shared_ptr<fpdb::executor::message::Message> tupleSetMessage =
+          std::make_shared<TupleSetMessage>(emptyTupleSet, name());
+  ctx()->tell(tupleSetMessage);
 }
 
 int getPredicateNum(const std::shared_ptr<Expression> &expr) {
