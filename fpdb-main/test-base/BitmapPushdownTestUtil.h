@@ -16,7 +16,8 @@ class BitmapPushdownTestUtil {
 
 public:
   static void run_bitmap_pushdown_benchmark_query(const std::string &cachingQuery,
-                                                  const std::string &testQuery,
+                                                  const std::vector<std::string> &testQueries,
+                                                  const std::vector<std::string> &testQueryFileNames,
                                                   bool isSsb,
                                                   const std::string &sf,
                                                   int parallelDegree,

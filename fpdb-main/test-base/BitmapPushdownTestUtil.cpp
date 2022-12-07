@@ -13,25 +13,32 @@
 namespace fpdb::main::test {
 
 void BitmapPushdownTestUtil::run_bitmap_pushdown_benchmark_query(const std::string &cachingQuery,
-                                                                 const std::string &testQuery,
+                                                                 const std::vector<std::string> &testQueries,
+                                                                 const std::vector<std::string> &testQueryFileNames,
                                                                  bool isSsb,
                                                                  const std::string &sf,
                                                                  int parallelDegree,
                                                                  bool startFPDBStore) {
-  std::string cachingQueryFileName = "caching.sql";
-  std::string testQueryFileName = "test.sql";
+  const std::string cachingQueryFileName = "caching.sql";
 
-  // write query to file
+  // write query to file and make fix layout indices
+  std::set<int> fixLayoutIndices;
   TestUtil::writeQueryToFile(cachingQueryFileName, cachingQuery);
-  TestUtil::writeQueryToFile(testQueryFileName, testQuery);
+  for (size_t i = 0; i < testQueryFileNames.size(); ++i) {
+    TestUtil::writeQueryToFile(testQueryFileNames[i], testQueries[i]);
+    fixLayoutIndices.emplace(i);
+  }
+
+  // combine caching query and test queries
+  std::vector<std::string> queryFileNames{cachingQueryFileName};
+  queryFileNames.insert(queryFileNames.end(), testQueryFileNames.begin(), testQueryFileNames.end());
 
   // test
   if (startFPDBStore) {
     startFPDBStoreServer();
   }
   TestUtil testUtil(isSsb ? fmt::format("ssb-sf{}/parquet/", sf) : fmt::format("tpch-sf{}/parquet/", sf),
-                    {cachingQueryFileName,
-                     testQueryFileName},
+                    queryFileNames,
                     parallelDegree,
                     false,
                     ObjStoreType::FPDB_STORE,
@@ -46,7 +53,7 @@ void BitmapPushdownTestUtil::run_bitmap_pushdown_benchmark_query(const std::stri
   // fix cache layout after caching query, otherwise it keeps fetching new segments
   // which is not intra-partition hybrid execution (i.e. hit data + loaded new cache data is enough for execution,
   // pushdown part actually does nothing)
-  testUtil.setFixLayoutIndices({0});
+  testUtil.setFixLayoutIndices(fixLayoutIndices);
 
   REQUIRE_NOTHROW(testUtil.runTest());
   if (startFPDBStore) {
@@ -58,7 +65,9 @@ void BitmapPushdownTestUtil::run_bitmap_pushdown_benchmark_query(const std::stri
 
   // clear query file
   TestUtil::removeQueryFile(cachingQueryFileName);
-  TestUtil::removeQueryFile(testQueryFileName);
+  for (size_t i = 0; i < testQueryFileNames.size(); ++i) {
+    TestUtil::removeQueryFile(testQueryFileNames[i]);
+  }
 }
 
 void BitmapPushdownTestUtil::set_pushdown_flags(std::unordered_map<std::string, bool> &flags) {

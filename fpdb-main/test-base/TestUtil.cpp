@@ -282,7 +282,7 @@ void TestUtil::makeExecutor() {
                                     nodes_,
                                     mode_,
                                     cachingPolicy_,
-                                    true,
+                                    false,
                                     false);
   executor_->start();
 

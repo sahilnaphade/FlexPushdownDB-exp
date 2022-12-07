@@ -353,13 +353,22 @@ TEST_CASE ("bitmap-pushdown-test-benchmark-query-storage-bitmap-ssb-1.1" * docte
                              "from lineorder\n"
                              "order by lo_discount\n"
                              "limit 10";
-  string testQuery = readFile(std::filesystem::current_path()
-                                      .parent_path()
-                                      .append("resources/query")
-                                      .append("ssb/original/1.1.sql")
-                                      .string());
+  std::string testQueryTemplate = "select sum(lo_extendedprice * lo_discount) as revenue\n"
+                                  "from lineorder,\n"
+                                  "     \"date\"\n"
+                                  "where lo_orderdate = d_datekey\n"
+                                  "  and d_year = 1992\n"
+                                  "  and lo_discount between 0 and 10\n"
+                                  "  and lo_quantity < {}";
+  std::vector<std::string> testQueries;
+  std::vector<std::string> testQueryFileNames;
+  for (double sel = 0.0; sel < 1.0; sel += 0.1) {
+    testQueries.emplace_back(fmt::format(testQueryTemplate, (int)(50 * sel)));
+    testQueryFileNames.emplace_back(fmt::format("ssb-1.1-sel-{:.1f}", sel));
+  }
   BitmapPushdownTestUtil::run_bitmap_pushdown_benchmark_query(cachingQuery,
-                                                              testQuery,
+                                                              testQueries,
+                                                              testQueryFileNames,
                                                               true,
                                                               "0.01",
                                                               PARALLEL_FPDB_STORE_SAME_NODE,
@@ -371,31 +380,39 @@ TEST_CASE ("bitmap-pushdown-test-benchmark-query-storage-bitmap-tpch-03" * docte
                              "from lineitem\n"
                              "order by l_discount\n"
                              "limit 10";
-  string testQuery = "select\n"
-                     "  l.l_orderkey,\n"
-                     "  sum(l.l_extendedprice * (1 - l.l_discount)) as revenue,\n"
-                     "  o.o_orderdate,\n"
-                     "  o.o_shippriority\n"
-                     "from\n"
-                     "  customer c,\n"
-                     "  orders o,\n"
-                     "  lineitem l\n"
-                     "where\n"
-                     "  c.c_mktsegment = 'HOUSEHOLD'\n"
-                     "  and c.c_custkey = o.o_custkey\n"
-                     "  and l.l_orderkey = o.o_orderkey\n"
-                     "  and o.o_orderdate < date '1992-03-25'\n"
-                     "  and l.l_shipdate > date '1992-03-25'\n"
-                     "group by\n"
-                     "  l.l_orderkey,\n"
-                     "  o.o_orderdate,\n"
-                     "  o.o_shippriority\n"
-                     "order by\n"
-                     "  revenue desc,\n"
-                     "  o.o_orderdate\n"
-                     "limit 10";
+  std::string testQueryTemplate = "select\n"
+                                  "  l.l_orderkey,\n"
+                                  "  sum(l.l_extendedprice * (1 - l.l_discount)) as revenue,\n"
+                                  "  o.o_orderdate,\n"
+                                  "  o.o_shippriority\n"
+                                  "from\n"
+                                  "  customer c,\n"
+                                  "  orders o,\n"
+                                  "  lineitem l\n"
+                                  "where\n"
+                                  "  c.c_mktsegment = 'HOUSEHOLD'\n"
+                                  "  and c.c_custkey = o.o_custkey\n"
+                                  "  and l.l_orderkey = o.o_orderkey\n"
+                                  "  and o.o_orderdate < date '1992-03-25'\n"
+                                  "  and l.l_shipdate > date '1991-01-01'\n"
+                                  "  and l.l_quantity < {}\n"
+                                  "group by\n"
+                                  "  l.l_orderkey,\n"
+                                  "  o.o_orderdate,\n"
+                                  "  o.o_shippriority\n"
+                                  "order by\n"
+                                  "  revenue desc,\n"
+                                  "  o.o_orderdate\n"
+                                  "limit 10";
+  std::vector<std::string> testQueries;
+  std::vector<std::string> testQueryFileNames;
+  for (double sel = 0.0; sel < 1.0; sel += 0.1) {
+    testQueries.emplace_back(fmt::format(testQueryTemplate, (int)(50 * sel)));
+    testQueryFileNames.emplace_back(fmt::format("tpch-03-sel-{:.1f}", sel));
+  }
   BitmapPushdownTestUtil::run_bitmap_pushdown_benchmark_query(cachingQuery,
-                                                              testQuery,
+                                                              testQueries,
+                                                              testQueryFileNames,
                                                               false,
                                                               "0.01",
                                                               PARALLEL_FPDB_STORE_SAME_NODE,
@@ -407,13 +424,39 @@ TEST_CASE ("bitmap-pushdown-test-benchmark-query-storage-bitmap-tpch-04" * docte
                              "from lineitem\n"
                              "order by l_orderkey\n"
                              "limit 10";
-  string testQuery = readFile(std::filesystem::current_path()
-                                      .parent_path()
-                                      .append("resources/query")
-                                      .append("tpch/original/04.sql")
-                                      .string());
+  std::string testQueryTemplate = "select\n"
+                                  "  o.o_orderpriority,\n"
+                                  "  count(*) as order_count\n"
+                                  "from\n"
+                                  "  orders o\n"
+                                  "where\n"
+                                  "  o.o_orderdate >= date '1996-10-01'\n"
+                                  "  and o.o_orderdate < date '1996-10-01' + interval '3' month\n"
+                                  "  and\n"
+                                  "  exists (\n"
+                                  "    select\n"
+                                  "      *\n"
+                                  "    from\n"
+                                  "      lineitem l\n"
+                                  "    where\n"
+                                  "      l.l_orderkey = o.o_orderkey\n"
+                                  "      and l.l_quantity < {}\n"
+                                  "      and l.l_commitdate > date '1991-01-01'\n"
+                                  "      and l.l_receiptdate > date '1991-01-01'\n"
+                                  "  )\n"
+                                  "group by\n"
+                                  "  o.o_orderpriority\n"
+                                  "order by\n"
+                                  "  o.o_orderpriority";
+  std::vector<std::string> testQueries;
+  std::vector<std::string> testQueryFileNames;
+  for (double sel = 0.0; sel < 1.0; sel += 0.1) {
+    testQueries.emplace_back(fmt::format(testQueryTemplate, (int)(50 * sel)));
+    testQueryFileNames.emplace_back(fmt::format("tpch-04-sel-{:.1f}", sel));
+  }
   BitmapPushdownTestUtil::run_bitmap_pushdown_benchmark_query(cachingQuery,
-                                                              testQuery,
+                                                              testQueries,
+                                                              testQueryFileNames,
                                                               false,
                                                               "0.01",
                                                               PARALLEL_FPDB_STORE_SAME_NODE,
@@ -425,32 +468,45 @@ TEST_CASE ("bitmap-pushdown-test-benchmark-query-storage-bitmap-tpch-12" * docte
                              "from lineitem\n"
                              "order by l_orderkey\n"
                              "limit 10";
-  string testQuery = "select\n"
-                     "  l.l_shipmode,\n"
-                     "  sum(case\n"
-                     "    when o.o_orderpriority = '1-URGENT'\n"
-                     "      or o.o_orderpriority = '2-HIGH'\n"
-                     "      then 1\n"
-                     "    else 0\n"
-                     "  end) as high_line_count,\n"
-                     "  sum(case\n"
-                     "    when o.o_orderpriority <> '1-URGENT'\n"
-                     "      and o.o_orderpriority <> '2-HIGH'\n"
-                     "      then 1\n"
-                     "    else 0\n"
-                     "  end) as low_line_count\n"
-                     "from\n"
-                     "  orders o,\n"
-                     "  lineitem l\n"
-                     "where\n"
-                     "  o.o_orderkey = l.l_orderkey\n"
-                     "  and l.l_receiptdate >= date '1992-01-01'\n"
-                     "group by\n"
-                     "  l.l_shipmode\n"
-                     "order by\n"
-                     "  l.l_shipmode";
+  std::string testQueryTemplate = "select\n"
+                                  "  l.l_shipmode,\n"
+                                  "  sum(case\n"
+                                  "    when o.o_orderpriority = '1-URGENT'\n"
+                                  "      or o.o_orderpriority = '2-HIGH'\n"
+                                  "      then 1\n"
+                                  "    else 0\n"
+                                  "  end) as high_line_count,\n"
+                                  "  sum(case\n"
+                                  "    when o.o_orderpriority <> '1-URGENT'\n"
+                                  "      and o.o_orderpriority <> '2-HIGH'\n"
+                                  "      then 1\n"
+                                  "    else 0\n"
+                                  "  end) as low_line_count\n"
+                                  "from\n"
+                                  "  orders o,\n"
+                                  "  lineitem l\n"
+                                  "where\n"
+                                  "  o.o_orderkey = l.l_orderkey\n"
+                                  "  and o.o_orderdate >= date '1993-10-01'\n"
+                                  "  and o.o_orderdate < date '1993-10-01' + interval '3' month"
+                                  "  and l.l_quantity < {}\n"
+                                  "  and l.l_shipmode >= '0'\n"
+                                  "  and l.l_commitdate > date '1991-01-01'\n"
+                                  "  and l.l_shipdate > date '1991-01-01'\n"
+                                  "  and l.l_receiptdate > date '1991-01-01'\n"
+                                  "group by\n"
+                                  "  l.l_shipmode\n"
+                                  "order by\n"
+                                  "  l.l_shipmode";
+  std::vector<std::string> testQueries;
+  std::vector<std::string> testQueryFileNames;
+  for (double sel = 0.0; sel < 1.0; sel += 0.1) {
+    testQueries.emplace_back(fmt::format(testQueryTemplate, (int)(50 * sel)));
+    testQueryFileNames.emplace_back(fmt::format("tpch-12-sel-{:.1f}", sel));
+  }
   BitmapPushdownTestUtil::run_bitmap_pushdown_benchmark_query(cachingQuery,
-                                                              testQuery,
+                                                              testQueries,
+                                                              testQueryFileNames,
                                                               false,
                                                               "0.01",
                                                               PARALLEL_FPDB_STORE_SAME_NODE,
@@ -462,21 +518,30 @@ TEST_CASE ("bitmap-pushdown-test-benchmark-query-storage-bitmap-tpch-14" * docte
                              "from lineitem\n"
                              "order by l_discount\n"
                              "limit 10";
-  string testQuery = "select\n"
-                     "  100.00 * sum(case\n"
-                     "    when p.p_type like 'PROMO%'\n"
-                     "      then l.l_extendedprice * (1 - l.l_discount)\n"
-                     "    else 0\n"
-                     "  end) / sum(l.l_extendedprice * (1 - l.l_discount)) as promo_revenue\n"
-                     "from\n"
-                     "  lineitem l,\n"
-                     "  part p\n"
-                     "where\n"
-                     "  l.l_partkey = p.p_partkey\n"
-                     "  and l.l_shipdate >= date '1994-08-01'\n"
-                     "  and l.l_shipdate < date '1994-08-01' + interval '2' year";
+  std::string testQueryTemplate = "select\n"
+                                  "  100.00 * sum(case\n"
+                                  "    when p.p_type like 'PROMO%'\n"
+                                  "      then l.l_extendedprice * (1 - l.l_discount)\n"
+                                  "    else 0\n"
+                                  "  end) / (sum(l.l_extendedprice * (1 - l.l_discount)) + 1) as promo_revenue\n"
+                                  "from\n"
+                                  "  lineitem l,\n"
+                                  "  part p\n"
+                                  "where\n"
+                                  "  l.l_partkey = p.p_partkey\n"
+                                  "  and p.p_brand = 'Brand#41'"
+                                  "  and l.l_quantity < {}\n"
+                                  "  and l.l_shipdate >= date '1991-01-01'\n"
+                                  "  and l.l_shipdate < date '1999-01-01'";
+  std::vector<std::string> testQueries;
+  std::vector<std::string> testQueryFileNames;
+  for (double sel = 0.0; sel < 1.0; sel += 0.1) {
+    testQueries.emplace_back(fmt::format(testQueryTemplate, (int)(50 * sel)));
+    testQueryFileNames.emplace_back(fmt::format("tpch-14-sel-{:.1f}", sel));
+  }
   BitmapPushdownTestUtil::run_bitmap_pushdown_benchmark_query(cachingQuery,
-                                                              testQuery,
+                                                              testQueries,
+                                                              testQueryFileNames,
                                                               false,
                                                               "0.01",
                                                               PARALLEL_FPDB_STORE_SAME_NODE,
@@ -488,43 +553,50 @@ TEST_CASE ("bitmap-pushdown-test-benchmark-query-storage-bitmap-tpch-19" * docte
                              "from lineitem\n"
                              "order by l_discount\n"
                              "limit 10";
-  string testQuery = "select\n"
-                     "  sum(l.l_extendedprice* (1 - l.l_discount)) as revenue\n"
-                     "from\n"
-                     "  lineitem l,\n"
-                     "  part p\n"
-                     "where\n"
-                     "  (\n"
-                     "    p.p_partkey = l.l_partkey\n"
-                     "    and p.p_brand = 'Brand#41'\n"
-                     "    and p.p_container in ('SM CASE', 'SM BOX', 'SM PACK', 'SM PKG')\n"
-                     "    and l.l_quantity >= 2 and l.l_quantity <= 2 + 10\n"
-                     "    and p.p_size between 1 and 5\n"
-                     "    and l.l_shipmode in ('AIR', 'AIR REG', 'TRUCK', 'MAIL')\n"
-                     "    and l.l_shipinstruct in ('DELIVER IN PERSON', 'COLLECT COD')\n"
-                     "  )\n"
-                     "  or\n"
-                     "  (\n"
-                     "    p.p_partkey = l.l_partkey\n"
-                     "    and p.p_brand = 'Brand#13'\n"
-                     "    and p.p_container in ('MED BAG', 'MED BOX', 'MED PKG', 'MED PACK')\n"
-                     "    and l.l_quantity >= 14 and l.l_quantity <= 14 + 10\n"
-                     "    and p.p_size between 1 and 10\n"
-                     "    and l.l_shipmode in ('AIR', 'AIR REG', 'TRUCK', 'MAIL')\n"
-                     "    and l.l_shipinstruct in ('DELIVER IN PERSON', 'COLLECT COD')\n"
-                     "  )\n"
-                     "  or\n"
-                     "  (\n"
-                     "    p.p_partkey = l.l_partkey\n"
-                     "    and p.p_brand = 'Brand#55'\n"
-                     "    and p.p_container in ('LG CASE', 'LG BOX', 'LG PACK', 'LG PKG')\n"
-                     "    and l.l_quantity >= 23 and l.l_quantity <= 23 + 10\n"
-                     "    and p.p_size between 1 and 15\n"
-                     "    and l.l_shipmode in ('AIR', 'AIR REG', 'TRUCK', 'MAIL')\n"
-                     "    and l.l_shipinstruct in ('DELIVER IN PERSON', 'COLLECT COD')\n"
-                     "  )";
+  std::string testQueryTemplate = "select\n"
+                                  "  sum(l.l_extendedprice* (1 - l.l_discount)) as revenue\n"
+                                  "from\n"
+                                  "  lineitem l,\n"
+                                  "  part p\n"
+                                  "where\n"
+                                  "  (\n"
+                                  "    p.p_partkey = l.l_partkey\n"
+                                  "    and p.p_brand = 'Brand#41'\n"
+                                  "    and p.p_container in ('SM CASE', 'SM BOX', 'SM PACK', 'SM PKG')\n"
+                                  "    and l.l_quantity >= 0 and l.l_quantity <= {0}\n"
+                                  "    and p.p_size between 1 and 5\n"
+                                  "    and l.l_shipmode >= '0'\n"
+                                  "    and l.l_shipinstruct >= '0'\n"
+                                  "  )\n"
+                                  "  or\n"
+                                  "  (\n"
+                                  "    p.p_partkey = l.l_partkey\n"
+                                  "    and p.p_brand = 'Brand#13'\n"
+                                  "    and p.p_container in ('MED BAG', 'MED BOX', 'MED PKG', 'MED PACK')\n"
+                                  "    and l.l_quantity >= 0 and l.l_quantity <= {0}\n"
+                                  "    and p.p_size between 6 and 10\n"
+                                  "    and l.l_shipmode >= '0'\n"
+                                  "    and l.l_shipinstruct >= '0'\n"
+                                  "  )\n"
+                                  "  or\n"
+                                  "  (\n"
+                                  "    p.p_partkey = l.l_partkey\n"
+                                  "    and p.p_brand = 'Brand#55'\n"
+                                  "    and p.p_container in ('LG CASE', 'LG BOX', 'LG PACK', 'LG PKG')\n"
+                                  "    and l.l_quantity >= 0 and l.l_quantity <= {0}\n"
+                                  "    and p.p_size between 11 and 15\n"
+                                  "    and l.l_shipmode >= '0'\n"
+                                  "    and l.l_shipinstruct >= '0'\n"
+                                  "  )";
+  std::vector<std::string> testQueries;
+  std::vector<std::string> testQueryFileNames;
+  for (double sel = 0.0; sel < 1.0; sel += 0.1) {
+    testQueries.emplace_back(fmt::format(testQueryTemplate, (int)(50 * sel)));
+    testQueryFileNames.emplace_back(fmt::format("tpch-19-sel-{:.1f}", sel));
+  }
   BitmapPushdownTestUtil::run_bitmap_pushdown_benchmark_query(cachingQuery,
-                                                              testQuery,
+                                                              testQueries,
+                                                              testQueryFileNames,
                                                               false,
                                                               "0.01",
                                                               PARALLEL_FPDB_STORE_SAME_NODE,
@@ -540,13 +612,22 @@ TEST_CASE ("bitmap-pushdown-test-benchmark-query-compute-bitmap-ssb-1.1" * docte
                              "from lineorder\n"
                              "order by lo_discount\n"
                              "limit 10";
-  string testQuery = readFile(std::filesystem::current_path()
-                                      .parent_path()
-                                      .append("resources/query")
-                                      .append("ssb/original/1.1.sql")
-                                      .string());
+  std::string testQueryTemplate = "select sum(lo_extendedprice * lo_discount) as revenue\n"
+                                  "from lineorder,\n"
+                                  "     \"date\"\n"
+                                  "where lo_orderdate = d_datekey\n"
+                                  "  and d_year = 1992\n"
+                                  "  and lo_discount between 0 and 10\n"
+                                  "  and lo_quantity < {}";
+  std::vector<std::string> testQueries;
+  std::vector<std::string> testQueryFileNames;
+  for (double sel = 0.0; sel < 1.0; sel += 0.1) {
+    testQueries.emplace_back(fmt::format(testQueryTemplate, (int)(50 * sel)));
+    testQueryFileNames.emplace_back(fmt::format("ssb-1.1-sel-{:.1f}", sel));
+  }
   BitmapPushdownTestUtil::run_bitmap_pushdown_benchmark_query(cachingQuery,
-                                                              testQuery,
+                                                              testQueries,
+                                                              testQueryFileNames,
                                                               true,
                                                               "0.01",
                                                               PARALLEL_FPDB_STORE_SAME_NODE,
@@ -554,37 +635,43 @@ TEST_CASE ("bitmap-pushdown-test-benchmark-query-compute-bitmap-ssb-1.1" * docte
 }
 
 TEST_CASE ("bitmap-pushdown-test-benchmark-query-compute-bitmap-tpch-03" * doctest::skip(false || SKIP_SUITE)) {
-  std::string cachingQuery = "select l_shipdate, l_commitdate, l_quantity\n"
+  std::string cachingQuery = "select l_shipdate, l_quantity\n"
                              "from lineitem\n"
                              "order by l_shipdate\n"
                              "limit 10";
-  string testQuery = "select\n"
-                     "  l.l_orderkey,\n"
-                     "  sum(l.l_extendedprice * (1 - l.l_discount)) as revenue,\n"
-                     "  o.o_orderdate,\n"
-                     "  o.o_shippriority\n"
-                     "from\n"
-                     "  customer c,\n"
-                     "  orders o,\n"
-                     "  lineitem l\n"
-                     "where\n"
-                     "  c.c_mktsegment = 'HOUSEHOLD'\n"
-                     "  and c.c_custkey = o.o_custkey\n"
-                     "  and l.l_orderkey = o.o_orderkey\n"
-                     "  and o.o_orderdate < date '1995-03-25'\n"
-                     "  and l.l_shipdate > date '1995-03-25'\n"
-                     "  and l.l_commitdate < date '1996-03-25'\n"
-                     "  and l.l_quantity < 35\n"
-                     "group by\n"
-                     "  l.l_orderkey,\n"
-                     "  o.o_orderdate,\n"
-                     "  o.o_shippriority\n"
-                     "order by\n"
-                     "  revenue desc,\n"
-                     "  o.o_orderdate\n"
-                     "limit 10";
+  std::string testQueryTemplate = "select\n"
+                                  "  l.l_orderkey,\n"
+                                  "  sum(l.l_extendedprice * (1 - l.l_discount)) as revenue,\n"
+                                  "  o.o_orderdate,\n"
+                                  "  o.o_shippriority\n"
+                                  "from\n"
+                                  "  customer c,\n"
+                                  "  orders o,\n"
+                                  "  lineitem l\n"
+                                  "where\n"
+                                  "  c.c_mktsegment = 'HOUSEHOLD'\n"
+                                  "  and c.c_custkey = o.o_custkey\n"
+                                  "  and l.l_orderkey = o.o_orderkey\n"
+                                  "  and o.o_orderdate < date '1992-03-25'\n"
+                                  "  and l.l_shipdate > date '1991-01-01'\n"
+                                  "  and l.l_quantity < {}\n"
+                                  "group by\n"
+                                  "  l.l_orderkey,\n"
+                                  "  o.o_orderdate,\n"
+                                  "  o.o_shippriority\n"
+                                  "order by\n"
+                                  "  revenue desc,\n"
+                                  "  o.o_orderdate\n"
+                                  "limit 10";
+  std::vector<std::string> testQueries;
+  std::vector<std::string> testQueryFileNames;
+  for (double sel = 0.0; sel < 1.0; sel += 0.1) {
+    testQueries.emplace_back(fmt::format(testQueryTemplate, (int)(50 * sel)));
+    testQueryFileNames.emplace_back(fmt::format("tpch-03-sel-{:.1f}", sel));
+  }
   BitmapPushdownTestUtil::run_bitmap_pushdown_benchmark_query(cachingQuery,
-                                                              testQuery,
+                                                              testQueries,
+                                                              testQueryFileNames,
                                                               false,
                                                               "0.01",
                                                               PARALLEL_FPDB_STORE_SAME_NODE,
@@ -592,17 +679,43 @@ TEST_CASE ("bitmap-pushdown-test-benchmark-query-compute-bitmap-tpch-03" * docte
 }
 
 TEST_CASE ("bitmap-pushdown-test-benchmark-query-compute-bitmap-tpch-04" * doctest::skip(false || SKIP_SUITE)) {
-  std::string cachingQuery = "select l_commitdate, l_receiptdate\n"
+  std::string cachingQuery = "select l_commitdate, l_receiptdate, l_quantity\n"
                              "from lineitem\n"
                              "order by l_commitdate\n"
                              "limit 10";
-  string testQuery = readFile(std::filesystem::current_path()
-                                      .parent_path()
-                                      .append("resources/query")
-                                      .append("tpch/original/04.sql")
-                                      .string());
+  std::string testQueryTemplate = "select\n"
+                                  "  o.o_orderpriority,\n"
+                                  "  count(*) as order_count\n"
+                                  "from\n"
+                                  "  orders o\n"
+                                  "where\n"
+                                  "  o.o_orderdate >= date '1996-10-01'\n"
+                                  "  and o.o_orderdate < date '1996-10-01' + interval '3' month\n"
+                                  "  and\n"
+                                  "  exists (\n"
+                                  "    select\n"
+                                  "      *\n"
+                                  "    from\n"
+                                  "      lineitem l\n"
+                                  "    where\n"
+                                  "      l.l_orderkey = o.o_orderkey\n"
+                                  "      and l.l_quantity < {}\n"
+                                  "      and l.l_commitdate > date '1991-01-01'\n"
+                                  "      and l.l_receiptdate > date '1991-01-01'\n"
+                                  "  )\n"
+                                  "group by\n"
+                                  "  o.o_orderpriority\n"
+                                  "order by\n"
+                                  "  o.o_orderpriority";
+  std::vector<std::string> testQueries;
+  std::vector<std::string> testQueryFileNames;
+  for (double sel = 0.0; sel < 1.0; sel += 0.1) {
+    testQueries.emplace_back(fmt::format(testQueryTemplate, (int)(50 * sel)));
+    testQueryFileNames.emplace_back(fmt::format("tpch-04-sel-{:.1f}", sel));
+  }
   BitmapPushdownTestUtil::run_bitmap_pushdown_benchmark_query(cachingQuery,
-                                                              testQuery,
+                                                              testQueries,
+                                                              testQueryFileNames,
                                                               false,
                                                               "0.01",
                                                               PARALLEL_FPDB_STORE_SAME_NODE,
@@ -610,17 +723,49 @@ TEST_CASE ("bitmap-pushdown-test-benchmark-query-compute-bitmap-tpch-04" * docte
 }
 
 TEST_CASE ("bitmap-pushdown-test-benchmark-query-compute-bitmap-tpch-12" * doctest::skip(false || SKIP_SUITE)) {
-  std::string cachingQuery = "select l_shipmode, l_commitdate, l_receiptdate, l_shipdate\n"
+  std::string cachingQuery = "select l_shipmode, l_commitdate, l_receiptdate, l_shipdate, l_quantity\n"
                              "from lineitem\n"
                              "order by l_commitdate\n"
                              "limit 10";
-  string testQuery = readFile(std::filesystem::current_path()
-                                      .parent_path()
-                                      .append("resources/query")
-                                      .append("tpch/original/12.sql")
-                                      .string());
+  std::string testQueryTemplate = "select\n"
+                                  "  l.l_shipmode,\n"
+                                  "  sum(case\n"
+                                  "    when o.o_orderpriority = '1-URGENT'\n"
+                                  "      or o.o_orderpriority = '2-HIGH'\n"
+                                  "      then 1\n"
+                                  "    else 0\n"
+                                  "  end) as high_line_count,\n"
+                                  "  sum(case\n"
+                                  "    when o.o_orderpriority <> '1-URGENT'\n"
+                                  "      and o.o_orderpriority <> '2-HIGH'\n"
+                                  "      then 1\n"
+                                  "    else 0\n"
+                                  "  end) as low_line_count\n"
+                                  "from\n"
+                                  "  orders o,\n"
+                                  "  lineitem l\n"
+                                  "where\n"
+                                  "  o.o_orderkey = l.l_orderkey\n"
+                                  "  and o.o_orderdate >= date '1993-10-01'\n"
+                                  "  and o.o_orderdate < date '1993-10-01' + interval '3' month"
+                                  "  and l.l_quantity < {}\n"
+                                  "  and l.l_shipmode >= '0'\n"
+                                  "  and l.l_commitdate > date '1991-01-01'\n"
+                                  "  and l.l_shipdate > date '1991-01-01'\n"
+                                  "  and l.l_receiptdate > date '1991-01-01'\n"
+                                  "group by\n"
+                                  "  l.l_shipmode\n"
+                                  "order by\n"
+                                  "  l.l_shipmode";
+  std::vector<std::string> testQueries;
+  std::vector<std::string> testQueryFileNames;
+  for (double sel = 0.0; sel < 1.0; sel += 0.1) {
+    testQueries.emplace_back(fmt::format(testQueryTemplate, (int)(50 * sel)));
+    testQueryFileNames.emplace_back(fmt::format("tpch-12-sel-{:.1f}", sel));
+  }
   BitmapPushdownTestUtil::run_bitmap_pushdown_benchmark_query(cachingQuery,
-                                                              testQuery,
+                                                              testQueries,
+                                                              testQueryFileNames,
                                                               false,
                                                               "0.01",
                                                               PARALLEL_FPDB_STORE_SAME_NODE,
@@ -628,25 +773,34 @@ TEST_CASE ("bitmap-pushdown-test-benchmark-query-compute-bitmap-tpch-12" * docte
 }
 
 TEST_CASE ("bitmap-pushdown-test-benchmark-query-compute-bitmap-tpch-14" * doctest::skip(false || SKIP_SUITE)) {
-  std::string cachingQuery = "select l_commitdate, l_shipdate\n"
+  std::string cachingQuery = "select l_shipdate, l_quantity\n"
                              "from lineitem\n"
-                             "order by l_commitdate\n"
+                             "order by l_shipdate\n"
                              "limit 10";
-  string testQuery = "select\n"
-                     "  100.00 * sum(case\n"
-                     "    when p.p_type like 'PROMO%'\n"
-                     "      then l.l_extendedprice * (1 - l.l_discount)\n"
-                     "    else 0\n"
-                     "  end) / sum(l.l_extendedprice * (1 - l.l_discount)) as promo_revenue\n"
-                     "from\n"
-                     "  lineitem l,\n"
-                     "  part p\n"
-                     "where\n"
-                     "  l.l_partkey = p.p_partkey\n"
-                     "  and l.l_shipdate >= date '1994-08-01'\n"
-                     "  and l.l_commitdate < date '1994-08-01' + interval '3' month";
+  std::string testQueryTemplate = "select\n"
+                                  "  100.00 * sum(case\n"
+                                  "    when p.p_type like 'PROMO%'\n"
+                                  "      then l.l_extendedprice * (1 - l.l_discount)\n"
+                                  "    else 0\n"
+                                  "  end) / (sum(l.l_extendedprice * (1 - l.l_discount)) + 1) as promo_revenue\n"
+                                  "from\n"
+                                  "  lineitem l,\n"
+                                  "  part p\n"
+                                  "where\n"
+                                  "  l.l_partkey = p.p_partkey\n"
+                                  "  and p.p_brand = 'Brand#41'"
+                                  "  and l.l_quantity < {}\n"
+                                  "  and l.l_shipdate >= date '1991-01-01'\n"
+                                  "  and l.l_shipdate < date '1999-01-01'";
+  std::vector<std::string> testQueries;
+  std::vector<std::string> testQueryFileNames;
+  for (double sel = 0.0; sel < 1.0; sel += 0.1) {
+    testQueries.emplace_back(fmt::format(testQueryTemplate, (int)(50 * sel)));
+    testQueryFileNames.emplace_back(fmt::format("tpch-14-sel-{:.1f}", sel));
+  }
   BitmapPushdownTestUtil::run_bitmap_pushdown_benchmark_query(cachingQuery,
-                                                              testQuery,
+                                                              testQueries,
+                                                              testQueryFileNames,
                                                               false,
                                                               "0.01",
                                                               PARALLEL_FPDB_STORE_SAME_NODE,
@@ -658,13 +812,50 @@ TEST_CASE ("bitmap-pushdown-test-benchmark-query-compute-bitmap-tpch-19" * docte
                              "from lineitem\n"
                              "order by l_quantity\n"
                              "limit 10";
-  string testQuery = readFile(std::filesystem::current_path()
-                                      .parent_path()
-                                      .append("resources/query")
-                                      .append("tpch/original/19.sql")
-                                      .string());
+  std::string testQueryTemplate = "select\n"
+                                  "  sum(l.l_extendedprice* (1 - l.l_discount)) as revenue\n"
+                                  "from\n"
+                                  "  lineitem l,\n"
+                                  "  part p\n"
+                                  "where\n"
+                                  "  (\n"
+                                  "    p.p_partkey = l.l_partkey\n"
+                                  "    and p.p_brand = 'Brand#41'\n"
+                                  "    and p.p_container in ('SM CASE', 'SM BOX', 'SM PACK', 'SM PKG')\n"
+                                  "    and l.l_quantity >= 0 and l.l_quantity <= {0}\n"
+                                  "    and p.p_size between 1 and 5\n"
+                                  "    and l.l_shipmode >= '0'\n"
+                                  "    and l.l_shipinstruct >= '0'\n"
+                                  "  )\n"
+                                  "  or\n"
+                                  "  (\n"
+                                  "    p.p_partkey = l.l_partkey\n"
+                                  "    and p.p_brand = 'Brand#13'\n"
+                                  "    and p.p_container in ('MED BAG', 'MED BOX', 'MED PKG', 'MED PACK')\n"
+                                  "    and l.l_quantity >= 0 and l.l_quantity <= {0}\n"
+                                  "    and p.p_size between 6 and 10\n"
+                                  "    and l.l_shipmode >= '0'\n"
+                                  "    and l.l_shipinstruct >= '0'\n"
+                                  "  )\n"
+                                  "  or\n"
+                                  "  (\n"
+                                  "    p.p_partkey = l.l_partkey\n"
+                                  "    and p.p_brand = 'Brand#55'\n"
+                                  "    and p.p_container in ('LG CASE', 'LG BOX', 'LG PACK', 'LG PKG')\n"
+                                  "    and l.l_quantity >= 0 and l.l_quantity <= {0}\n"
+                                  "    and p.p_size between 11 and 15\n"
+                                  "    and l.l_shipmode >= '0'\n"
+                                  "    and l.l_shipinstruct >= '0'\n"
+                                  "  )";
+  std::vector<std::string> testQueries;
+  std::vector<std::string> testQueryFileNames;
+  for (double sel = 0.0; sel < 1.0; sel += 0.1) {
+    testQueries.emplace_back(fmt::format(testQueryTemplate, (int)(50 * sel)));
+    testQueryFileNames.emplace_back(fmt::format("tpch-19-sel-{:.1f}", sel));
+  }
   BitmapPushdownTestUtil::run_bitmap_pushdown_benchmark_query(cachingQuery,
-                                                              testQuery,
+                                                              testQueries,
+                                                              testQueryFileNames,
                                                               false,
                                                               "0.01",
                                                               PARALLEL_FPDB_STORE_SAME_NODE,
