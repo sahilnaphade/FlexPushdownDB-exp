@@ -37,7 +37,7 @@ void BitmapPushdownTestUtil::run_bitmap_pushdown_benchmark_query(const std::stri
                     ObjStoreType::FPDB_STORE,
                     Mode::hybridMode(),
                     CachingPolicyType::LFU,
-                    std::numeric_limits<int>::max());
+                    std::numeric_limits<int64_t>::max());
 
   // enable filter bitmap pushdown
   std::unordered_map<std::string, bool> flags;
