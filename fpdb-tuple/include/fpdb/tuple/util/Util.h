@@ -30,6 +30,13 @@ public:
    */
   static int64_t getSize(const std::shared_ptr<arrow::RecordBatch> &recordBatch);
 
+  /**
+   * Check if the table has the same schema to targetSchema (field order can be different),
+   * if so, calibrate the table into targeSchema by rearranging columns
+   */
+  static tl::expected<std::shared_ptr<arrow::Table>, std::string> calibrateSchema(
+          const std::shared_ptr<arrow::Table> &table, const std::shared_ptr<arrow::Schema> &targetSchema);
+
 };
 
 }
