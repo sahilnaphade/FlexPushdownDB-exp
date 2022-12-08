@@ -350,9 +350,7 @@ TEST_SUITE ("bitmap-pushdown-test-benchmark-query-storage-bitmap" * doctest::ski
 
 TEST_CASE ("bitmap-pushdown-test-benchmark-query-storage-bitmap-ssb-1.1" * doctest::skip(false || SKIP_SUITE)) {
   std::string cachingQuery = "select lo_extendedprice, lo_discount, lo_orderdate\n"
-                             "from lineorder\n"
-                             "order by lo_discount\n"
-                             "limit 10";
+                             "from lineorder";
   std::string testQueryTemplate = "select sum(lo_extendedprice * lo_discount) as revenue\n"
                                   "from lineorder,\n"
                                   "     \"date\"\n"
@@ -377,9 +375,7 @@ TEST_CASE ("bitmap-pushdown-test-benchmark-query-storage-bitmap-ssb-1.1" * docte
 
 TEST_CASE ("bitmap-pushdown-test-benchmark-query-storage-bitmap-tpch-03" * doctest::skip(false || SKIP_SUITE)) {
   std::string cachingQuery = "select l_orderkey, l_extendedprice, l_discount\n"
-                             "from lineitem\n"
-                             "order by l_discount\n"
-                             "limit 10";
+                             "from lineitem";
   std::string testQueryTemplate = "select\n"
                                   "  l.l_orderkey,\n"
                                   "  sum(l.l_extendedprice * (1 - l.l_discount)) as revenue,\n"
@@ -421,9 +417,7 @@ TEST_CASE ("bitmap-pushdown-test-benchmark-query-storage-bitmap-tpch-03" * docte
 
 TEST_CASE ("bitmap-pushdown-test-benchmark-query-storage-bitmap-tpch-04" * doctest::skip(false || SKIP_SUITE)) {
   std::string cachingQuery = "select l_orderkey\n"
-                             "from lineitem\n"
-                             "order by l_orderkey\n"
-                             "limit 10";
+                             "from lineitem";
   std::string testQueryTemplate = "select\n"
                                   "  o.o_orderpriority,\n"
                                   "  count(*) as order_count\n"
@@ -465,9 +459,7 @@ TEST_CASE ("bitmap-pushdown-test-benchmark-query-storage-bitmap-tpch-04" * docte
 
 TEST_CASE ("bitmap-pushdown-test-benchmark-query-storage-bitmap-tpch-12" * doctest::skip(false || SKIP_SUITE)) {
   std::string cachingQuery = "select l_orderkey, l_shipmode\n"
-                             "from lineitem\n"
-                             "order by l_orderkey\n"
-                             "limit 10";
+                             "from lineitem";
   std::string testQueryTemplate = "select\n"
                                   "  l.l_shipmode,\n"
                                   "  sum(case\n"
@@ -515,9 +507,7 @@ TEST_CASE ("bitmap-pushdown-test-benchmark-query-storage-bitmap-tpch-12" * docte
 
 TEST_CASE ("bitmap-pushdown-test-benchmark-query-storage-bitmap-tpch-14" * doctest::skip(false || SKIP_SUITE)) {
   std::string cachingQuery = "select l_partkey, l_extendedprice, l_discount\n"
-                             "from lineitem\n"
-                             "order by l_discount\n"
-                             "limit 10";
+                             "from lineitem";
   std::string testQueryTemplate = "select\n"
                                   "  100.00 * sum(case\n"
                                   "    when p.p_type like 'PROMO%'\n"
@@ -550,9 +540,7 @@ TEST_CASE ("bitmap-pushdown-test-benchmark-query-storage-bitmap-tpch-14" * docte
 
 TEST_CASE ("bitmap-pushdown-test-benchmark-query-storage-bitmap-tpch-19" * doctest::skip(false || SKIP_SUITE)) {
   std::string cachingQuery = "select l_partkey, l_extendedprice, l_discount, l_quantity\n"
-                             "from lineitem\n"
-                             "order by l_discount\n"
-                             "limit 10";
+                             "from lineitem";
   std::string testQueryTemplate = "select\n"
                                   "  sum(l.l_extendedprice* (1 - l.l_discount)) as revenue\n"
                                   "from\n"
@@ -609,9 +597,7 @@ TEST_SUITE ("bitmap-pushdown-test-benchmark-query-compute-bitmap" * doctest::ski
 
 TEST_CASE ("bitmap-pushdown-test-benchmark-query-compute-bitmap-ssb-1.1" * doctest::skip(false || SKIP_SUITE)) {
   std::string cachingQuery = "select lo_discount, lo_quantity\n"
-                             "from lineorder\n"
-                             "order by lo_discount\n"
-                             "limit 10";
+                             "from lineorder";
   std::string testQueryTemplate = "select sum(lo_extendedprice * lo_discount) as revenue\n"
                                   "from lineorder,\n"
                                   "     \"date\"\n"
@@ -636,9 +622,7 @@ TEST_CASE ("bitmap-pushdown-test-benchmark-query-compute-bitmap-ssb-1.1" * docte
 
 TEST_CASE ("bitmap-pushdown-test-benchmark-query-compute-bitmap-tpch-03" * doctest::skip(false || SKIP_SUITE)) {
   std::string cachingQuery = "select l_shipdate, l_quantity\n"
-                             "from lineitem\n"
-                             "order by l_shipdate\n"
-                             "limit 10";
+                             "from lineitem";
   std::string testQueryTemplate = "select\n"
                                   "  l.l_orderkey,\n"
                                   "  sum(l.l_extendedprice * (1 - l.l_discount)) as revenue,\n"
@@ -680,9 +664,7 @@ TEST_CASE ("bitmap-pushdown-test-benchmark-query-compute-bitmap-tpch-03" * docte
 
 TEST_CASE ("bitmap-pushdown-test-benchmark-query-compute-bitmap-tpch-04" * doctest::skip(false || SKIP_SUITE)) {
   std::string cachingQuery = "select l_commitdate, l_receiptdate, l_quantity\n"
-                             "from lineitem\n"
-                             "order by l_commitdate\n"
-                             "limit 10";
+                             "from lineitem";
   std::string testQueryTemplate = "select\n"
                                   "  o.o_orderpriority,\n"
                                   "  count(*) as order_count\n"
@@ -724,9 +706,7 @@ TEST_CASE ("bitmap-pushdown-test-benchmark-query-compute-bitmap-tpch-04" * docte
 
 TEST_CASE ("bitmap-pushdown-test-benchmark-query-compute-bitmap-tpch-12" * doctest::skip(false || SKIP_SUITE)) {
   std::string cachingQuery = "select l_shipmode, l_commitdate, l_receiptdate, l_shipdate, l_quantity\n"
-                             "from lineitem\n"
-                             "order by l_commitdate\n"
-                             "limit 10";
+                             "from lineitem";
   std::string testQueryTemplate = "select\n"
                                   "  l.l_shipmode,\n"
                                   "  sum(case\n"
@@ -774,9 +754,7 @@ TEST_CASE ("bitmap-pushdown-test-benchmark-query-compute-bitmap-tpch-12" * docte
 
 TEST_CASE ("bitmap-pushdown-test-benchmark-query-compute-bitmap-tpch-14" * doctest::skip(false || SKIP_SUITE)) {
   std::string cachingQuery = "select l_shipdate, l_quantity\n"
-                             "from lineitem\n"
-                             "order by l_shipdate\n"
-                             "limit 10";
+                             "from lineitem";
   std::string testQueryTemplate = "select\n"
                                   "  100.00 * sum(case\n"
                                   "    when p.p_type like 'PROMO%'\n"
@@ -809,9 +787,7 @@ TEST_CASE ("bitmap-pushdown-test-benchmark-query-compute-bitmap-tpch-14" * docte
 
 TEST_CASE ("bitmap-pushdown-test-benchmark-query-compute-bitmap-tpch-19" * doctest::skip(false || SKIP_SUITE)) {
   std::string cachingQuery = "select l_quantity, l_shipmode, l_shipinstruct\n"
-                             "from lineitem\n"
-                             "order by l_quantity\n"
-                             "limit 10";
+                             "from lineitem";
   std::string testQueryTemplate = "select\n"
                                   "  sum(l.l_extendedprice* (1 - l.l_discount)) as revenue\n"
                                   "from\n"
