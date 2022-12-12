@@ -156,6 +156,20 @@ void FPDBStoreSuperPOp::setGetAdaptPushdownMetrics(bool getAdaptPushdownMetrics)
   getAdaptPushdownMetrics_ = getAdaptPushdownMetrics;
 }
 
+void FPDBStoreSuperPOp::processDetachIn() {
+  std::unique_lock lock(FPDBStoreSuperPOpDetachMutex);
+  FPDBStoreSuperPOpDetachCv.wait(lock, [&] {
+    return numFPDBStoreSuperPOpDetachSlots > 0;
+  });
+  --numFPDBStoreSuperPOpDetachSlots;
+}
+
+void FPDBStoreSuperPOp::processDetachOut() {
+  std::unique_lock lock(FPDBStoreSuperPOpDetachMutex);
+  ++numFPDBStoreSuperPOpDetachSlots;
+  FPDBStoreSuperPOpDetachCv.notify_one();
+}
+
 void FPDBStoreSuperPOp::onStart() {
   SPDLOG_DEBUG("Starting operator  |  name: '{}'", this->name());
 
@@ -227,19 +241,24 @@ bool FPDBStoreSuperPOp::readyToProcess() {
 }
 
 void FPDBStoreSuperPOp::processAtStore() {
+  // for limiting number of concurrent detached FPDBStoreSuperPOp
+  if (ENABLE_FILTER_BITMAP_PUSHDOWN) {
+    processDetachIn();
+  }
+
   // make flight client and connect
   auto client = flight::GlobalFlightClients.getFlightClient(host_, flightPort_);
 
   // send request to store
   auto expPlanString = serialize(false);
   if (!expPlanString.has_value()) {
-    ctx()->notifyError(expPlanString.error());
+    onErrorDuringProcess(expPlanString.error());
     return;
   }
   auto ticketObj = SelectObjectContentTicket::make(queryId_, name_, *expPlanString, parallelDegree_);
   auto expTicket = ticketObj->to_ticket(false);
   if (!expTicket.has_value()) {
-    ctx()->notifyError(expTicket.error());
+    onErrorDuringProcess(expTicket.error());
     return;
   }
 
@@ -259,19 +278,22 @@ void FPDBStoreSuperPOp::processAtStore() {
     if (ENABLE_ADAPTIVE_PUSHDOWN && flightStatusDetail->code() == ReqRejectStatusCode) {
       // currently unsupported if "receiveByOthers_" = true
       if (receiveByOthers_) {
-        ctx()->notifyError("Adaptive pushdown with pipelining pushdown results is currently unsupported");
+        onErrorDuringProcess("Adaptive pushdown with pipelining pushdown results is currently unsupported");
         return;
       }
       // fall back to pullup (adaptive pushdown)
       processAsPullup();
       // complete and return
       ctx()->notifyComplete();
+      if (ENABLE_FILTER_BITMAP_PUSHDOWN) {
+        processDetachOut();
+      }
       return;
     }
 
     // error
     else {
-      ctx()->notifyError(status.message());
+      onErrorDuringProcess(status.message());
       return;
     }
   }
@@ -280,7 +302,7 @@ void FPDBStoreSuperPOp::processAtStore() {
   if (!receiveByOthers_ && !shufflePOpName_.has_value()) {
     status = reader->ReadAll(&table);
     if (!status.ok()) {
-      ctx()->notifyError(status.message());
+      onErrorDuringProcess(status.message());
       return;
     }
   }
@@ -290,7 +312,7 @@ void FPDBStoreSuperPOp::processAtStore() {
   if (getAdaptPushdownMetrics_) {
     auto expAdaptPushdownMetricsKey = AdaptPushdownMetricsMessage::generateAdaptPushdownMetricsKey(queryId_, name_);
     if (!expAdaptPushdownMetricsKey.has_value()) {
-      ctx()->notifyError(expAdaptPushdownMetricsKey.error());
+      onErrorDuringProcess(expAdaptPushdownMetricsKey.error());
       return;
     }
     int64_t execTime = std::chrono::duration_cast<chrono::nanoseconds>(stopTime - startTime).count();
@@ -305,7 +327,7 @@ void FPDBStoreSuperPOp::processAtStore() {
     if (!shufflePOpName_.has_value()) {
       // check table
       if (table == nullptr) {
-        ctx()->notifyError("Received null table from FPDB-Store");
+        onErrorDuringProcess("Received null table from FPDB-Store");
         return;
       }
 
@@ -337,6 +359,11 @@ void FPDBStoreSuperPOp::processAtStore() {
 
   // complete
   ctx()->notifyComplete();
+
+  // for limiting number of concurrent detached FPDBStoreSuperPOp
+  if (ENABLE_FILTER_BITMAP_PUSHDOWN) {
+    processDetachOut();
+  }
 }
 
 void FPDBStoreSuperPOp::processEmpty() {
@@ -418,6 +445,13 @@ void FPDBStoreSuperPOp::processAsPullup() {
   std::shared_ptr<Message> execMetricsMsg = std::make_shared<DebugMetricsMessage>(execution->getDebugMetrics(), name_);
   ctx()->notifyRoot(execMetricsMsg);
 #endif
+}
+
+void FPDBStoreSuperPOp::onErrorDuringProcess(const std::string &error) {
+  if (ENABLE_FILTER_BITMAP_PUSHDOWN) {
+    processDetachOut();
+  }
+  ctx()->notifyError(error);
 }
 
 tl::expected<std::string, std::string> FPDBStoreSuperPOp::serialize(bool pretty) {

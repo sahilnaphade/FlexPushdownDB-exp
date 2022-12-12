@@ -7,8 +7,19 @@
 
 #include <fpdb/executor/physical/PhysicalPlan.h>
 #include <tl/expected.hpp>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
 
 namespace fpdb::executor::physical::fpdb_store {
+
+/**
+ * This is used when FPDBStoreSuperPOp is detached, e.g. when filter bitmap pushdown is enabled,
+ * otherwise too many detached FPDBStoreSuperPOp will cause performance degradation.
+ */
+inline std::mutex FPDBStoreSuperPOpDetachMutex;
+inline std::condition_variable_any FPDBStoreSuperPOpDetachCv;
+inline int numFPDBStoreSuperPOpDetachSlots = std::thread::hardware_concurrency();
 
 /**
  * Denote a sub-plan to be pushed to store, consists a group of physical operators (e.g. scan->filter->aggregate)
@@ -48,6 +59,9 @@ public:
   void setGetAdaptPushdownMetrics(bool getAdaptPushdownMetrics);
 
 private:
+  static void processDetachIn();
+  static void processDetachOut();
+
   void onStart();
   void onCacheLoadResponse(const ScanMessage &msg);
   void onBloomFilter(const BloomFilterMessage &);
@@ -57,6 +71,7 @@ private:
   void processAtStore();
   void processEmpty();
   void processAsPullup();   // for adaptive pushdown
+  void onErrorDuringProcess(const std::string &error);    // handle errors from processAtStore()
   tl::expected<std::string, std::string> serialize(bool pretty);
 
   std::shared_ptr<PhysicalPlan> subPlan_;
