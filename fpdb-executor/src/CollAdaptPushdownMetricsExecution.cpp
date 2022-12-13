@@ -3,6 +3,7 @@
 //
 
 #include <fpdb/executor/CollAdaptPushdownMetricsExecution.h>
+#include <fpdb/executor/physical/Globals.h>
 #include <fpdb/executor/physical/filter/FilterPOp.h>
 #include <fpdb/executor/physical/file/RemoteFileScanPOp.h>
 #include <fpdb/executor/physical/fpdb-store/FPDBStoreSuperPOp.h>
@@ -109,6 +110,13 @@ void CollAdaptPushdownMetricsExecution::join() {
           handle_err);
 
   stopTime_ = chrono::steady_clock::now();
+}
+
+bool CollAdaptPushdownMetricsExecution::useDetached(const shared_ptr<PhysicalOp> &op) {
+  // Here only make blocking op detached, ignore performance considerations because we here want to
+  // measure metrics of a single pullup/pushdown request.
+  return (op->getType() == POpType::FPDB_STORE_SUPER && ENABLE_FILTER_BITMAP_PUSHDOWN)
+         || op->getType() == POpType::FPDB_STORE_TABLE_CACHE_LOAD;
 }
 
 void CollAdaptPushdownMetricsExecution::sendAdaptPushdownMetricsToStore() {

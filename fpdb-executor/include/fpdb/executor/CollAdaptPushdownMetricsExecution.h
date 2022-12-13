@@ -33,6 +33,8 @@ private:
   void preExecute() override;
   void join() override;
 
+  bool useDetached(const shared_ptr<PhysicalOp> &op) override;
+
   void sendAdaptPushdownMetricsToStore();
   void addAdaptPushdownMetrics(const std::string &key, int64_t execTime);
 
