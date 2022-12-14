@@ -120,15 +120,8 @@ bool CollAdaptPushdownMetricsExecution::useDetached(const shared_ptr<PhysicalOp>
 }
 
 void CollAdaptPushdownMetricsExecution::sendAdaptPushdownMetricsToStore() {
-  // compute average of adaptive pushdown metrics
-  std::unordered_map<std::string, int64_t> avgAdaptPushdownMetrics;
-  for (const auto &it: adaptPushdownMetrics_) {
-    avgAdaptPushdownMetrics[it.first] =
-            std::reduce(it.second.begin(), it.second.end(), 0.0) / static_cast<float>(it.second.size());
-  }
-
   // send metrics to store
-  auto cmdObj = fpdb::store::server::flight::PutAdaptPushdownMetricsCmd::make(avgAdaptPushdownMetrics);
+  auto cmdObj = fpdb::store::server::flight::PutAdaptPushdownMetricsCmd::make(adaptPushdownMetrics_);
   auto expCmd = cmdObj->serialize(false);
   if (!expCmd.has_value()) {
     throw std::runtime_error(expCmd.error());
@@ -154,12 +147,7 @@ void CollAdaptPushdownMetricsExecution::sendAdaptPushdownMetricsToStore() {
 }
 
 void CollAdaptPushdownMetricsExecution::addAdaptPushdownMetrics(const std::string &key, int64_t execTime) {
-  auto it = adaptPushdownMetrics_.find(key);
-  if (it != adaptPushdownMetrics_.end()) {
-    it->second.emplace_back(execTime);
-  } else {
-    adaptPushdownMetrics_[key] = std::vector<int64_t>{execTime};
-  }
+  adaptPushdownMetrics_[key] = execTime;
 }
 
 }

@@ -7,6 +7,8 @@
 
 #include <fpdb/main/ActorSystemConfig.h>
 #include <fpdb/executor/Executor.h>
+#include <fpdb/store/server/Server.hpp>
+#include <fpdb/store/client/FPDBStoreClientConfig.h>
 #include <fpdb/catalogue/Catalogue.h>
 #include <fpdb/catalogue/CatalogueEntry.h>
 #include <fpdb/catalogue/obj-store/ObjStoreConnector.h>
@@ -66,6 +68,9 @@ public:
   static void writeQueryToFile(const std::string queryFileName, const std::string query);
   static void removeQueryFile(const std::string queryFileName);
 
+  static void startFPDBStoreServer();
+  static void stopFPDBStoreServer();
+
   TestUtil(const string &schemaName,
            const vector<string> &queryFileNames,
            int parallelDegree,
@@ -92,6 +97,10 @@ private:
   void makeExecutor();
   void executeQueryFile(const string &queryFileName);
   void stop();
+
+  static std::shared_ptr<fpdb::store::server::Server> fpdbStoreServer_;
+  static std::shared_ptr<fpdb::store::server::caf::ActorManager> actorManager_;
+  static std::shared_ptr<fpdb::store::client::FPDBStoreClientConfig> fpdbStoreClientConfig_;
 
   // input parameters
   std::string schemaName_;

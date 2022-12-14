@@ -19,9 +19,6 @@ namespace fpdb::main::test {
 
 #define SKIP_SUITE false
 
-void startFPDBStoreServer();
-void stopFPDBStoreServer();
-
 TEST_SUITE ("bitmap-pushdown" * doctest::skip(SKIP_SUITE)) {
 
 TEST_CASE ("bitmap-pushdown-all-cached" * doctest::skip(false || SKIP_SUITE)) {
@@ -41,7 +38,7 @@ TEST_CASE ("bitmap-pushdown-all-cached" * doctest::skip(false || SKIP_SUITE)) {
   TestUtil::writeQueryToFile(testQueryFileName, testQuery);
 
   // test
-  startFPDBStoreServer();
+  TestUtil::startFPDBStoreServer();
   TestUtil testUtil("tpch-sf0.01/parquet/",
                     {testQueryFileName,
                      testQueryFileName},
@@ -55,7 +52,7 @@ TEST_CASE ("bitmap-pushdown-all-cached" * doctest::skip(false || SKIP_SUITE)) {
   REQUIRE_NOTHROW(testUtil.runTest());
   REQUIRE_EQ(testUtil.getCrtQueryHitRatio(), 1.0);
 
-  stopFPDBStoreServer();
+  TestUtil::stopFPDBStoreServer();
 
   // clear query file
   fpdb::executor::physical::ENABLE_FILTER_BITMAP_PUSHDOWN = false;
@@ -90,7 +87,7 @@ TEST_CASE ("bitmap-pushdown-none-cached" * doctest::skip(false || SKIP_SUITE)) {
   TestUtil::writeQueryToFile(testQueryFileName, testQuery);
 
   // test
-  startFPDBStoreServer();
+  TestUtil::startFPDBStoreServer();
   TestUtil testUtil("tpch-sf0.01/parquet/",
                     {cachingQueryFileName,
                      testQueryFileName},
@@ -104,7 +101,7 @@ TEST_CASE ("bitmap-pushdown-none-cached" * doctest::skip(false || SKIP_SUITE)) {
   REQUIRE_NOTHROW(testUtil.runTest());
   REQUIRE_EQ(testUtil.getCrtQueryHitRatio(), 0.0);
 
-  stopFPDBStoreServer();
+  TestUtil::stopFPDBStoreServer();
 
   // clear query file
   fpdb::executor::physical::ENABLE_FILTER_BITMAP_PUSHDOWN = false;
@@ -143,7 +140,7 @@ TEST_CASE ("bitmap-pushdown-partial-cached-compute-bitmap-both-project" * doctes
   TestUtil::writeQueryToFile(testQueryFileName, testQuery);
 
   // test
-  startFPDBStoreServer();
+  TestUtil::startFPDBStoreServer();
   TestUtil testUtil("tpch-sf0.01/parquet/",
                     {cachingQueryFileName,
                      testQueryFileName},
@@ -162,7 +159,7 @@ TEST_CASE ("bitmap-pushdown-partial-cached-compute-bitmap-both-project" * doctes
   REQUIRE_GT(testUtil.getCrtQueryHitRatio(), 0.0);
   REQUIRE_LT(testUtil.getCrtQueryHitRatio(), 1.0);
 
-  stopFPDBStoreServer();
+  TestUtil::stopFPDBStoreServer();
 
   // clear query file
   fpdb::executor::physical::ENABLE_FILTER_BITMAP_PUSHDOWN = false;
@@ -201,7 +198,7 @@ TEST_CASE ("bitmap-pushdown-partial-cached-compute-bitmap-only-storage-project" 
   TestUtil::writeQueryToFile(testQueryFileName, testQuery);
 
   // test
-  startFPDBStoreServer();
+  TestUtil::startFPDBStoreServer();
   TestUtil testUtil("tpch-sf0.01/parquet/",
                     {cachingQueryFileName,
                      testQueryFileName},
@@ -220,7 +217,7 @@ TEST_CASE ("bitmap-pushdown-partial-cached-compute-bitmap-only-storage-project" 
   REQUIRE_GT(testUtil.getCrtQueryHitRatio(), 0.0);
   REQUIRE_LT(testUtil.getCrtQueryHitRatio(), 1.0);
 
-  stopFPDBStoreServer();
+  TestUtil::stopFPDBStoreServer();
 
   // clear query file
   fpdb::executor::physical::ENABLE_FILTER_BITMAP_PUSHDOWN = false;
@@ -259,7 +256,7 @@ TEST_CASE ("bitmap-pushdown-partial-cached-storage-bitmap-both-project" * doctes
   TestUtil::writeQueryToFile(testQueryFileName, testQuery);
 
   // test
-  startFPDBStoreServer();
+  TestUtil::startFPDBStoreServer();
   TestUtil testUtil("tpch-sf0.01/parquet/",
                     {cachingQueryFileName,
                      testQueryFileName},
@@ -278,7 +275,7 @@ TEST_CASE ("bitmap-pushdown-partial-cached-storage-bitmap-both-project" * doctes
   REQUIRE_GT(testUtil.getCrtQueryHitRatio(), 0.0);
   REQUIRE_LT(testUtil.getCrtQueryHitRatio(), 1.0);
 
-  stopFPDBStoreServer();
+  TestUtil::stopFPDBStoreServer();
 
   // clear query file
   fpdb::executor::physical::ENABLE_FILTER_BITMAP_PUSHDOWN = false;
@@ -317,7 +314,7 @@ TEST_CASE ("bitmap-pushdown-partial-cached-storage-bitmap-only-compute-project" 
   TestUtil::writeQueryToFile(testQueryFileName, testQuery);
 
   // test
-  startFPDBStoreServer();
+  TestUtil::startFPDBStoreServer();
   TestUtil testUtil("tpch-sf0.01/parquet/",
                     {cachingQueryFileName,
                      testQueryFileName},
@@ -336,7 +333,7 @@ TEST_CASE ("bitmap-pushdown-partial-cached-storage-bitmap-only-compute-project" 
   REQUIRE_GT(testUtil.getCrtQueryHitRatio(), 0.0);
   REQUIRE_LT(testUtil.getCrtQueryHitRatio(), 1.0);
 
-  stopFPDBStoreServer();
+  TestUtil::stopFPDBStoreServer();
 
   // clear query file
   fpdb::executor::physical::ENABLE_FILTER_BITMAP_PUSHDOWN = false;

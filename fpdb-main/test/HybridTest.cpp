@@ -17,9 +17,6 @@ namespace fpdb::main::test {
 
 #define SKIP_SUITE false
 
-void startFPDBStoreServer();
-void stopFPDBStoreServer();
-
 TEST_SUITE ("hybrid" * doctest::skip(SKIP_SUITE)) {
 
 TEST_CASE ("hybrid-all-cached" * doctest::skip(false || SKIP_SUITE)) {
@@ -38,7 +35,7 @@ TEST_CASE ("hybrid-all-cached" * doctest::skip(false || SKIP_SUITE)) {
   TestUtil::writeQueryToFile(testQueryFileName, testQuery);
 
   // test
-  startFPDBStoreServer();
+  TestUtil::startFPDBStoreServer();
   TestUtil testUtil("tpch-sf0.01/parquet/",
                     {testQueryFileName,
                      testQueryFileName},
@@ -52,7 +49,7 @@ TEST_CASE ("hybrid-all-cached" * doctest::skip(false || SKIP_SUITE)) {
   REQUIRE_NOTHROW(testUtil.runTest());
   REQUIRE_EQ(testUtil.getCrtQueryHitRatio(), 1.0);
 
-  stopFPDBStoreServer();
+  TestUtil::stopFPDBStoreServer();
 
   // clear query file
   TestUtil::removeQueryFile(testQueryFileName);
@@ -85,7 +82,7 @@ TEST_CASE ("hybrid-none-cached" * doctest::skip(false || SKIP_SUITE)) {
   TestUtil::writeQueryToFile(testQueryFileName, testQuery);
 
   // test
-  startFPDBStoreServer();
+  TestUtil::startFPDBStoreServer();
   TestUtil testUtil("tpch-sf0.01/parquet/",
                     {cachingQueryFileName,
                      testQueryFileName},
@@ -99,7 +96,7 @@ TEST_CASE ("hybrid-none-cached" * doctest::skip(false || SKIP_SUITE)) {
   REQUIRE_NOTHROW(testUtil.runTest());
   REQUIRE_EQ(testUtil.getCrtQueryHitRatio(), 0.0);
 
-  stopFPDBStoreServer();
+  TestUtil::stopFPDBStoreServer();
 
   // clear query file
   TestUtil::removeQueryFile(cachingQueryFileName);
@@ -133,7 +130,7 @@ TEST_CASE ("hybrid-partial-cached-filter-inseparable" * doctest::skip(false || S
   TestUtil::writeQueryToFile(testQueryFileName, testQuery);
 
   // test
-  startFPDBStoreServer();
+  TestUtil::startFPDBStoreServer();
   TestUtil testUtil("tpch-sf0.01/parquet/",
                     {cachingQueryFileName,
                      testQueryFileName},
@@ -152,7 +149,7 @@ TEST_CASE ("hybrid-partial-cached-filter-inseparable" * doctest::skip(false || S
   REQUIRE_GT(testUtil.getCrtQueryHitRatio(), 0.0);
   REQUIRE_LT(testUtil.getCrtQueryHitRatio(), 1.0);
 
-  stopFPDBStoreServer();
+  TestUtil::stopFPDBStoreServer();
 
   // clear query file
   TestUtil::removeQueryFile(cachingQueryFileName);
@@ -186,7 +183,7 @@ TEST_CASE ("hybrid-partial-cached-filter-separable" * doctest::skip(false || SKI
   TestUtil::writeQueryToFile(testQueryFileName, testQuery);
 
   // test
-  startFPDBStoreServer();
+  TestUtil::startFPDBStoreServer();
   TestUtil testUtil("tpch-sf0.01/parquet/",
                     {cachingQueryFileName,
                      testQueryFileName},
@@ -205,7 +202,7 @@ TEST_CASE ("hybrid-partial-cached-filter-separable" * doctest::skip(false || SKI
   REQUIRE_GT(testUtil.getCrtQueryHitRatio(), 0.0);
   REQUIRE_LT(testUtil.getCrtQueryHitRatio(), 1.0);
 
-  stopFPDBStoreServer();
+  TestUtil::stopFPDBStoreServer();
 
   // clear query file
   TestUtil::removeQueryFile(cachingQueryFileName);
@@ -235,7 +232,7 @@ TEST_CASE ("hybrid-partial-cached-project-separable" * doctest::skip(false || SK
   TestUtil::writeQueryToFile(testQueryFileName, testQuery);
 
   // test
-  startFPDBStoreServer();
+  TestUtil::startFPDBStoreServer();
   TestUtil testUtil("tpch-sf0.01/parquet/",
                     {cachingQueryFileName,
                      testQueryFileName},
@@ -252,7 +249,7 @@ TEST_CASE ("hybrid-partial-cached-project-separable" * doctest::skip(false || SK
   REQUIRE_GT(testUtil.getCrtQueryHitRatio(), 0.0);
   REQUIRE_LT(testUtil.getCrtQueryHitRatio(), 1.0);
 
-  stopFPDBStoreServer();
+  TestUtil::stopFPDBStoreServer();
 
   // clear query file
   TestUtil::removeQueryFile(cachingQueryFileName);
@@ -276,7 +273,7 @@ TEST_CASE ("hybrid-partial-cached-aggregate-separable" * doctest::skip(false || 
   TestUtil::writeQueryToFile(testQueryFileName, testQuery);
 
   // test
-  startFPDBStoreServer();
+  TestUtil::startFPDBStoreServer();
   TestUtil testUtil("tpch-sf0.01/parquet/",
                     {cachingQueryFileName,
                      testQueryFileName},
@@ -293,7 +290,7 @@ TEST_CASE ("hybrid-partial-cached-aggregate-separable" * doctest::skip(false || 
   REQUIRE_GT(testUtil.getCrtQueryHitRatio(), 0.0);
   REQUIRE_LT(testUtil.getCrtQueryHitRatio(), 1.0);
 
-  stopFPDBStoreServer();
+  TestUtil::stopFPDBStoreServer();
 
   // clear query file
   TestUtil::removeQueryFile(cachingQueryFileName);
@@ -327,7 +324,7 @@ TEST_CASE ("hybrid-partial-cached-filter-project-separable" * doctest::skip(fals
   TestUtil::writeQueryToFile(testQueryFileName, testQuery);
 
   // test
-  startFPDBStoreServer();
+  TestUtil::startFPDBStoreServer();
   TestUtil testUtil("tpch-sf0.01/parquet/",
                     {cachingQueryFileName,
                      testQueryFileName},
@@ -344,7 +341,7 @@ TEST_CASE ("hybrid-partial-cached-filter-project-separable" * doctest::skip(fals
   REQUIRE_GT(testUtil.getCrtQueryHitRatio(), 0.0);
   REQUIRE_LT(testUtil.getCrtQueryHitRatio(), 1.0);
 
-  stopFPDBStoreServer();
+  TestUtil::stopFPDBStoreServer();
 
   // clear query file
   TestUtil::removeQueryFile(cachingQueryFileName);
@@ -372,7 +369,7 @@ TEST_CASE ("hybrid-partial-cached-filter-aggregate-separable" * doctest::skip(fa
   TestUtil::writeQueryToFile(testQueryFileName, testQuery);
 
   // test
-  startFPDBStoreServer();
+  TestUtil::startFPDBStoreServer();
   TestUtil testUtil("tpch-sf0.01/parquet/",
                     {cachingQueryFileName,
                      testQueryFileName},
@@ -389,7 +386,7 @@ TEST_CASE ("hybrid-partial-cached-filter-aggregate-separable" * doctest::skip(fa
   REQUIRE_GT(testUtil.getCrtQueryHitRatio(), 0.0);
   REQUIRE_LT(testUtil.getCrtQueryHitRatio(), 1.0);
 
-  stopFPDBStoreServer();
+  TestUtil::stopFPDBStoreServer();
 
   // clear query file
   TestUtil::removeQueryFile(cachingQueryFileName);

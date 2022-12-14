@@ -43,6 +43,7 @@ add_executable(fpdb-main-test
         test-base/MainTest.cpp
         test-base/TestUtil.cpp test-base/TestUtil.h
         test-base/BitmapPushdownTestUtil.cpp test-base/BitmapPushdownTestUtil.h
+        test-base/AdaptPushdownTestUtil.cpp test-base/AdaptPushdownTestUtil.h
         test/SSBTest.cpp
         test/SSBFPDBStoreSameNodeTest.cpp
         test/TPCHTest.cpp
@@ -76,6 +77,7 @@ add_executable(fpdb-main-bench
         test-base/MainTest.cpp
         test-base/TestUtil.cpp test-base/TestUtil.h
         test-base/BitmapPushdownTestUtil.cpp test-base/BitmapPushdownTestUtil.h
+        test-base/AdaptPushdownTestUtil.cpp test-base/AdaptPushdownTestUtil.h
         bench/SSBDistFPDBStoreBench.cpp
         bench/TPCHBench.cpp
         bench/TPCHDistBench.cpp

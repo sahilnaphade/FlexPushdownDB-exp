@@ -112,8 +112,7 @@ tl::expected<std::pair<std::string, std::string>, std::string>
 AdaptPushdownManager::generateAdaptPushdownMetricsKeys(long queryId, const std::string &op) {
   if (op.substr(0, fpdb::executor::physical::PushdownOpNamePrefix.size()) ==
       fpdb::executor::physical::PushdownOpNamePrefix) {
-    auto pos = op.find("]");
-    auto pushdownMetricsKey = fmt::format("{}-{}", queryId, op.substr(0, pos + 1));
+    auto pushdownMetricsKey = fmt::format("{}-{}", queryId, op);
     std::string pullupMetricsKey = pushdownMetricsKey;
     pullupMetricsKey.replace(pullupMetricsKey.find(fpdb::executor::physical::PushdownOpNamePrefix),
                              fpdb::executor::physical::PushdownOpNamePrefix.size(),

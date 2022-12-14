@@ -38,7 +38,7 @@ private:
   void sendAdaptPushdownMetricsToStore();
   void addAdaptPushdownMetrics(const std::string &key, int64_t execTime);
 
-  std::unordered_map<std::string, std::vector<int64_t>> adaptPushdownMetrics_;
+  std::unordered_map<std::string, int64_t> adaptPushdownMetrics_;
   std::shared_ptr<fpdb::catalogue::obj_store::FPDBStoreConnector> fpdbStoreConnector_;
 };
 

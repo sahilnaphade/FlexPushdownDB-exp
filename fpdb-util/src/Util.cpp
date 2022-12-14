@@ -125,12 +125,8 @@ bool fpdb::util::getBit(const vector<int64_t> &bitmap, int64_t n) {
 }
 
 bool fpdb::util::isInteger(const string& str) {
-  try {
-    int parsedInt = stoi(str);
-  } catch (const logic_error& err) {
-    return false;
-  }
-  return true;
+  return !str.empty() && std::find_if(str.begin(), str.end(),
+                                      [](unsigned char c) { return !std::isdigit(c); }) == str.end();
 }
 
 tl::expected<string, string> fpdb::util::execCmd(const char *cmd) {

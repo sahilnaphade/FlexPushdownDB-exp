@@ -25,6 +25,7 @@
 #include <fpdb/store/client/FPDBStoreClientConfig.h>
 #include <fpdb/store/server/flight/Util.hpp>
 #include <fpdb/util/Util.h>
+#include <doctest/doctest.h>
 
 using namespace fpdb::executor::physical;
 using namespace fpdb::cache;
@@ -122,6 +123,37 @@ void TestUtil::removeQueryFile(const std::string queryFileName) {
           .append(queryFileName)
           .string();
   std::remove(queryFilePath.c_str());
+}
+
+std::shared_ptr<fpdb::store::server::Server> TestUtil::fpdbStoreServer_ = nullptr;
+std::shared_ptr<fpdb::store::server::caf::ActorManager> TestUtil::actorManager_= nullptr;
+std::shared_ptr<fpdb::store::client::FPDBStoreClientConfig> TestUtil::fpdbStoreClientConfig_= nullptr;
+
+void TestUtil::startFPDBStoreServer() {
+  fpdbStoreClientConfig_ = fpdb::store::client::FPDBStoreClientConfig::parseFPDBStoreClientConfig();
+  actorManager_ = fpdb::store::server::caf::ActorManager::make<::caf::id_block::Server>().value();
+  fpdbStoreServer_ = fpdb::store::server::Server::make(
+          fpdb::store::server::ServerConfig{"1",
+                                            0,
+                                            true,
+                                            std::nullopt,
+                                            0,
+                                            fpdbStoreClientConfig_->getFlightPort(),
+                                            fpdbStoreClientConfig_->getFileServicePort(),
+                                            "test-resources/fpdb-store",
+                                            1},
+          std::nullopt,
+          actorManager_);
+  auto initResult = fpdbStoreServer_->init();
+  REQUIRE(initResult.has_value());
+  auto startResult = fpdbStoreServer_->start();
+  REQUIRE(startResult.has_value());
+}
+
+void TestUtil::stopFPDBStoreServer() {
+  fpdbStoreServer_->stop();
+  fpdbStoreServer_.reset();
+  actorManager_.reset();
 }
 
 double TestUtil::getCrtQueryHitRatio() const {

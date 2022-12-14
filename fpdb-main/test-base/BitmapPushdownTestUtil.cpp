@@ -35,7 +35,7 @@ void BitmapPushdownTestUtil::run_bitmap_pushdown_benchmark_query(const std::stri
 
   // test
   if (startFPDBStore) {
-    startFPDBStoreServer();
+    TestUtil::startFPDBStoreServer();
   }
   TestUtil testUtil(isSsb ? fmt::format("ssb-sf{}/parquet/", sf) : fmt::format("tpch-sf{}/parquet/", sf),
                     queryFileNames,
@@ -57,7 +57,7 @@ void BitmapPushdownTestUtil::run_bitmap_pushdown_benchmark_query(const std::stri
 
   REQUIRE_NOTHROW(testUtil.runTest());
   if (startFPDBStore) {
-    stopFPDBStoreServer();
+    TestUtil::stopFPDBStoreServer();
   }
 
   // reset pushdown flags
@@ -89,37 +89,6 @@ void BitmapPushdownTestUtil::reset_pushdown_flags(std::unordered_map<std::string
   fpdb::executor::physical::ENABLE_SHUFFLE_PUSHDOWN = flags["shuffle"];
   fpdb::plan::prephysical::separable::ENABLE_CO_LOCATED_JOIN_PUSHDOWN = flags["co_located_join"];
   fpdb::executor::physical::ENABLE_FILTER_BITMAP_PUSHDOWN = flags["filter_bitmap"];
-}
-
-std::shared_ptr<fpdb::store::server::Server> BitmapPushdownTestUtil::fpdbStoreServer_ = nullptr;
-std::shared_ptr<fpdb::store::server::caf::ActorManager> BitmapPushdownTestUtil::actorManager_= nullptr;
-std::shared_ptr<fpdb::store::client::FPDBStoreClientConfig> BitmapPushdownTestUtil::fpdbStoreClientConfig_= nullptr;
-
-void BitmapPushdownTestUtil::startFPDBStoreServer() {
-  fpdbStoreClientConfig_ = fpdb::store::client::FPDBStoreClientConfig::parseFPDBStoreClientConfig();
-  actorManager_ = fpdb::store::server::caf::ActorManager::make<::caf::id_block::Server>().value();
-  fpdbStoreServer_ = fpdb::store::server::Server::make(
-          fpdb::store::server::ServerConfig{"1",
-                                            0,
-                                            true,
-                                            std::nullopt,
-                                            0,
-                                            fpdbStoreClientConfig_->getFlightPort(),
-                                            fpdbStoreClientConfig_->getFileServicePort(),
-                                            "test-resources/fpdb-store",
-                                            1},
-          std::nullopt,
-          actorManager_);
-  auto initResult = fpdbStoreServer_->init();
-          REQUIRE(initResult.has_value());
-  auto startResult = fpdbStoreServer_->start();
-          REQUIRE(startResult.has_value());
-}
-
-void BitmapPushdownTestUtil::stopFPDBStoreServer() {
-  fpdbStoreServer_->stop();
-  fpdbStoreServer_.reset();
-  actorManager_.reset();
 }
 
 }

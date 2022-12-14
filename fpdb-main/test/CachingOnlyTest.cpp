@@ -17,9 +17,6 @@ namespace fpdb::main::test {
 
 #define SKIP_SUITE false
 
-void startFPDBStoreServer();
-void stopFPDBStoreServer();
-
 TEST_SUITE ("caching-only" * doctest::skip(SKIP_SUITE)) {
 
 constexpr std::string_view cachingOnlyTestQueryFileName = "caching_only_test.sql";
@@ -68,7 +65,7 @@ TEST_CASE ("caching-only-all-cached" * doctest::skip(false || SKIP_SUITE)) {
   TestUtil::writeQueryToFile(cachingOnlyTestQueryFileName.data(), cachingOnlyTestQuery.data());
 
   // test
-  startFPDBStoreServer();
+  TestUtil::TestUtil::TestUtil::startFPDBStoreServer();
   TestUtil testUtil("tpch-sf0.01/parquet/",
                     {cachingOnlyTestQueryFileName.data(),
                      cachingOnlyTestQueryFileName.data()},
@@ -82,7 +79,7 @@ TEST_CASE ("caching-only-all-cached" * doctest::skip(false || SKIP_SUITE)) {
   REQUIRE_NOTHROW(testUtil.runTest());
   REQUIRE_EQ(testUtil.getCrtQueryHitRatio(), 1.0);
 
-  stopFPDBStoreServer();
+  TestUtil::stopFPDBStoreServer();
 
   // clear query file
   TestUtil::removeQueryFile(cachingOnlyTestQueryFileName.data());
@@ -95,7 +92,7 @@ TEST_CASE ("caching-only-partial-cached" * doctest::skip(false || SKIP_SUITE)) {
   TestUtil::writeQueryToFile(cachingOnlyTestQueryFileName.data(), cachingOnlyTestQuery.data());
 
   // test
-  startFPDBStoreServer();
+  TestUtil::TestUtil::TestUtil::startFPDBStoreServer();
   TestUtil testUtil("tpch-sf0.01/parquet/",
                     {cachingOnlyTestPartialCachingQueryFileName.data(),
                      cachingOnlyTestQueryFileName.data()},
@@ -110,7 +107,7 @@ TEST_CASE ("caching-only-partial-cached" * doctest::skip(false || SKIP_SUITE)) {
   REQUIRE_GT(testUtil.getCrtQueryHitRatio(), 0.0);
   REQUIRE_LT(testUtil.getCrtQueryHitRatio(), 1.0);
 
-  stopFPDBStoreServer();
+  TestUtil::stopFPDBStoreServer();
 
   // clear query file
   TestUtil::removeQueryFile(cachingOnlyTestPartialCachingQueryFileName.data());
@@ -124,7 +121,7 @@ TEST_CASE ("caching-only-none-cached" * doctest::skip(false || SKIP_SUITE)) {
   TestUtil::writeQueryToFile(cachingOnlyTestQueryFileName.data(), cachingOnlyTestQuery.data());
 
   // test
-  startFPDBStoreServer();
+  TestUtil::TestUtil::TestUtil::startFPDBStoreServer();
   TestUtil testUtil("tpch-sf0.01/parquet/",
                     {cachingOnlyTestNoCachingQueryFileName.data(),
                      cachingOnlyTestQueryFileName.data()},
@@ -138,7 +135,7 @@ TEST_CASE ("caching-only-none-cached" * doctest::skip(false || SKIP_SUITE)) {
   REQUIRE_NOTHROW(testUtil.runTest());
   REQUIRE_EQ(testUtil.getCrtQueryHitRatio(), 0.0);
 
-  stopFPDBStoreServer();
+  TestUtil::stopFPDBStoreServer();
 
   // clear query file
   TestUtil::removeQueryFile(cachingOnlyTestNoCachingQueryFileName.data());

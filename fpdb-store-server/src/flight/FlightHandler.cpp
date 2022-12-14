@@ -653,11 +653,20 @@ FlightHandler::do_put_put_bitmap(const ServerCallContext&,
 tl::expected<void, ::arrow::Status>
 FlightHandler::do_put_clear_bitmap(const ServerCallContext&,
                                    const std::shared_ptr<ClearBitmapCmd>& clear_bitmap_cmd) {
-  // bitmap key
-  auto bitmap_key = BitmapCache::generateBitmapKey(clear_bitmap_cmd->query_id(), clear_bitmap_cmd->op());
-
-  // just consume the bitmap
-  get_bitmap_from_cache(bitmap_key, clear_bitmap_cmd->bitmap_type());
+  auto query_id = clear_bitmap_cmd->query_id();
+  const auto &op = clear_bitmap_cmd->op();
+  auto bitmap_type = clear_bitmap_cmd->bitmap_type();
+  if (bitmap_type == BitmapType::BLOOM_FILTER_COMPUTE) {
+    // bloom filter key
+    auto bloom_filter_key = BloomFilterCache::generateBloomFilterKey(query_id, op);
+    // just consumer the bloom filter
+    bloom_filter_cache_.consumeBloomFilter(bloom_filter_key);
+  } else {
+    // bitmap key
+    auto bitmap_key = BitmapCache::generateBitmapKey(query_id, op);
+    // just consume the bitmap
+    get_bitmap_from_cache(bitmap_key, bitmap_type);
+  }
 
   return {};
 }

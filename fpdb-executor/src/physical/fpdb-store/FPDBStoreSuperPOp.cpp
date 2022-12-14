@@ -445,6 +445,45 @@ void FPDBStoreSuperPOp::processAsPullup() {
   std::shared_ptr<Message> execMetricsMsg = std::make_shared<DebugMetricsMessage>(execution->getDebugMetrics(), name_);
   ctx()->notifyRoot(execMetricsMsg);
 #endif
+
+  // clear unused bloom filters at storage side, due to we fall back to pullup
+  std::unordered_set<std::string> bloomFilterKeys;
+  std::vector<std::shared_ptr<ClearBitmapCmd>> clearBitmapCmds;
+  for (const auto &opIt: subPlan_->getPhysicalOps()) {
+    auto op = opIt.second;
+    for (const auto &consumerToBloomFilterIt: op->getConsumerToBloomFilterInfo()) {
+      const auto &bloomFilterCreatePOp = consumerToBloomFilterIt.second->bloomFilterCreatePOp_;
+      auto bloomFilterKey = fmt::format("{}-{}", queryId_, bloomFilterCreatePOp);     // same function of BloomFilterCache::generateBloomFilterKey()
+      if (bloomFilterKeys.find(bloomFilterKey) != bloomFilterKeys.end()) {
+        continue;
+      }
+      clearBitmapCmds.emplace_back(
+              ClearBitmapCmd::make(BitmapType::BLOOM_FILTER_COMPUTE, queryId_, bloomFilterCreatePOp));
+      bloomFilterKeys.emplace(bloomFilterKey);
+    }
+  }
+  // send request to store
+  auto client = flight::GlobalFlightClients.getFlightClient(host_, flightPort_);
+  for (const auto &cmdObj: clearBitmapCmds) {
+    auto expCmd = cmdObj->serialize(false);
+    if (!expCmd.has_value()) {
+      ctx()->notifyError(expCmd.error());
+      return;
+    }
+    auto descriptor = ::arrow::flight::FlightDescriptor::Command(*expCmd);
+    std::unique_ptr<arrow::flight::FlightStreamWriter> writer;
+    std::unique_ptr<arrow::flight::FlightMetadataReader> metadataReader;
+    auto status = client->DoPut(descriptor, nullptr, &writer, &metadataReader);
+    if (!status.ok()) {
+      ctx()->notifyError(status.message());
+      return;
+    }
+    status = writer->Close();
+    if (!status.ok()) {
+      ctx()->notifyError(status.message());
+      return;
+    }
+  }
 }
 
 void FPDBStoreSuperPOp::onErrorDuringProcess(const std::string &error) {
