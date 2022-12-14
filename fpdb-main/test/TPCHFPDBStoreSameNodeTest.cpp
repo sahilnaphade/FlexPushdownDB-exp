@@ -1042,46 +1042,7 @@ TEST_CASE ("tpch-sf0.01-1-node-hash-part-hash-join-synthetic-3-table" * doctest:
 
 TEST_SUITE ("tpch-sf0.01-fpdb-store-same-node-adaptive-pushdown" * doctest::skip(SKIP_SUITE)) {
 
-void test_tpch_sf0_01_fpdb_store_same_node_adaptive_pushdown(const std::string &queryFileName) {
-  TestUtil::startFPDBStoreServer();
-
-  // adaptive pushdown metrics of pullup run
-  TestUtil testUtil1("tpch-sf0.01/parquet/",
-                     {queryFileName},
-                     PARALLEL_FPDB_STORE_SAME_NODE,
-                     false,
-                     ObjStoreType::FPDB_STORE,
-                     Mode::pullupMode());
-  fpdb::executor::physical::ENABLE_ADAPTIVE_PUSHDOWN = true;
-  testUtil1.setCollAdaptPushdownMetrics(true);
-  REQUIRE_NOTHROW(testUtil1.runTest());
-
-  // adaptive pushdown metrics of pushdown run
-  TestUtil testUtil2("tpch-sf0.01/parquet/",
-                     {queryFileName},
-                     PARALLEL_FPDB_STORE_SAME_NODE,
-                     false,
-                     ObjStoreType::FPDB_STORE,
-                     Mode::pushdownOnlyMode());
-  fpdb::executor::physical::ENABLE_ADAPTIVE_PUSHDOWN = true;
-  testUtil2.setCollAdaptPushdownMetrics(true);
-  REQUIRE_NOTHROW(testUtil2.runTest());
-
-  // test run
-  TestUtil testUtil3("tpch-sf0.01/parquet/",
-                     {queryFileName},
-                     PARALLEL_FPDB_STORE_SAME_NODE,
-                     false,
-                     ObjStoreType::FPDB_STORE,
-                     Mode::pushdownOnlyMode());
-  fpdb::executor::physical::ENABLE_ADAPTIVE_PUSHDOWN = true;
-  REQUIRE_NOTHROW(testUtil3.runTest());
-
-  TestUtil::stopFPDBStoreServer();
-}
-
 TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-adaptive-pushdown-19" * doctest::skip(false || SKIP_SUITE)) {
-//  test_tpch_sf0_01_fpdb_store_same_node_adaptive_pushdown("tpch/original/19.sql");
   AdaptPushdownTestUtil::run_adapt_pushdown_benchmark_query("tpch-sf0.01/parquet/",
                                                             "tpch/original/19.sql",
                                                             100,
