@@ -17,7 +17,7 @@ class AdaptPushdownTestUtil {
 public:
   static void run_adapt_pushdown_benchmark_query(const std::string &schemaName,
                                                  const std::string &queryFileName,
-                                                 int availCpuPercent,
+                                                 const std::vector<int> &availCpuPercents,
                                                  int parallelDegree,
                                                  bool startFPDBStore);
 

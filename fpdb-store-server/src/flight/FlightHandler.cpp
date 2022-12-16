@@ -557,6 +557,10 @@ FlightHandler::do_put_for_cmd(const ServerCallContext& context,
       auto put_adapt_pushdown_metrics = std::static_pointer_cast<PutAdaptPushdownMetricsCmd>(cmd_object);
       return do_put_put_adapt_pushdown_metrics(context, put_adapt_pushdown_metrics);
     }
+    case CmdTypeId::CLEAR_ADAPT_PUSHDOWN_METRICS: {
+      auto clear_adapt_pushdown_metrics = std::static_pointer_cast<ClearAdaptPushdownMetricsCmd>(cmd_object);
+      return do_put_clear_adapt_pushdown_metrics(context, clear_adapt_pushdown_metrics);
+    }
     default: {
       return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed,
                                                  fmt::format("Cmd type '{}' not supported for DoPut",
@@ -676,6 +680,15 @@ tl::expected<void, ::arrow::Status> FlightHandler::do_put_put_adapt_pushdown_met
         const std::shared_ptr<PutAdaptPushdownMetricsCmd>& put_adapt_pushdown_metrics_cmd) {
   // save metrics of adaptive pushdown
   adaptPushdownManager_.addAdaptPushdownMetrics(put_adapt_pushdown_metrics_cmd->getAdaptPushdownMetrics());
+
+  return {};
+}
+
+tl::expected<void, ::arrow::Status> FlightHandler::do_put_clear_adapt_pushdown_metrics(
+        const ServerCallContext&,
+        const std::shared_ptr<ClearAdaptPushdownMetricsCmd>&) {
+  // clear metrics of adaptive pushdown
+  adaptPushdownManager_.clearAdaptPushdownMetrics();
 
   return {};
 }

@@ -22,6 +22,7 @@ add_library(fpdb-executor STATIC
         src/message/BloomFilterMessage.cpp include/fpdb/executor/message/BloomFilterMessage.h
         src/message/BitmapMessage.cpp include/fpdb/executor/message/BitmapMessage.h
         src/message/AdaptPushdownMetricsMessage.cpp include/fpdb/executor/message/AdaptPushdownMetricsMessage.h
+        src/message/PushdownFallBackMessage.cpp include/fpdb/executor/message/PushdownFallBackMessage.h
         src/message/cache/CacheMetricsMessage.cpp include/fpdb/executor/message/cache/CacheMetricsMessage.h
         src/message/cache/LoadRequestMessage.cpp include/fpdb/executor/message/cache/LoadRequestMessage.h
         src/message/cache/LoadResponseMessage.cpp include/fpdb/executor/message/cache/LoadResponseMessage.h

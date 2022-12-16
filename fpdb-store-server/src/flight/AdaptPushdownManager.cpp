@@ -12,8 +12,12 @@ namespace fpdb::store::server::flight {
 
 void AdaptPushdownManager::addAdaptPushdownMetrics(const std::unordered_map<std::string, int64_t> &other) {
   std::unique_lock lock(adaptPushdownMetricsMutex_);
-
   adaptPushdownMetrics_.insert(other.begin(), other.end());
+}
+
+void AdaptPushdownManager::clearAdaptPushdownMetrics() {
+  std::unique_lock lock(adaptPushdownMetricsMutex_);
+  adaptPushdownMetrics_.clear();
 }
 
 bool AdaptPushdownManager::receiveOne(const std::shared_ptr<AdaptPushdownReqInfo> &req) {

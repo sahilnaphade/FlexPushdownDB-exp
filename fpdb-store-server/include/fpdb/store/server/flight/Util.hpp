@@ -36,6 +36,7 @@ static constexpr std::string_view SelectObjectContentCmdTypeName = "select_objec
 static constexpr std::string_view PutBitmapCmdTypeName = "put_bitmap";
 static constexpr std::string_view ClearBitmapCmdTypeName = "clear_bitmap";
 static constexpr std::string_view PutAdaptPushdownMetricsCmdTypeName = "put_adapt_pushdown_metrics";
+static constexpr std::string_view ClearAdaptPushdownMetricsCmdTypeName = "clear_adapt_pushdown_metrics";
 static constexpr std::string_view GetObjectTicketTypeName = "get_object";
 static constexpr std::string_view SelectObjectContentTicketTypeName = "select_object_content";
 static constexpr std::string_view GetBitmapTicketTypeName = "get_bitmap";

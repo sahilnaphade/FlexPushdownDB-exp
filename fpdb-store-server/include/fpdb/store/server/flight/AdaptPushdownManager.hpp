@@ -57,6 +57,9 @@ public:
   // Save adaptive pushdown metrics
   void addAdaptPushdownMetrics(const std::unordered_map<std::string, int64_t> &other);
 
+  // Clear adaptive pushdown metrics
+  void clearAdaptPushdownMetrics();
+
   // process an incoming pushdown request, return "true" to execute as pushdown, "false" to fall back as pullup
   bool receiveOne(const std::shared_ptr<AdaptPushdownReqInfo> &req);
 

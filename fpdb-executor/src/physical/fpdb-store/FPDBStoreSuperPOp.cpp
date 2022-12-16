@@ -8,6 +8,7 @@
 #include <fpdb/executor/physical/Globals.h>
 #include <fpdb/executor/flight/FlightClients.h>
 #include <fpdb/executor/message/TransferMetricsMessage.h>
+#include <fpdb/executor/message/PushdownFallBackMessage.h>
 #include <fpdb/executor/metrics/Globals.h>
 #include <fpdb/executor/caf/CAFAdaptPushdownUtil.h>
 #include <fpdb/executor/FPDBStoreExecution.h>
@@ -445,6 +446,8 @@ void FPDBStoreSuperPOp::processAsPullup() {
   std::shared_ptr<Message> execMetricsMsg =
           std::make_shared<TransferMetricsMessage>(execution->getDebugMetrics().getTransferMetrics(), name_);
   ctx()->notifyRoot(execMetricsMsg);
+  std::shared_ptr<Message> pushdownFallBackMsg = std::make_shared<PushdownFallBackMessage>(name_);
+  ctx()->notifyRoot(pushdownFallBackMsg);
 #endif
 
   // clear unused bloom filters at storage side, due to we fall back to pullup

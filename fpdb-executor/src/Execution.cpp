@@ -245,6 +245,11 @@ void Execution::join() {
               }
 #endif
 
+              case MessageType::PUSHDOWN_FALL_BACK: {
+                debugMetrics_.incPushdownFallBack();
+                break;
+              }
+
               case MessageType::ERROR: {
                 errAct(fmt::format("ERROR: {}, from {}", ((ErrorMessage &) msg).getContent(), msg.sender()));
               }
@@ -690,6 +695,23 @@ string Execution::showDebugMetrics() const{
   ss << left << setw(60) << "Bytes transferred totally";
   ss << left << setw(60) << formattedBytesRemote.str();
   ss << endl;
+
+  if (ENABLE_ADAPTIVE_PUSHDOWN) {
+    int numFPDBStoreSuperPOps = 0;
+    for (const auto &opIt: physicalPlan_->getPhysicalOps()) {
+      if (opIt.second->getType() == POpType::FPDB_STORE_SUPER) {
+        ++numFPDBStoreSuperPOps;
+      }
+    }
+
+    stringstream formattedNumPushdownFallBack;
+    int numPushdownFallBack = debugMetrics_.getNumPushdownFallBack();
+    formattedNumPushdownFallBack << numPushdownFallBack << " / " << numFPDBStoreSuperPOps;
+
+    ss << left << setw(60) << "Num pushdown fall back / num total pushdown req";
+    ss << left << setw(60) << formattedNumPushdownFallBack.str();
+    ss << endl;
+  }
 
   return ss.str();
 }

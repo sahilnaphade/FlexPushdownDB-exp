@@ -60,6 +60,7 @@ add_library(fpdb-store-server-flight-api STATIC
         src/flight/PutBitmapCmd.cpp include/fpdb/store/server/flight/PutBitmapCmd.hpp
         src/flight/ClearBitmapCmd.cpp include/fpdb/store/server/flight/ClearBitmapCmd.hpp
         src/flight/PutAdaptPushdownMetricsCmd.cpp include/fpdb/store/server/flight/PutAdaptPushdownMetricsCmd.hpp
+        src/flight/ClearAdaptPushdownMetricsCmd.cpp include/fpdb/store/server/flight/ClearAdaptPushdownMetricsCmd.hpp
         src/flight/TicketType.cpp include/fpdb/store/server/flight/TicketType.hpp
         src/flight/TicketObject.cpp include/fpdb/store/server/flight/TicketObject.hpp
         src/flight/GetObjectTicket.cpp include/fpdb/store/server/flight/GetObjectTicket.hpp

@@ -16,13 +16,13 @@ public:
   DebugMetrics() = default;
 
   const TransferMetrics &getTransferMetrics() const;
+  int getNumPushdownFallBack() const;
   void add(const TransferMetrics &transferMetrics);
   void incPushdownFallBack();
 
 private:
   TransferMetrics transferMetrics_;
-  int numPushdownFallback_ = 0;
-  std::mutex updateMutex_;
+  int numPushdownFallBack_ = 0;
 };
 
 }

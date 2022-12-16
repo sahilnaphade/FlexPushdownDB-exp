@@ -38,4 +38,8 @@ std::shared_ptr<CmdType> CmdType::put_adapt_pushdown_metrics() {
   return std::make_shared<CmdType>(CmdTypeId::PUT_ADAPT_PUSHDOWN_METRICS, PutAdaptPushdownMetricsCmdTypeName.data());
 }
 
+std::shared_ptr<CmdType> CmdType::clear_adapt_pushdown_metrics() {
+  return std::make_shared<CmdType>(CmdTypeId::CLEAR_ADAPT_PUSHDOWN_METRICS, ClearAdaptPushdownMetricsCmdTypeName.data());
+}
+
 } // namespace fpdb::store::server::flight

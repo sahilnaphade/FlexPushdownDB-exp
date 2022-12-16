@@ -10,14 +10,16 @@ const TransferMetrics &DebugMetrics::getTransferMetrics() const {
   return transferMetrics_;
 }
 
+int DebugMetrics::getNumPushdownFallBack() const {
+  return numPushdownFallBack_;
+}
+
 void DebugMetrics::add(const TransferMetrics &transferMetrics) {
-  std::lock_guard<std::mutex> guard(updateMutex_);
   transferMetrics_.add(transferMetrics);
 }
 
 void DebugMetrics::incPushdownFallBack() {
-  std::lock_guard<std::mutex> guard(updateMutex_);
-  ++numPushdownFallback_;
+  ++numPushdownFallBack_;
 }
 
 }
