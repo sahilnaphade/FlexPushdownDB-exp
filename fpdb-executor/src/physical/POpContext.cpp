@@ -108,8 +108,8 @@ void POpContext::send_regular(const std::shared_ptr<message::Message> &msg, cons
 #if SHOW_DEBUG_METRICS == true
     if (appliedMsg->type() == MessageType::TUPLESET
         && operatorActor_->operator_()->getNodeId() != opEntry.getNodeId()) {
-      std::shared_ptr<Message> execMetricsMsg = std::make_shared<DebugMetricsMessage>(
-              metrics::DebugMetrics(0, 0, std::static_pointer_cast<TupleSetMessage>(appliedMsg)->tuples()->size()),
+      std::shared_ptr<Message> execMetricsMsg = std::make_shared<TransferMetricsMessage>(
+              metrics::TransferMetrics(0, 0, std::static_pointer_cast<TupleSetMessage>(appliedMsg)->tuples()->size()),
               operatorActor_->name_);
       operatorActor_->anon_send(rootActor_, Envelope(execMetricsMsg));
     }

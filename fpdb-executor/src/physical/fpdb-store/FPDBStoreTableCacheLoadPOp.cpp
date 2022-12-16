@@ -94,8 +94,8 @@ void FPDBStoreTableCacheLoadPOp::onTupleSetWaitRemote(const TupleSetWaitRemoteMe
 
       // metrics
 #if SHOW_DEBUG_METRICS == true
-      std::shared_ptr<Message> execMetricsMsg = std::make_shared<DebugMetricsMessage>(
-              metrics::DebugMetrics(tupleSet->size(), 0, 0), name_);
+      std::shared_ptr<Message> execMetricsMsg = std::make_shared<TransferMetricsMessage>(
+              metrics::TransferMetrics(tupleSet->size(), 0, 0), name_);
       ctx()->notifyRoot(execMetricsMsg);
 #endif
 

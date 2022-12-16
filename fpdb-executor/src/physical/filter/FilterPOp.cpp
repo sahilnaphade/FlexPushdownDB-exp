@@ -578,8 +578,8 @@ void FilterPOp::putBitmapToFPDBStore() {
 
   // metrics
 #if SHOW_DEBUG_METRICS == true
-  std::shared_ptr<Message> execMetricsMsg = std::make_shared<DebugMetricsMessage>(
-          metrics::DebugMetrics(0, fpdb::tuple::util::Util::getSize(recordBatch), 0), name_);
+  std::shared_ptr<Message> execMetricsMsg = std::make_shared<TransferMetricsMessage>(
+          metrics::TransferMetrics(0, fpdb::tuple::util::Util::getSize(recordBatch), 0), name_);
   ctx()->notifyRoot(execMetricsMsg);
 #endif
 
@@ -625,8 +625,8 @@ void FilterPOp::getBitmapFromFPDBStore() {
 
   // metrics
 #if SHOW_DEBUG_METRICS == true
-  std::shared_ptr<Message> execMetricsMsg = std::make_shared<DebugMetricsMessage>(
-          metrics::DebugMetrics(fpdb::tuple::util::Util::getSize(recordBatches[0]), 0, 0), name_);
+  std::shared_ptr<Message> execMetricsMsg = std::make_shared<TransferMetricsMessage>(
+          metrics::TransferMetrics(fpdb::tuple::util::Util::getSize(recordBatches[0]), 0, 0), name_);
   ctx()->notifyRoot(execMetricsMsg);
 #endif
 }

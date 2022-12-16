@@ -10,7 +10,7 @@
 #include <fpdb/executor/physical/Globals.h>
 #include <fpdb/executor/physical/filter/FilterPOp.h>
 #include <fpdb/executor/caf-serialization/CAFPOpSerializer.h>
-#include <fpdb/executor/message/DebugMetricsMessage.h>
+#include <fpdb/executor/message/TransferMetricsMessage.h>
 #include <caf/io/all.hpp>
 #include <graphviz/gvc.h>
 
@@ -31,9 +31,6 @@ Execution::Execution(long queryId,
   physicalPlan_(physicalPlan),
   isDistributed_(isDistributed) {
   rootActor_ = make_shared<::caf::scoped_actor>(*actorSystem_);
-#if SHOW_DEBUG_METRICS == true
-  debugMetrics_.initUpdate();
-#endif
 }
 
 Execution::~Execution() {
@@ -241,9 +238,9 @@ void Execution::join() {
               }
 
 #if SHOW_DEBUG_METRICS == true
-              case MessageType::DEBUG_METRICS: {
-                auto debugMetricsMsg = ((DebugMetricsMessage &) msg);
-                debugMetrics_.add(debugMetricsMsg.getDebugMetrics());
+              case MessageType::TRANSFER_METRICS: {
+                auto transferMetricsMsg = ((TransferMetricsMessage &) msg);
+                debugMetrics_.add(transferMetricsMsg.getTransferMetrics());
                 break;
               }
 #endif
@@ -659,7 +656,7 @@ string Execution::showDebugMetrics() const{
   ss << "Debug Metrics |" << endl << endl;
 
   stringstream formattedBytesFromStore;
-  int64_t bytesFromStore = debugMetrics_.getBytesFromStore();
+  int64_t bytesFromStore = debugMetrics_.getTransferMetrics().getBytesFromStore();
   formattedBytesFromStore << bytesFromStore << " B" << " ("
                           << ((double) bytesFromStore / 1024.0 / 1024.0 / 1024.0) << " GB)";
 
@@ -668,7 +665,7 @@ string Execution::showDebugMetrics() const{
   ss << endl;
 
   stringstream formattedBytesToStore;
-  int64_t bytesToStore = debugMetrics_.getBytesToStore();
+  int64_t bytesToStore = debugMetrics_.getTransferMetrics().getBytesToStore();
   formattedBytesToStore << bytesToStore << " B" << " ("
                         << ((double) bytesToStore / 1024.0 / 1024.0 / 1024.0) << " GB)";
 
@@ -677,7 +674,7 @@ string Execution::showDebugMetrics() const{
   ss << endl;
 
   stringstream formattedBytesInterCompute;
-  int64_t bytesInterCompute = debugMetrics_.getBytesInterCompute();
+  int64_t bytesInterCompute = debugMetrics_.getTransferMetrics().getBytesInterCompute();
   formattedBytesInterCompute << bytesInterCompute << " B" << " ("
                              << ((double) bytesInterCompute / 1024.0 / 1024.0 / 1024.0) << " GB)";
 

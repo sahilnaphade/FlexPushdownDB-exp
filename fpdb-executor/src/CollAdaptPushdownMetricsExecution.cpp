@@ -91,9 +91,9 @@ void CollAdaptPushdownMetricsExecution::join() {
               }
 
 #if SHOW_DEBUG_METRICS == true
-              case MessageType::DEBUG_METRICS: {
-                auto debugMetricsMsg = ((DebugMetricsMessage &) msg);
-                debugMetrics_.add(debugMetricsMsg.getDebugMetrics());
+              case MessageType::TRANSFER_METRICS: {
+                auto transferMetricsMsg = ((TransferMetricsMessage &) msg);
+                debugMetrics_.add(transferMetricsMsg.getTransferMetrics());
                 break;
               }
 #endif

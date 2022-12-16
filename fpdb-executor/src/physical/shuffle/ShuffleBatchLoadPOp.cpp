@@ -122,11 +122,11 @@ void ShuffleBatchLoadPOp::onTupleSetReadyRemote(const TupleSetReadyRemoteMessage
 #if SHOW_DEBUG_METRICS == true
   std::shared_ptr<Message> execMetricsMsg;
   if (msg.isFromStore()) {
-    execMetricsMsg = std::make_shared<DebugMetricsMessage>(
-            metrics::DebugMetrics(TupleSet::make(table)->size(), 0, 0), name_);
+    execMetricsMsg = std::make_shared<TransferMetricsMessage>(
+            metrics::TransferMetrics(TupleSet::make(table)->size(), 0, 0), name_);
   } else {
-    execMetricsMsg = std::make_shared<DebugMetricsMessage>(
-            metrics::DebugMetrics(0, 0, TupleSet::make(table)->size()), name_);
+    execMetricsMsg = std::make_shared<TransferMetricsMessage>(
+            metrics::TransferMetrics(0, 0, TupleSet::make(table)->size()), name_);
   }
   ctx()->notifyRoot(execMetricsMsg);
 #endif

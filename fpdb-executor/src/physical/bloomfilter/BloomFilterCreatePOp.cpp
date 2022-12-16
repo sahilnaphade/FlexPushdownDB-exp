@@ -182,8 +182,8 @@ void BloomFilterCreatePOp::putBloomFilterToStore(const std::shared_ptr<BloomFilt
   for (const auto &batch: recordBatches) {
     recordBatchesSize += fpdb::tuple::util::Util::getSize(batch);
   }
-  std::shared_ptr<Message> execMetricsMsg = std::make_shared<DebugMetricsMessage>(
-          metrics::DebugMetrics(0, recordBatchesSize * bloomFilterInfo_->hosts_.size(), 0), name_);
+  std::shared_ptr<Message> execMetricsMsg = std::make_shared<TransferMetricsMessage>(
+          metrics::TransferMetrics(0, recordBatchesSize * bloomFilterInfo_->hosts_.size(), 0), name_);
   ctx()->notifyRoot(execMetricsMsg);
 #endif
 }

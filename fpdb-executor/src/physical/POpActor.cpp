@@ -109,11 +109,11 @@ void POpActor::on_regular_message(const fpdb::executor::message::Envelope &msg) 
 #if SHOW_DEBUG_METRICS == true
     std::shared_ptr<Message> execMetricsMsg;
     if (typedMessage.isFromStore()) {
-      execMetricsMsg = std::make_shared<DebugMetricsMessage>(metrics::DebugMetrics(tupleSet->size(), 0, 0),
-                                                             opBehaviour_->name());
+      execMetricsMsg = std::make_shared<TransferMetricsMessage>(metrics::TransferMetrics(tupleSet->size(), 0, 0),
+                                                                opBehaviour_->name());
     } else {
-      execMetricsMsg = std::make_shared<DebugMetricsMessage>(metrics::DebugMetrics(0, 0, tupleSet->size()),
-                                                             opBehaviour_->name());
+      execMetricsMsg = std::make_shared<TransferMetricsMessage>(metrics::TransferMetrics(0, 0, tupleSet->size()),
+                                                                opBehaviour_->name());
     }
     opBehaviour_->ctx()->notifyRoot(execMetricsMsg);
 #endif

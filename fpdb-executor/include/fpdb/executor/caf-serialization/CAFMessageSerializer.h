@@ -10,8 +10,8 @@
 #include <fpdb/executor/message/ConnectMessage.h>
 #include <fpdb/executor/message/CompleteMessage.h>
 #include <fpdb/executor/message/ErrorMessage.h>
-#include <fpdb/executor/message/DebugMetricsMessage.h>
 #include <fpdb/executor/message/ScanMessage.h>
+#include <fpdb/executor/message/TransferMetricsMessage.h>
 #include <fpdb/executor/message/TupleSetMessage.h>
 #include <fpdb/executor/message/TupleSetBufferMessage.h>
 #include <fpdb/executor/message/TupleSetIndexMessage.h>
@@ -39,8 +39,8 @@ CAF_ADD_TYPE_ID(Message, (StartMessage))
 CAF_ADD_TYPE_ID(Message, (ConnectMessage))
 CAF_ADD_TYPE_ID(Message, (CompleteMessage))
 CAF_ADD_TYPE_ID(Message, (ErrorMessage))
-CAF_ADD_TYPE_ID(Message, (DebugMetricsMessage))
 CAF_ADD_TYPE_ID(Message, (ScanMessage))
+CAF_ADD_TYPE_ID(Message, (TransferMetricsMessage))
 CAF_ADD_TYPE_ID(Message, (TupleSetMessage))
 CAF_ADD_TYPE_ID(Message, (TupleSetBufferMessage))
 CAF_ADD_TYPE_ID(Message, (TupleSetIndexMessage))
@@ -78,8 +78,8 @@ struct variant_inspector_traits<MessagePtr> {
           type_id_v<ConnectMessage>,
           type_id_v<CompleteMessage>,
           type_id_v<ErrorMessage>,
-          type_id_v<DebugMetricsMessage>,
           type_id_v<ScanMessage>,
+          type_id_v<TransferMetricsMessage>,
           type_id_v<TupleSetMessage>,
           type_id_v<TupleSetBufferMessage>,
           type_id_v<TupleSetIndexMessage>,
@@ -103,9 +103,9 @@ struct variant_inspector_traits<MessagePtr> {
       return 3;
     else if (x->type() == MessageType::ERROR)
       return 4;
-    else if (x->type() == MessageType::DEBUG_METRICS)
-      return 5;
     else if (x->type() == MessageType::SCAN)
+      return 5;
+    else if (x->type() == MessageType::TRANSFER_METRICS)
       return 6;
     else if (x->type() == MessageType::TUPLESET)
       return 7;
@@ -142,9 +142,9 @@ struct variant_inspector_traits<MessagePtr> {
       case 4:
         return f(dynamic_cast<ErrorMessage &>(*x));
       case 5:
-        return f(dynamic_cast<DebugMetricsMessage &>(*x));
-      case 6:
         return f(dynamic_cast<ScanMessage &>(*x));
+      case 6:
+        return f(dynamic_cast<TransferMetricsMessage &>(*x));
       case 7:
         return f(dynamic_cast<TupleSetMessage &>(*x));
       case 8:
@@ -211,13 +211,13 @@ struct variant_inspector_traits<MessagePtr> {
         continuation(tmp);
         return true;
       }
-      case type_id_v<DebugMetricsMessage>: {
-        auto tmp = DebugMetricsMessage{};
+      case type_id_v<ScanMessage>: {
+        auto tmp = ScanMessage{};
         continuation(tmp);
         return true;
       }
-      case type_id_v<ScanMessage>: {
-        auto tmp = ScanMessage{};
+      case type_id_v<TransferMetricsMessage>: {
+        auto tmp = TransferMetricsMessage{};
         continuation(tmp);
         return true;
       }

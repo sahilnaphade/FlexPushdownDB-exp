@@ -7,7 +7,7 @@
 #include <fpdb/executor/physical/serialization/PhysicalPlanSerializer.h>
 #include <fpdb/executor/physical/Globals.h>
 #include <fpdb/executor/flight/FlightClients.h>
-#include <fpdb/executor/message/DebugMetricsMessage.h>
+#include <fpdb/executor/message/TransferMetricsMessage.h>
 #include <fpdb/executor/metrics/Globals.h>
 #include <fpdb/executor/caf/CAFAdaptPushdownUtil.h>
 #include <fpdb/executor/FPDBStoreExecution.h>
@@ -344,7 +344,7 @@ void FPDBStoreSuperPOp::processAtStore() {
       // metrics
 #if SHOW_DEBUG_METRICS == true
       std::shared_ptr<Message> execMetricsMsg =
-              std::make_shared<DebugMetricsMessage>(metrics::DebugMetrics(tupleSet->size(), 0, 0), this->name());
+              std::make_shared<TransferMetricsMessage>(metrics::TransferMetrics(tupleSet->size(), 0, 0), this->name());
       ctx()->notifyRoot(execMetricsMsg);
 #endif
     }
@@ -442,7 +442,8 @@ void FPDBStoreSuperPOp::processAsPullup() {
 
   // metrics
 #if SHOW_DEBUG_METRICS == true
-  std::shared_ptr<Message> execMetricsMsg = std::make_shared<DebugMetricsMessage>(execution->getDebugMetrics(), name_);
+  std::shared_ptr<Message> execMetricsMsg =
+          std::make_shared<TransferMetricsMessage>(execution->getDebugMetrics().getTransferMetrics(), name_);
   ctx()->notifyRoot(execMetricsMsg);
 #endif
 
