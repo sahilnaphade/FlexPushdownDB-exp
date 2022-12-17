@@ -6,6 +6,7 @@
 #define FPDB_FPDB_MAIN_TEST_BASE_ADAPTPUSHDOWNTESTUTIL_H
 
 #include <fpdb/store/server/Server.hpp>
+#include <fpdb/store/server/flight/CmdObject.hpp>
 #include <fpdb/store/client/FPDBStoreClientConfig.h>
 #include <unordered_map>
 #include <string>
@@ -23,8 +24,12 @@ public:
 
 private:
   static void set_pushdown_flags(bool *oldEnableAdaptPushdown, int* oldAvailCpuPercent,
-                                 bool enableAdaptPushdown, int availCpuPercent);
-  static void reset_pushdown_flags(bool oldEnableAdaptPushdown, int oldAvailCpuPercent);
+                                 bool enableAdaptPushdown, int availCpuPercent,
+                                 bool isFPDBStoreRemote);
+  static void reset_pushdown_flags(bool oldEnableAdaptPushdown, int oldAvailCpuPercent,
+                                   bool isFPDBStoreRemote);
+
+  static void send_cmd_to_storage(const std::shared_ptr<fpdb::store::server::flight::CmdObject> &cmdObj);
 };
 
 }

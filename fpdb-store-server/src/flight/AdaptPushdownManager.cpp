@@ -109,7 +109,9 @@ bool AdaptPushdownManager::wait() {
   if (!waitQueue_.empty()) {
     return true;
   }
-  return fpdb::util::getCpuUsage() >= AvailCpuPercent;
+  double cpuUsage = fpdb::util::getCpuUsage();
+  printf("[CPU] %.2f\n", cpuUsage);
+  return cpuUsage >= AvailCpuPercent;
 }
 
 tl::expected<std::pair<std::string, std::string>, std::string>

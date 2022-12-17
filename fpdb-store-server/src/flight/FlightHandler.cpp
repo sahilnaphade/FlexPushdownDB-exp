@@ -561,6 +561,10 @@ FlightHandler::do_put_for_cmd(const ServerCallContext& context,
       auto clear_adapt_pushdown_metrics = std::static_pointer_cast<ClearAdaptPushdownMetricsCmd>(cmd_object);
       return do_put_clear_adapt_pushdown_metrics(context, clear_adapt_pushdown_metrics);
     }
+    case CmdTypeId::SET_ADAPT_PUSHDOWN: {
+      auto set_adapt_pushdown = std::static_pointer_cast<SetAdaptPushdownCmd>(cmd_object);
+      return do_put_set_adapt_pushdown(context, set_adapt_pushdown);
+    }
     default: {
       return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed,
                                                  fmt::format("Cmd type '{}' not supported for DoPut",
@@ -689,6 +693,15 @@ tl::expected<void, ::arrow::Status> FlightHandler::do_put_clear_adapt_pushdown_m
         const std::shared_ptr<ClearAdaptPushdownMetricsCmd>&) {
   // clear metrics of adaptive pushdown
   adaptPushdownManager_.clearAdaptPushdownMetrics();
+
+  return {};
+}
+
+tl::expected<void, ::arrow::Status> FlightHandler::do_put_set_adapt_pushdown(
+        const ServerCallContext&,
+        const std::shared_ptr<SetAdaptPushdownCmd>& set_adapt_pushdown_cmd) {
+  // set flag of adaptive pushdown
+  ENABLE_ADAPTIVE_PUSHDOWN = set_adapt_pushdown_cmd->enableAdaptPushdown();
 
   return {};
 }

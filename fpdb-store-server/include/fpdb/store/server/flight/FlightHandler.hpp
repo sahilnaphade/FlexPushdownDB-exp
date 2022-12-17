@@ -16,6 +16,7 @@
 #include "fpdb/store/server/flight/ClearBitmapCmd.hpp"
 #include "fpdb/store/server/flight/PutAdaptPushdownMetricsCmd.hpp"
 #include "fpdb/store/server/flight/ClearAdaptPushdownMetricsCmd.hpp"
+#include "fpdb/store/server/flight/SetAdaptPushdownCmd.hpp"
 #include "fpdb/store/server/flight/GetObjectTicket.hpp"
 #include "fpdb/store/server/flight/SelectObjectContentTicket.hpp"
 #include "fpdb/store/server/flight/GetBitmapTicket.hpp"
@@ -320,6 +321,16 @@ private:
   tl::expected<void, ::arrow::Status> do_put_clear_adapt_pushdown_metrics(
           const ServerCallContext& context,
           const std::shared_ptr<ClearAdaptPushdownMetricsCmd>& clear_adapt_pushdown_metrics_cmd);
+
+  /**
+   *
+   * @param context
+   * @param set_adapt_pushdown_cmd
+   * @return
+   */
+  tl::expected<void, ::arrow::Status> do_put_set_adapt_pushdown(
+          const ServerCallContext& context,
+          const std::shared_ptr<SetAdaptPushdownCmd>& set_adapt_pushdown_cmd);
 
   /**
    *

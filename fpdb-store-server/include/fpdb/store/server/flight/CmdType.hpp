@@ -16,7 +16,8 @@ enum class CmdTypeId {
   PUT_BITMAP,
   CLEAR_BITMAP,
   PUT_ADAPT_PUSHDOWN_METRICS,
-  CLEAR_ADAPT_PUSHDOWN_METRICS
+  CLEAR_ADAPT_PUSHDOWN_METRICS,
+  SET_ADAPT_PUSHDOWN
 };
 
 class CmdType {
@@ -38,6 +39,8 @@ public:
   static std::shared_ptr<CmdType> put_adapt_pushdown_metrics();
 
   static std::shared_ptr<CmdType> clear_adapt_pushdown_metrics();
+
+  static std::shared_ptr<CmdType> set_adapt_pushdown();
 
 private:
   CmdTypeId id_;
