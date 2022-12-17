@@ -6,6 +6,7 @@
 #define FPDB_FPDB_MAIN_TEST_BASE_BITMAPPUSHDOWNTESTUTIL_H
 
 #include <unordered_map>
+#include <vector>
 #include <string>
 
 namespace fpdb::main::test {
