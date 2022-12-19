@@ -157,6 +157,11 @@ bool Execution::useDetached(const shared_ptr<PhysicalOp> &op) {
   // Don't run more S3Get requests in parallel than # cores, earlier testing showed this did not help as S3Get
   // already utilizes the full network bandwidth with #cores requests whereas S3Select does not when
   // selectivity is low.
+
+  // Currently do not detach if adaptive pushdown is enabled.
+  if (ENABLE_ADAPTIVE_PUSHDOWN) {
+    return false;
+  }
   return op->getType() == POpType::LOCAL_FILE_SCAN
          || op->getType() == POpType::REMOTE_FILE_SCAN
          || (op->getType() == POpType::FPDB_STORE_SUPER && (ENABLE_BLOOM_FILTER_PUSHDOWN || ENABLE_FILTER_BITMAP_PUSHDOWN))

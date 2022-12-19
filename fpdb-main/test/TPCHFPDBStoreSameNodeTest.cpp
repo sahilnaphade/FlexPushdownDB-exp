@@ -1045,7 +1045,7 @@ TEST_SUITE ("tpch-sf0.01-fpdb-store-same-node-adaptive-pushdown" * doctest::skip
 TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-adaptive-pushdown-19" * doctest::skip(false || SKIP_SUITE)) {
   AdaptPushdownTestUtil::run_adapt_pushdown_benchmark_query("tpch-sf0.01/parquet/",
                                                             "tpch/original/19.sql",
-                                                            {100},
+                                                            {100, 10},
                                                             PARALLEL_FPDB_STORE_SAME_NODE,
                                                             true);
 }
