@@ -4,7 +4,8 @@
 
 add_library(fpdb-util
         include/fpdb/util/Traits.h
-        src/Util.cpp include/fpdb/util/Util.h)
+        src/Util.cpp include/fpdb/util/Util.h
+        src/CPUMonitor.cpp include/fpdb/util/CPUMonitor.h)
 
 target_include_directories(fpdb-util PUBLIC include)
 

@@ -2,8 +2,8 @@
 // Created by Yifei Yang on 2/9/21.
 //
 
-#ifndef FPDB_UTIL_UTIL_H
-#define FPDB_UTIL_UTIL_H
+#ifndef FPDB_FPDB_UTIL_INCLUDE_FPDB_UTIL_UTIL_H
+#define FPDB_FPDB_UTIL_INCLUDE_FPDB_UTIL_UTIL_H
 
 #include <tl/expected.hpp>
 #include <vector>
@@ -134,8 +134,7 @@ namespace fpdb::util {
   bool isInteger(const string& str);
   tl::expected<string, string> execCmd(const char *cmd);
   tl::expected<string, string> getLocalIp();
-  double getCpuUsage();
 }
 
 
-#endif //FPDB_UTIL_UTIL_H
+#endif //FPDB_FPDB_UTIL_INCLUDE_FPDB_UTIL_UTIL_H

@@ -5,7 +5,7 @@
 #include "fpdb/store/server/flight/AdaptPushdownManager.hpp"
 #include "fpdb/store/server/flight/Util.hpp"
 #include "fpdb/executor/physical/Globals.h"
-#include "fpdb/util/Util.h"
+#include "fpdb/util/CPUMonitor.h"
 #include "thread"
 
 namespace fpdb::store::server::flight {
@@ -74,7 +74,7 @@ void AdaptPushdownManager::finishOne(const std::shared_ptr<AdaptPushdownReqInfo>
   }
 
   // then regular case, which checks CPU usage to determine
-  double cpuUsage = fpdb::util::getCpuUsage();
+  double cpuUsage = fpdb::util::cpuMonitor.getUsage();
   while (cpuUsage < AvailCpuPercent && !waitQueue_.empty()) {
     const auto &front = waitQueue_.front();
     admit(front);
@@ -99,7 +99,7 @@ int64_t AdaptPushdownManager::getWaitTime() {
   for (const auto &execReq: execSet_) {
     if (execReq->estExecTime_.has_value()) {
       waitTime += std::max((int64_t) 0, (int64_t) (*execReq->estExecTime_ -
-          std::chrono::duration_cast<chrono::nanoseconds>(currTime - *execReq->startTime_).count()));
+          std::chrono::duration_cast<std::chrono::nanoseconds>(currTime - *execReq->startTime_).count()));
     }
   }
   return waitTime / (std::thread::hardware_concurrency() * AvailCpuPercent / 100.0);
@@ -109,7 +109,7 @@ bool AdaptPushdownManager::wait() {
   if (!waitQueue_.empty()) {
     return true;
   }
-  return fpdb::util::getCpuUsage() >= AvailCpuPercent;
+  return fpdb::util::cpuMonitor.getUsage() >= AvailCpuPercent;
 }
 
 tl::expected<std::pair<std::string, std::string>, std::string>
