@@ -1040,12 +1040,16 @@ TEST_CASE ("tpch-sf0.01-1-node-hash-part-hash-join-synthetic-3-table" * doctest:
 
 }
 
+/**
+ * Need to know the number of CPU cores at storage side, here we assume to be std::thread::hardware_concurrency()
+ * as we are using the local machine.
+ */
 TEST_SUITE ("tpch-sf0.01-fpdb-store-same-node-adaptive-pushdown" * doctest::skip(SKIP_SUITE)) {
 
 TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-adaptive-pushdown-19" * doctest::skip(false || SKIP_SUITE)) {
   AdaptPushdownTestUtil::run_adapt_pushdown_benchmark_query("tpch-sf0.01/parquet/",
                                                             "tpch/original/19.sql",
-                                                            {100, 10},
+                                                            {(int) std::thread::hardware_concurrency(), 1},
                                                             PARALLEL_FPDB_STORE_SAME_NODE,
                                                             true);
 }

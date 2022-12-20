@@ -18,15 +18,15 @@ class AdaptPushdownTestUtil {
 public:
   static void run_adapt_pushdown_benchmark_query(const std::string &schemaName,
                                                  const std::string &queryFileName,
-                                                 const std::vector<int> &availCpuPercents,
+                                                 const std::vector<int> &maxThreadsVec,
                                                  int parallelDegree,
                                                  bool startFPDBStore);
 
 private:
-  static void set_pushdown_flags(bool *oldEnableAdaptPushdown, int* oldAvailCpuPercent,
-                                 bool enableAdaptPushdown, int availCpuPercent,
+  static void set_pushdown_flags(bool *oldEnableAdaptPushdown, int* oldMaxThreads,
+                                 bool enableAdaptPushdown, int maxThreads,
                                  bool isFPDBStoreRemote);
-  static void reset_pushdown_flags(bool oldEnableAdaptPushdown, int oldAvailCpuPercent,
+  static void reset_pushdown_flags(bool oldEnableAdaptPushdown, int oldMaxThreads,
                                    bool isFPDBStoreRemote);
 
   static void send_cmd_to_storage(const std::shared_ptr<fpdb::store::server::flight::CmdObject> &cmdObj);

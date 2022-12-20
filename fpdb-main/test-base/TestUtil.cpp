@@ -211,8 +211,6 @@ void TestUtil::readPushdownFlags() {
   ENABLE_BLOOM_FILTER_PUSHDOWN = parseBool(configMap["BLOOM_FILTER"]);
   ENABLE_FILTER_BITMAP_PUSHDOWN = parseBool(configMap["FILTER_BITMAP"]);
   ENABLE_CO_LOCATED_JOIN_PUSHDOWN = parseBool(configMap["CO_LOCATED_JOIN"]);
-  ENABLE_ADAPTIVE_PUSHDOWN = parseBool(configMap["ADAPTIVE"]);
-  AvailCpuPercent = stoi(configMap["ADAPTIVE_AVAIL_CPU_PERCENT"]);
 }
 
 void TestUtil::makeObjStoreConnector() {

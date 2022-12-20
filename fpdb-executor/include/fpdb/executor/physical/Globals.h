@@ -62,8 +62,7 @@ inline bool ENABLE_GROUP_BY_PUSHDOWN;
 inline bool ENABLE_SHUFFLE_PUSHDOWN;
 inline bool ENABLE_BLOOM_FILTER_PUSHDOWN;
 inline bool ENABLE_FILTER_BITMAP_PUSHDOWN;
-inline bool ENABLE_ADAPTIVE_PUSHDOWN;     // This only affects the compute side, at storage side this is not set
-                                          // need to send flight request to enable at storage side
+inline bool ENABLE_ADAPTIVE_PUSHDOWN = false;     // we need to send flight request to storage side to enable this
 static constexpr std::string_view PullupOpNamePrefix = "RemoteFileScan";
 static constexpr std::string_view PushdownOpNamePrefix = "FPDBStoreSuper";
 

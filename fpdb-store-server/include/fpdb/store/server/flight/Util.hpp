@@ -9,6 +9,7 @@
 #include <arrow/flight/api.h>
 #include <tl/expected.hpp>
 #include "string"
+#include "thread"
 
 namespace fpdb::store::server::flight {
 
@@ -31,6 +32,7 @@ static constexpr std::string_view BatchLoadPOpJSONName = "batch_load_pop";
 static constexpr std::string_view WaitNotExistJSONName = "wait_not_exist";
 static constexpr std::string_view AdaptPushdownMetricsJSONName = "adapt_pushdown_metrics";
 static constexpr std::string_view EnableAdaptPushdownJSONName = "enable_adapt_pushdown";
+static constexpr std::string_view MaxThreadsJSONName = "max_threads";
 
 static constexpr std::string_view GetObjectCmdTypeName = "get_object";
 static constexpr std::string_view SelectObjectContentCmdTypeName = "select_object_content";
@@ -50,7 +52,7 @@ static constexpr std::string_view BucketHeaderKey = "bucket";
 static constexpr std::string_view ObjectHeaderKey = "object";
 
 static constexpr arrow::flight::FlightStatusCode ReqRejectStatusCode = arrow::flight::FlightStatusCode::Unavailable;
-inline int AvailCpuPercent = 100;    // [0, 100], only used when "LimitSelectReq" = true
+inline int MaxThreads = std::thread::hardware_concurrency();
 
 class Util {
 

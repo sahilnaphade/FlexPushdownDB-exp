@@ -780,12 +780,15 @@ TEST_CASE ("tpch-sf10-fpdb-store-diff-node-parquet-pushdown-only-22" * doctest::
 
 }
 
+/**
+ * Need to know the number of CPU cores at storage side, here we assume to be 16 as we are using r5d.4x at storage side.
+ */
 TEST_SUITE ("tpch-sf50-fpdb-store-diff-node-adaptive-pushdown" * doctest::skip(SKIP_SUITE)) {
 
 TEST_CASE ("tpch-sf50-fpdb-store-diff-node-adaptive-pushdown-19" * doctest::skip(false || SKIP_SUITE)) {
   AdaptPushdownTestUtil::run_adapt_pushdown_benchmark_query("tpch-sf50/parquet/",
                                                             "tpch/original/19.sql",
-                                                            {100, 10},
+                                                            {16, 1},
                                                             PARALLEL_FPDB_STORE_DIFF_NODE,
                                                             false);
 }

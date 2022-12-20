@@ -54,34 +54,34 @@ bool AdaptPushdownManager::receiveOne(const std::shared_ptr<AdaptPushdownReqInfo
 }
 
 void AdaptPushdownManager::finishOne(const std::shared_ptr<AdaptPushdownReqInfo> &req) {
-  std::unique_lock lock(waitQueueMutex_);
-
-  // set status and remove from execution set
-  req->status_ = AdaptPushdownReqInfo::STATUS::FINISH;
-  execSet_.erase(req);
-
-  // skip if no request is waiting
-  if (waitQueue_.empty()) {
-    return;
-  }
-
-  // if no request is being executed, we should at least pop one request from wait queue
-  if (execSet_.empty()) {
-    const auto &front = waitQueue_.front();
-    admit(front);
-    waitQueue_.pop();
-    estExecTimeInWaitQueue_ -= front->estExecTime_.value_or(0);
-  }
-
-  // then regular case, which checks CPU usage to determine
-  double cpuUsage = fpdb::util::cpuMonitor.getUsage();
-  while (cpuUsage < AvailCpuPercent && !waitQueue_.empty()) {
-    const auto &front = waitQueue_.front();
-    admit(front);
-    waitQueue_.pop();
-    estExecTimeInWaitQueue_ -= front->estExecTime_.value_or(0);
-    cpuUsage += front->numRequiredCpuCores_ / ((double) std::thread::hardware_concurrency()) * 100.0;
-  }
+//  std::unique_lock lock(waitQueueMutex_);
+//
+//  // set status and remove from execution set
+//  req->status_ = AdaptPushdownReqInfo::STATUS::FINISH;
+//  execSet_.erase(req);
+//
+//  // skip if no request is waiting
+//  if (waitQueue_.empty()) {
+//    return;
+//  }
+//
+//  // regular case, which checks CPU usage to determine
+//  double cpuUsage = fpdb::util::cpuMonitor.getUsage();
+//  while (cpuUsage < AvailCpuPercent && !waitQueue_.empty()) {
+//    const auto &front = waitQueue_.front();
+//    admit(front);
+//    waitQueue_.pop();
+//    estExecTimeInWaitQueue_ -= front->estExecTime_.value_or(0);
+//    cpuUsage += front->numRequiredCpuCores_ / ((double) std::thread::hardware_concurrency()) * 100.0;
+//  }
+//
+//  // if no request is being executed, we should at least pop one request from wait queue
+//  if (execSet_.empty()) {
+//    const auto &front = waitQueue_.front();
+//    admit(front);
+//    waitQueue_.pop();
+//    estExecTimeInWaitQueue_ -= front->estExecTime_.value_or(0);
+//  }
 }
 
 void AdaptPushdownManager::admit(const std::shared_ptr<AdaptPushdownReqInfo> &req) {
@@ -94,22 +94,30 @@ void AdaptPushdownManager::admit(const std::shared_ptr<AdaptPushdownReqInfo> &re
 }
 
 int64_t AdaptPushdownManager::getWaitTime() {
-  int64_t waitTime = estExecTimeInWaitQueue_;
-  auto currTime = std::chrono::steady_clock::now();
-  for (const auto &execReq: execSet_) {
-    if (execReq->estExecTime_.has_value()) {
-      waitTime += std::max((int64_t) 0, (int64_t) (*execReq->estExecTime_ -
-          std::chrono::duration_cast<std::chrono::nanoseconds>(currTime - *execReq->startTime_).count()));
-    }
-  }
-  return waitTime / (std::thread::hardware_concurrency() * AvailCpuPercent / 100.0);
+//  int64_t waitTime = estExecTimeInWaitQueue_;
+//  auto currTime = std::chrono::steady_clock::now();
+//  for (const auto &execReq: execSet_) {
+//    if (execReq->estExecTime_.has_value()) {
+//      waitTime += std::max((int64_t) 0, (int64_t) (*execReq->estExecTime_ -
+//          std::chrono::duration_cast<std::chrono::nanoseconds>(currTime - *execReq->startTime_).count()));
+//    }
+//  }
+//  return waitTime / (std::thread::hardware_concurrency() * AvailCpuPercent / 100.0);
+  return 0;
 }
 
 bool AdaptPushdownManager::wait() {
-  if (!waitQueue_.empty()) {
-    return true;
-  }
-  return fpdb::util::cpuMonitor.getUsage() >= AvailCpuPercent;
+//  // if no req is being executed, shouldn't wait, otherwise will cause deadlock
+//  if (execSet_.empty()) {
+//    return false;
+//  }
+//  // if wait queue is not empty, just join the wait queue
+//  if (!waitQueue_.empty()) {
+//    return true;
+//  }
+//  // otherwise, check cpu usage
+//  return fpdb::util::cpuMonitor.getUsage() >= AvailCpuPercent;
+  return false;
 }
 
 tl::expected<std::pair<std::string, std::string>, std::string>
