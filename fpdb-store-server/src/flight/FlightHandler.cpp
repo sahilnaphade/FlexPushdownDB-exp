@@ -705,7 +705,6 @@ tl::expected<void, ::arrow::Status> FlightHandler::do_put_set_adapt_pushdown(
   int maxThreads = set_adapt_pushdown_cmd->maxThreads();
   actor_system_cfg_ = std::make_shared<::caf::actor_system_config>();
   actor_system_cfg_->set("caf.scheduler.max-threads", maxThreads);
-  actor_system_->await_all_actors_done();
   actor_system_ = std::make_shared<::caf::actor_system>(*actor_system_cfg_);
 
   return {};

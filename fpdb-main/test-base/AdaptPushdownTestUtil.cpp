@@ -29,36 +29,29 @@ void AdaptPushdownTestUtil::run_adapt_pushdown_benchmark_query(const std::string
   for (int maxThreads: maxThreadsVec) {
     std::cout << fmt::format("Max threads at storage side: {}\n", maxThreads) << std::endl;
 
-//    // pullup baseline run, also collecting adaptive pushdown metrics
-//    std::cout << "Pullup baseline run" << std::endl;
-//    TestUtil testUtil(schemaName,
-//                      {queryFileName},
-//                      parallelDegree,
-//                      false,
-//                      ObjStoreType::FPDB_STORE,
-//                      Mode::pullupMode());
-//    testUtil.setCollAdaptPushdownMetrics(true);
-//    set_pushdown_flags(&oldEnableAdaptPushdown, &oldAvailCpuPercent, false, availCpuPercent, !startFPDBStore);
-//    REQUIRE_NOTHROW(testUtil.runTest());
-//    reset_pushdown_flags(oldEnableAdaptPushdown, oldAvailCpuPercent, !startFPDBStore);
+    // pullup baseline run, also collecting adaptive pushdown metrics
+    std::cout << "Pullup baseline run" << std::endl;
+    TestUtil testUtil(schemaName,
+                      {queryFileName},
+                      parallelDegree,
+                      false,
+                      ObjStoreType::FPDB_STORE,
+                      Mode::pullupMode());
+    testUtil.setCollAdaptPushdownMetrics(true);
+    set_pushdown_flags(&oldEnableAdaptPushdown, &oldAvailCpuPercent, false, maxThreads, !startFPDBStore);
+    REQUIRE_NOTHROW(testUtil.runTest());
+    reset_pushdown_flags(oldEnableAdaptPushdown, oldAvailCpuPercent, !startFPDBStore);
 
     // pushdown baseline run, also collecting adaptive pushdown metrics.
-    // note if this is running on Mac OS, CPU usage cannot be relied on (CPU is always not enough),
-    // so we just let it pass through.
-    // we need this to make sense when we test on linux machines.
-    bool isMac = false;
-#ifdef __APPLE__
-    isMac = true;
-#endif
     std::cout << "Pushdown baseline run" << std::endl;
-    TestUtil testUtil(schemaName,
+    testUtil = TestUtil(schemaName,
                         {queryFileName},
                         parallelDegree,
                         false,
                         ObjStoreType::FPDB_STORE,
                         Mode::pushdownOnlyMode());
     testUtil.setCollAdaptPushdownMetrics(true);
-    set_pushdown_flags(&oldEnableAdaptPushdown, &oldAvailCpuPercent, !isMac, maxThreads, !startFPDBStore);
+    set_pushdown_flags(&oldEnableAdaptPushdown, &oldAvailCpuPercent, false, maxThreads, !startFPDBStore);
     REQUIRE_NOTHROW(testUtil.runTest());
     reset_pushdown_flags(oldEnableAdaptPushdown, oldAvailCpuPercent, !startFPDBStore);
 
