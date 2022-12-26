@@ -158,9 +158,10 @@ bool Execution::useDetached(const shared_ptr<PhysicalOp> &op) {
   // already utilizes the full network bandwidth with #cores requests whereas S3Select does not when
   // selectivity is low.
 
-  // Currently do not detach if adaptive pushdown is enabled.
+  // Currently detach if adaptive pushdown is enabled,
+  // so that pushdown and pullup (falled back) can occur at the same time.
   if (ENABLE_ADAPTIVE_PUSHDOWN) {
-    return false;
+    return true;
   }
   return op->getType() == POpType::LOCAL_FILE_SCAN
          || op->getType() == POpType::REMOTE_FILE_SCAN

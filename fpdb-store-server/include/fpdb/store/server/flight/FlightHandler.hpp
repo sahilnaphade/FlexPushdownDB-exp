@@ -385,7 +385,7 @@ private:
 
   ::arrow::flight::Location location_;
   std::shared_ptr<::caf::actor_system> actor_system_;
-  std::shared_ptr<::caf::actor_system_config> actor_system_cfg_;    // used in adaptive pushdown to simulate CPU limit
+  ::caf::actor_system_config actor_system_cfg_;    // used in adaptive pushdown to simulate CPU limit
   std::string store_root_path_prefix_;
   int num_drives_;
   int scan_drive_id_ = 0;    // updated in round-robin

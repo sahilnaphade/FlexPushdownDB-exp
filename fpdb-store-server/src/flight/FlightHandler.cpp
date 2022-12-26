@@ -694,10 +694,9 @@ tl::expected<void, ::arrow::Status> FlightHandler::do_put_set_adapt_pushdown(
         const std::shared_ptr<SetAdaptPushdownCmd>& set_adapt_pushdown_cmd) {
   // set flag and param of adaptive pushdown
   ENABLE_ADAPTIVE_PUSHDOWN = set_adapt_pushdown_cmd->enableAdaptPushdown();
-  int maxThreads = set_adapt_pushdown_cmd->maxThreads();
-  actor_system_cfg_ = std::make_shared<::caf::actor_system_config>();
-  actor_system_cfg_->set("caf.scheduler.max-threads", maxThreads);
-  actor_system_ = std::make_shared<::caf::actor_system>(*actor_system_cfg_);
+  MaxThreads = set_adapt_pushdown_cmd->maxThreads();
+  actor_system_cfg_.set("caf.scheduler.max-threads", MaxThreads);
+  actor_system_ = std::make_shared<::caf::actor_system>(actor_system_cfg_);
 
   return {};
 }
