@@ -339,16 +339,8 @@ FlightHandler::run_select_object_content(long query_id,
   if (ENABLE_ADAPTIVE_PUSHDOWN) {
     req = std::make_shared<AdaptPushdownReqInfo>(query_id,
                                                  fpdb_store_super_pop,
-                                                 parallel_degree,
-                                                 std::make_shared<std::mutex>(),
-                                                 std::make_shared<std::condition_variable_any>());
-    if (adaptPushdownManager_.receiveOne(req)) {
-      // execute as pushdown
-      std::unique_lock lock(*req->mutex_);
-      req->cv_->wait(lock, [&] {
-        return req->status_ == AdaptPushdownReqInfo::STATUS::RUN;
-      });
-    } else {
+                                                 parallel_degree);
+    if (!adaptPushdownManager_.receiveOne(req)) {
       // fall back as pullup
       return tl::make_unexpected(MakeFlightError(ReqRejectStatusCode, "Resource limited"));
     }

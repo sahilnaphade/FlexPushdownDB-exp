@@ -20,18 +20,12 @@ namespace fpdb::store::server::flight {
 struct AdaptPushdownReqInfo {
   AdaptPushdownReqInfo(long queryId,
                        const std::string &op,
-                       int numRequiredCpuCores,
-                       const std::shared_ptr<std::mutex> &mutex,
-                       const std::shared_ptr<std::condition_variable_any> &cv):
-  queryId_(queryId), op_(op), numRequiredCpuCores_(numRequiredCpuCores),
-  mutex_(mutex), cv_(cv) {}
+                       int numRequiredCpuCores):
+  queryId_(queryId), op_(op), numRequiredCpuCores_(numRequiredCpuCores) {}
 
   long queryId_;
   std::string op_;
   int numRequiredCpuCores_;
-  std::shared_ptr<std::mutex> mutex_;
-  std::shared_ptr<std::condition_variable_any> cv_;
-  enum STATUS {WAIT, RUN, FINISH} status_ = STATUS::WAIT;
   std::optional<std::chrono::steady_clock::time_point> startTime_ = std::nullopt;
   std::optional<int64_t> estExecTime_ = std::nullopt;
 };
@@ -63,29 +57,25 @@ public:
   // process an incoming pushdown request, return "true" to execute as pushdown, "false" to fall back as pullup
   bool receiveOne(const std::shared_ptr<AdaptPushdownReqInfo> &req);
 
-  // when, one request is finished, check if we need to pop out requests from wait queue
+  // when one request is finished
   void finishOne(const std::shared_ptr<AdaptPushdownReqInfo> &req);
 
 private:
-  // admit to execute a pushdown request
-  void admit(const std::shared_ptr<AdaptPushdownReqInfo> &req);
-
-  // get the waiting time at this point
-  int64_t getWaitTime();
-
-  // if the incoming pushdown request needs to wait
-  bool wait();
+  // get the estimated total time (including both wait and exec) to execute the req at this point
+  int64_t getWaitExecTime(const std::shared_ptr<AdaptPushdownReqInfo> &req);
 
   // generate adaptive pushdown metrics keys for both pullup metrics and pushdown metrics
   static tl::expected<std::pair<std::string, std::string>, std::string>
   generateAdaptPushdownMetricsKeys(long queryId, const std::string &op);
 
-  std::unordered_map<std::string, int64_t> adaptPushdownMetrics_; // used to estimate pullup and pushdown time
-  std::queue<std::shared_ptr<AdaptPushdownReqInfo>> waitQueue_;  // wait queue
+  // for adaptive pushdown metrics
+  std::unordered_map<std::string, int64_t> adaptPushdownMetrics_;
+  std::mutex metricsMutex_;
+
+  // for managing pushdown requests adaptively
   std::unordered_set<std::shared_ptr<AdaptPushdownReqInfo>, AdaptPushdownReqInfoPointerHash,
       AdaptPushdownReqInfoPointerPredicate> execSet_;   // execution set
-  int64_t estExecTimeInWaitQueue_ = 0; // total estimated (pushdown) execution time in the wait queue
-  std::mutex adaptPushdownMetricsMutex_, waitQueueMutex_;   // used when updating member variables
+  std::mutex reqManageMutex_;
 };
 
 }

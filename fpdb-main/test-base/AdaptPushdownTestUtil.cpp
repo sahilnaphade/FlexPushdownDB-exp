@@ -55,17 +55,17 @@ void AdaptPushdownTestUtil::run_adapt_pushdown_benchmark_query(const std::string
     REQUIRE_NOTHROW(testUtil.runTest());
     reset_pushdown_flags(oldEnableAdaptPushdown, oldAvailCpuPercent, !startFPDBStore);
 
-//    // adaptive pushdown test run
-//    std::cout << "Adaptive pushdown run" << std::endl;
-//    testUtil = TestUtil(schemaName,
-//                        {queryFileName},
-//                        parallelDegree,
-//                        false,
-//                        ObjStoreType::FPDB_STORE,
-//                        Mode::pushdownOnlyMode());
-//    set_pushdown_flags(&oldEnableAdaptPushdown, &oldAvailCpuPercent, true, availCpuPercent, !startFPDBStore);
-//    REQUIRE_NOTHROW(testUtil.runTest());
-//    reset_pushdown_flags(oldEnableAdaptPushdown, oldAvailCpuPercent, !startFPDBStore);
+    // adaptive pushdown test run
+    std::cout << "Adaptive pushdown run" << std::endl;
+    testUtil = TestUtil(schemaName,
+                        {queryFileName},
+                        parallelDegree,
+                        false,
+                        ObjStoreType::FPDB_STORE,
+                        Mode::pushdownOnlyMode());
+    set_pushdown_flags(&oldEnableAdaptPushdown, &oldAvailCpuPercent, true, maxThreads, !startFPDBStore);
+    REQUIRE_NOTHROW(testUtil.runTest());
+    reset_pushdown_flags(oldEnableAdaptPushdown, oldAvailCpuPercent, !startFPDBStore);
 
     // clear adaptive pushdown metrics
     send_cmd_to_storage(fpdb::store::server::flight::ClearAdaptPushdownMetricsCmd::make());

@@ -11,113 +11,56 @@
 namespace fpdb::store::server::flight {
 
 void AdaptPushdownManager::addAdaptPushdownMetrics(const std::unordered_map<std::string, int64_t> &other) {
-  std::unique_lock lock(adaptPushdownMetricsMutex_);
+  std::unique_lock lock(metricsMutex_);
   adaptPushdownMetrics_.insert(other.begin(), other.end());
 }
 
 void AdaptPushdownManager::clearAdaptPushdownMetrics() {
-  std::unique_lock lock(adaptPushdownMetricsMutex_);
+  std::unique_lock lock(metricsMutex_);
   adaptPushdownMetrics_.clear();
 }
 
 bool AdaptPushdownManager::receiveOne(const std::shared_ptr<AdaptPushdownReqInfo> &req) {
-  std::unique_lock lock(waitQueueMutex_);
+  std::unique_lock lock(reqManageMutex_);
 
   // check if need to fall back to pullup
   auto adaptPushdownMetricsKeys = generateAdaptPushdownMetricsKeys(req->queryId_, req->op_);
   auto pullupMetricsIt = adaptPushdownMetrics_.find(adaptPushdownMetricsKeys->first);
   auto pushdownMetricsIt = adaptPushdownMetrics_.find(adaptPushdownMetricsKeys->second);
   bool execAsPushdown;
-  std::optional<int64_t> estExecTime = std::nullopt;
   if (pullupMetricsIt == adaptPushdownMetrics_.end() || pushdownMetricsIt == adaptPushdownMetrics_.end()) {
     execAsPushdown = true;
   } else {
     int64_t pullupTime = pullupMetricsIt->second;
-    int64_t pushdownTime = pushdownMetricsIt->second;
-    int64_t waitTime = getWaitTime();
-    execAsPushdown = (pullupTime >= pushdownTime + waitTime);
-    estExecTime = pushdownTime;
+    req->estExecTime_ = pushdownMetricsIt->second;
+    int64_t waitExecTime = getWaitExecTime(req);
+    execAsPushdown = (pullupTime >= waitExecTime);
   }
 
-  // check if need to wait if we execute it as pushdown
+  // set start time if we execute it as pushdown, and add to execution set
   if (execAsPushdown) {
-    req->estExecTime_ = estExecTime;
-    if (wait()) {
-      waitQueue_.push(req);
-      estExecTimeInWaitQueue_ += estExecTime.value_or(0);
-    } else {
-      admit(req);
-    }
+    req->startTime_ = std::chrono::steady_clock::now();
+    execSet_.emplace(req);
   }
 
   return execAsPushdown;
 }
 
 void AdaptPushdownManager::finishOne(const std::shared_ptr<AdaptPushdownReqInfo> &req) {
-//  std::unique_lock lock(waitQueueMutex_);
-//
-//  // set status and remove from execution set
-//  req->status_ = AdaptPushdownReqInfo::STATUS::FINISH;
-//  execSet_.erase(req);
-//
-//  // skip if no request is waiting
-//  if (waitQueue_.empty()) {
-//    return;
-//  }
-//
-//  // regular case, which checks CPU usage to determine
-//  double cpuUsage = fpdb::util::cpuMonitor.getUsage();
-//  while (cpuUsage < AvailCpuPercent && !waitQueue_.empty()) {
-//    const auto &front = waitQueue_.front();
-//    admit(front);
-//    waitQueue_.pop();
-//    estExecTimeInWaitQueue_ -= front->estExecTime_.value_or(0);
-//    cpuUsage += front->numRequiredCpuCores_ / ((double) std::thread::hardware_concurrency()) * 100.0;
-//  }
-//
-//  // if no request is being executed, we should at least pop one request from wait queue
-//  if (execSet_.empty()) {
-//    const auto &front = waitQueue_.front();
-//    admit(front);
-//    waitQueue_.pop();
-//    estExecTimeInWaitQueue_ -= front->estExecTime_.value_or(0);
-//  }
+  std::unique_lock lock(reqManageMutex_);
+  execSet_.erase(req);
 }
 
-void AdaptPushdownManager::admit(const std::shared_ptr<AdaptPushdownReqInfo> &req) {
-  req->mutex_->lock();
-  req->status_ = AdaptPushdownReqInfo::STATUS::RUN;
-  req->cv_->notify_one();
-  req->mutex_->unlock();
-  req->startTime_ = std::chrono::steady_clock::now();
-  execSet_.emplace(req);
-}
-
-int64_t AdaptPushdownManager::getWaitTime() {
-//  int64_t waitTime = estExecTimeInWaitQueue_;
-//  auto currTime = std::chrono::steady_clock::now();
-//  for (const auto &execReq: execSet_) {
-//    if (execReq->estExecTime_.has_value()) {
-//      waitTime += std::max((int64_t) 0, (int64_t) (*execReq->estExecTime_ -
-//          std::chrono::duration_cast<std::chrono::nanoseconds>(currTime - *execReq->startTime_).count()));
-//    }
-//  }
-//  return waitTime / (std::thread::hardware_concurrency() * AvailCpuPercent / 100.0);
-  return 0;
-}
-
-bool AdaptPushdownManager::wait() {
-//  // if no req is being executed, shouldn't wait, otherwise will cause deadlock
-//  if (execSet_.empty()) {
-//    return false;
-//  }
-//  // if wait queue is not empty, just join the wait queue
-//  if (!waitQueue_.empty()) {
-//    return true;
-//  }
-//  // otherwise, check cpu usage
-//  return fpdb::util::cpuMonitor.getUsage() >= AvailCpuPercent;
-  return false;
+int64_t AdaptPushdownManager::getWaitExecTime(const std::shared_ptr<AdaptPushdownReqInfo> &req) {
+  int64_t waitExecTime = *req->estExecTime_;
+  auto currTime = std::chrono::steady_clock::now();
+  for (const auto &execReq: execSet_) {
+    if (execReq->estExecTime_.has_value()) {
+      waitExecTime += std::max((int64_t) 0, (int64_t) (*execReq->estExecTime_ -
+          std::chrono::duration_cast<std::chrono::nanoseconds>(currTime - *execReq->startTime_).count()));
+    }
+  }
+  return waitExecTime / MaxThreads;
 }
 
 tl::expected<std::pair<std::string, std::string>, std::string>
