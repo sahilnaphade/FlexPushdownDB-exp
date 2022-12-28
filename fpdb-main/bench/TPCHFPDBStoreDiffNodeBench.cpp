@@ -788,7 +788,7 @@ TEST_SUITE ("tpch-sf50-fpdb-store-diff-node-adaptive-pushdown" * doctest::skip(S
 TEST_CASE ("tpch-sf50-fpdb-store-diff-node-adaptive-pushdown-19" * doctest::skip(false || SKIP_SUITE)) {
   AdaptPushdownTestUtil::run_adapt_pushdown_benchmark_query("tpch-sf50/parquet/",
                                                             "tpch/original/19.sql",
-                                                            {16, 1},
+                                                            {16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1},
                                                             PARALLEL_FPDB_STORE_DIFF_NODE,
                                                             false);
 }
