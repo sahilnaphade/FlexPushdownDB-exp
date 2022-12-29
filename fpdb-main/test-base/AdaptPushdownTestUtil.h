@@ -23,11 +23,8 @@ public:
                                                  bool startFPDBStore);
 
 private:
-  static void set_pushdown_flags(bool *oldEnableAdaptPushdown, int* oldMaxThreads,
-                                 bool enableAdaptPushdown, int maxThreads,
+  static void set_pushdown_flags(bool enableAdaptPushdown, int maxThreads,
                                  bool isFPDBStoreRemote);
-  static void reset_pushdown_flags(bool oldEnableAdaptPushdown, int oldMaxThreads,
-                                   bool isFPDBStoreRemote);
 
   static void send_cmd_to_storage(const std::shared_ptr<fpdb::store::server::flight::CmdObject> &cmdObj);
 };

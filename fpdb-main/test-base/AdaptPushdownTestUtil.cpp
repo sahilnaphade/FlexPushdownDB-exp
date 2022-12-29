@@ -12,6 +12,7 @@
 #include <fpdb/store/client/FPDBStoreClientConfig.h>
 #include <arrow/flight/api.h>
 #include <doctest/doctest.h>
+#include "thread"
 
 namespace fpdb::main::test {
 
@@ -20,8 +21,8 @@ void AdaptPushdownTestUtil::run_adapt_pushdown_benchmark_query(const std::string
                                                                const std::vector<int> &maxThreadsVec,
                                                                int parallelDegree,
                                                                bool startFPDBStore) {
-  bool oldEnableAdaptPushdown;
-  int oldAvailCpuPercent;
+  bool oldEnableAdaptPushdown = fpdb::executor::physical::ENABLE_ADAPTIVE_PUSHDOWN;
+  int oldMaxThreads = fpdb::store::server::flight::MaxThreads;
   if (startFPDBStore) {
     TestUtil::startFPDBStoreServer();
   }
@@ -54,9 +55,9 @@ void AdaptPushdownTestUtil::run_adapt_pushdown_benchmark_query(const std::string
                       ObjStoreType::FPDB_STORE,
                       Mode::pullupMode());
     testUtil.setCollAdaptPushdownMetrics(true);
-    set_pushdown_flags(&oldEnableAdaptPushdown, &oldAvailCpuPercent, false, maxThreads, !startFPDBStore);
+    set_pushdown_flags(false, maxThreads, !startFPDBStore);
+    std::this_thread::sleep_for(1s);
     REQUIRE_NOTHROW(testUtil.runTest());
-    reset_pushdown_flags(oldEnableAdaptPushdown, oldAvailCpuPercent, !startFPDBStore);
 
     // pushdown baseline run, also collecting adaptive pushdown metrics.
     std::cout << "Pushdown baseline run" << std::endl;
@@ -67,9 +68,7 @@ void AdaptPushdownTestUtil::run_adapt_pushdown_benchmark_query(const std::string
                         ObjStoreType::FPDB_STORE,
                         Mode::pushdownOnlyMode());
     testUtil.setCollAdaptPushdownMetrics(true);
-    set_pushdown_flags(&oldEnableAdaptPushdown, &oldAvailCpuPercent, false, maxThreads, !startFPDBStore);
     REQUIRE_NOTHROW(testUtil.runTest());
-    reset_pushdown_flags(oldEnableAdaptPushdown, oldAvailCpuPercent, !startFPDBStore);
 
     // adaptive pushdown test run
     std::cout << "Adaptive pushdown run" << std::endl;
@@ -79,40 +78,30 @@ void AdaptPushdownTestUtil::run_adapt_pushdown_benchmark_query(const std::string
                         false,
                         ObjStoreType::FPDB_STORE,
                         Mode::pushdownOnlyMode());
-    set_pushdown_flags(&oldEnableAdaptPushdown, &oldAvailCpuPercent, true, maxThreads, !startFPDBStore);
+    set_pushdown_flags(true, maxThreads, !startFPDBStore);
+    std::this_thread::sleep_for(1s);
     REQUIRE_NOTHROW(testUtil.runTest());
-    reset_pushdown_flags(oldEnableAdaptPushdown, oldAvailCpuPercent, !startFPDBStore);
 
     // clear adaptive pushdown metrics
     send_cmd_to_storage(fpdb::store::server::flight::ClearAdaptPushdownMetricsCmd::make());
   }
+
+  // restore flags
+  set_pushdown_flags(oldEnableAdaptPushdown, oldMaxThreads, !startFPDBStore);
 
   if (startFPDBStore) {
     TestUtil::stopFPDBStoreServer();
   }
 }
 
-void AdaptPushdownTestUtil::set_pushdown_flags(bool *oldEnableAdaptPushdown, int* oldMaxThreads,
-                                               bool enableAdaptPushdown, int maxThreads,
+void AdaptPushdownTestUtil::set_pushdown_flags(bool enableAdaptPushdown, int maxThreads,
                                                bool isFPDBStoreRemote) {
-  *oldEnableAdaptPushdown = fpdb::executor::physical::ENABLE_ADAPTIVE_PUSHDOWN;
-  *oldMaxThreads = fpdb::store::server::flight::MaxThreads;
   fpdb::executor::physical::ENABLE_ADAPTIVE_PUSHDOWN = enableAdaptPushdown;
+  fpdb::store::server::flight::MaxThreads = maxThreads;
   if (isFPDBStoreRemote) {
     send_cmd_to_storage(fpdb::store::server::flight::SetAdaptPushdownCmd::make(
             enableAdaptPushdown, maxThreads));
   }
-  fpdb::store::server::flight::MaxThreads = maxThreads;
-}
-
-void AdaptPushdownTestUtil::reset_pushdown_flags(bool oldEnableAdaptPushdown, int oldMaxThreads,
-                                                 bool isFPDBStoreRemote) {
-  fpdb::executor::physical::ENABLE_ADAPTIVE_PUSHDOWN = oldEnableAdaptPushdown;
-  if (isFPDBStoreRemote) {
-    send_cmd_to_storage(fpdb::store::server::flight::SetAdaptPushdownCmd::make(
-            oldEnableAdaptPushdown, oldMaxThreads));
-  }
-  fpdb::store::server::flight::MaxThreads = oldMaxThreads;
 }
 
 void AdaptPushdownTestUtil::send_cmd_to_storage(const std::shared_ptr<fpdb::store::server::flight::CmdObject> &cmdObj) {
