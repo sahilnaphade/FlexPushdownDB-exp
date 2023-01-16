@@ -21,45 +21,54 @@ void AdaptPushdownTestUtil::run_adapt_pushdown_benchmark_query(const std::string
                                                                const std::vector<int> &maxThreadsVec,
                                                                int parallelDegree,
                                                                bool startFPDBStore) {
+  // save old configs
   bool oldEnableAdaptPushdown = fpdb::executor::physical::ENABLE_ADAPTIVE_PUSHDOWN;
   int oldMaxThreads = fpdb::store::server::flight::MaxThreads;
+
+  // start fpdb-store if local
   if (startFPDBStore) {
     TestUtil::startFPDBStoreServer();
   }
 
-  // run pullup and pushdown once as gandiva cache makes the subsequent runs faster than the first run
-  std::cout << "Start run (pullup)" << std::endl;
-  REQUIRE(TestUtil::e2eNoStartCalciteServer(schemaName,
-                                            {queryFileName},
-                                            parallelDegree,
-                                            false,
-                                            ObjStoreType::FPDB_STORE,
-                                            Mode::pullupMode()));
-  std::cout << "Start run (pushdown)" << std::endl;
-  REQUIRE(TestUtil::e2eNoStartCalciteServer(schemaName,
-                                            {queryFileName},
-                                            parallelDegree,
-                                            false,
-                                            ObjStoreType::FPDB_STORE,
-                                            Mode::pushdownOnlyMode()));
+  // collect adaptive pushdown metrics for pullup
+  std::cout << "Collect metrics run (pullup)" << std::endl;
+  TestUtil testUtil(schemaName,
+                    {queryFileName},
+                    parallelDegree,
+                    false,
+                    ObjStoreType::FPDB_STORE,
+                    Mode::pullupMode());
+  testUtil.setCollAdaptPushdownMetrics(true);
+  REQUIRE_NOTHROW(testUtil.runTest());
 
-  for (int maxThreads: maxThreadsVec) {
-    std::cout << fmt::format("Max threads at storage side: {}\n", maxThreads) << std::endl;
-
-    // pullup baseline run, also collecting adaptive pushdown metrics
-    std::cout << "Pullup baseline run" << std::endl;
-    TestUtil testUtil(schemaName,
+  // collect adaptive pushdown metrics for pushdown
+  std::cout << "Collect metrics run (pushdown)" << std::endl;
+  testUtil = TestUtil(schemaName,
                       {queryFileName},
                       parallelDegree,
                       false,
                       ObjStoreType::FPDB_STORE,
-                      Mode::pullupMode());
-    testUtil.setCollAdaptPushdownMetrics(true);
+                      Mode::pushdownOnlyMode());
+  testUtil.setCollAdaptPushdownMetrics(true);
+  REQUIRE_NOTHROW(testUtil.runTest());
+
+  // measurement runs
+  for (int maxThreads: maxThreadsVec) {
+    std::cout << fmt::format("Max threads at storage side: {}\n", maxThreads) << std::endl;
+
+    // pullup baseline run
+    std::cout << "Pullup baseline run" << std::endl;
+    testUtil = TestUtil(schemaName,
+                        {queryFileName},
+                        parallelDegree,
+                        false,
+                        ObjStoreType::FPDB_STORE,
+                        Mode::pullupMode());
     set_pushdown_flags(false, maxThreads, !startFPDBStore);
     std::this_thread::sleep_for(1s);
     REQUIRE_NOTHROW(testUtil.runTest());
 
-    // pushdown baseline run, also collecting adaptive pushdown metrics.
+    // pushdown baseline run
     std::cout << "Pushdown baseline run" << std::endl;
     testUtil = TestUtil(schemaName,
                         {queryFileName},
@@ -67,7 +76,7 @@ void AdaptPushdownTestUtil::run_adapt_pushdown_benchmark_query(const std::string
                         false,
                         ObjStoreType::FPDB_STORE,
                         Mode::pushdownOnlyMode());
-    testUtil.setCollAdaptPushdownMetrics(true);
+    std::this_thread::sleep_for(1s);
     REQUIRE_NOTHROW(testUtil.runTest());
 
     // adaptive pushdown test run
@@ -81,14 +90,13 @@ void AdaptPushdownTestUtil::run_adapt_pushdown_benchmark_query(const std::string
     set_pushdown_flags(true, maxThreads, !startFPDBStore);
     std::this_thread::sleep_for(1s);
     REQUIRE_NOTHROW(testUtil.runTest());
-
-    // clear adaptive pushdown metrics
-    send_cmd_to_storage(fpdb::store::server::flight::ClearAdaptPushdownMetricsCmd::make());
   }
 
-  // restore flags
+  // restore flags and clear adaptive pushdown metrics
   set_pushdown_flags(oldEnableAdaptPushdown, oldMaxThreads, !startFPDBStore);
+  send_cmd_to_storage(fpdb::store::server::flight::ClearAdaptPushdownMetricsCmd::make());
 
+  // stop fpdb-store if local
   if (startFPDBStore) {
     TestUtil::stopFPDBStoreServer();
   }
