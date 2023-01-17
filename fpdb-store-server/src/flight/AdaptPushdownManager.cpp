@@ -52,15 +52,15 @@ void AdaptPushdownManager::finishOne(const std::shared_ptr<AdaptPushdownReqInfo>
 }
 
 int64_t AdaptPushdownManager::getWaitExecTime(const std::shared_ptr<AdaptPushdownReqInfo> &req) {
-  int64_t waitExecTime = *req->estExecTime_;
+  int64_t waitTime = 0;
   auto currTime = std::chrono::steady_clock::now();
   for (const auto &execReq: execSet_) {
     if (execReq->estExecTime_.has_value()) {
-      waitExecTime += std::max((int64_t) 0, (int64_t) (*execReq->estExecTime_ -
+      waitTime += std::max((int64_t) 0, (int64_t) (*execReq->estExecTime_ -
           std::chrono::duration_cast<std::chrono::nanoseconds>(currTime - *execReq->startTime_).count()));
     }
   }
-  return waitExecTime / MaxThreads;
+  return waitTime / MaxThreads * 2 + *req->estExecTime_;
 }
 
 tl::expected<std::pair<std::string, std::string>, std::string>
