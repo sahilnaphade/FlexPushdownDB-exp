@@ -340,7 +340,7 @@ FlightHandler::run_select_object_content(long query_id,
     req = std::make_shared<AdaptPushdownReqInfo>(query_id,
                                                  fpdb_store_super_pop,
                                                  parallel_degree);
-    if (!adaptPushdownManager_.receiveOne(req)) {
+    if (!adapt_pushdown_manager_.receiveOne(req)) {
       // fall back as pullup
       return tl::make_unexpected(MakeFlightError(ReqRejectStatusCode, "Resource limited"));
     }
@@ -351,7 +351,7 @@ FlightHandler::run_select_object_content(long query_id,
                                                                  getStoreRootPath(update_scan_drive_id()));
   if (!exp_physical_plan.has_value()) {
     if (ENABLE_ADAPTIVE_PUSHDOWN) {
-      adaptPushdownManager_.finishOne(req);
+      adapt_pushdown_manager_.finishOne(req);
     }
     return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed, exp_physical_plan.error()));
   }
@@ -379,7 +379,7 @@ FlightHandler::run_select_object_content(long query_id,
         auto exp_bloom_filter = bloom_filter_cache_.consumeBloomFilter(bloom_filter_key);
         if (!exp_bloom_filter.has_value()) {
           if (ENABLE_ADAPTIVE_PUSHDOWN) {
-            adaptPushdownManager_.finishOne(req);
+            adapt_pushdown_manager_.finishOne(req);
           }
           return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed, exp_bloom_filter.error()));
         }
@@ -405,7 +405,9 @@ FlightHandler::run_select_object_content(long query_id,
 
   // execute the query plan
   auto execution = std::make_shared<executor::FPDBStoreExecution>(
-          query_id, actor_system_, physical_plan,
+          query_id,
+          use_adapt_pushdown_actor_system_vec_ ? adapt_pushdown_actor_system_vec_.back() : actor_system_,
+          physical_plan,
           [&] (const std::string &consumer, const std::shared_ptr<arrow::Table> &table) {
             auto table_key = executor::flight::TableCache::generateTableKey(query_id, fpdb_store_super_pop, consumer);
             put_table_into_cache(table_key, table);
@@ -417,7 +419,7 @@ FlightHandler::run_select_object_content(long query_id,
 
   // return query result
   if (ENABLE_ADAPTIVE_PUSHDOWN) {
-    adaptPushdownManager_.finishOne(req);
+    adapt_pushdown_manager_.finishOne(req);
   }
   return execution->execute()->table();
 }
@@ -675,7 +677,7 @@ tl::expected<void, ::arrow::Status> FlightHandler::do_put_put_adapt_pushdown_met
         const ServerCallContext&,
         const std::shared_ptr<PutAdaptPushdownMetricsCmd>& put_adapt_pushdown_metrics_cmd) {
   // save metrics of adaptive pushdown
-  adaptPushdownManager_.addAdaptPushdownMetrics(put_adapt_pushdown_metrics_cmd->getAdaptPushdownMetrics());
+  adapt_pushdown_manager_.addAdaptPushdownMetrics(put_adapt_pushdown_metrics_cmd->getAdaptPushdownMetrics());
 
   return {};
 }
@@ -684,7 +686,11 @@ tl::expected<void, ::arrow::Status> FlightHandler::do_put_clear_adapt_pushdown_m
         const ServerCallContext&,
         const std::shared_ptr<ClearAdaptPushdownMetricsCmd>&) {
   // clear metrics of adaptive pushdown
-  adaptPushdownManager_.clearAdaptPushdownMetrics();
+  adapt_pushdown_manager_.clearAdaptPushdownMetrics();
+
+  // also reset to use the default actor_system
+  use_adapt_pushdown_actor_system_vec_ = false;
+  adapt_pushdown_actor_system_vec_.clear();
 
   return {};
 }
@@ -696,8 +702,10 @@ tl::expected<void, ::arrow::Status> FlightHandler::do_put_set_adapt_pushdown(
   ENABLE_ADAPTIVE_PUSHDOWN = set_adapt_pushdown_cmd->enableAdaptPushdown();
   if (MaxThreads != set_adapt_pushdown_cmd->maxThreads()) {
     MaxThreads = set_adapt_pushdown_cmd->maxThreads();
-    actor_system_cfg_.set("caf.scheduler.max-threads", MaxThreads);
-    actor_system_ = std::make_shared<::caf::actor_system>(actor_system_cfg_);
+    adapt_pushdown_actor_system_cfg_.set("caf.scheduler.max-threads", MaxThreads);
+    adapt_pushdown_actor_system_vec_.emplace_back(
+            std::make_shared<::caf::actor_system>(adapt_pushdown_actor_system_cfg_));
+    use_adapt_pushdown_actor_system_vec_ = true;
   }
 
   return {};

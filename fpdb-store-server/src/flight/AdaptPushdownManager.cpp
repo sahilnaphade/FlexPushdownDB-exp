@@ -60,7 +60,7 @@ int64_t AdaptPushdownManager::getWaitExecTime(const std::shared_ptr<AdaptPushdow
           std::chrono::duration_cast<std::chrono::nanoseconds>(currTime - *execReq->startTime_).count()));
     }
   }
-  return waitTime / MaxThreads * 2 + *req->estExecTime_;
+  return waitTime / MaxThreads + *req->estExecTime_;
 }
 
 tl::expected<std::pair<std::string, std::string>, std::string>

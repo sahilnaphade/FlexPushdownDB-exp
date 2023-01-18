@@ -385,7 +385,7 @@ private:
 
   ::arrow::flight::Location location_;
   std::shared_ptr<::caf::actor_system> actor_system_;
-  ::caf::actor_system_config actor_system_cfg_;    // used in adaptive pushdown to simulate CPU limit
+
   std::string store_root_path_prefix_;
   int num_drives_;
   int scan_drive_id_ = 0;    // updated in round-robin
@@ -410,7 +410,13 @@ private:
   std::unordered_map<std::string, std::shared_ptr<std::condition_variable_any>> table_cvs_;
 
   // adaptive pushdown
-  AdaptPushdownManager adaptPushdownManager_;
+  AdaptPushdownManager adapt_pushdown_manager_;
+  ::caf::actor_system_config adapt_pushdown_actor_system_cfg_;
+  // FIXME: unsure why if just using one actor_system and replace by a new one when modifying actor_system_config,
+  //  it may stuck (probably in its destructor), so here a work-around is to store all newly created actor_system
+  //  in a vector (to avoid calling the destructor) and use the last one
+  std::vector<std::shared_ptr<::caf::actor_system>> adapt_pushdown_actor_system_vec_;
+  bool use_adapt_pushdown_actor_system_vec_ = false;
 };
 
 } // namespace fpdb::store::server::flight

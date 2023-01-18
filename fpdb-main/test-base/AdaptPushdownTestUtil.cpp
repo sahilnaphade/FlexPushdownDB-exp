@@ -30,6 +30,22 @@ void AdaptPushdownTestUtil::run_adapt_pushdown_benchmark_query(const std::string
     TestUtil::startFPDBStoreServer();
   }
 
+  // run pullup and pushdown once as gandiva cache makes the subsequent runs faster than the first run
+  std::cout << "Start run (pullup)" << std::endl;
+  REQUIRE(TestUtil::e2eNoStartCalciteServer(schemaName,
+                                            {queryFileName},
+                                            parallelDegree,
+                                            false,
+                                            ObjStoreType::FPDB_STORE,
+                                            Mode::pullupMode()));
+  std::cout << "Start run (pushdown)" << std::endl;
+  REQUIRE(TestUtil::e2eNoStartCalciteServer(schemaName,
+                                            {queryFileName},
+                                            parallelDegree,
+                                            false,
+                                            ObjStoreType::FPDB_STORE,
+                                            Mode::pushdownOnlyMode()));
+
   // collect adaptive pushdown metrics for pullup
   std::cout << "Collect metrics run (pullup)" << std::endl;
   TestUtil testUtil(schemaName,
