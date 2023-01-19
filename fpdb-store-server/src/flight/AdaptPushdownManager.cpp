@@ -34,7 +34,9 @@ bool AdaptPushdownManager::receiveOne(const std::shared_ptr<AdaptPushdownReqInfo
     int64_t pullupTime = pullupMetricsIt->second;
     req->estExecTime_ = pushdownMetricsIt->second;
     int64_t waitExecTime = getWaitExecTime(req);
-    execAsPushdown = (pullupTime >= waitExecTime);
+    // some calibration needed when observing sample test results
+    execAsPushdown = (((double) pullupTime) / ((double) *req->estExecTime_) < 2) ?
+            (pullupTime * 1.5 >= waitExecTime) : (pullupTime / 1.5 >= waitExecTime);
   }
 
   // set start time if we execute it as pushdown, and add to execution set

@@ -785,10 +785,77 @@ TEST_CASE ("tpch-sf10-fpdb-store-diff-node-parquet-pushdown-only-22" * doctest::
  */
 TEST_SUITE ("tpch-sf50-fpdb-store-diff-node-adaptive-pushdown" * doctest::skip(SKIP_SUITE)) {
 
+TEST_CASE ("tpch-sf50-fpdb-store-diff-node-adaptive-pushdown-01" * doctest::skip(false || SKIP_SUITE)) {
+  AdaptPushdownTestUtil::run_adapt_pushdown_benchmark_query("tpch-sf50/parquet/",
+                                                            "tpch/original/01.sql",
+                                                            {16, 8, 6, 4, 3, 2, 1},
+                                                            PARALLEL_FPDB_STORE_DIFF_NODE,
+                                                            false);
+}
+
+TEST_CASE ("tpch-sf50-fpdb-store-diff-node-adaptive-pushdown-04" * doctest::skip(false || SKIP_SUITE)) {
+  AdaptPushdownTestUtil::run_adapt_pushdown_benchmark_query("tpch-sf50/parquet/",
+                                                            "tpch/original/04.sql",
+                                                            {16, 8, 6, 4, 3, 2, 1},
+                                                            PARALLEL_FPDB_STORE_DIFF_NODE,
+                                                            false);
+}
+
+TEST_CASE ("tpch-sf50-fpdb-store-diff-node-adaptive-pushdown-06" * doctest::skip(false || SKIP_SUITE)) {
+  AdaptPushdownTestUtil::run_adapt_pushdown_benchmark_query("tpch-sf50/parquet/",
+                                                            "tpch/original/06.sql",
+                                                            {16, 8, 6, 4, 3, 2, 1},
+                                                            PARALLEL_FPDB_STORE_DIFF_NODE,
+                                                            false);
+}
+
+
+TEST_CASE ("tpch-sf50-fpdb-store-diff-node-adaptive-pushdown-07" * doctest::skip(false || SKIP_SUITE)) {
+  AdaptPushdownTestUtil::run_adapt_pushdown_benchmark_query("tpch-sf50/parquet/",
+                                                            "tpch/original/07.sql",
+                                                            {16, 8, 6, 4, 3, 2, 1},
+                                                            PARALLEL_FPDB_STORE_DIFF_NODE,
+                                                            false);
+}
+
+// FIXME: currently there is memory not freed after execution, so unable to run too many queries in a single test,
+//  now just split the test into multiple parts.
+TEST_CASE ("tpch-sf50-fpdb-store-diff-node-adaptive-pushdown-08-part1" * doctest::skip(false || SKIP_SUITE)) {
+  AdaptPushdownTestUtil::run_adapt_pushdown_benchmark_query("tpch-sf50/parquet/",
+                                                            "tpch/original/08.sql",
+                                                            {16, 8, 6, 4},
+                                                            PARALLEL_FPDB_STORE_DIFF_NODE,
+                                                            false);
+}
+
+TEST_CASE ("tpch-sf50-fpdb-store-diff-node-adaptive-pushdown-08-part2" * doctest::skip(false || SKIP_SUITE)) {
+  AdaptPushdownTestUtil::run_adapt_pushdown_benchmark_query("tpch-sf50/parquet/",
+                                                            "tpch/original/08.sql",
+                                                            {3, 2, 1},
+                                                            PARALLEL_FPDB_STORE_DIFF_NODE,
+                                                            false);
+}
+
+TEST_CASE ("tpch-sf50-fpdb-store-diff-node-adaptive-pushdown-11" * doctest::skip(false || SKIP_SUITE)) {
+  AdaptPushdownTestUtil::run_adapt_pushdown_benchmark_query("tpch-sf50/parquet/",
+                                                            "tpch/original/11.sql",
+                                                            {16, 8, 6, 4, 3, 2, 1},
+                                                            PARALLEL_FPDB_STORE_DIFF_NODE,
+                                                            false);
+}
+
+TEST_CASE ("tpch-sf50-fpdb-store-diff-node-adaptive-pushdown-16" * doctest::skip(false || SKIP_SUITE)) {
+  AdaptPushdownTestUtil::run_adapt_pushdown_benchmark_query("tpch-sf50/parquet/",
+                                                            "tpch/original/16.sql",
+                                                            {16, 8, 6, 4, 3, 2, 1},
+                                                            PARALLEL_FPDB_STORE_DIFF_NODE,
+                                                            false);
+}
+
 TEST_CASE ("tpch-sf50-fpdb-store-diff-node-adaptive-pushdown-19" * doctest::skip(false || SKIP_SUITE)) {
   AdaptPushdownTestUtil::run_adapt_pushdown_benchmark_query("tpch-sf50/parquet/",
                                                             "tpch/original/19.sql",
-                                                            {16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1},
+                                                            {16, 8, 6, 4, 3, 2, 1},
                                                             PARALLEL_FPDB_STORE_DIFF_NODE,
                                                             false);
 }
