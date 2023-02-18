@@ -3,9 +3,9 @@ select
   sum(l.l_extendedprice * (1 - l.l_discount)) as revenue
 
 from
-  customer c,
   orders o,
   lineitem l,
+  customer c,
   supplier s,
   nation n,
   region r
