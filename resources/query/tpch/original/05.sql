@@ -5,10 +5,10 @@ select
 from
   orders o,
   lineitem l,
-  customer c,
   supplier s,
   nation n,
-  region r
+  region r,
+  customer c
 
 where
   c.c_custkey = o.o_custkey
