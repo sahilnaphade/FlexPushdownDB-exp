@@ -8,7 +8,7 @@ export build_parallel=8
 export build_dir_name="build"
 export deploy_dir_name="FPDB-build"
 export temp_dir_name="temp"
-export pem_path="$HOME""/.aws/yifei-aws-wisc.pem"
+export pem_path="$HOME""/.aws/yifei-cloudbank-aws.pem"
 export use_fpdb_store=true
 
 # fixed parameters
