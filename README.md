@@ -25,6 +25,7 @@ Compiler needed:
 
 1. Clear `resources/config/cluster_ips`.
 2. Install required dependency. For Ubuntu, `./tools/project/bin/ubuntu-prerequisites.sh`. For other Linux OS or Mac OS, required dependencies listed in `tools/project/bin/ubuntu-prerequisites.sh` have to be manually installed.
+3. Set `RESOURCE_PATH` of `fpdb-calcite/java/main/resources/config/exec.conf` to the path of `resources`.
 3. Build the system `./resources/script/build.sh`.
 
 #### To set up the system in an EC2 cluster:
