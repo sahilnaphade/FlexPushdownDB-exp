@@ -40,8 +40,9 @@ public:
   const std::optional<std::pair<int64_t, int64_t>> &getByteRange() const;
 
 #if SHOW_DEBUG_METRICS == true
+  int64_t getBytesReadLocal() const;
   int64_t getBytesReadRemote() const;
-  void clearBytesReadRemote();
+  void clearBytesRead();
 #endif
 
   virtual tl::expected<std::shared_ptr<TupleSet>, std::string> scan() = 0;
@@ -55,6 +56,7 @@ protected:
   std::optional<std::pair<int64_t, int64_t>> byteRange_;
 
 #if SHOW_DEBUG_METRICS == true
+  int64_t bytesReadLocal_ = 0;
   int64_t bytesReadRemote_ = 0;
 #endif
 

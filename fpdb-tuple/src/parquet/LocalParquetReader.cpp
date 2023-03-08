@@ -32,6 +32,9 @@ tl::expected<std::shared_ptr<TupleSet>, std::string> LocalParquetReader::read(co
 
   // read
   auto expTupleSet = ParquetReader::readImpl(columnNames, inFile);
+  bytesReadLocal_ += inFile->GetBytesRead();
+
+  // close
   close(inFile);
   return expTupleSet;
 }
@@ -47,6 +50,9 @@ LocalParquetReader::readRange(const std::vector<std::string> &columnNames, int64
 
   // read
   auto expTupleSet = ParquetReader::readRangeImpl(columnNames, startPos, finishPos, inputStream);
+  bytesReadLocal_ += inputStream->GetBytesRead();
+
+  // close
   close(inputStream);
   return expTupleSet;
 }

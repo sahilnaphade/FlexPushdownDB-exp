@@ -111,10 +111,15 @@ std::shared_ptr<TupleSet> FileScanAbstractPOp::readTuples(const std::vector<std:
 
   // metrics
 #if SHOW_DEBUG_METRICS == true
-  std::shared_ptr<Message> execMetricsMsg = std::make_shared<TransferMetricsMessage>(
-          metrics::TransferMetrics(kernel_->getBytesReadRemote(), 0, 0), this->name());
+  std::shared_ptr<Message> execMetricsMsg;
+  if (type_ == POpType::REMOTE_FILE_SCAN) {
+    execMetricsMsg = std::make_shared<TransferMetricsMessage>(
+            metrics::TransferMetrics(kernel_->getBytesReadRemote(), 0, 0), this->name());
+  } else {
+    execMetricsMsg = std::make_shared<DiskMetricsMessage>(kernel_->getBytesReadLocal(), this->name());
+  }
   ctx()->notifyRoot(execMetricsMsg);
-  kernel_->clearBytesReadRemote();
+  kernel_->clearBytesRead();
 #endif
 
   if (toCache_) {

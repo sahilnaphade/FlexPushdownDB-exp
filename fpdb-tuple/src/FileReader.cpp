@@ -17,6 +17,10 @@ const std::shared_ptr<FileFormat> &FileReader::getFormat() const {
   return format_;
 }
 
+int64_t FileReader::getBytesReadLocal() const {
+  return bytesReadLocal_;
+}
+
 int64_t FileReader::getBytesReadRemote() const {
   return bytesReadRemote_;
 }

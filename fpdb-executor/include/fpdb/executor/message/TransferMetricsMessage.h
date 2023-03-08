@@ -34,7 +34,7 @@ public:
   friend bool inspect(Inspector& f, TransferMetricsMessage& msg) {
     return f.object(msg).fields(f.field("type", msg.type_),
                                 f.field("sender", msg.sender_),
-                                f.field("debugMetrics", msg.transferMetrics_));
+                                f.field("transferMetrics", msg.transferMetrics_));
   }
 };
 

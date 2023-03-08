@@ -36,6 +36,10 @@ LocalCSVReader::readRange(const std::vector<std::string> &columnNames, int64_t s
 
   // read
   auto expTupleSet = CSVReader::readRangeImpl(columnNames, startPos, finishPos, inFile);
+  auto fileSize = fpdb::util::getFileSize(path_);
+  bytesReadLocal_ += (fileSize >= finishPos) ? (finishPos - startPos) : (fileSize - startPos);
+
+  // close
   close(inFile);
   return expTupleSet;
 }
@@ -56,6 +60,9 @@ LocalCSVReader::readUsingSimdParser(const std::vector<std::string> &columnNames)
 #else
   auto expTupleSet = TupleSet::makeWithEmptyTable();
 #endif
+  bytesReadLocal_ += fpdb::util::getFileSize(path_);
+
+  // close
   inputStream.close();
   return expTupleSet;
 }
@@ -72,6 +79,9 @@ LocalCSVReader::readUsingArrowApi(const std::vector<std::string> &columnNames) {
 
   // read
   auto expTupleSet = CSVReader::readUsingArrowApiImpl(columnNames, inFile);
+  bytesReadLocal_ += inFile->GetBytesRead();
+
+  // close
   close(inFile);
   return expTupleSet;
 }

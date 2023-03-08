@@ -22,6 +22,7 @@ public:
 
   const std::shared_ptr<FileFormat> &getFormat() const;
 
+  int64_t getBytesReadLocal() const;
   int64_t getBytesReadRemote() const;
 
   /**
@@ -63,6 +64,7 @@ protected:
   std::shared_ptr<FileFormat> format_;
   std::shared_ptr<::arrow::Schema> schema_;
 
+  int64_t bytesReadLocal_ = 0;
   int64_t bytesReadRemote_ = 0;
 
 };

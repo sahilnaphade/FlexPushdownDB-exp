@@ -32,6 +32,32 @@ FlightHandler::FlightHandler(Location location,
 
 FlightHandler::~FlightHandler() {
   this->shutdown();
+  if (ShowDebugMetricsOnExit && !bytes_disk_read_by_query_.empty()) {
+    stringstream ss;
+    ss << endl;
+    ss << "Storage Metrics |" << endl << endl;
+    ss << "Bytes Disk Read |" << endl;
+
+    // sort map entries by key
+    std::vector<long> keys;
+    keys.reserve(bytes_disk_read_by_query_.size());
+    for (const auto &metrics: bytes_disk_read_by_query_) {
+      keys.emplace_back(metrics.first);
+    }
+    std::sort(keys.begin(), keys.end());
+
+    // print
+    for (auto key: keys) {
+      stringstream formattedBytesDiskRead;
+      int64_t bytesDiskRead = bytes_disk_read_by_query_[key];
+      formattedBytesDiskRead << bytesDiskRead << " B" << " ("
+                             << ((double) bytesDiskRead / 1024.0 / 1024.0 / 1024.0) << " GB)";
+      ss << left << setw(60) << key;
+      ss << left << setw(60) << formattedBytesDiskRead.str();
+      ss << endl;
+    }
+    std::cout << ss.str() << std::endl;
+  }
 }
 
 tl::expected<void, std::string> FlightHandler::init() {
@@ -416,12 +442,20 @@ FlightHandler::run_select_object_content(long query_id,
             auto bitmap_key = BitmapCache::generateBitmapKey(query_id, sender);
             put_bitmap_into_cache(bitmap_key, bitmap, BitmapType::FILTER_STORAGE, true);
           });
+  const auto &result_table = execution->execute()->table();
+
+#if SHOW_DEBUG_METRICS == true
+  // save metrics of bytes disk read
+  bytes_disk_read_mutex_.lock();
+  bytes_disk_read_by_query_[query_id] += execution->getDebugMetrics().getDiskMetrics().getBytesFromDisk();
+  bytes_disk_read_mutex_.unlock();
+#endif
 
   // return query result
   if (ENABLE_ADAPTIVE_PUSHDOWN) {
     adapt_pushdown_manager_.finishOne(req);
   }
-  return execution->execute()->table();
+  return result_table;
 }
 
 tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::do_get_get_bitmap(

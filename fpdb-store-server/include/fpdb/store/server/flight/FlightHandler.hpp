@@ -417,6 +417,12 @@ private:
   //  in a vector (to avoid calling the destructor) and use the last one
   std::vector<std::shared_ptr<::caf::actor_system>> adapt_pushdown_actor_system_vec_;
   bool use_adapt_pushdown_actor_system_vec_ = false;
+
+#if SHOW_DEBUG_METRICS == true
+  // used for collect bytes of disk read per query
+  std::unordered_map<long, int64_t> bytes_disk_read_by_query_;
+  std::mutex bytes_disk_read_mutex_;
+#endif
 };
 
 } // namespace fpdb::store::server::flight

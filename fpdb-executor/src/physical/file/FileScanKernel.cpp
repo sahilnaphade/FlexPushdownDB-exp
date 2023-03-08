@@ -38,11 +38,16 @@ const std::optional<std::pair<int64_t, int64_t>> &FileScanKernel::getByteRange()
 }
 
 #if SHOW_DEBUG_METRICS == true
+int64_t FileScanKernel::getBytesReadLocal() const {
+  return bytesReadLocal_;
+}
+
 int64_t FileScanKernel::getBytesReadRemote() const {
   return bytesReadRemote_;
 }
 
-void FileScanKernel::clearBytesReadRemote() {
+void FileScanKernel::clearBytesRead() {
+  bytesReadLocal_ = 0;
   bytesReadRemote_ = 0;
 }
 #endif

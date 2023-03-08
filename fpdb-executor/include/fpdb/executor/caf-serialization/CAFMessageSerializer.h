@@ -12,6 +12,7 @@
 #include <fpdb/executor/message/ErrorMessage.h>
 #include <fpdb/executor/message/ScanMessage.h>
 #include <fpdb/executor/message/TransferMetricsMessage.h>
+#include <fpdb/executor/message/DiskMetricsMessage.h>
 #include <fpdb/executor/message/TupleSetMessage.h>
 #include <fpdb/executor/message/TupleSetBufferMessage.h>
 #include <fpdb/executor/message/TupleSetIndexMessage.h>
@@ -41,6 +42,7 @@ CAF_ADD_TYPE_ID(Message, (CompleteMessage))
 CAF_ADD_TYPE_ID(Message, (ErrorMessage))
 CAF_ADD_TYPE_ID(Message, (ScanMessage))
 CAF_ADD_TYPE_ID(Message, (TransferMetricsMessage))
+CAF_ADD_TYPE_ID(Message, (DiskMetricsMessage))
 CAF_ADD_TYPE_ID(Message, (TupleSetMessage))
 CAF_ADD_TYPE_ID(Message, (TupleSetBufferMessage))
 CAF_ADD_TYPE_ID(Message, (TupleSetIndexMessage))
@@ -80,6 +82,7 @@ struct variant_inspector_traits<MessagePtr> {
           type_id_v<ErrorMessage>,
           type_id_v<ScanMessage>,
           type_id_v<TransferMetricsMessage>,
+          type_id_v<DiskMetricsMessage>,
           type_id_v<TupleSetMessage>,
           type_id_v<TupleSetBufferMessage>,
           type_id_v<TupleSetIndexMessage>,
@@ -107,24 +110,26 @@ struct variant_inspector_traits<MessagePtr> {
       return 5;
     else if (x->type() == MessageType::TRANSFER_METRICS)
       return 6;
-    else if (x->type() == MessageType::TUPLESET)
+    else if (x->type() == MessageType::DISK_METRICS)
       return 7;
-    else if (x->type() == MessageType::TUPLESET_BUFFER)
+    else if (x->type() == MessageType::TUPLESET)
       return 8;
-    else if (x->type() == MessageType::TUPLESET_INDEX)
+    else if (x->type() == MessageType::TUPLESET_BUFFER)
       return 9;
-    else if (x->type() == MessageType::TUPLESET_READY_REMOTE)
+    else if (x->type() == MessageType::TUPLESET_INDEX)
       return 10;
-    else if (x->type() == MessageType::TUPLESET_WAIT_REMOTE)
+    else if (x->type() == MessageType::TUPLESET_READY_REMOTE)
       return 11;
-    else if (x->type() == MessageType::TUPLESET_SIZE)
+    else if (x->type() == MessageType::TUPLESET_WAIT_REMOTE)
       return 12;
-    else if (x->type() == MessageType::BLOOM_FILTER)
+    else if (x->type() == MessageType::TUPLESET_SIZE)
       return 13;
-    else if (x->type() == MessageType::BITMAP)
+    else if (x->type() == MessageType::BLOOM_FILTER)
       return 14;
-    else if (x->type() == MessageType::ADAPT_PUSHDOWN_METRICS)
+    else if (x->type() == MessageType::BITMAP)
       return 15;
+    else if (x->type() == MessageType::ADAPT_PUSHDOWN_METRICS)
+      return 16;
     else
       return -1;
   }
@@ -146,22 +151,24 @@ struct variant_inspector_traits<MessagePtr> {
       case 6:
         return f(dynamic_cast<TransferMetricsMessage &>(*x));
       case 7:
-        return f(dynamic_cast<TupleSetMessage &>(*x));
+        return f(dynamic_cast<DiskMetricsMessage &>(*x));
       case 8:
-        return f(dynamic_cast<TupleSetBufferMessage &>(*x));
+        return f(dynamic_cast<TupleSetMessage &>(*x));
       case 9:
-        return f(dynamic_cast<TupleSetIndexMessage &>(*x));
+        return f(dynamic_cast<TupleSetBufferMessage &>(*x));
       case 10:
-        return f(dynamic_cast<TupleSetReadyRemoteMessage &>(*x));
+        return f(dynamic_cast<TupleSetIndexMessage &>(*x));
       case 11:
-        return f(dynamic_cast<TupleSetWaitRemoteMessage &>(*x));
+        return f(dynamic_cast<TupleSetReadyRemoteMessage &>(*x));
       case 12:
-        return f(dynamic_cast<TupleSetSizeMessage &>(*x));
+        return f(dynamic_cast<TupleSetWaitRemoteMessage &>(*x));
       case 13:
-        return f(dynamic_cast<BloomFilterMessage &>(*x));
+        return f(dynamic_cast<TupleSetSizeMessage &>(*x));
       case 14:
-        return f(dynamic_cast<BitmapMessage &>(*x));
+        return f(dynamic_cast<BloomFilterMessage &>(*x));
       case 15:
+        return f(dynamic_cast<BitmapMessage &>(*x));
+      case 16:
         return f(dynamic_cast<AdaptPushdownMetricsMessage &>(*x));
       default: {
         none_t dummy;
@@ -218,6 +225,11 @@ struct variant_inspector_traits<MessagePtr> {
       }
       case type_id_v<TransferMetricsMessage>: {
         auto tmp = TransferMetricsMessage{};
+        continuation(tmp);
+        return true;
+      }
+      case type_id_v<DiskMetricsMessage>: {
+        auto tmp = DiskMetricsMessage{};
         continuation(tmp);
         return true;
       }

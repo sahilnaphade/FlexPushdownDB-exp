@@ -54,6 +54,8 @@ static constexpr std::string_view ObjectHeaderKey = "object";
 static constexpr arrow::flight::FlightStatusCode ReqRejectStatusCode = arrow::flight::FlightStatusCode::Unavailable;
 inline int MaxThreads = std::thread::hardware_concurrency();
 
+static constexpr bool ShowDebugMetricsOnExit = false;
+
 class Util {
 
 public:

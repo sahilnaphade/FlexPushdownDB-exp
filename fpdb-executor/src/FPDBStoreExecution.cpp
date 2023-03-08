@@ -61,6 +61,12 @@ void FPDBStoreExecution::join() {
                 debugMetrics_.add(transferMetricsMsg.getTransferMetrics());
                 break;
               }
+
+              case MessageType::DISK_METRICS: {
+                auto diskMetricsMsg = ((DiskMetricsMessage &) msg);
+                debugMetrics_.add(diskMetricsMsg.getDiskMetrics());
+                break;
+              }
 #endif
 
               case MessageType::ERROR: {
