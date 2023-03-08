@@ -8,6 +8,7 @@
 #include <tl/expected.hpp>
 #include <vector>
 #include <unordered_map>
+#include <unordered_set>
 #include <set>
 
 using namespace std;
@@ -75,6 +76,16 @@ namespace fpdb::util {
    */
   template<typename T>
   bool isSubSet(const set<T> &set1, const set<T> &set2) {
+    for (const auto &e1: set1) {
+      if (set2.find(e1) == set2.end()) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  template<typename T>
+  bool isSubSet(const unordered_set<T> &set1, const unordered_set<T> &set2) {
     for (const auto &e1: set1) {
       if (set2.find(e1) == set2.end()) {
         return false;

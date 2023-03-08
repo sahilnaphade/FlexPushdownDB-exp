@@ -16,6 +16,7 @@
 #include <fpdb/store/server/flight/GetTableTicket.hpp>
 #include <fpdb/store/server/flight/ClearBitmapCmd.hpp>
 #include <fpdb/store/server/flight/Util.hpp>
+#include <fpdb/util/Util.h>
 #include <arrow/flight/api.h>
 #include <unordered_map>
 
@@ -157,18 +158,54 @@ void FPDBStoreSuperPOp::setGetAdaptPushdownMetrics(bool getAdaptPushdownMetrics)
   getAdaptPushdownMetrics_ = getAdaptPushdownMetrics;
 }
 
+void FPDBStoreSuperPOp::unBlockNonRestrictFilters(const std::string &filterPOpName,
+                                                  const std::string &fpdbStoreSuperPOpName) {
+  std::unique_lock lock(FPDBStoreSuperPOpDetachMutex);
+
+  nonRestrictFilters.emplace(filterPOpName);
+  const auto cvIt = FPDBStoreSuperPOpDetachCvs.find(fpdbStoreSuperPOpName);
+  if (cvIt != FPDBStoreSuperPOpDetachCvs.end()) {
+    cvIt->second->notify_one();
+  }
+}
+
 void FPDBStoreSuperPOp::processDetachIn() {
   std::unique_lock lock(FPDBStoreSuperPOpDetachMutex);
-  FPDBStoreSuperPOpDetachCv.wait(lock, [&] {
+
+  // set filterPOpNames_
+  for (const auto &opIt: subPlan_->getPhysicalOps()) {
+    if (opIt.second->getType() == POpType::FILTER) {
+      filterPOpNames_.emplace(opIt.first);
+    }
+  }
+
+  // wait until satisfied
+  auto cv = std::make_shared<std::condition_variable_any>();
+  FPDBStoreSuperPOpDetachCvs[name_] = cv;
+  cv->wait(lock, [&] {
+    // check if its filters are all in nonRestrictFilters
+    if (fpdb::util::isSubSet(filterPOpNames_, nonRestrictFilters)) {
+      for (const auto &opName: filterPOpNames_) {
+        nonRestrictFilters.erase(opName);
+      }
+      return true;
+    }
+    // if false, check number of available slots
     return numFPDBStoreSuperPOpDetachSlots > 0;
   });
+  FPDBStoreSuperPOpDetachCvs.erase(name_);
+
   --numFPDBStoreSuperPOpDetachSlots;
 }
 
 void FPDBStoreSuperPOp::processDetachOut() {
   std::unique_lock lock(FPDBStoreSuperPOpDetachMutex);
   ++numFPDBStoreSuperPOpDetachSlots;
-  FPDBStoreSuperPOpDetachCv.notify_one();
+
+  // randomly weak up one
+  if (!FPDBStoreSuperPOpDetachCvs.empty()) {
+    FPDBStoreSuperPOpDetachCvs.begin()->second->notify_one();
+  }
 }
 
 void FPDBStoreSuperPOp::onStart() {

@@ -3,6 +3,7 @@
 //
 
 #include <fpdb/executor/physical/filter/FilterPOp.h>
+#include <fpdb/executor/physical/fpdb-store/FPDBStoreSuperPOp.h>
 #include <fpdb/executor/physical/Globals.h>
 #include <fpdb/executor/message/TupleSetMessage.h>
 #include <fpdb/executor/message/CompleteMessage.h>
@@ -153,6 +154,8 @@ void FilterPOp::onTupleSetBitmapPushdown() {
         // if at compute side, then send nullopt bitmap to storage side denoting the bitmap cannot be constructed
         // and then wait until receiving bitmap from store
         putBitmapToFPDBStore();
+        // unblock associated FPDBStoreSuperPOp
+        FPDBStoreSuperPOp::unBlockNonRestrictFilters((*bitmapWrapper_).mirrorOp_, (*bitmapWrapper_).fpdbStoreSuperPOp_);
       } else {
         // filter at storage side should always be applicable
         ctx()->notifyError("Filter predicate is inapplicable to input tupleSet");

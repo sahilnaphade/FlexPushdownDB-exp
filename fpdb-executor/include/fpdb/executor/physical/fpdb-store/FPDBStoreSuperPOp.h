@@ -18,8 +18,10 @@ namespace fpdb::executor::physical::fpdb_store {
  * otherwise too many detached FPDBStoreSuperPOp will cause performance degradation.
  */
 inline std::mutex FPDBStoreSuperPOpDetachMutex;
-inline std::condition_variable_any FPDBStoreSuperPOpDetachCv;
+inline std::unordered_map<std::string, std::shared_ptr<std::condition_variable_any>> FPDBStoreSuperPOpDetachCvs;
 inline int numFPDBStoreSuperPOpDetachSlots = std::thread::hardware_concurrency();
+// if filter bitmap cannot be generated at compute side, we shouldn't use this blocking mechanism
+inline std::unordered_set<std::string> nonRestrictFilters;
 
 /**
  * Denote a sub-plan to be pushed to store, consists a group of physical operators (e.g. scan->filter->aggregate)
@@ -58,9 +60,13 @@ public:
   void resetForwardConsumers();
   void setGetAdaptPushdownMetrics(bool getAdaptPushdownMetrics);
 
+  // used in filter bitmap pushdown
+  static void unBlockNonRestrictFilters(const std::string &filterPOpName, const std::string &fpdbStoreSuperPOpName);
+
 private:
-  static void processDetachIn();
-  static void processDetachOut();
+  // used in filter bitmap pushdown
+  void processDetachIn();
+  void processDetachOut();
 
   void onStart();
   void onCacheLoadResponse(const ScanMessage &msg);
@@ -88,6 +94,9 @@ private:
 
   // set when pushing shuffle to store
   std::optional<std::string> shufflePOpName_ = std::nullopt;
+
+  // set when pushing filter bitmap to store
+  std::unordered_set<std::string> filterPOpNames_;
 
   // set when pushing bloom filter to store
   int numBloomFiltersExpected_ = 0;
