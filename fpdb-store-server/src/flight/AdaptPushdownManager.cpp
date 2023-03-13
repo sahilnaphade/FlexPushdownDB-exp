@@ -39,24 +39,30 @@ bool AdaptPushdownManager::receiveOne(const std::shared_ptr<AdaptPushdownReqInfo
             (pullupTime * 1.5 >= waitExecTime) : (pullupTime / 1.5 >= waitExecTime);
   }
 
-  // set start time if we execute it as pushdown, and add to execution set
-  if (execAsPushdown) {
-    req->startTime_ = std::chrono::steady_clock::now();
-    execSet_.emplace(req);
-  }
+  return true;
+}
 
-  return execAsPushdown;
+void AdaptPushdownManager::admitOne(const std::shared_ptr<AdaptPushdownReqInfo> &req) {
+  std::unique_lock lock(reqManageMutex_);
+  reqSet_.emplace(req);
+  reqManageCv_.wait(lock, [&] {
+    return numRunningReqs_ < MaxThreads;
+  });
+  req->startTime_ = std::chrono::steady_clock::now();
+  ++numRunningReqs_;
 }
 
 void AdaptPushdownManager::finishOne(const std::shared_ptr<AdaptPushdownReqInfo> &req) {
   std::unique_lock lock(reqManageMutex_);
-  execSet_.erase(req);
+  reqSet_.erase(req);
+  --numRunningReqs_;
+  reqManageCv_.notify_one();
 }
 
 int64_t AdaptPushdownManager::getWaitExecTime(const std::shared_ptr<AdaptPushdownReqInfo> &req) {
   int64_t waitTime = 0;
   auto currTime = std::chrono::steady_clock::now();
-  for (const auto &execReq: execSet_) {
+  for (const auto &execReq: reqSet_) {
     if (execReq->estExecTime_.has_value()) {
       waitTime += std::max((int64_t) 0, (int64_t) (*execReq->estExecTime_ -
           std::chrono::duration_cast<std::chrono::nanoseconds>(currTime - *execReq->startTime_).count()));

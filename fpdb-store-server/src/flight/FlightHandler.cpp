@@ -366,10 +366,12 @@ FlightHandler::run_select_object_content(long query_id,
     req = std::make_shared<AdaptPushdownReqInfo>(query_id,
                                                  fpdb_store_super_pop,
                                                  parallel_degree);
+    // check if need to fall back as pullup
     if (!adapt_pushdown_manager_.receiveOne(req)) {
-      // fall back as pullup
       return tl::make_unexpected(MakeFlightError(ReqRejectStatusCode, "Resource limited"));
     }
+    // execute as pushdown
+    adapt_pushdown_manager_.admitOne(req);
   }
 
   // deserialize the query plan

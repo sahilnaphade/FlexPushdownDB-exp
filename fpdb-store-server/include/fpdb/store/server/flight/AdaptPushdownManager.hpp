@@ -13,7 +13,6 @@
 #include "string"
 #include "mutex"
 #include "condition_variable"
-#include "queue"
 
 namespace fpdb::store::server::flight {
 
@@ -57,6 +56,9 @@ public:
   // process an incoming pushdown request, return "true" to execute as pushdown, "false" to fall back as pullup
   bool receiveOne(const std::shared_ptr<AdaptPushdownReqInfo> &req);
 
+  // admit executing one pushdown request (may wait due to non-enough resource)
+  void admitOne(const std::shared_ptr<AdaptPushdownReqInfo> &req);
+
   // when one request is finished
   void finishOne(const std::shared_ptr<AdaptPushdownReqInfo> &req);
 
@@ -74,8 +76,10 @@ private:
 
   // for managing pushdown requests adaptively
   std::unordered_set<std::shared_ptr<AdaptPushdownReqInfo>, AdaptPushdownReqInfoPointerHash,
-      AdaptPushdownReqInfoPointerPredicate> execSet_;   // execution set
+      AdaptPushdownReqInfoPointerPredicate> reqSet_;   // req set, contain both running and waiting reqs
   std::mutex reqManageMutex_;
+  std::condition_variable_any reqManageCv_;
+  int numRunningReqs_ = 0;
 };
 
 }
