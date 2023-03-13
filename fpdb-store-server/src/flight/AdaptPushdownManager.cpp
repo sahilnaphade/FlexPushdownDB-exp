@@ -49,13 +49,13 @@ void AdaptPushdownManager::admitOne(const std::shared_ptr<AdaptPushdownReqInfo> 
     return numRunningReqs_ < MaxThreads;
   });
   req->startTime_ = std::chrono::steady_clock::now();
-  ++numRunningReqs_;
+  numRunningReqs_ += req->numRequiredCpuCores_;
 }
 
 void AdaptPushdownManager::finishOne(const std::shared_ptr<AdaptPushdownReqInfo> &req) {
   std::unique_lock lock(reqManageMutex_);
   reqSet_.erase(req);
-  --numRunningReqs_;
+  numRunningReqs_ -= req->numRequiredCpuCores_;
   reqManageCv_.notify_one();
 }
 
