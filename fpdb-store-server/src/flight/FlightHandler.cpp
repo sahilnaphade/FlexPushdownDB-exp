@@ -367,7 +367,11 @@ FlightHandler::run_select_object_content(long query_id,
                                                  fpdb_store_super_pop,
                                                  parallel_degree);
     // check if need to fall back as pullup
-    if (!adapt_pushdown_manager_.receiveOne(req)) {
+    auto exp_exec_as_pushdown = adapt_pushdown_manager_.receiveOne(req);
+    if (!exp_exec_as_pushdown.has_value()) {
+      return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed, exp_exec_as_pushdown.error()));
+    }
+    if (!(*exp_exec_as_pushdown)) {
       return tl::make_unexpected(MakeFlightError(ReqRejectStatusCode, "Resource limited"));
     }
     // execute as pushdown

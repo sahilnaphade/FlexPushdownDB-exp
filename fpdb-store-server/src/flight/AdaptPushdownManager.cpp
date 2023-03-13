@@ -20,55 +20,68 @@ void AdaptPushdownManager::clearAdaptPushdownMetrics() {
   adaptPushdownMetrics_.clear();
 }
 
-bool AdaptPushdownManager::receiveOne(const std::shared_ptr<AdaptPushdownReqInfo> &req) {
+tl::expected<bool, std::string> AdaptPushdownManager::receiveOne(const std::shared_ptr<AdaptPushdownReqInfo> &req) {
   std::unique_lock lock(reqManageMutex_);
 
-  // check if need to fall back to pullup
+  // find adaptive pushdown metrics
   auto adaptPushdownMetricsKeys = generateAdaptPushdownMetricsKeys(req->queryId_, req->op_);
   auto pullupMetricsIt = adaptPushdownMetrics_.find(adaptPushdownMetricsKeys->first);
   auto pushdownMetricsIt = adaptPushdownMetrics_.find(adaptPushdownMetricsKeys->second);
-  bool execAsPushdown;
-  if (pullupMetricsIt == adaptPushdownMetrics_.end() || pushdownMetricsIt == adaptPushdownMetrics_.end()) {
-    execAsPushdown = true;
-  } else {
-    int64_t pullupTime = pullupMetricsIt->second;
-    req->estExecTime_ = pushdownMetricsIt->second;
-    int64_t waitExecTime = getWaitExecTime(req);
-    // some calibration needed when observing sample test results
-    execAsPushdown = (((double) pullupTime) / ((double) *req->estExecTime_) < 2) ?
-            (pullupTime * 1.5 >= waitExecTime) : (pullupTime / 1.5 >= waitExecTime);
+  if (pullupMetricsIt == adaptPushdownMetrics_.end()) {
+    return tl::make_unexpected(fmt::format("Pullup metrics of req '{}-{}' not found", req->queryId_, req->op_));
+  }
+  if (pushdownMetricsIt == adaptPushdownMetrics_.end()) {
+    return tl::make_unexpected(fmt::format("Pushdown metrics of req '{}-{}' not found", req->queryId_, req->op_));
   }
 
-  return true;
+  // check if need to fall back to pullup
+  int64_t pullupTime = pullupMetricsIt->second;
+  req->estExecTime_ = pushdownMetricsIt->second;
+  auto expWaitTime = getWaitTime();
+  if (!expWaitTime.has_value()) {
+    return tl::make_unexpected(expWaitTime.error());
+  }
+//  printf("[%s]\t%d: %lld, %lld, %lld\n", req->op_.c_str(), pullupTime > *req->estExecTime_ + *expWaitTime,
+//         pullupTime, *req->estExecTime_, *expWaitTime);
+  return pullupTime > *req->estExecTime_ + *expWaitTime;
+//  return (((double) pullupTime) / ((double) *req->estExecTime_) < 2) ?
+//         (pullupTime * 1.5 >= *req->estExecTime_ + *expWaitTime) :
+//         (pullupTime / 1.5 >= *req->estExecTime_ + *expWaitTime);
 }
 
 void AdaptPushdownManager::admitOne(const std::shared_ptr<AdaptPushdownReqInfo> &req) {
   std::unique_lock lock(reqManageMutex_);
   reqSet_.emplace(req);
   reqManageCv_.wait(lock, [&] {
-    return numRunningReqs_ < MaxThreads;
+    return numUsedThreads_ < MaxThreads;
   });
   req->startTime_ = std::chrono::steady_clock::now();
-  numRunningReqs_ += req->numRequiredCpuCores_;
+  numUsedThreads_ += req->numRequiredCpuCores_;
 }
 
 void AdaptPushdownManager::finishOne(const std::shared_ptr<AdaptPushdownReqInfo> &req) {
   std::unique_lock lock(reqManageMutex_);
   reqSet_.erase(req);
-  numRunningReqs_ -= req->numRequiredCpuCores_;
+  numUsedThreads_ -= req->numRequiredCpuCores_;
   reqManageCv_.notify_one();
 }
 
-int64_t AdaptPushdownManager::getWaitExecTime(const std::shared_ptr<AdaptPushdownReqInfo> &req) {
+tl::expected<int64_t, std::string> AdaptPushdownManager::getWaitTime() {
   int64_t waitTime = 0;
   auto currTime = std::chrono::steady_clock::now();
-  for (const auto &execReq: reqSet_) {
-    if (execReq->estExecTime_.has_value()) {
-      waitTime += std::max((int64_t) 0, (int64_t) (*execReq->estExecTime_ -
-          std::chrono::duration_cast<std::chrono::nanoseconds>(currTime - *execReq->startTime_).count()));
+  for (const auto &req: reqSet_) {
+    if (!req->estExecTime_.has_value()) {
+      return tl::make_unexpected(fmt::format("Estimated execution time of req '{}-{}' not set",
+                                             req->queryId_, req->op_));
+    }
+    if (req->startTime_.has_value()) {
+      waitTime += std::max((int64_t) 0, (int64_t) (*req->estExecTime_ -
+          std::chrono::duration_cast<std::chrono::nanoseconds>(currTime - *req->startTime_).count()));
+    } else {
+      waitTime += *req->estExecTime_;
     }
   }
-  return waitTime / MaxThreads + *req->estExecTime_;
+  return waitTime / MaxThreads;
 }
 
 tl::expected<std::pair<std::string, std::string>, std::string>

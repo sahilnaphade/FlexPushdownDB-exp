@@ -54,7 +54,7 @@ public:
   void clearAdaptPushdownMetrics();
 
   // process an incoming pushdown request, return "true" to execute as pushdown, "false" to fall back as pullup
-  bool receiveOne(const std::shared_ptr<AdaptPushdownReqInfo> &req);
+  tl::expected<bool, std::string> receiveOne(const std::shared_ptr<AdaptPushdownReqInfo> &req);
 
   // admit executing one pushdown request (may wait due to non-enough resource)
   void admitOne(const std::shared_ptr<AdaptPushdownReqInfo> &req);
@@ -63,8 +63,8 @@ public:
   void finishOne(const std::shared_ptr<AdaptPushdownReqInfo> &req);
 
 private:
-  // get the estimated total time (including both wait and exec) to execute the req at this point
-  int64_t getWaitExecTime(const std::shared_ptr<AdaptPushdownReqInfo> &req);
+  // get the estimated wait time at this point
+  tl::expected<int64_t, std::string> getWaitTime();
 
   // generate adaptive pushdown metrics keys for both pullup metrics and pushdown metrics
   static tl::expected<std::pair<std::string, std::string>, std::string>
@@ -79,7 +79,7 @@ private:
       AdaptPushdownReqInfoPointerPredicate> reqSet_;   // req set, contain both running and waiting reqs
   std::mutex reqManageMutex_;
   std::condition_variable_any reqManageCv_;
-  int numRunningReqs_ = 0;
+  int numUsedThreads_ = 0;
 };
 
 }
