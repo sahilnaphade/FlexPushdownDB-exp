@@ -37,16 +37,14 @@ tl::expected<bool, std::string> AdaptPushdownManager::receiveOne(const std::shar
   // check if need to fall back to pullup
   int64_t pullupTime = pullupMetricsIt->second;
   req->estExecTime_ = pushdownMetricsIt->second;
-  auto expWaitTime = getWaitTime();
+  auto expWaitTime = getWaitTime(req);
   if (!expWaitTime.has_value()) {
     return tl::make_unexpected(expWaitTime.error());
   }
-//  printf("[%s]\t%d: %lld, %lld, %lld\n", req->op_.c_str(), pullupTime > *req->estExecTime_ + *expWaitTime,
-//         pullupTime, *req->estExecTime_, *expWaitTime);
-  return pullupTime > *req->estExecTime_ + *expWaitTime;
-//  return (((double) pullupTime) / ((double) *req->estExecTime_) < 2) ?
-//         (pullupTime * 1.5 >= *req->estExecTime_ + *expWaitTime) :
-//         (pullupTime / 1.5 >= *req->estExecTime_ + *expWaitTime);
+  // need to calibrate by multiplying a constant, since
+  //  1) Pullup metrics are measured when not detached, but in real runs they are detached;
+  //  2) Fall back actually incurs double requests, which incurs additional overhead.
+  return pullupTime * 3 > *req->estExecTime_ + *expWaitTime;
 }
 
 void AdaptPushdownManager::admitOne(const std::shared_ptr<AdaptPushdownReqInfo> &req) {
@@ -66,22 +64,22 @@ void AdaptPushdownManager::finishOne(const std::shared_ptr<AdaptPushdownReqInfo>
   reqManageCv_.notify_one();
 }
 
-tl::expected<int64_t, std::string> AdaptPushdownManager::getWaitTime() {
+tl::expected<int64_t, std::string> AdaptPushdownManager::getWaitTime(const std::shared_ptr<AdaptPushdownReqInfo> &req) {
   int64_t waitTime = 0;
   auto currTime = std::chrono::steady_clock::now();
-  for (const auto &req: reqSet_) {
-    if (!req->estExecTime_.has_value()) {
+  for (const auto &existReq: reqSet_) {
+    if (!existReq->estExecTime_.has_value()) {
       return tl::make_unexpected(fmt::format("Estimated execution time of req '{}-{}' not set",
-                                             req->queryId_, req->op_));
+                                             existReq->queryId_, existReq->op_));
     }
-    if (req->startTime_.has_value()) {
-      waitTime += std::max((int64_t) 0, (int64_t) (*req->estExecTime_ -
-          std::chrono::duration_cast<std::chrono::nanoseconds>(currTime - *req->startTime_).count()));
+    if (existReq->startTime_.has_value()) {
+      waitTime += std::max((int64_t) 0, (int64_t) (*existReq->estExecTime_ -
+          std::chrono::duration_cast<std::chrono::nanoseconds>(currTime - *existReq->startTime_).count()));
     } else {
-      waitTime += *req->estExecTime_;
+      waitTime += *existReq->estExecTime_;
     }
   }
-  return waitTime / MaxThreads;
+  return (waitTime * 1.0 / MaxThreads) * (req->numRequiredCpuCores_ * 1.0 / MaxThreads);
 }
 
 tl::expected<std::pair<std::string, std::string>, std::string>

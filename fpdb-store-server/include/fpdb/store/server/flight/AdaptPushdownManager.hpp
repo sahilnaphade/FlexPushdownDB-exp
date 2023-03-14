@@ -63,8 +63,8 @@ public:
   void finishOne(const std::shared_ptr<AdaptPushdownReqInfo> &req);
 
 private:
-  // get the estimated wait time at this point
-  tl::expected<int64_t, std::string> getWaitTime();
+  // get the estimated wait time to execute the req at this point
+  tl::expected<int64_t, std::string> getWaitTime(const std::shared_ptr<AdaptPushdownReqInfo> &req);
 
   // generate adaptive pushdown metrics keys for both pullup metrics and pushdown metrics
   static tl::expected<std::pair<std::string, std::string>, std::string>
