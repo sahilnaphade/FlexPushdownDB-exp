@@ -63,6 +63,8 @@ public:
   void finishOne(const std::shared_ptr<AdaptPushdownReqInfo> &req);
 
 private:
+  double WaitTimeCalConst = 1.0 / 6.0;
+
   // get the estimated wait time to execute the req at this point
   tl::expected<int64_t, std::string> getWaitTime(const std::shared_ptr<AdaptPushdownReqInfo> &req);
 

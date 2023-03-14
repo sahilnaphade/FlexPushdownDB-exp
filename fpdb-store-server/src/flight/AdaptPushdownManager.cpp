@@ -41,10 +41,7 @@ tl::expected<bool, std::string> AdaptPushdownManager::receiveOne(const std::shar
   if (!expWaitTime.has_value()) {
     return tl::make_unexpected(expWaitTime.error());
   }
-  // need to calibrate by multiplying a constant, since
-  //  1) Pullup metrics are measured when not detached, but in real runs they are detached;
-  //  2) Fall back actually incurs double requests, which incurs additional overhead.
-  return pullupTime * 3 > *req->estExecTime_ + *expWaitTime;
+  return pullupTime > *req->estExecTime_ + *expWaitTime;
 }
 
 void AdaptPushdownManager::admitOne(const std::shared_ptr<AdaptPushdownReqInfo> &req) {
@@ -79,7 +76,7 @@ tl::expected<int64_t, std::string> AdaptPushdownManager::getWaitTime(const std::
       waitTime += *existReq->estExecTime_;
     }
   }
-  return (waitTime * 1.0 / MaxThreads) * (req->numRequiredCpuCores_ * 1.0 / MaxThreads);
+  return (waitTime * 1.0 / MaxThreads) * (req->numRequiredCpuCores_ * 1.0 / MaxThreads) * WaitTimeCalConst;
 }
 
 tl::expected<std::pair<std::string, std::string>, std::string>

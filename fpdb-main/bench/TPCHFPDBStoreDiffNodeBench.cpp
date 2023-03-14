@@ -861,14 +861,6 @@ TEST_CASE ("tpch-sf50-fpdb-store-diff-node-adaptive-pushdown-11" * doctest::skip
                                                             false);
 }
 
-TEST_CASE ("tpch-sf50-fpdb-store-diff-node-adaptive-pushdown-16" * doctest::skip(false || SKIP_SUITE)) {
-  AdaptPushdownTestUtil::run_adapt_pushdown_benchmark_query("tpch-sf50/parquet/",
-                                                            "tpch/original/16.sql",
-                                                            {16, 8, 6, 4, 3, 2, 1},
-                                                            PARALLEL_FPDB_STORE_DIFF_NODE,
-                                                            false);
-}
-
 TEST_CASE ("tpch-sf50-fpdb-store-diff-node-adaptive-pushdown-19" * doctest::skip(false || SKIP_SUITE)) {
   AdaptPushdownTestUtil::run_adapt_pushdown_benchmark_query("tpch-sf50/parquet/",
                                                             "tpch/original/19.sql",
