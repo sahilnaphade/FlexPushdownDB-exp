@@ -13,6 +13,7 @@
 #include "string"
 #include "mutex"
 #include "condition_variable"
+#include "thread"
 
 namespace fpdb::store::server::flight {
 
@@ -62,9 +63,9 @@ public:
   // when one request is finished
   void finishOne(const std::shared_ptr<AdaptPushdownReqInfo> &req);
 
-private:
-  double WaitTimeCalConst = 1.0 / 6.0;
+  void clearNumFallBackReqs();
 
+private:
   // get the estimated wait time to execute the req at this point
   tl::expected<int64_t, std::string> getWaitTime(const std::shared_ptr<AdaptPushdownReqInfo> &req);
 
@@ -82,6 +83,11 @@ private:
   std::mutex reqManageMutex_;
   std::condition_variable_any reqManageCv_;
   int numUsedThreads_ = 0;
+
+  // for computing weight of pullup time, since we cannot dedicate a fix amount of network bandwidth when there are
+  // too many pullup requests
+  const int NumMaxPullupReqs = std::thread::hardware_concurrency();
+  int numFallBackReqs_ = 0;
 };
 
 }

@@ -748,6 +748,9 @@ tl::expected<void, ::arrow::Status> FlightHandler::do_put_set_adapt_pushdown(
     use_adapt_pushdown_actor_system_vec_ = true;
   }
 
+  // clear number of fall pack requests
+  adapt_pushdown_manager_.clearNumFallBackReqs();
+
   return {};
 }
 
