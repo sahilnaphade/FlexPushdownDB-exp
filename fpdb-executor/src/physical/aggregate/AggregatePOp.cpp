@@ -6,7 +6,7 @@
 #include <fpdb/executor/physical/aggregate/AggregateResult.h>
 #include <fpdb/executor/physical/PhysicalOp.h>
 #include <fpdb/executor/message/CompleteMessage.h>
-#include <fpdb/executor/message/TupleMessage.h>
+#include <fpdb/executor/message/TupleSetMessage.h>
 #include <fpdb/executor/message/Message.h>
 #include <arrow/scalar.h>
 #include <string>
@@ -32,6 +32,10 @@ std::string AggregatePOp::getTypeString() const {
   return "AggregatePOp";
 }
 
+const vector<shared_ptr<AggregateFunction>> &AggregatePOp::getFunctions() const {
+  return functions_;
+}
+
 void AggregatePOp::onStart() {
   SPDLOG_DEBUG("Starting operator  |  name: '{}'", this->name());
 }
@@ -39,9 +43,9 @@ void AggregatePOp::onStart() {
 void AggregatePOp::onReceive(const Envelope &message) {
   if (message.message().type() == MessageType::START) {
     this->onStart();
-  } else if (message.message().type() == MessageType::TUPLE) {
-    auto tupleMessage = dynamic_cast<const TupleMessage &>(message.message());
-    this->onTuple(tupleMessage);
+  } else if (message.message().type() == MessageType::TUPLESET) {
+    auto tupleSetMessage = dynamic_cast<const TupleSetMessage &>(message.message());
+    this->onTupleSet(tupleSetMessage);
   } else if (message.message().type() == MessageType::COMPLETE) {
     auto completeMessage = dynamic_cast<const CompleteMessage &>(message.message());
     this->onComplete(completeMessage);
@@ -50,8 +54,16 @@ void AggregatePOp::onReceive(const Envelope &message) {
   }
 }
 
-void AggregatePOp::onTuple(const TupleMessage &message) {
-  compute(message.tuples());
+void AggregatePOp::onTupleSet(const TupleSetMessage &message) {
+  auto tupleSet = message.tuples();
+
+  // Discard inapplicable functions for hybrid execution
+  if (isSeparated_) {
+    discardInapplicableFunctions(tupleSet);
+  }
+
+  // compute aggregation
+  compute(tupleSet);
 }
 
 void AggregatePOp::onComplete(const CompleteMessage &) {
@@ -66,8 +78,8 @@ void AggregatePOp::onComplete(const CompleteMessage &) {
       tupleSet = finalizeEmpty();
     }
 
-    shared_ptr<Message> tupleMessage = make_shared<TupleMessage>(tupleSet, this->name());
-    ctx()->tell(tupleMessage);
+    shared_ptr<Message> tupleSetMessage = make_shared<TupleSetMessage>(tupleSet, this->name());
+    ctx()->tell(tupleSetMessage);
     ctx()->notifyComplete();
   }
 }
@@ -119,8 +131,7 @@ shared_ptr<TupleSet> AggregatePOp::finalize() {
   }
 
   // Make tupleSet
-  const auto &table = arrow::Table::Make(schema, columns);
-  const shared_ptr<TupleSet> &aggregatedTuples = TupleSet::make(table);
+  auto aggregatedTuples = TupleSet::make(schema, columns);
 
   // Project using projectColumnNames
   auto expProjectTupleSet = aggregatedTuples->projectExist(getProjectColumnNames());
@@ -143,6 +154,36 @@ shared_ptr<TupleSet> AggregatePOp::finalizeEmpty() {
 
 bool AggregatePOp::hasResult() {
   return !aggregateResults_[0].empty();
+}
+
+void AggregatePOp::discardInapplicableFunctions(const std::shared_ptr<TupleSet> &tupleSet) {
+  if (inapplicableFunctionsDiscarded_) {
+    return;
+  }
+
+  // collect input column names
+  auto tupleSetColumnNames = tupleSet->schema()->field_names();
+  std::set<std::string> tupleSetColumnNameSet(tupleSetColumnNames.begin(), tupleSetColumnNames.end());
+
+  // check aggregate functions
+  functions_.erase(
+          std::remove_if(functions_.begin(), functions_.end(),
+                         [&](const std::shared_ptr<AggregateFunction> &function) {
+                           auto expr = function->getExpression();
+                           if (!expr) {
+                             return false;
+                           }
+                           auto exprColumnNames = expr->involvedColumnNames();
+                           std::set<std::string> exprColumnNameSet(exprColumnNames.begin(), exprColumnNames.end());
+                           return !isSubSet(exprColumnNameSet, tupleSetColumnNameSet);
+                         }),
+          functions_.end()
+  );
+
+  // resize aggregate results
+  aggregateResults_.resize(functions_.size());
+
+  inapplicableFunctionsDiscarded_ = true;
 }
 
 void AggregatePOp::clear() {

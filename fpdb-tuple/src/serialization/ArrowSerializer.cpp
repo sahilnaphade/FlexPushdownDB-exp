@@ -9,7 +9,8 @@
 
 namespace fpdb::tuple {
 
-std::shared_ptr<arrow::Table> ArrowSerializer::bytes_to_table(const std::vector<std::uint8_t>& bytes_vec) {
+std::shared_ptr<arrow::Table> ArrowSerializer::bytes_to_table(const std::vector<std::uint8_t>& bytes_vec,
+                                                              bool copy_view) {
   if (bytes_vec.empty()) {
     return nullptr;
   }
@@ -18,12 +19,15 @@ std::shared_ptr<arrow::Table> ArrowSerializer::bytes_to_table(const std::vector<
 
   // Create a view over the given byte vector, but then get a copy because the vector ref eventually disappears
   auto buffer_view = ::arrow::Buffer::Wrap(bytes_vec);
-  auto maybe_buffer = buffer_view->CopySlice(0, buffer_view->size(), arrow::default_memory_pool());
-  if (!maybe_buffer.ok())
-    throw std::runtime_error(fmt::format("Error converting bytes to Arrow table  |  error: {}", maybe_buffer.status().message()));
+  if (copy_view) {
+    auto maybe_buffer = buffer_view->CopySlice(0, buffer_view->size(), arrow::default_memory_pool());
+    if (!maybe_buffer.ok())
+      throw std::runtime_error(fmt::format("Error converting bytes to Arrow table  |  error: {}", maybe_buffer.status().message()));
+    buffer_view = *maybe_buffer;
+  }
 
   // Get a reader over the buffer
-  auto buffer_reader = std::make_shared<::arrow::io::BufferReader>(*maybe_buffer);
+  auto buffer_reader = std::make_shared<::arrow::io::BufferReader>(buffer_view);
 
   // Get a record batch reader over that
   auto maybe_reader = arrow::ipc::RecordBatchStreamReader::Open(buffer_reader);
@@ -72,6 +76,49 @@ std::vector<std::uint8_t> ArrowSerializer::table_to_bytes(const std::shared_ptr<
   std::vector<std::uint8_t> bytes_vec(data, data + length);
 
   return bytes_vec;
+}
+
+std::shared_ptr<arrow::Table> ArrowSerializer::align_table_by_copy(const std::shared_ptr<arrow::Table>& table) {
+  if (!table) {
+    return nullptr;
+  }
+
+  arrow::Status status;
+
+  // table -> buffer
+  auto maybe_output_stream = arrow::io::BufferOutputStream::Create();
+  if (!maybe_output_stream.ok())
+    throw std::runtime_error(fmt::format("Error converting Arrow table to bytes  |  error: {}", maybe_output_stream.status().message()));
+
+  auto maybe_writer = arrow::ipc::MakeStreamWriter((*maybe_output_stream).get(), table->schema());
+  if (!maybe_writer.ok())
+    throw std::runtime_error(fmt::format("Error converting Arrow table to bytes  |  error: {}", maybe_writer.status().message()));
+
+  status = (*maybe_writer)->WriteTable(*table);
+  if (!status.ok())
+    throw std::runtime_error(fmt::format("Error converting Arrow table to bytes  |  error: {}", status.message()));
+
+  status = (*maybe_writer)->Close();
+  if (!status.ok())
+    throw std::runtime_error(fmt::format("Error converting Arrow table to bytes  |  error: {}", status.message()));
+
+  auto maybe_buffer = (*maybe_output_stream)->Finish();
+  if (!maybe_buffer.ok())
+    throw std::runtime_error(fmt::format("Error converting Arrow table to bytes  |  error: {}", status.message()));
+
+  // buffer -> table
+  auto buffer_reader = std::make_shared<::arrow::io::BufferReader>(*maybe_buffer);
+
+  auto maybe_reader = arrow::ipc::RecordBatchStreamReader::Open(buffer_reader);
+  if (!maybe_reader.ok())
+    throw std::runtime_error(fmt::format("Error converting bytes to Arrow table  |  error: {}", maybe_reader.status().message()));
+
+  std::shared_ptr<arrow::Table> new_table;
+  status = (*maybe_reader)->ReadAll(&new_table);
+  if (!status.ok())
+    throw std::runtime_error(fmt::format("Error converting bytes to Arrow table  |  error: {}", status.message()));
+
+  return new_table;
 }
 
 std::shared_ptr<arrow::RecordBatch> ArrowSerializer::bytes_to_recordBatch(const std::vector<std::uint8_t>& bytes_vec) {
@@ -278,6 +325,42 @@ std::vector<std::uint8_t> ArrowSerializer::dataType_to_bytes(const std::shared_p
 
   auto typeName = dataType->name();
   return {typeName.begin(), typeName.end()};
+}
+
+tl::expected<std::shared_ptr<arrow::RecordBatch>, std::string>
+ArrowSerializer::bitmap_to_recordBatch(const std::vector<int64_t> &bitmap) {
+  // make boolean array from bitmap
+  auto arrayBuilder = std::make_shared<arrow::Int64Builder>();
+  auto status = arrayBuilder->AppendValues(bitmap);
+  if (!status.ok()) {
+    return tl::make_unexpected(status.message());
+  }
+  auto expBitmapArray = arrayBuilder->Finish();
+  if (!expBitmapArray.ok()) {
+    return tl::make_unexpected(expBitmapArray.status().message());
+  }
+  auto bitmapArray = *expBitmapArray;
+
+  // make record batch from array
+  return arrow::RecordBatch::Make(::arrow::schema({{field(BITMAP_FIELD_NAME.data(), ::arrow::int64())}}),
+                                  bitmapArray->length(),
+                                  arrow::ArrayVector{bitmapArray});
+}
+
+tl::expected<std::vector<int64_t>, std::string>
+ArrowSerializer::recordBatch_to_bitmap(const std::shared_ptr<arrow::RecordBatch> &recordBatch) {
+  // get bitmap array
+  auto bitmapArray = recordBatch->GetColumnByName(BITMAP_FIELD_NAME.data());
+  if (bitmapArray == nullptr) {
+    return tl::make_unexpected("Bitmap array not found in the recordBatch");
+  }
+  if (bitmapArray->type()->id() != arrow::int64()->id()) {
+    return tl::make_unexpected("Type of bitmap array is not int64");
+  }
+  auto typedBitmapArray = std::static_pointer_cast<arrow::Int64Array>(bitmapArray);
+
+  auto bitmapData = typedBitmapArray->data()->GetValues<int64_t>(1, typedBitmapArray->offset());
+  return std::vector<int64_t>(bitmapData, bitmapData + typedBitmapArray->length());
 }
 
 }

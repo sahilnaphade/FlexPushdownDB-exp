@@ -2,12 +2,13 @@
 // Created by Yifei Yang on 2/9/21.
 //
 
-#ifndef FPDB_UTIL_UTIL_H
-#define FPDB_UTIL_UTIL_H
+#ifndef FPDB_FPDB_UTIL_INCLUDE_FPDB_UTIL_UTIL_H
+#define FPDB_FPDB_UTIL_INCLUDE_FPDB_UTIL_UTIL_H
 
 #include <tl/expected.hpp>
 #include <vector>
 #include <unordered_map>
+#include <unordered_set>
 #include <set>
 
 using namespace std;
@@ -20,6 +21,8 @@ namespace fpdb::util {
    */
   string readFile(const string& filePath);
   vector<string> readFileByLine(const string& filePath);
+  void writeFile(const string& filePath, const string& content);
+  int64_t getFileSize(const string& filePath);
 
   /**
    * Config utils
@@ -29,10 +32,11 @@ namespace fpdb::util {
   unordered_map<string, string> readConfig(const string &fileName);
 
   /**
-   * Read ip of all remote nodes from "cluster_ip"
+   * Read ip of all remote nodes
+   * @param isCompute
    * @return
    */
-  vector<string> readRemoteIps();
+  vector<string> readRemoteIps(bool isCompute = true);
 
   /**
    * Parsing bool string
@@ -42,7 +46,7 @@ namespace fpdb::util {
   bool parseBool(const string& stringToParse);
 
   /**
-   * Union two vectors or one vector with one set
+   * Union func
    */
   template<typename T>
   vector<T> union_(const vector<T> &vec1, const set<T> &set2) {
@@ -58,7 +62,55 @@ namespace fpdb::util {
     return vector<T>{unionSet.begin(), unionSet.end()};
   }
 
+  template<typename T>
+  vector<T> union_(const vector<set<T>> &sets) {
+    set<T> unionSet;
+    for (const auto &set: sets) {
+      unionSet.insert(set.begin(), set.end());
+    }
+    return vector<T>{unionSet.begin(), unionSet.end()};
+  }
+
+  /**
+   * Check if set1 is a subset of set2
+   */
+  template<typename T>
+  bool isSubSet(const set<T> &set1, const set<T> &set2) {
+    for (const auto &e1: set1) {
+      if (set2.find(e1) == set2.end()) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  template<typename T>
+  bool isSubSet(const unordered_set<T> &set1, const unordered_set<T> &set2) {
+    for (const auto &e1: set1) {
+      if (set2.find(e1) == set2.end()) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  template<typename T>
+  vector<set<T>> splitToUnarySet(const vector<T> vec) {
+    vector<set<T>> sets;
+    for (const auto &e: vec) {
+      sets.emplace_back(set<T>{e});
+    }
+    return sets;
+  }
+
   size_t hashCombine(const vector<size_t> &hashes);
+
+  /**
+   * Bitmap util
+   */
+  void setBit(vector<int64_t> &bitmap, int64_t n);
+  void unsetBit(vector<int64_t> &bitmap, int64_t n);
+  bool getBit(const vector<int64_t> &bitmap, int64_t n);
 
   /**
    * Given a start and finish number, will create pairs of numbers from start to finish (inclusive)
@@ -96,4 +148,4 @@ namespace fpdb::util {
 }
 
 
-#endif //FPDB_UTIL_UTIL_H
+#endif //FPDB_FPDB_UTIL_INCLUDE_FPDB_UTIL_UTIL_H

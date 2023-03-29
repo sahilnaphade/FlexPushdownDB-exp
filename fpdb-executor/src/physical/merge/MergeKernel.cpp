@@ -15,27 +15,13 @@ tl::expected<void, std::string> MergeKernel::validateTupleSets(const std::shared
   // means discarding the empty one.
   if (tupleSet1->numColumns() > 0 && tupleSet2->numColumns() > 0) {
 
-	// Check row count is equal
-	if (tupleSet1->numRows() != tupleSet2->numRows()) {
-	  return tl::unexpected(fmt::format(
-            "Cannot merge TupleSets, number of rows must be equal. "
-            "tupleSet1.numRows: {} != tupleSet2.numRows: {}",
-            tupleSet1->numRows(), tupleSet2->numRows()));
-	}
-
-	// Check field names do not contain duplicates
-	if (tupleSet1->valid() && tupleSet2->valid()) {
-	  for (const auto &field1: tupleSet1->schema()->fields()) {
-		for (const auto &field2: tupleSet2->schema()->fields()) {
-		  if (field1->name() == field2->name()) {
-		    return tl::unexpected(fmt::format(
-                "Cannot merge TupleSets, field names must not contain duplicates. "
-                "Multiple fields with name: {}",
-                field1->name()));
-		  }
-		}
-	  }
-	}
+    // Check row count is equal
+    if (tupleSet1->numRows() != tupleSet2->numRows()) {
+      return tl::unexpected(fmt::format(
+              "Cannot merge TupleSets, number of rows must be equal. "
+              "tupleSet1.numRows: {} != tupleSet2.numRows: {}",
+              tupleSet1->numRows(), tupleSet2->numRows()));
+    }
   }
 
   return {};
@@ -44,16 +30,24 @@ tl::expected<void, std::string> MergeKernel::validateTupleSets(const std::shared
 std::shared_ptr<Schema> MergeKernel::mergeSchema(const std::shared_ptr<TupleSet> &tupleSet1,
 												 const std::shared_ptr<TupleSet> &tupleSet2) {
 
+  std::set<std::string> fields1NameSet;
   auto mergedFields = std::vector<std::shared_ptr<arrow::Field>>{};
 
   if (tupleSet1->valid()){
-	const auto &fields1 = tupleSet1->schema()->fields();
-	mergedFields.insert(std::end(mergedFields), std::begin(fields1), std::end(fields1));
+    auto fields1Names = tupleSet1->schema()->field_names();
+    fields1NameSet = std::set<std::string>(fields1Names.begin(), fields1Names.end());
+    const auto &fields1 = tupleSet1->schema()->fields();
+    mergedFields.insert(std::end(mergedFields), std::begin(fields1), std::end(fields1));
   }
 
   if (tupleSet2->valid()) {
-	const auto &fields2 = tupleSet2->schema()->fields();
-	mergedFields.insert(std::end(mergedFields), std::begin(fields2), std::end(fields2));
+    const auto &fields2 = tupleSet2->schema()->fields();
+    for (const auto &field: fields2) {
+      // deduplicate
+      if (fields1NameSet.find(field->name()) == fields1NameSet.end()) {
+        mergedFields.emplace_back(field);
+      }
+    }
   }
 
   const auto &mergedArrowSchema = std::make_shared<::arrow::Schema>(mergedFields);
@@ -65,16 +59,25 @@ std::shared_ptr<Schema> MergeKernel::mergeSchema(const std::shared_ptr<TupleSet>
 std::vector<std::shared_ptr<::arrow::ChunkedArray>> MergeKernel::mergeArrays(const std::shared_ptr<TupleSet> &tupleSet1,
 																			 const std::shared_ptr<TupleSet> &tupleSet2) {
 
+  std::set<std::string> fields1NameSet;
   auto mergedArrays = std::vector<std::shared_ptr<::arrow::ChunkedArray>>{};
 
   if (tupleSet1->valid()) {
-	const auto &arrowArrays1 = tupleSet1->table()->columns();
-	mergedArrays.insert(std::end(mergedArrays), std::begin(arrowArrays1), std::end(arrowArrays1));
+    auto fields1Names = tupleSet1->schema()->field_names();
+    fields1NameSet = std::set<std::string>(fields1Names.begin(), fields1Names.end());
+    const auto &arrowArrays1 = tupleSet1->table()->columns();
+    mergedArrays.insert(std::end(mergedArrays), std::begin(arrowArrays1), std::end(arrowArrays1));
   }
 
   if (tupleSet2->valid()) {
-	const auto &arrowArrays2 = tupleSet2->table()->columns();
-	mergedArrays.insert(std::end(mergedArrays), std::begin(arrowArrays2), std::end(arrowArrays2));
+    const auto &fields2 = tupleSet2->schema()->fields();
+    const auto &arrowArrays2 = tupleSet2->table()->columns();
+    for (int i = 0; i < tupleSet2->numColumns(); ++i) {
+      // deduplicate
+      if (fields1NameSet.find(fields2[i]->name()) == fields1NameSet.end()) {
+        mergedArrays.emplace_back(arrowArrays2[i]);
+      }
+    }
   }
 
   return mergedArrays;

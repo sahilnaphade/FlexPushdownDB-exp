@@ -7,6 +7,7 @@
 
 #include <caf/all.hpp>
 #include <arrow/api.h>
+#include <tl/expected.hpp>
 
 namespace fpdb::tuple {
 
@@ -15,9 +16,18 @@ class ArrowSerializer {
 public:
   /**
    * Serialization and deserialization methods of arrow::Table.
+   * If setting copy_view = false, need to make sure the bytes vector doesn't become invalid
+   * during the usage of the output table.
    */
-  static std::shared_ptr<arrow::Table> bytes_to_table(const std::vector<std::uint8_t>& bytes_vec);
+  static std::shared_ptr<arrow::Table> bytes_to_table(const std::vector<std::uint8_t>& bytes_vec,
+                                                      bool copy_view = true);
   static std::vector<std::uint8_t> table_to_bytes(const std::shared_ptr<arrow::Table>& table);
+
+  /**
+   * This is just used by the temp fix for the issue that arrow's group-by kernel will crash
+   * when using unaligned buffers from flight.
+   */
+  static std::shared_ptr<arrow::Table> align_table_by_copy(const std::shared_ptr<arrow::Table>& table);
 
   /**
    * Serialization and deserialization methods of arrow::RecordBatch.
@@ -51,6 +61,16 @@ public:
    */
   static std::shared_ptr<arrow::DataType> bytes_to_dataType(const std::vector<std::uint8_t>& bytes_vec);
   static std::vector<std::uint8_t> dataType_to_bytes(const std::shared_ptr<arrow::DataType>& dataType);
+
+  /**
+   * Transformation between bitmap and recordBatch
+   */
+  static constexpr std::string_view BITMAP_FIELD_NAME = "bitmap";
+  static tl::expected<std::shared_ptr<arrow::RecordBatch>, std::string>
+  bitmap_to_recordBatch(const std::vector<int64_t> &bitmap);
+  static tl::expected<std::vector<int64_t>, std::string>
+  recordBatch_to_bitmap(const std::shared_ptr<arrow::RecordBatch> &recordBatch);
+
 };
 
 }

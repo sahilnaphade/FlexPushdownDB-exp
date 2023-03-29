@@ -5,11 +5,10 @@ project(fpdb-main VERSION "${PROJECT_VERSION}" LANGUAGES C CXX)
 # Targets
 #-----------------------------------------------------------------------------------------------------------------------
 
-# fpdb-main-client
+# fpdb-main
 add_library(fpdb-main
         src/ExecConfig.cpp include/fpdb/main/ExecConfig.h
         include/fpdb/main/ActorSystemConfig.h
-        src/CAFInit.cpp include/fpdb/main/CAFInit.h
         src/Client.cpp include/fpdb/main/Client.h
         src/Server.cpp include/fpdb/main/Server.h)
 
@@ -17,7 +16,6 @@ target_include_directories(fpdb-main PUBLIC include)
 
 target_link_libraries(fpdb-main PUBLIC fpdb-executor)
 target_link_libraries(fpdb-main PUBLIC fpdb-util)
-target_link_libraries(fpdb-main PUBLIC ssl crypto)
 
 
 # fpdb-main-client
@@ -25,10 +23,6 @@ add_executable(fpdb-main-client
         src/ClientMain.cpp)
 
 target_link_libraries(fpdb-main-client PRIVATE fpdb-main)
-# need to add and link libraries on mac
-if (${APPLE})
-  linkForMacExecutable(fpdb-main-client)
-endif()
 
 add_dependencies(fpdb-main-client resources)
 
@@ -38,9 +32,6 @@ add_executable(fpdb-main-server
         src/ServerMain.cpp)
 
 target_link_libraries(fpdb-main-server PRIVATE fpdb-main)
-if (${APPLE})
-  linkForMacExecutable(fpdb-main-server)
-endif()
 
 add_dependencies(fpdb-main-server resources)
 
@@ -50,18 +41,57 @@ add_dependencies(fpdb-main-server resources)
 #-----------------------------------------------------------------------------------------------------------------------
 
 add_executable(fpdb-main-test
-        test/Globals.h
-        test/TestUtil.cpp test/TestUtil.h
-        test/MainTest.cpp
+        test-base/Globals.h
+        test-base/MainTest.cpp
+        test-base/TestUtil.cpp test-base/TestUtil.h
+        test-base/BitmapPushdownTestUtil.cpp test-base/BitmapPushdownTestUtil.h
+        test-base/AdaptPushdownTestUtil.cpp test-base/AdaptPushdownTestUtil.h
         test/SSBTest.cpp
+        test/SSBFPDBStoreSameNodeTest.cpp
         test/TPCHTest.cpp
-        test/TPCHDistTest.cpp)
+        test/TPCHDistTest.cpp
+        test/TPCHFPDBStoreSameNodeTest.cpp
+        test/CachingOnlyTest.cpp
+        test/HybridTest.cpp
+        test/BitmapPushdownTest.cpp)
+
+target_include_directories(fpdb-main-test PRIVATE test-base)
 
 target_link_libraries(fpdb-main-test PRIVATE fpdb-main)
+target_link_libraries(fpdb-main-test PRIVATE fpdb-store-server-static)
 target_link_libraries(fpdb-main-test PRIVATE doctest::doctest)
-# need to add and link libraries on mac
-if (${APPLE})
-  linkForMacExecutable(fpdb-main-test)
-endif()
 
 add_dependencies(fpdb-main-test resources)
+
+add_custom_command(
+        TARGET fpdb-main-test POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_CURRENT_SOURCE_DIR}/test-resources
+        ${CMAKE_CURRENT_BINARY_DIR}/test-resources)
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+# Bench
+#-----------------------------------------------------------------------------------------------------------------------
+
+add_executable(fpdb-main-bench
+        test-base/Globals.h
+        test-base/MainTest.cpp
+        test-base/TestUtil.cpp test-base/TestUtil.h
+        test-base/BitmapPushdownTestUtil.cpp test-base/BitmapPushdownTestUtil.h
+        test-base/AdaptPushdownTestUtil.cpp test-base/AdaptPushdownTestUtil.h
+        bench/SSBDistFPDBStoreBench.cpp
+        bench/TPCHBench.cpp
+        bench/TPCHDistBench.cpp
+        bench/TPCHFPDBStoreDiffNodeBench.cpp
+        bench/TPCHDistFPDBStoreBench.cpp
+        bench/BytesReadBench.cpp
+        bench/BitmapPushdownBench.cpp)
+
+target_include_directories(fpdb-main-bench PRIVATE test-base)
+
+target_link_libraries(fpdb-main-bench PRIVATE fpdb-main)
+target_link_libraries(fpdb-main-bench PRIVATE fpdb-store-server-static)
+target_link_libraries(fpdb-main-bench PRIVATE doctest::doctest)
+
+add_dependencies(fpdb-main-bench resources)

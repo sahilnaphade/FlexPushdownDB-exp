@@ -5,7 +5,7 @@
 #include <fpdb/plan/calcite/CalcitePlanJsonDeserializer.h>
 #include <fpdb/plan/prephysical/JoinType.h>
 #include <fpdb/plan/Util.h>
-#include <fpdb/catalogue/s3/S3CatalogueEntry.h>
+#include <fpdb/catalogue/obj-store/ObjStoreCatalogueEntry.h>
 #include <fpdb/expression/gandiva/Expression.h>
 #include <fpdb/expression/gandiva/Column.h>
 #include <fpdb/expression/gandiva/And.h>
@@ -30,6 +30,7 @@
 #include <fpdb/expression/gandiva/DateExtract.h>
 #include <fpdb/expression/gandiva/IsNull.h>
 #include <fpdb/expression/gandiva/Substr.h>
+#include <fpdb/expression/gandiva/Cast.h>
 #include <fpdb/tuple/ColumnName.h>
 
 #include <fmt/format.h>
@@ -47,6 +48,12 @@ CalcitePlanJsonDeserializer::CalcitePlanJsonDeserializer(string planJsonString,
   planJsonString_(std::move(planJsonString)),
   catalogueEntry_(catalogueEntry),
   pOpIdGenerator_(0) {}
+
+shared_ptr<PrePhysicalPlan> CalcitePlanJsonDeserializer::deserialize(string planJsonString,
+                                                                     const shared_ptr<CatalogueEntry> &catalogueEntry) {
+  CalcitePlanJsonDeserializer deserializer(planJsonString, catalogueEntry);
+  return deserializer.deserialize();
+}
 
 shared_ptr<PrePhysicalPlan> CalcitePlanJsonDeserializer::deserialize() {
   auto jObj = json::parse(planJsonString_);
@@ -306,6 +313,29 @@ shared_ptr<fpdb::expression::gandiva::Expression> CalcitePlanJsonDeserializer::d
   return substr(expr, fromLit, forLit);
 }
 
+shared_ptr<fpdb::expression::gandiva::Expression> CalcitePlanJsonDeserializer::deserializeCastOperation(const json &jObj) {
+  const auto &operand = jObj["operand"].get<json>();
+  const auto &expr = deserializeExpression(operand);
+  const auto &type = deserializeDataType(jObj);
+
+  return cast(expr, type);
+}
+
+shared_ptr<::arrow::DataType> CalcitePlanJsonDeserializer::deserializeDataType(const json &jObj) {
+  const auto &type = jObj["type"].get<std::string>();
+
+  if(type == "INTEGER"){
+    return ::arrow::int64();
+  }
+  // TODO: Add more types
+//  else if(type == "INTEGER"){
+//    return ::arrow::int64();
+//  }
+  else{
+    throw runtime_error(fmt::format("Unrecognized data type, {}, from: {}", type, to_string(jObj)));
+  }
+}
+
 shared_ptr<fpdb::expression::gandiva::Expression> CalcitePlanJsonDeserializer::deserializeOperation(const json &jObj) {
   const string &opName = jObj["op"].get<string>();
   // and, or
@@ -336,6 +366,9 @@ shared_ptr<fpdb::expression::gandiva::Expression> CalcitePlanJsonDeserializer::d
   }
   else if (opName == "SUBSTRING") {
     return deserializeSubstrOperation(jObj);
+  }
+  else if (opName == "CAST") {
+    return deserializeCastOperation(jObj);
   }
   // invalid
   else {
@@ -505,7 +538,7 @@ shared_ptr<LimitSortPrePOp> CalcitePlanJsonDeserializer::deserializeLimitSort(co
   // deserialize limit
   const auto &limitJObj = jObj["limit"];
   if (!limitJObj.contains("literal")) {
-    throw runtime_error(fmt::format("Invalid sort limit, not an literal, from: {}",to_string(limitJObj)));
+    throw runtime_error(fmt::format("Invalid sort limit, not an literal, from: {}", to_string(limitJObj)));
   }
   const auto &limitLiteralJObj = limitJObj["literal"];
   if (limitLiteralJObj["type"].get<string>() != "INTEGER") {
@@ -727,10 +760,17 @@ shared_ptr<prephysical::HashJoinPrePOp> CalcitePlanJsonDeserializer::deserialize
   const auto &joinCondJObj = jObj["condition"];
   const pair<vector<string>, vector<string>> &joinColumnNames = deserializeHashJoinCondition(joinCondJObj);
 
+  // deserialize pushable
+  if (!jObj.contains("pushable")) {
+    throw runtime_error("Invalid hash join, no field 'pushable'");
+  }
+  bool pushable = jObj["pushable"].get<bool>();
+
   shared_ptr<PrePhysicalOp> hashJoinPrePOp = make_shared<HashJoinPrePOp>(pOpIdGenerator_.fetch_add(1),
                                                                          joinType,
                                                                          joinColumnNames.first,
-                                                                         joinColumnNames.second);
+                                                                         joinColumnNames.second,
+                                                                         pushable);
 
   // deserialize producers
   const auto &producers = deserializeProducers(jObj);
@@ -800,9 +840,9 @@ shared_ptr<prephysical::FilterableScanPrePOp> CalcitePlanJsonDeserializer::deser
 
   set<string> columnNameSet;
   // fetch table from catalogue entry
-  if (catalogueEntry_->getType() == S3) {
-    const auto s3CatalogueEntry = static_pointer_cast<s3::S3CatalogueEntry>(catalogueEntry_);
-    table = s3CatalogueEntry->getS3Table(tableName);
+  if (catalogueEntry_->getType() == CatalogueEntryType::OBJ_STORE) {
+    const auto objStoreCatalogueEntry = static_pointer_cast<obj_store::ObjStoreCatalogueEntry>(catalogueEntry_);
+    table = objStoreCatalogueEntry->getTable(tableName);
     const vector<string> &columnNames = table->getColumnNames();
     columnNameSet.insert(columnNames.begin(), columnNames.end());
   } else {

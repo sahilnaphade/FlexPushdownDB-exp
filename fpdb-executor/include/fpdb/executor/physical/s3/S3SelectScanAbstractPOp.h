@@ -8,7 +8,7 @@
 #include <fpdb/executor/physical/PhysicalOp.h>
 #include <fpdb/executor/physical/s3/S3SelectCSVParseOptions.h>
 #include <fpdb/executor/physical/s3/S3CSVParser.h>
-#include <fpdb/executor/message/TupleMessage.h>
+#include <fpdb/executor/message/TupleSetMessage.h>
 #include <fpdb/executor/message/CompleteMessage.h>
 #include <fpdb/executor/message/ScanMessage.h>
 #include <fpdb/executor/message/cache/LoadResponseMessage.h>

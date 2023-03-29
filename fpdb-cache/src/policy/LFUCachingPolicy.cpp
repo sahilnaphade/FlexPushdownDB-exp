@@ -30,10 +30,14 @@ void LFUCachingPolicy::eraseFreqMap(int freq, std::list<std::shared_ptr<SegmentK
     freqSet_.erase(freq);
     if (minFreq_ == freq) {
       // update minFreq_ to next min
-      minFreq_ = *freqSet_.begin();
-      for (auto freq1: freqSet_) {
-        if (freq1 < minFreq_) {
-          minFreq_ = freq1;
+      if (freqSet_.empty()) {
+        minFreq_ = 0;
+      } else {
+        minFreq_ = std::numeric_limits<int>::max();
+        for (auto freq1: freqSet_) {
+          if (freq1 < minFreq_) {
+            minFreq_ = freq1;
+          }
         }
       }
     }
@@ -236,4 +240,14 @@ std::string LFUCachingPolicy::toString() {
 
 void LFUCachingPolicy::onNewQuery() {
 
+}
+
+void LFUCachingPolicy::onClear() {
+  freqMap_.clear();
+  keyMap_.clear();
+  minFreq_ = 0;
+  freqSet_.clear();
+  keySet_.clear();
+  keysToReplace_.clear();
+  estimateCachingDecisions_.clear();
 }

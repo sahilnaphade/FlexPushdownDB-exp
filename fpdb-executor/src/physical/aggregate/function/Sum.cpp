@@ -12,6 +12,10 @@ Sum::Sum(const string &outputColumnName,
          const shared_ptr<fpdb::expression::gandiva::Expression> &expression)
   : AggregateFunction(SUM, outputColumnName, expression) {}
 
+std::string Sum::getTypeString() const {
+  return "Sum";
+}
+
 tl::expected<shared_ptr<arrow::Scalar>, string> Sum::computeComplete(const shared_ptr<TupleSet> &tupleSet) {
   // evaluate the expression to get input of aggregation
   const auto &expAggChunkedArray = evaluateExpr(tupleSet);
@@ -54,6 +58,19 @@ Sum::finalize(const vector<shared_ptr<AggregateResult>> &aggregateResults) {
     return tl::make_unexpected(expFinalResultScalar.status().message());
   }
   return (*expFinalResultScalar).scalar();
+}
+
+std::vector<std::tuple<arrow::compute::internal::Aggregate, arrow::FieldRef, std::string,
+std::shared_ptr<arrow::Field>>> Sum::getArrowAggregateSignatures() {
+  static auto defaultScalarAggregateOptions = arrow::compute::ScalarAggregateOptions::Defaults();
+  std::tuple<arrow::compute::internal::Aggregate, arrow::FieldRef, std::string, std::shared_ptr<arrow::Field>>
+          aggregateSignature{
+          {"hash_sum", &defaultScalarAggregateOptions},
+          getAggregateInputColumnName(),
+          outputColumnName_,
+          arrow::field(outputColumnName_, returnType())
+  };
+  return {aggregateSignature};
 }
 
 }

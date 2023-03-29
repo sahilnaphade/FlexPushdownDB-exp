@@ -1,11 +1,15 @@
 package com.flexpushdowndb.calcite.optimizer;
 
+import com.flexpushdowndb.calcite.metadata.FPDBRelMdRowCount;
+import com.flexpushdowndb.calcite.metadata.FPDBRelMetadataProvider;
 import com.flexpushdowndb.calcite.rule.EnhancedFilterJoinRule;
 import com.flexpushdowndb.calcite.rule.JoinSmallLeftRule;
 import com.flexpushdowndb.calcite.schema.SchemaImpl;
 import com.flexpushdowndb.calcite.schema.SchemaReader;
+import com.flexpushdowndb.calcite.tools.MorePrograms;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
+import org.apache.calcite.adapter.enumerable.EnumerableHashJoin;
 import org.apache.calcite.adapter.enumerable.EnumerableRules;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.config.CalciteConnectionProperty;
@@ -18,10 +22,6 @@ import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.metadata.CachingRelMetadataProvider;
-import org.apache.calcite.rel.metadata.ChainedRelMetadataProvider;
-import org.apache.calcite.rel.metadata.JaninoRelMetadataProvider;
-import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
@@ -34,12 +34,14 @@ import org.apache.calcite.sql2rel.RelDecorrelator;
 import org.apache.calcite.sql2rel.RelFieldTrimmer;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.sql2rel.StandardConvertletTable;
-import org.apache.calcite.tools.*;
+import org.apache.calcite.tools.Program;
+import org.apache.calcite.tools.Programs;
+import org.apache.calcite.tools.RelBuilder;
+import org.apache.calcite.tools.RuleSets;
 
+import java.io.FileInputStream;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 public class Optimizer {
   private static final RelOptTable.ViewExpander NOOP_EXPANDER = (type, query, schema, path) -> null;
@@ -49,11 +51,12 @@ public class Optimizer {
   private final RelOptPlanner planner;
   private final RelBuilder relBuilder;
   private final CalciteSchema rootSchema;
+  private final boolean findPushableHashJoins;
 
   // assigned during query parsing
   private SqlValidator sqlValidator = null;
 
-  public Optimizer(Path resourcePath) {
+  public Optimizer(Path resourcePath) throws Exception {
     // Initialize
     this.resourcePath = resourcePath;
     this.typeFactory = new JavaTypeFactoryImpl();
@@ -61,17 +64,10 @@ public class Optimizer {
     this.planner = cluster.getPlanner();
     this.relBuilder = RelBuilder.proto(planner.getContext()).create(cluster, null);
     this.rootSchema = CalciteSchema.createRootSchema(false, true);
-
-    // Set RelMetadataProvider, using DefaultRelMetadataProvider
-    List<RelMetadataProvider> metadataProviders = new ArrayList<>();
-    metadataProviders.add(JaninoRelMetadataProvider.DEFAULT);
-    this.planner.registerMetadataProviders(metadataProviders);
-    RelMetadataProvider chainedMetadataProvider = ChainedRelMetadataProvider.of(metadataProviders);
-    CachingRelMetadataProvider cachingMetadataProvider = new CachingRelMetadataProvider(chainedMetadataProvider, planner);
-    this.cluster.setMetadataProvider(cachingMetadataProvider);
+    this.findPushableHashJoins = isHashJoinPushable();
   }
 
-  public RelNode planQuery(String query, String schemaName) throws Exception {
+  public OptimizeResult planQuery(String query, String schemaName, boolean useHeuristicJoinOrdering) throws Exception {
     // Parse and Validate
     RelNode logicalPlan = parseAndValidate(query, schemaName);
 
@@ -82,7 +78,7 @@ public class Optimizer {
     RelNode preFilterPushdownPlan = filterPushdown(decorrelatedPlan);
 
     // Join optimization
-    RelNode joinOptPlan = joinOptimize(preFilterPushdownPlan);
+    RelNode joinOptPlan = joinOptimize(preFilterPushdownPlan, schemaName, useHeuristicJoinOrdering);
 
     // Post-join filter pushdown
     RelNode postFilterPushdownPlan = filterPushdown(joinOptPlan);
@@ -91,7 +87,15 @@ public class Optimizer {
     RelNode trimmedPhysicalPlan = trim(postFilterPushdownPlan);
 
     // Heuristics to apply
-    return postHeuristics(trimmedPhysicalPlan);
+    RelNode postHeuristicsPlan = postHeuristics(trimmedPhysicalPlan);
+
+    // Find pushable co-located join
+    Set<EnumerableHashJoin> pushableHashJoins = null;
+    if (findPushableHashJoins) {
+      pushableHashJoins = findPushableHashJoins(postHeuristicsPlan, schemaName);
+    }
+
+    return new OptimizeResult(postHeuristicsPlan, pushableHashJoins);
   }
 
   private RelNode parseAndValidate(String query, String schemaName) throws Exception {
@@ -149,16 +153,25 @@ public class Optimizer {
     return hepPlanner.findBestExp();
   }
 
-  private RelNode joinOptimize(RelNode relNode) {
-    // join optimize
-    Program program = Programs.heuristicJoinOrder(getJoinOptimizeRules(), false, 0);
-    return program.run(
-            planner,
-            relNode,
-            relNode.getTraitSet().plus(EnumerableConvention.INSTANCE),
-            Collections.emptyList(),
-            Collections.emptyList()
-    );
+  private RelNode joinOptimize(RelNode relNode, String schemaName, boolean useHeuristicJoinOrdering) {
+    if (useHeuristicJoinOrdering) {
+      // set config
+      FPDBRelMdRowCount.THREAD_HASH_KEYS.set(getHashKeys(schemaName));
+      FPDBRelMdRowCount.THREAD_FIND_PUSHABLE_HASH_JOINS.set(findPushableHashJoins);
+
+      // join optimize
+      Program program = MorePrograms.heuristicJoinOrder(
+              getJoinOptimizeRules(), false, 0, FPDBRelMetadataProvider.INSTANCE);
+      return program.run(
+              planner,
+              relNode,
+              relNode.getTraitSet().plus(EnumerableConvention.INSTANCE),
+              Collections.emptyList(),
+              Collections.emptyList()
+      );
+    } else {
+      return relNode;
+    }
   }
 
   private RelNode trim(RelNode relNode) {
@@ -190,6 +203,23 @@ public class Optimizer {
     return hepPlanner.findBestExp();
   }
 
+  private Set<EnumerableHashJoin> findPushableHashJoins(RelNode relNode, String schemaName) {
+    Map<String, String> hashKeys = getHashKeys(schemaName);
+    if (hashKeys == null) {
+      return new HashSet<>();
+    } else {
+      return PushableHashJoinFinder.find(relNode, hashKeys);
+    }
+  }
+
+  private boolean isHashJoinPushable() throws Exception {
+    Properties props = new Properties();
+    try (FileInputStream in = new FileInputStream(resourcePath.resolve("config/pushdown.conf").toFile())) {
+      props.load(in);
+      return Boolean.parseBoolean(props.getProperty("CO_LOCATED_JOIN"));
+    }
+  }
+
   private static List<RelOptRule> getJoinOptimizeRules() {
     List<RelOptRule> ruleList = getConvertToPhysicalRules();
     ruleList.add(CoreRules.PROJECT_MERGE);
@@ -212,6 +242,14 @@ public class Optimizer {
     ruleList.add(EnumerableRules.ENUMERABLE_LIMIT_RULE);
     ruleList.add(EnumerableRules.ENUMERABLE_SORTED_AGGREGATE_RULE);
     return ruleList;
+  }
+
+  private Map<String, String> getHashKeys(String schemaName) {
+    CalciteSchema schema = rootSchema.getSubSchema(schemaName, true);
+    if (schema == null) {
+      return null;
+    }
+    return ((SchemaImpl) schema.schema).getHashKeys();
   }
 
   private static RelOptCluster newCluster(RelDataTypeFactory typeFactory) {

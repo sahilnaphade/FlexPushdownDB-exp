@@ -15,7 +15,7 @@ namespace fpdb::tuple {
 /**
  * Default number of records per arrow chunk when processing record batches
  */
-inline size_t DefaultChunkSize = 100000;
+inline int64_t DefaultChunkSize = 100000;
 
 }
 

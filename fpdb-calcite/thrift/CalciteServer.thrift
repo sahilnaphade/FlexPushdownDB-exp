@@ -12,6 +12,7 @@ struct TPlanResult {
 service CalciteServer {
   void ping(),
   void shutdown(),
-  TPlanResult sql2Plan(1: string query, 2: string schemaName) throws (1: ParsePlanningError parsePlanningErr),
+  TPlanResult sql2Plan(1: string query, 2: string schemaName, 3: bool useHeuristicJoinOrdering)
+      throws (1: ParsePlanningError parsePlanningErr),
   void updateMetadata(1: string catalog, 2: string table)
 }

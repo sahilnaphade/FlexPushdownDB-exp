@@ -4,6 +4,7 @@
 
 #include <fpdb/expression/gandiva/Or.h>
 #include <gandiva/tree_expr_builder.h>
+#include <fmt/format.h>
 #include <sstream>
 
 using namespace fpdb::expression::gandiva;
@@ -36,7 +37,7 @@ string Or::alias() {
   return ss.str();
 }
 
-string Or::getTypeString() {
+string Or::getTypeString() const {
   return "Or";
 }
 
@@ -47,6 +48,37 @@ set<string> Or::involvedColumnNames() {
     allInvolvedColumnNames.insert(involvedColumnNames.begin(), involvedColumnNames.end());
   }
   return allInvolvedColumnNames;
+}
+
+::nlohmann::json Or::toJson() const {
+  ::nlohmann::json jObj;
+  jObj.emplace("type", getTypeString());
+
+  vector<::nlohmann::json> operandsJArr;
+  for (const auto &expr: exprs_) {
+    operandsJArr.emplace_back(expr->toJson());
+  }
+  jObj.emplace("exprs", operandsJArr);
+
+  return jObj;
+}
+
+tl::expected<std::shared_ptr<Or>, std::string> Or::fromJson(const nlohmann::json &jObj) {
+  if (!jObj.contains("exprs")) {
+    return tl::make_unexpected(fmt::format("Exprs not specified in Or expression JSON '{}'", to_string(jObj)));
+  }
+  auto exprsJArr = jObj["exprs"].get<std::vector<nlohmann::json>>();
+
+  std::vector<std::shared_ptr<Expression>> exprs;
+  for (const auto &exprJObj: exprsJArr) {
+    auto expExpr = Expression::fromJson(exprJObj);
+    if (!expExpr.has_value()) {
+      return tl::make_unexpected(expExpr.error());
+    }
+    exprs.emplace_back(*expExpr);
+  }
+
+  return std::make_shared<Or>(exprs);
 }
 
 const vector<shared_ptr<Expression>> &Or::getExprs() const {

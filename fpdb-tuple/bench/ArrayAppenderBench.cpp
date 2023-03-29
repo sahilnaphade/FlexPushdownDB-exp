@@ -7,11 +7,12 @@
 
 #include <fpdb/tuple/arrow/Arrays.h>
 #include <fpdb/tuple/ArrayAppenderWrapper.h>
-#include <fpdb/tuple/Sample.h>
+#include <fpdb/tuple/util/Sample.h>
 
 #include "Globals.h"
 
 using namespace fpdb::tuple;
+using namespace fpdb::tuple::util;
 
 TEST_SUITE ("array-appender-benchmark" * doctest::skip(false)) {
 

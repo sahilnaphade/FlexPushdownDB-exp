@@ -8,7 +8,7 @@
 #include <fpdb/executor/physical/aggregate/function/AggregateFunction.h>
 #include <fpdb/executor/physical/aggregate/AggregateResult.h>
 #include <fpdb/executor/physical/PhysicalOp.h>
-#include <fpdb/executor/message/TupleMessage.h>
+#include <fpdb/executor/message/TupleSetMessage.h>
 #include <fpdb/executor/message/CompleteMessage.h>
 #include <memory>
 #include <string>
@@ -34,9 +34,11 @@ public:
   void clear() override;
   std::string getTypeString() const override;
 
+  const vector<shared_ptr<AggregateFunction>> &getFunctions() const;
+
 private:
   void onStart();
-  void onTuple(const TupleMessage &message);
+  void onTupleSet(const TupleSetMessage &message);
   void onComplete(const CompleteMessage &message);
 
   void compute(const shared_ptr<TupleSet> &tupleSet);
@@ -44,9 +46,20 @@ private:
   shared_ptr<TupleSet> finalizeEmpty();
 
   bool hasResult();
+
+  /**
+   * Used in hybrid execution, keep only those aggregate functions that are applicable to input tupleSet
+   * @param tupleSet
+   */
+  void discardInapplicableFunctions(const std::shared_ptr<TupleSet> &tupleSet);
   
   vector<shared_ptr<AggregateFunction>> functions_;
   vector<vector<shared_ptr<AggregateResult>>> aggregateResults_;
+
+  /**
+   * Whether discardInapplicableFunctions() has been invoked
+   */
+  bool inapplicableFunctionsDiscarded_ = false;
 
 // caf inspect
 public:
@@ -60,6 +73,8 @@ public:
                                f.field("opContext", op.opContext_),
                                f.field("producers", op.producers_),
                                f.field("consumers", op.consumers_),
+                               f.field("consumerToBloomFilterInfo", op.consumerToBloomFilterInfo_),
+                               f.field("isSeparated", op.isSeparated_),
                                f.field("functions", op.functions_),
                                f.field("aggregateResults", op.aggregateResults_));
   }

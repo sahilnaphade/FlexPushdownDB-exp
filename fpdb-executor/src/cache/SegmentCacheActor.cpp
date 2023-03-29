@@ -72,28 +72,33 @@ void SegmentCacheActor::metrics(const CacheMetricsMessage &msg, stateful_actor<S
   self->state.cache->addCrtQueryShardMissNum(msg.getShardMissNum());
 }
 
-[[maybe_unused]] behavior SegmentCacheActor::makeBehaviour(stateful_actor<SegmentCacheActorState> *self,
-                                                           const std::optional<std::shared_ptr<CachingPolicy>> &cachingPolicy,
-                                                           const std::shared_ptr<Mode> &mode) {
+void SegmentCacheActor::stop(stateful_actor<SegmentCacheActorState> *self) {
+  self->state.cache->clear();
+  self->state.cache.reset();
+}
 
-  if (cachingPolicy.has_value())
-	self->state.cache = SegmentCache::make(cachingPolicy.value());
+behavior SegmentCacheActor::makeBehaviour(stateful_actor<SegmentCacheActorState> *self,
+                                          std::shared_ptr<CachingPolicy> cachingPolicy,
+                                          std::shared_ptr<Mode> mode) {
+
+  if (cachingPolicy != nullptr)
+	  self->state.cache = SegmentCache::make(std::move(cachingPolicy));
   else
-	throw runtime_error("Error when creating SegmentCacheActor: no caching policy specified");
+	  throw runtime_error("Error when creating SegmentCacheActor: no caching policy specified");
 
   /**
    * Handler for actor exit event
    */
   self->attach_functor([=](const ::caf::error &reason) {
 
-	// FIXME: Actor name appears to have been destroyed by this stage, it
-	//  often comes out as garbage anyway, so we avoid using it. Something
-	//  to raise with developers.
-	SPDLOG_DEBUG("[Actor {} ('<name unavailable>')]  Segment Cache exit  |  reason: {}",
-			  self->id(),
-				 to_string(reason));
+    SPDLOG_DEBUG("[Actor {} ('<name unavailable>')]  Segment Cache exit  |  reason: {}",
+          self->id(),
+           to_string(reason));
 
-	self->state.cache.reset();
+    // Important: we cannot do clear/release here which will throw "corrupted chunks" error,
+    // which is probably because CAF already does some memory freeing before entering this exit function.
+    // We need to explicitly make a "stop" api to clear.
+
   });
 
   return {
@@ -109,6 +114,9 @@ void SegmentCacheActor::metrics(const CacheMetricsMessage &msg, stateful_actor<S
     [=](NewQueryAtom) {
     self->state.cache->newQuery();
 	  },
+    [=](StopCacheAtom) {
+    stop(self);
+    },
 	  [=](GetNumHitsAtom) {
 		return self->state.cache->hitNum();
 	  },

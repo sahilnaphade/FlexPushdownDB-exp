@@ -2,9 +2,9 @@ select c_nation,
        s_nation,
        d_year,
        sum(lo_revenue) as revenue
-from "date",
+from supplier,
      lineorder,
-     supplier,
+     "date",
      customer
 where lo_custkey = c_custkey
   and lo_suppkey = s_suppkey

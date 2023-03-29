@@ -44,6 +44,8 @@ public:
                                         const std::vector<std::shared_ptr<Column>>& columns);
   static std::shared_ptr<TupleSet> make(const std::vector<std::shared_ptr<Column>>& columns);
   static tl::expected<std::shared_ptr<TupleSet>, std::string>
+  make(const std::vector<std::shared_ptr<arrow::RecordBatch>> &recordBatches);
+  static tl::expected<std::shared_ptr<TupleSet>, std::string>
   make(const std::shared_ptr<arrow::csv::TableReader> &tableReader);
   static std::shared_ptr<TupleSet> makeWithNullTable();
   static std::shared_ptr<TupleSet> makeWithEmptyTable();
@@ -81,6 +83,10 @@ public:
    * @return
    */
   tl::expected<std::shared_ptr<TupleSet>, std::string> projectExist(const std::vector<std::string> &columnNames) const;
+  static std::shared_ptr<arrow::RecordBatch> projectExist(const std::shared_ptr<arrow::RecordBatch> &recordBatch,
+                                                          const std::vector<std::string> &columnNames);
+  static std::shared_ptr<arrow::RecordBatch> projectExist(const arrow::RecordBatch &recordBatch,
+                                                          const std::vector<std::string> &columnNames);
 
   /**
    * Project specified columns

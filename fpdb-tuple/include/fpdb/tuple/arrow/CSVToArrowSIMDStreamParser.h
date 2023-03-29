@@ -13,14 +13,15 @@
 
 class CSVToArrowSIMDStreamParser {
 public:
+  static constexpr int DefaultParseChunkSize = 128 * 1024;
+
   // The header is discarded and the schema passed in is used and assumed to be valid.
   // If the header is in the file input then set discardHeader to true so that it can be ignored
   // otherwise set discardHeader to false
   // Process columns specified by outputSchema. outputSchema assumes to have the same ordering of fields as in
   // inputSchema (as this seems to be the way that we handle it already in Get, so this avoids a check in our processing)
-  explicit CSVToArrowSIMDStreamParser(std::string callerName,
-                                      uint64_t parseChunkSize,
-                                      std::basic_iostream<char, std::char_traits<char>> &file,
+  explicit CSVToArrowSIMDStreamParser(uint64_t parseChunkSize,
+                                      std::basic_istream<char, std::char_traits<char>> &file,
                                       bool discardHeader,
                                       std::shared_ptr<arrow::Schema> inputSchema,
                                       std::shared_ptr<arrow::Schema> outputSchema,
@@ -46,7 +47,6 @@ private:
 
   [[maybe_unused]] void prettyPrintPCSV(ParsedCSV & pcsv);
 
-  [[maybe_unused]] std::string callerName_;
   uint64_t parseChunkSize_;
   // Use inputstream as it provides a nice wrapper for both uncompressed and compressed data
   std::shared_ptr<arrow::io::InputStream> inputStream_;

@@ -27,12 +27,21 @@ using namespace std;
 namespace fpdb::plan::calcite {
 
 class CalcitePlanJsonDeserializer {
-public:
-  CalcitePlanJsonDeserializer(string planJsonString, const shared_ptr<CatalogueEntry> &catalogueEntry);
 
-  shared_ptr<PrePhysicalPlan> deserialize();
+public:
+  static shared_ptr<PrePhysicalPlan> deserialize(string planJsonString,
+                                                 const shared_ptr<CatalogueEntry> &catalogueEntry);
 
 private:
+  CalcitePlanJsonDeserializer(string planJsonString,
+                              const shared_ptr<CatalogueEntry> &catalogueEntry);
+
+  /**
+   * Impl of deserialization
+   * @return
+   */
+  shared_ptr<PrePhysicalPlan> deserialize();
+
   shared_ptr<PrePhysicalOp> deserializeDfs(json &jObj);
   vector<shared_ptr<PrePhysicalOp>> deserializeProducers(const json &jObj);
 
@@ -46,6 +55,8 @@ private:
   shared_ptr<fpdb::expression::gandiva::Expression> deserializeExtractOperation(const json &jObj);
   shared_ptr<fpdb::expression::gandiva::Expression> deserializeNullOperation(const string &opName, const json &jObj);
   shared_ptr<fpdb::expression::gandiva::Expression> deserializeSubstrOperation(const json &jObj);
+  shared_ptr<fpdb::expression::gandiva::Expression> deserializeCastOperation(const json &jObj);
+  shared_ptr<::arrow::DataType> deserializeDataType(const json &jObj);
   shared_ptr<fpdb::expression::gandiva::Expression> deserializeExpression(const json &jObj);
 
   unordered_map<string, string> deserializeColumnRenames(const vector<json> &jArr);

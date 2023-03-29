@@ -28,7 +28,9 @@ public:
 
   void compile(const shared_ptr<arrow::Schema> &schema) override;
   string alias() override;
-  string getTypeString() override;
+  string getTypeString() const override;
+  ::nlohmann::json toJson() const override;
+  static tl::expected<std::shared_ptr<DateAdd>, std::string> fromJson(const nlohmann::json &jObj);
 
 private:
   DateIntervalType intervalType_;

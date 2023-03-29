@@ -7,8 +7,10 @@
 #include <fpdb/executor/physical/POpDirectoryEntry.h>
 #include <fpdb/executor/physical/POpConnection.h>
 #include <fpdb/executor/physical/POpRelationshipType.h>
+#include <fpdb/executor/physical/Globals.h>
 #include <fpdb/executor/physical/filter/FilterPOp.h>
-#include <fpdb/executor/serialization/POpSerializer.h>
+#include <fpdb/executor/caf-serialization/CAFPOpSerializer.h>
+#include <fpdb/executor/message/TransferMetricsMessage.h>
 #include <caf/io/all.hpp>
 #include <graphviz/gvc.h>
 
@@ -17,13 +19,15 @@ namespace fpdb::executor {
 Execution::Execution(long queryId, 
                      const shared_ptr<::caf::actor_system> &actorSystem,
                      const vector<::caf::node_id> &nodes,
-                     const ::caf::actor &segmentCacheActor,
+                     const ::caf::actor &localSegmentCacheActor,
+                     const vector<::caf::actor> &remoteSegmentCacheActors,
                      const shared_ptr<PhysicalPlan> &physicalPlan,
                      bool isDistributed) :
   queryId_(queryId),
   actorSystem_(actorSystem),
   nodes_(nodes),
-  segmentCacheActor_(segmentCacheActor),
+  localSegmentCacheActor_(localSegmentCacheActor),
+  remoteSegmentCacheActors_(remoteSegmentCacheActors),
   physicalPlan_(physicalPlan),
   isDistributed_(isDistributed) {
   rootActor_ = make_shared<::caf::scoped_actor>(*actorSystem_);
@@ -34,34 +38,41 @@ Execution::~Execution() {
 }
 
 shared_ptr<TupleSet> Execution::execute() {
+  preExecute();
   boot();
   start();
   join();
   return legacyCollateOperator_->tuples();
 }
 
-void Execution::boot() {
-  startTime_ = chrono::steady_clock::now();
-
-  // Tell segment cache actor that new query comes
-  if (segmentCacheActor_) {
-    (*rootActor_)->anon_send(segmentCacheActor_, NewQueryAtom_v);
-  }
-
+void Execution::preExecute() {
   // Set query id, and add physical operators to operator directory
-  for (const auto &op: physicalPlan_->getPhysicalOps()) {
-    assert(op);
+  for (const auto &opIt: physicalPlan_->getPhysicalOps()) {
+    auto op = opIt.second;
     op->setQueryId(queryId_);
     auto result = opDirectory_.insert(POpDirectoryEntry(op, nullptr, false));
     if (!result.has_value()) {
       throw runtime_error(result.error());
     }
   }
+}
+
+void Execution::boot() {
+  startTime_ = chrono::steady_clock::now();
+
+  // Tell segment cache actor that new query comes
+  (*rootActor_)->anon_send(localSegmentCacheActor_, NewQueryAtom_v);
+  for (const auto &remoteSegmentCacheActor: remoteSegmentCacheActors_) {
+    (*rootActor_)->anon_send(remoteSegmentCacheActor, NewQueryAtom_v);
+  }
 
   // Spawn actors locally/remotely according to nodeId assigned
   for (auto &element: opDirectory_) {
     auto op = element.second.getDef();
-    auto ctx = make_shared<POpContext>(*rootActor_, segmentCacheActor_);
+    const auto &segmentCacheActor = isDistributed_ ?
+            remoteSegmentCacheActors_.empty() ? nullptr : remoteSegmentCacheActors_[op->getNodeId()]:
+            localSegmentCacheActor_;
+    auto ctx = make_shared<POpContext>(*rootActor_, segmentCacheActor);
     op->create(ctx);
 
     // Spawn collate at the coordinator
@@ -111,18 +122,12 @@ void Execution::boot() {
 //    element.second.setActorHandle(::caf::actor_cast<::caf::actor>(collateActorHandle_));
 //  }
 
-  // Need s3 operators to be "detached" to not block others while loading data.
-  // Don't run more S3Get requests in parallel than # cores, earlier testing showed this did not help as S3Get
-  // already utilizes the full network bandwidth with #cores requests whereas S3Select does not when
-  // selectivity is low.
-  if (op->getType() == POpType::S3_SELECT || op->getType() == POpType::S3_GET) {
+  if (useDetached(op)) {
     auto actorHandle = actorSystem_->spawn<POpActor, detached>(op);
     if (!actorHandle)
       throw runtime_error(fmt::format("Failed to spawn operator actor '{}'", op->name()));
     return ::caf::actor_cast<::caf::actor>(actorHandle);
-  }
-
-  else {
+  } else {
     auto actorHandle = actorSystem_->spawn<POpActor>(op);
     if (!actorHandle)
       throw runtime_error(fmt::format("Failed to spawn operator actor '{}'", op->name()));
@@ -133,13 +138,7 @@ void Execution::boot() {
 ::caf::actor Execution::remoteSpawn(const shared_ptr<PhysicalOp> &op, int nodeId) {
   auto remoteSpawnTout = std::chrono::seconds(10);
   auto args = make_message(op);
-
-  // Need s3 operators to be "detached" to not block others while loading data.
-  // Don't run more S3Get requests in parallel than # cores, earlier testing showed this did not help as S3Get
-  // already utilizes the full network bandwidth with #cores requests whereas S3Select does not when
-  // selectivity is low.
-  auto actorTypeName = (op->getType() == POpType::S3_SELECT || op->getType() == POpType::S3_GET) ?
-          "POpActor-detached" : "POpActor";
+  auto actorTypeName = useDetached(op) ? "POpActor-detached" : "POpActor";
 
   auto expectedActorHandle = actorSystem_->middleman().remote_spawn<::caf::actor>(nodes_[nodeId],
                                                                                   actorTypeName,
@@ -153,6 +152,19 @@ void Execution::boot() {
   return *expectedActorHandle;
 }
 
+bool Execution::useDetached(const shared_ptr<PhysicalOp> &op) {
+  // Need the following operators to be "detached" to not block others while loading data or potentially causes deadlock.
+  // Don't run more S3Get requests in parallel than # cores, earlier testing showed this did not help as S3Get
+  // already utilizes the full network bandwidth with #cores requests whereas S3Select does not when
+  // selectivity is low.
+  return op->getType() == POpType::LOCAL_FILE_SCAN
+         || op->getType() == POpType::REMOTE_FILE_SCAN
+         || (op->getType() == POpType::FPDB_STORE_SUPER && (ENABLE_BLOOM_FILTER_PUSHDOWN || ENABLE_FILTER_BITMAP_PUSHDOWN))
+         || op->getType() == POpType::FPDB_STORE_TABLE_CACHE_LOAD
+         || op->getType() == POpType::S3_GET
+         || op->getType() == POpType::S3_SELECT;
+}
+
 void Execution::start() {
   // Mark all the operators as incomplete
   opDirectory_.setIncomplete();
@@ -163,12 +175,26 @@ void Execution::start() {
 
     vector<POpConnection> opConnections;
     for (const auto &producer: element.second.getDef()->producers()) {
-      auto producerHandle = opDirectory_.get(producer).value().getActorHandle();
-      opConnections.emplace_back(producer, producerHandle, POpRelationshipType::Producer);
+      auto expEntry = opDirectory_.get(producer);
+      if (!expEntry.has_value()) {
+        throw runtime_error(expEntry.error());
+      }
+      auto producerHandle = (*expEntry).getActorHandle();
+      opConnections.emplace_back(producer,
+                                 producerHandle,
+                                 POpRelationshipType::Producer,
+                                 (*expEntry).getDef()->getNodeId());
     }
     for (const auto &consumer: element.second.getDef()->consumers()) {
-      auto consumerHandle = opDirectory_.get(consumer).value().getActorHandle();
-      opConnections.emplace_back(consumer, consumerHandle, POpRelationshipType::Consumer);
+      auto expEntry = opDirectory_.get(consumer);
+      if (!expEntry.has_value()) {
+        throw runtime_error(expEntry.error());
+      }
+      auto consumerHandle = (*expEntry).getActorHandle();
+      opConnections.emplace_back(consumer,
+                                 consumerHandle,
+                                 POpRelationshipType::Consumer,
+                                 (*expEntry).getDef()->getNodeId());
     }
 
     auto cm = make_shared<message::ConnectMessage>(opConnections, ExecutionRootActorName);
@@ -210,6 +236,26 @@ void Execution::join() {
                 allComplete = this->opDirectory_.allComplete();
                 break;
               }
+
+#if SHOW_DEBUG_METRICS == true
+              case MessageType::TRANSFER_METRICS: {
+                auto transferMetricsMsg = ((TransferMetricsMessage &) msg);
+                debugMetrics_.add(transferMetricsMsg.getTransferMetrics());
+                break;
+              }
+
+              case MessageType::DISK_METRICS: {
+                auto diskMetricsMsg = ((DiskMetricsMessage &) msg);
+                debugMetrics_.add(diskMetricsMsg.getDiskMetrics());
+                break;
+              }
+#endif
+
+              case MessageType::PUSHDOWN_FALL_BACK: {
+                debugMetrics_.incPushdownFallBack();
+                break;
+              }
+
               case MessageType::ERROR: {
                 errAct(fmt::format("ERROR: {}, from {}", ((ErrorMessage &) msg).getContent(), msg.sender()));
               }
@@ -461,7 +507,6 @@ string Execution::showMetrics(bool showOpTimes, bool showScanMetrics) {
     ss << left << setw(40) << formattedProcessingTime.str();
     ss << left << setw(20) << "100.0";
     ss << endl;
-    ss << endl;
   }
 
   if (showScanMetrics) {
@@ -493,6 +538,7 @@ string Execution::showMetrics(bool showOpTimes, bool showScanMetrics) {
     } else {
       formattedStorageFormatToArrowSizeX << "NA";
     }
+    ss << endl;
     ss << left << setw(60) << "Processed Bytes";
     ss << left << setw(60) << formattedProcessedBytes.str();
     ss << endl;
@@ -609,10 +655,76 @@ string Execution::showMetrics(bool showOpTimes, bool showScanMetrics) {
     ss << left << setw(60) << "Local filter selectivity (bytes)";
     ss << left << setw(60) << formattedLocalFilterSelectivity.str();
     ss << endl;
+  }
+
+  return ss.str();
+}
+
+#if SHOW_DEBUG_METRICS == true
+string Execution::showDebugMetrics() const{
+  stringstream ss;
+  ss << endl;
+  ss << "Debug Metrics |" << endl << endl;
+
+  stringstream formattedBytesFromStore;
+  int64_t bytesFromStore = debugMetrics_.getTransferMetrics().getBytesFromStore();
+  formattedBytesFromStore << bytesFromStore << " B" << " ("
+                          << ((double) bytesFromStore / 1024.0 / 1024.0 / 1024.0) << " GB)";
+
+  ss << left << setw(60) << "Bytes transferred from store";
+  ss << left << setw(60) << formattedBytesFromStore.str();
+  ss << endl;
+
+  stringstream formattedBytesToStore;
+  int64_t bytesToStore = debugMetrics_.getTransferMetrics().getBytesToStore();
+  formattedBytesToStore << bytesToStore << " B" << " ("
+                        << ((double) bytesToStore / 1024.0 / 1024.0 / 1024.0) << " GB)";
+
+  ss << left << setw(60) << "Bytes transferred to store";
+  ss << left << setw(60) << formattedBytesToStore.str();
+  ss << endl;
+
+  stringstream formattedBytesInterCompute;
+  int64_t bytesInterCompute = debugMetrics_.getTransferMetrics().getBytesInterCompute();
+  formattedBytesInterCompute << bytesInterCompute << " B" << " ("
+                             << ((double) bytesInterCompute / 1024.0 / 1024.0 / 1024.0) << " GB)";
+
+  ss << left << setw(60) << "Bytes transferred across compute nodes";
+  ss << left << setw(60) << formattedBytesInterCompute.str();
+  ss << endl;
+
+  stringstream formattedBytesRemote;
+  int64_t bytesRemote = bytesFromStore + bytesToStore + bytesInterCompute;
+  formattedBytesRemote << bytesRemote << " B" << " ("
+                       << ((double) bytesRemote / 1024.0 / 1024.0 / 1024.0) << " GB)";
+
+  ss << left << setw(60) << "Bytes transferred totally";
+  ss << left << setw(60) << formattedBytesRemote.str();
+  ss << endl;
+
+  if (ENABLE_ADAPTIVE_PUSHDOWN) {
+    int numFPDBStoreSuperPOps = 0;
+    for (const auto &opIt: physicalPlan_->getPhysicalOps()) {
+      if (opIt.second->getType() == POpType::FPDB_STORE_SUPER) {
+        ++numFPDBStoreSuperPOps;
+      }
+    }
+
+    stringstream formattedNumPushdownFallBack;
+    int numPushdownFallBack = debugMetrics_.getNumPushdownFallBack();
+    formattedNumPushdownFallBack << numPushdownFallBack << " / " << numFPDBStoreSuperPOps;
+
+    ss << left << setw(60) << "Num pushdown fall back / num total pushdown req";
+    ss << left << setw(60) << formattedNumPushdownFallBack.str();
     ss << endl;
   }
 
   return ss.str();
 }
+
+const metrics::DebugMetrics &Execution::getDebugMetrics() const {
+  return debugMetrics_;
+}
+#endif
 
 }

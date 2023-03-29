@@ -10,9 +10,11 @@
 
 using namespace fpdb::tuple;
 
-TEST_SUITE ("array-appender-test" * doctest::skip(false)) {
+#define SKIP_SUITE false
 
-TEST_CASE ("array-appender-test-append" * doctest::skip(false)) {
+TEST_SUITE ("array-appender-test" * doctest::skip(SKIP_SUITE)) {
+
+TEST_CASE ("array-appender-test-append" * doctest::skip(false || SKIP_SUITE)) {
 
   auto v = std::vector{"1", "2", "3"};
   auto sourceArray = Arrays::make<::arrow::StringType>(v).value();
@@ -31,7 +33,7 @@ TEST_CASE ("array-appender-test-append" * doctest::skip(false)) {
 
 }
 
-TEST_CASE ("array-appender-test-append-empty" * doctest::skip(false)) {
+TEST_CASE ("array-appender-test-append-empty" * doctest::skip(false || SKIP_SUITE)) {
 
   auto v = std::vector<std::string>{};
   auto sourceArray = Arrays::make<::arrow::StringType>(v).value();
@@ -50,7 +52,7 @@ TEST_CASE ("array-appender-test-append-empty" * doctest::skip(false)) {
 	  CHECK_EQ(destArray.value()->length(), 0);
 }
 
-TEST_CASE ("array-appender-test-append-bad-array" * doctest::skip(false)) {
+TEST_CASE ("array-appender-test-append-bad-array" * doctest::skip(false || SKIP_SUITE)) {
 
   std::shared_ptr<arrow::Array> sourceArray = nullptr;
 
@@ -61,7 +63,7 @@ TEST_CASE ("array-appender-test-append-bad-array" * doctest::skip(false)) {
 	  CHECK_FALSE_MESSAGE(result, "Safe append succeeded when should have failed");
 }
 
-TEST_CASE ("array-appender-test-append-bad-index" * doctest::skip(false)) {
+TEST_CASE ("array-appender-test-append-bad-index" * doctest::skip(false || SKIP_SUITE)) {
 
   auto v = std::vector{"1", "2", "3"};
   auto sourceArray = Arrays::make<::arrow::StringType>(v).value();

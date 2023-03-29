@@ -17,18 +17,23 @@ namespace fpdb::executor::message {
 class ScanMessage : public Message {
 
 public:
-  ScanMessage(std::vector<std::string> columnNames_, const std::string &sender, bool resultNeeded);
+  ScanMessage(const std::vector<std::string> &scanColumnNames,
+              const std::vector<std::string> &projectColumnNames,
+              const std::string &sender, 
+              bool resultNeeded);
   ScanMessage() = default;
   ScanMessage(const ScanMessage&) = default;
   ScanMessage& operator=(const ScanMessage&) = default;
 
   std::string getTypeString() const override;
-  
-  [[nodiscard]] const std::vector<std::string> &getColumnNames() const;
-  [[nodiscard]] bool isResultNeeded() const;
+
+  const std::vector<std::string> &getScanColumnNames() const;
+  const std::vector<std::string> &getProjectColumnNames() const;
+  bool isResultNeeded() const;
 
 private:
-  std::vector<std::string> columnNames_;
+  std::vector<std::string> scanColumnNames_;     // only used by FPDBStoreSuperPOp during pushdown
+  std::vector<std::string> projectColumnNames_;
   bool resultNeeded_;
 
 // caf inspect
@@ -37,7 +42,8 @@ public:
   friend bool inspect(Inspector& f, ScanMessage& msg) {
     return f.object(msg).fields(f.field("type", msg.type_),
                                 f.field("sender", msg.sender_),
-                                f.field("columnNames", msg.columnNames_),
+                                f.field("scanColumnNames", msg.scanColumnNames_),
+                                f.field("projectColumnNames", msg.projectColumnNames_),
                                 f.field("resultNeeded", msg.resultNeeded_));
   };
 };

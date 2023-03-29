@@ -15,7 +15,15 @@ Count::Count(const string &outputColumnName,
              const shared_ptr<fpdb::expression::gandiva::Expression> &expression):
   AggregateFunction(COUNT, outputColumnName, expression) {}
 
+std::string Count::getTypeString() const {
+  return "Count";
+}
+
 shared_ptr<arrow::DataType> Count::returnType() const {
+  return defaultReturnType();
+}
+
+shared_ptr<arrow::DataType> Count::defaultReturnType() {
   return arrow::int64();
 }
 
@@ -78,6 +86,21 @@ Count::finalize(const vector<shared_ptr<AggregateResult>> &aggregateResults) {
     return tl::make_unexpected(expFinalResultScalar.status().message());
   }
   return (*expFinalResultScalar).scalar();
+}
+
+std::vector<std::tuple<arrow::compute::internal::Aggregate, arrow::FieldRef, std::string,
+std::shared_ptr<arrow::Field>>> Count::getArrowAggregateSignatures() {
+  static auto countOnlyValidOptions = arrow::compute::CountOptions(arrow::compute::CountOptions::ONLY_VALID);
+  static auto countAllOptions = arrow::compute::CountOptions(arrow::compute::CountOptions::ALL);
+  auto& countOptions = (expression_ != nullptr) ? countOnlyValidOptions : countAllOptions;
+  std::tuple<arrow::compute::internal::Aggregate, arrow::FieldRef, std::string, std::shared_ptr<arrow::Field>>
+          aggregateSignature{
+          {"hash_count", &countOptions},
+          getAggregateInputColumnName(),
+          outputColumnName_,
+          arrow::field(outputColumnName_, returnType())
+  };
+  return {aggregateSignature};
 }
 
 }

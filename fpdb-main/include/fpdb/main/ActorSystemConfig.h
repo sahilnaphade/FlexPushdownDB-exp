@@ -7,10 +7,13 @@
 
 #include <fpdb/executor/physical/POpActor.h>
 #include <fpdb/executor/physical/PhysicalOp.h>
-#include <fpdb/executor/serialization/POpSerializer.h>
+#include <fpdb/executor/caf-serialization/CAFPOpSerializer.h>
+#include <fpdb/executor/cache/SegmentCacheActor.h>
+#include <fpdb/cache/caf-serialization/CAFCachingPolicySerializer.h>
 #include <caf/io/all.hpp>
 
 using namespace fpdb::executor::physical;
+using namespace fpdb::executor::cache;
 
 namespace fpdb::main {
 
@@ -24,6 +27,7 @@ struct ActorSystemConfig: ::caf::actor_system_config {
     load<::caf::io::middleman>();
     add_actor_type<POpActor, ::caf::no_spawn_options, std::shared_ptr<PhysicalOp>&>("POpActor");
     add_actor_type<POpActor, ::caf::detached, std::shared_ptr<PhysicalOp>&>("POpActor-detached");
+    add_actor_type("SegmentCacheActor", SegmentCacheActor::makeBehaviour);
   }
 
   int port_;

@@ -1,5 +1,3 @@
-project(fpdb-expression-gandiva VERSION "${PROJECT_VERSION}" LANGUAGES C CXX)
-
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Target
@@ -25,7 +23,7 @@ add_library(fpdb-expression-gandiva STATIC
         src/GreaterThanOrEqualTo.cpp include/fpdb/expression/gandiva/GreaterThanOrEqualTo.h
         src/GreaterThan.cpp include/fpdb/expression/gandiva/GreaterThan.h
         src/And.cpp include/fpdb/expression/gandiva/And.h
-        include/fpdb/expression/gandiva/DateIntervalType.h
+        src/DateIntervalType.cpp include/fpdb/expression/gandiva/DateIntervalType.h
         src/DateAdd.cpp include/fpdb/expression/gandiva/DateAdd.h
         src/Or.cpp include/fpdb/expression/gandiva/Or.h
         src/StringLiteral.cpp include/fpdb/expression/gandiva/StringLiteral.h
@@ -39,9 +37,11 @@ add_library(fpdb-expression-gandiva STATIC
         src/BinaryExpression.cpp include/fpdb/expression/gandiva/BinaryExpression.h
         src/Canonicalizer.cpp include/fpdb/expression/gandiva/Canonicalizer.h
         src/Util.cpp include/fpdb/expression/gandiva/Util.h
-        include/fpdb/expression/gandiva/serialization/ExpressionSerializer.h)
+        include/fpdb/expression/gandiva/caf-serialization/CAFExpressionSerializer.h)
 
 target_include_directories(fpdb-expression-gandiva PUBLIC include)
+
+set_target_properties(fpdb-expression-gandiva PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 target_link_libraries(fpdb-expression-gandiva PUBLIC gandiva_static)
 target_link_libraries(fpdb-expression-gandiva PUBLIC fpdb-expression)

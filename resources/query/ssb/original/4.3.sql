@@ -2,11 +2,11 @@ select d_year,
        s_city,
        p_brand1,
        sum(lo_revenue - lo_supplycost) as profit
-from "date",
+from supplier,
      lineorder,
-     supplier,
-     customer,
-     part
+     "date",
+     part,
+     customer
 where lo_custkey = c_custkey
   and lo_suppkey = s_suppkey
   and lo_partkey = p_partkey

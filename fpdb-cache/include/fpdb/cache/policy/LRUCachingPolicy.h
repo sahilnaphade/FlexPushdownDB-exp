@@ -23,6 +23,9 @@ class LRUCachingPolicy: public CachingPolicy {
 public:
   explicit LRUCachingPolicy(size_t maxSize,
                             std::shared_ptr<CatalogueEntry> catalogueEntry);
+  LRUCachingPolicy() = default;
+  LRUCachingPolicy(const LRUCachingPolicy&) = default;
+  LRUCachingPolicy& operator=(const LRUCachingPolicy&) = default;
 
   std::optional<std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>>> onStore(const std::shared_ptr<SegmentKey> &key) override;
   void onRemove(const std::shared_ptr<SegmentKey> &key) override;
@@ -32,6 +35,7 @@ public:
   std::string showCurrentLayout() override;
   std::string toString() override;
   void onNewQuery() override;
+  void onClear() override;
 
 private:
   std::list<std::shared_ptr<SegmentKey>> usageQueue_;
@@ -39,6 +43,15 @@ private:
 
   void eraseLRU();
   void erase(const std::shared_ptr<SegmentKey> &key);
+
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, LRUCachingPolicy& policy) {
+    return f.object(policy).fields(f.field("type", policy.type_),
+                                   f.field("maxSize", policy.maxSize_),
+                                   f.field("freeSize", policy.freeSize_));
+  }
 };
 
 }

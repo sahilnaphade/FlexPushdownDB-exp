@@ -11,10 +11,11 @@ else
 fi
 
 # import util
-util_path=$(dirname "$0")"/util.sh"
-source "$util_path"
-
 pushd "$(dirname "$0")" > /dev/null
+util_param_path=$(pwd)"/util_param.sh"
+source "$util_param_path"
+util_func_path=$(pwd)"/util_func.sh"
+source "$util_func_path"
 
 # make build directory
 if [ "${clean}" = true ]; then
@@ -48,6 +49,7 @@ if [ "${build_distributed}" = true ]; then
 fi
 
 # build targets
+targets=("${compute_targets[@]}" "${fpdb_store_targets[@]}")
 for target in "${targets[@]}"
 do
   cmake --build . --target "${target}" -- -j "${build_parallel}"

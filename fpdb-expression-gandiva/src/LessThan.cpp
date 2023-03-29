@@ -32,8 +32,16 @@ std::string LessThan::alias() {
   return genAliasForComparison("<");
 }
 
-std::string LessThan::getTypeString() {
+std::string LessThan::getTypeString() const {
   return "LessThan";
+}
+
+tl::expected<std::shared_ptr<LessThan>, std::string> LessThan::fromJson(const nlohmann::json &jObj) {
+  auto expOperands = BinaryExpression::fromJson(jObj);
+  if (!expOperands.has_value()) {
+    return tl::make_unexpected(expOperands.error());
+  }
+  return std::make_shared<LessThan>((*expOperands).first, (*expOperands).second);
 }
 
 std::shared_ptr<Expression> fpdb::expression::gandiva::lt(const std::shared_ptr<Expression>& Left, const std::shared_ptr<Expression>& Right) {

@@ -5,21 +5,31 @@
 #include <fpdb/executor/message/ScanMessage.h>
 #include <utility>
 
-using namespace fpdb::executor::message;
+namespace fpdb::executor::message {
 
-ScanMessage::ScanMessage(std::vector<std::string> ColumnNames, const std::string &Sender, bool resultNeeded) :
-	Message(SCAN, Sender),
-	columnNames_(std::move(ColumnNames)),
+ScanMessage::ScanMessage(const std::vector<std::string> &scanColumnNames,
+                         const std::vector<std::string> &projectColumnNames,
+                         const std::string &sender,
+                         bool resultNeeded) :
+	Message(SCAN, sender),
+  scanColumnNames_(scanColumnNames),
+  projectColumnNames_(projectColumnNames),
 	resultNeeded_(resultNeeded) {}
 
 std::string ScanMessage::getTypeString() const {
   return "ScanMessage";
 }
 
-const std::vector<std::string> &ScanMessage::getColumnNames() const {
-  return columnNames_;
+const std::vector<std::string> &ScanMessage::getScanColumnNames() const {
+  return scanColumnNames_;
+}
+
+const std::vector<std::string> &ScanMessage::getProjectColumnNames() const {
+  return projectColumnNames_;
 }
 
 bool ScanMessage::isResultNeeded() const {
   return resultNeeded_;
+}
+
 }

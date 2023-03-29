@@ -9,6 +9,8 @@
 #include <fpdb/expression/gandiva/ExpressionType.h>
 #include <arrow/type.h>
 #include <gandiva/node.h>
+#include <nlohmann/json.hpp>
+#include <tl/expected.hpp>
 #include <memory>
 #include <set>
 
@@ -26,7 +28,11 @@ public:
 
   virtual std::set<std::string> involvedColumnNames() = 0;
 
-  virtual std::string getTypeString() = 0;
+  virtual std::string getTypeString() const = 0;
+
+  virtual ::nlohmann::json toJson() const = 0;
+  static tl::expected<std::shared_ptr<fpdb::expression::gandiva::Expression>, std::string>
+  fromJson(const nlohmann::json &jObj);
 
   ExpressionType getType() const;
   const ::gandiva::NodePtr &getGandivaExpression() const;

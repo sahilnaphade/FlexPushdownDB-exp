@@ -5,16 +5,17 @@
 #ifndef FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_FILE_FILESCANKERNEL_H
 #define FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_FILE_FILESCANKERNEL_H
 
-#include <fpdb/tuple/FileReader.h>
-#include <fpdb/tuple/FileType.h>
+#include <fpdb/executor/metrics/Globals.h>
+#include <fpdb/catalogue/CatalogueEntryType.h>
+#include <fpdb/tuple/FileFormat.h>
 #include <fpdb/tuple/TupleSet.h>
-#include <fpdb/tuple/FileReaderBuilder.h>
 #include <tl/expected.hpp>
 #include <string>
 #include <vector>
 #include <memory>
 #include <optional>
 
+using namespace fpdb::catalogue;
 using namespace fpdb::tuple;
 
 namespace fpdb::executor::physical::file {
@@ -22,41 +23,43 @@ namespace fpdb::executor::physical::file {
 class FileScanKernel {
 
 public:
-  FileScanKernel(std::string path,
-				 std::shared_ptr<FileReader> reader,
-				 int64_t startPos,
-                 int64_t finishPos);
+  FileScanKernel(CatalogueEntryType type,
+                 const std::shared_ptr<FileFormat> &format,
+                 const std::shared_ptr<::arrow::Schema> &schema,
+                 int64_t fileSize,
+                 const std::optional<std::pair<int64_t, int64_t>> &byteRange);
   FileScanKernel() = default;
   FileScanKernel(const FileScanKernel&) = default;
   FileScanKernel& operator=(const FileScanKernel&) = default;
+  virtual ~FileScanKernel() = default;
 
-  static FileScanKernel make(const std::string &path,
-                             FileType fileType,
-                             int64_t startPos,
-                             int64_t finishPos);
+  CatalogueEntryType getType() const;
+  const std::shared_ptr<FileFormat> &getFormat() const;
+  const std::shared_ptr<::arrow::Schema> &getSchema() const;
+  int64_t getFileSize() const;
+  const std::optional<std::pair<int64_t, int64_t>> &getByteRange() const;
 
-  tl::expected<std::shared_ptr<TupleSet>, std::string> scan(const std::vector<std::string> &columnNames);
+#if SHOW_DEBUG_METRICS == true
+  int64_t getBytesReadLocal() const;
+  int64_t getBytesReadRemote() const;
+  void clearBytesRead();
+#endif
 
-  [[nodiscard]] const std::string &getPath() const;
-  [[nodiscard]] FileType getFileType() const;
-  [[nodiscard]] int64_t getStartPos() const;
-  [[nodiscard]] int64_t getFinishPos() const;
+  virtual tl::expected<std::shared_ptr<TupleSet>, std::string> scan() = 0;
+  virtual tl::expected<std::shared_ptr<TupleSet>, std::string> scan(const std::vector<std::string> &columnNames) = 0;
 
-private:
-  std::string path_;
-  std::shared_ptr<FileReader> reader_;
-  int64_t startPos_;
-  int64_t finishPos_;
+protected:
+  CatalogueEntryType type_;
+  std::shared_ptr<FileFormat> format_;
+  std::shared_ptr<::arrow::Schema> schema_;
+  int64_t fileSize_;
+  std::optional<std::pair<int64_t, int64_t>> byteRange_;
 
-// caf inspect
-public:
-  template <class Inspector>
-  friend bool inspect(Inspector& f, FileScanKernel& kernel) {
-    return f.object(kernel).fields(f.field("path", kernel.path_),
-                                   f.field("reader", kernel.reader_),
-                                   f.field("startPos", kernel.startPos_),
-                                   f.field("finishPos", kernel.finishPos_));
-  }
+#if SHOW_DEBUG_METRICS == true
+  int64_t bytesReadLocal_ = 0;
+  int64_t bytesReadRemote_ = 0;
+#endif
+
 };
 
 }

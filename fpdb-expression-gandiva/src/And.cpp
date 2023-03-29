@@ -4,6 +4,7 @@
 
 #include <fpdb/expression/gandiva/And.h>
 #include <gandiva/tree_expr_builder.h>
+#include <fmt/format.h>
 #include <sstream>
 
 using namespace fpdb::expression::gandiva;
@@ -37,7 +38,7 @@ string And::alias() {
   return ss.str();
 }
 
-string And::getTypeString() {
+string And::getTypeString() const {
   return "And";
 }
 
@@ -48,6 +49,37 @@ set<string> And::involvedColumnNames() {
     allInvolvedColumnNames.insert(involvedColumnNames.begin(), involvedColumnNames.end());
   }
   return allInvolvedColumnNames;
+}
+
+::nlohmann::json And::toJson() const {
+  ::nlohmann::json jObj;
+  jObj.emplace("type", getTypeString());
+
+  vector<::nlohmann::json> operandsJArr;
+  for (const auto &expr: exprs_) {
+    operandsJArr.emplace_back(expr->toJson());
+  }
+  jObj.emplace("exprs", operandsJArr);
+
+  return jObj;
+}
+
+tl::expected<std::shared_ptr<And>, std::string> And::fromJson(const nlohmann::json &jObj) {
+  if (!jObj.contains("exprs")) {
+    return tl::make_unexpected(fmt::format("Exprs not specified in And expression JSON '{}'", to_string(jObj)));
+  }
+  auto exprsJArr = jObj["exprs"].get<std::vector<nlohmann::json>>();
+
+  std::vector<std::shared_ptr<Expression>> exprs;
+  for (const auto &exprJObj: exprsJArr) {
+    auto expExpr = Expression::fromJson(exprJObj);
+    if (!expExpr.has_value()) {
+      return tl::make_unexpected(expExpr.error());
+    }
+    exprs.emplace_back(*expExpr);
+  }
+
+  return std::make_shared<And>(exprs);
 }
 
 const vector<shared_ptr<Expression>> &And::getExprs() const {

@@ -2,8 +2,8 @@
 // Created by Yifei Yang on 3/26/21.
 //
 
-#ifndef FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_SHUFFLE_RECORDBATCHSHUFFLER2_H
-#define FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_SHUFFLE_RECORDBATCHSHUFFLER2_H
+#ifndef FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_SHUFFLE_RECORDBATCHSHUFFLER_H
+#define FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_SHUFFLE_RECORDBATCHSHUFFLER_H
 
 #include <fpdb/tuple/TupleSet.h>
 #include <fpdb/tuple/ArrayAppender.h>
@@ -37,8 +37,6 @@ public:
   tl::expected<vector<shared_ptr<TupleSet>>, string> toTupleSets();
 
 private:
-  size_t hash(const vector<shared_ptr<ArrayHasher>> &hashers, int64_t row);
-
   vector<int> shuffleColumnIndices_;
   size_t numSlots_;
   shared_ptr<::arrow::Schema> schema_;
@@ -48,4 +46,4 @@ private:
 }
 
 
-#endif //FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_SHUFFLE_RECORDBATCHSHUFFLER2_H
+#endif //FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_SHUFFLE_RECORDBATCHSHUFFLER_H

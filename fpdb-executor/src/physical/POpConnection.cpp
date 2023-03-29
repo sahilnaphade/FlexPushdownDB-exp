@@ -9,10 +9,12 @@ namespace fpdb::executor::physical {
 
 POpConnection::POpConnection(std::string name,
                              ::caf::actor actorHandle,
-                             POpRelationshipType connectionType) :
+                             POpRelationshipType connectionType,
+                             int nodeId) :
 	name_(std::move(name)),
 	actorHandle_(std::move(actorHandle)),
-	connectionType_(connectionType) {}
+	connectionType_(connectionType),
+  nodeId_(nodeId) {}
 
 const std::string &POpConnection::getName() const {
   return name_;
@@ -24,6 +26,10 @@ const ::caf::actor &POpConnection::getActorHandle() const {
 
 POpRelationshipType POpConnection::getConnectionType() const {
   return connectionType_;
+}
+
+int POpConnection::getNodeId() const {
+  return nodeId_;
 }
 
 }

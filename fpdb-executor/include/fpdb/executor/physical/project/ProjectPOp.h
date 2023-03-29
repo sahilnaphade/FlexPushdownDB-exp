@@ -6,7 +6,7 @@
 #define FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_PROJECT_PROJECTPOP_H
 
 #include <fpdb/executor/physical/PhysicalOp.h>
-#include <fpdb/executor/message/TupleMessage.h>
+#include <fpdb/executor/message/TupleSetMessage.h>
 #include <fpdb/executor/message/CompleteMessage.h>
 #include <fpdb/expression/gandiva/Expression.h>
 #include <fpdb/expression/Expression.h>
@@ -48,6 +48,10 @@ public:
   void clear() override;
   std::string getTypeString() const override;
 
+  const std::vector<std::shared_ptr<fpdb::expression::gandiva::Expression>> &getExprs() const;
+  const std::vector<std::string> &getExprNames() const;
+  const std::vector<std::pair<std::string, std::string>> &getProjectColumnNamePairs() const;
+
 private:
   /**
    * Start message handler
@@ -63,19 +67,19 @@ private:
    * Tuples message handler
    * @param message
    */
-  void onTuple(const TupleMessage &message);
+  void onTupleSet(const TupleSetMessage &message);
 
   /**
    * Build the projector from the input schema
    * @param inputSchema
    */
-  void buildProjector(const TupleMessage &message);
+  void buildProjector(const TupleSetMessage &message);
 
   /**
    * Adds the tuples in the tuple message to the internal buffer
    * @param message
    */
-  void bufferTuples(const TupleMessage &message);
+  void bufferTuples(const TupleSetMessage &message);
 
   /**
    * Sends the given projected tuples to consumers
@@ -87,6 +91,12 @@ private:
    * Projects the tuples and sends them to consumers
    */
   void projectAndSendTuples();
+
+  /**
+   * Used in hybrid execution, keep only those projections that are applicable to input tupleSet
+   * @param tupleSet
+   */
+  void discardInapplicableProjections(const std::shared_ptr<TupleSet> &tupleSet);
 
   /**
    * The project expressions and the attribute names
@@ -109,6 +119,11 @@ private:
    */
   std::optional<std::shared_ptr<fpdb::expression::Projector>> projector_;
 
+  /**
+   * Whether discardInapplicableProjections() has been invoked
+   */
+  bool inapplicableProjectionsDiscarded_ = false;
+
 // caf inspect
 public:
   template <class Inspector>
@@ -121,6 +136,8 @@ public:
                                f.field("opContext", op.opContext_),
                                f.field("producers", op.producers_),
                                f.field("consumers", op.consumers_),
+                               f.field("consumerToBloomFilterInfo", op.consumerToBloomFilterInfo_),
+                               f.field("isSeparated", op.isSeparated_),
                                f.field("exprs", op.exprs_),
                                f.field("exprNames", op.exprNames_),
                                f.field("projectColumnNamePairs", op.projectColumnNamePairs_));

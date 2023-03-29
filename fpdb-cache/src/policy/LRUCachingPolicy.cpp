@@ -92,4 +92,9 @@ void LRUCachingPolicy::onNewQuery() {
 
 }
 
+void LRUCachingPolicy::onClear() {
+  usageQueue_.clear();
+  keyIndexMap_.clear();
+}
+
 

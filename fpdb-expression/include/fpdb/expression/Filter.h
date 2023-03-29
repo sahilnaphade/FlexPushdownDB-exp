@@ -22,7 +22,8 @@ public:
 
   virtual tl::expected<arrow::ArrayVector, std::string> evaluate(const arrow::RecordBatch &recordBatch) = 0;
 
-  virtual tl::expected<void, std::string> compile(const std::shared_ptr<fpdb::tuple::Schema> &Schema) = 0;
+  virtual tl::expected<void, std::string> compile(const std::shared_ptr<arrow::Schema> &inputSchema,
+                                                  const std::shared_ptr<arrow::Schema> &outputSchema) = 0;
 
 };
 

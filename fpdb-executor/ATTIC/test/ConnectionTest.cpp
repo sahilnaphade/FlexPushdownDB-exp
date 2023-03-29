@@ -5,7 +5,7 @@
 #include <doctest/doctest.h>
 #include <aws/s3/model/ListObjectsRequest.h>
 #include <fpdb/pushdown/AWSClient.h>
-#include <fpdb/plan/Globals.h>
+#include "fpdb/plan/prephysical/separable/Globals.h"
 #include <spdlog/spdlog.h>
 #include <fpdb/pushdown/Globals.h>
 

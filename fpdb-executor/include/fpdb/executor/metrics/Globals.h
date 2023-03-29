@@ -1,0 +1,16 @@
+//
+// Created by Yifei Yang on 3/14/22.
+//
+
+#ifndef FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_METRICS_GLOBALS_H
+#define FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_METRICS_GLOBALS_H
+
+#define SHOW_DEBUG_METRICS true
+
+#include <memory>
+
+namespace fpdb::executor::metrics {
+
+}
+
+#endif //FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_METRICS_GLOBALS_H

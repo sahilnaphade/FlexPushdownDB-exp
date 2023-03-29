@@ -31,8 +31,16 @@ std::string Multiply::alias() {
   return "?column?";
 }
 
-std::string Multiply::getTypeString() {
+std::string Multiply::getTypeString() const {
   return "Multiply";
+}
+
+tl::expected<std::shared_ptr<Multiply>, std::string> Multiply::fromJson(const nlohmann::json &jObj) {
+  auto expOperands = BinaryExpression::fromJson(jObj);
+  if (!expOperands.has_value()) {
+    return tl::make_unexpected(expOperands.error());
+  }
+  return std::make_shared<Multiply>((*expOperands).first, (*expOperands).second);
 }
 
 std::shared_ptr<Expression> fpdb::expression::gandiva::times(const std::shared_ptr<Expression>& left,

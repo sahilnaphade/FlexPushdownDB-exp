@@ -40,7 +40,7 @@ NestedLoopJoinPOp::makeKernel(const std::optional<shared_ptr<expression::gandiva
       // This is not inside actor processing, so we cannot use ctx()->notifyError()
       throw runtime_error(fmt::format("Unsupported nested loop join type, {}", joinType));
   }
-};
+}
 
 std::string NestedLoopJoinPOp::getTypeString() const {
   return "NestedLoopJoinPOp";
@@ -49,9 +49,9 @@ std::string NestedLoopJoinPOp::getTypeString() const {
 void NestedLoopJoinPOp::onReceive(const Envelope &msg) {
   if (msg.message().type() == MessageType::START) {
     this->onStart();
-  } else if (msg.message().type() == MessageType::TUPLE) {
-    auto tupleMessage = dynamic_cast<const TupleMessage &>(msg.message());
-    this->onTuple(tupleMessage);
+  } else if (msg.message().type() == MessageType::TUPLESET) {
+    auto tupleMessage = dynamic_cast<const TupleSetMessage &>(msg.message());
+    this->onTupleSet(tupleMessage);
   } else if (msg.message().type() == MessageType::COMPLETE) {
     auto completeMessage = dynamic_cast<const CompleteMessage &>(msg.message());
     this->onComplete(completeMessage);
@@ -85,15 +85,15 @@ void NestedLoopJoinPOp::onComplete(const CompleteMessage &) {
   }
 }
 
-void NestedLoopJoinPOp::onTuple(const TupleMessage &message) {
+void NestedLoopJoinPOp::onTupleSet(const TupleSetMessage &message) {
   const auto &tupleSet = message.tuples();
   const auto &sender = message.sender();
 
   // incremental join immediately
   tl::expected<void, string> result;
-  if (leftProducerNames_.find(sender) != leftProducerNames_.end()) {
+  if (leftProducers_.find(sender) != leftProducers_.end()) {
     result = kernel_.joinIncomingLeft(tupleSet);
-  } else if (rightProducerName_.find(sender) != rightProducerName_.end()) {
+  } else if (rightProducers_.find(sender) != rightProducers_.end()) {
     result = kernel_.joinIncomingRight(tupleSet);
   } else {
     ctx()->notifyError(fmt::format("Unknown sender '{}', neither left nor right producer", sender));
@@ -107,12 +107,12 @@ void NestedLoopJoinPOp::onTuple(const TupleMessage &message) {
 }
 
 void NestedLoopJoinPOp::addLeftProducer(const shared_ptr<PhysicalOp> &leftProducer) {
-  leftProducerNames_.emplace(leftProducer->name());
+  leftProducers_.emplace(leftProducer->name());
   consume(leftProducer);
 }
 
 void NestedLoopJoinPOp::addRightProducer(const shared_ptr<PhysicalOp> &rightProducer) {
-  rightProducerName_.emplace(rightProducer->name());
+  rightProducers_.emplace(rightProducer->name());
   consume(rightProducer);
 }
 
@@ -127,8 +127,8 @@ void NestedLoopJoinPOp::send(bool force) {
         ctx()->notifyError(expProjectTupleSet.error());
       }
 
-      shared_ptr<Message> tupleMessage = make_shared<TupleMessage>(expProjectTupleSet.value(), name());
-      ctx()->tell(tupleMessage);
+      shared_ptr<Message> tupleSetMessage = make_shared<TupleSetMessage>(expProjectTupleSet.value(), name());
+      ctx()->tell(tupleSetMessage);
       sentResult = true;
       kernel_.clearBuffer();
     }
@@ -145,8 +145,8 @@ void NestedLoopJoinPOp::sendEmpty() {
     ctx()->notifyError(expProjectTupleSet.error());
   }
 
-  shared_ptr<Message> tupleMessage = make_shared<TupleMessage>(expProjectTupleSet.value(), name());
-  ctx()->tell(tupleMessage);
+  shared_ptr<Message> tupleSetMessage = make_shared<TupleSetMessage>(expProjectTupleSet.value(), name());
+  ctx()->tell(tupleSetMessage);
 }
 
 void NestedLoopJoinPOp::clear() {

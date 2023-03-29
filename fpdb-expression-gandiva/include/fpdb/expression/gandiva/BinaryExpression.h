@@ -29,6 +29,9 @@ public:
    */
   std::tuple<shared_ptr<arrow::DataType>, ::gandiva::NodePtr, ::gandiva::NodePtr> castGandivaExprToUpperType();
   set<string> involvedColumnNames() override;
+  virtual ::nlohmann::json toJson() const override;
+  static tl::expected<std::pair<std::shared_ptr<Expression>, std::shared_ptr<Expression>>, std::string>
+  fromJson(const nlohmann::json &jObj);
 
   [[nodiscard]] const shared_ptr<Expression> &getLeft() const;
   [[nodiscard]] const shared_ptr<Expression> &getRight() const;

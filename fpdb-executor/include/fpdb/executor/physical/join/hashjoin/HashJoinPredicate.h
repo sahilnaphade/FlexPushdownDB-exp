@@ -5,6 +5,8 @@
 #ifndef FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_HASHJOIN_JOINPREDICATE_H
 #define FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_HASHJOIN_JOINPREDICATE_H
 
+#include <nlohmann/json.hpp>
+#include <tl/expected.hpp>
 #include <string>
 #include <vector>
 
@@ -30,6 +32,9 @@ public:
   const vector<string> &getRightColumnNames() const;
 
   string toString() const;
+
+  ::nlohmann::json toJson() const;
+  static tl::expected<HashJoinPredicate, std::string> fromJson(const nlohmann::json &jObj);
 
 private:
   vector<string> leftColumnNames_;

@@ -3,7 +3,7 @@
 //
 
 #include "fpdb/expression/gandiva/Column.h"
-
+#include <fmt/format.h>
 #include <gandiva/tree_expr_builder.h>
 
 #include <fpdb/tuple/ColumnName.h>
@@ -37,8 +37,23 @@ std::set<std::string> Column::involvedColumnNames() {
   return involvedColumnNames;
 }
 
-std::string Column::getTypeString() {
+std::string Column::getTypeString() const {
   return "Column";
+}
+
+::nlohmann::json Column::toJson() const {
+  ::nlohmann::json jObj;
+  jObj.emplace("type", getTypeString());
+  jObj.emplace("columnName", columnName_);
+  return jObj;
+}
+
+tl::expected<std::shared_ptr<Column>, std::string> Column::fromJson(const nlohmann::json &jObj) {
+  if (!jObj.contains("columnName")) {
+    return tl::make_unexpected(fmt::format("ColumnName not specified in Column expression JSON '{}'", to_string(jObj)));
+  }
+  auto columnName = jObj["columnName"].get<std::string>();
+  return std::make_shared<Column>(columnName);
 }
 
 std::shared_ptr<Expression> fpdb::expression::gandiva::col(const std::string& columnName) {

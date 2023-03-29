@@ -7,7 +7,7 @@
 
 #include <fpdb/executor/physical/PhysicalOp.h>
 #include <fpdb/executor/message/CompleteMessage.h>
-#include <fpdb/executor/message/TupleMessage.h>
+#include <fpdb/executor/message/TupleSetMessage.h>
 #include <fpdb/tuple/TupleSet.h>
 
 using namespace fpdb::executor::message;
@@ -26,6 +26,11 @@ public:
              vector<string> projectColumnNames,
              int nodeId,
              vector<string> shuffleColumnNames);
+  ShufflePOp(string name,
+             vector<string> projectColumnNames,
+             int nodeId,
+             vector<string> shuffleColumnNames,
+             vector<string> consumerVec);
   ShufflePOp() = default;
   ShufflePOp(const ShufflePOp&) = default;
   ShufflePOp& operator=(const ShufflePOp&) = default;
@@ -38,8 +43,23 @@ public:
   void clear() override;
   std::string getTypeString() const override;
 
+  const std::vector<std::string> &getShuffleColumnNames() const;
+  const std::vector<std::string> &getConsumerVec() const;
+  void setConsumerVec(const std::vector<std::string> &consumerVec);
+
   /**
-   * Set the producer operator
+   * This only adds op to consumerVec_
+   * @param op
+   */
+  void addToConsumerVec(const std::shared_ptr<PhysicalOp> &op);
+
+  /**
+   * Clear consumerVec_
+   */
+  void clearConsumerVec();
+
+  /**
+   * Set the producer operator, i.e. add operator_ to both consumers_(base class) and consumerVec_
    * @param operator_
    */
   void produce(const shared_ptr<PhysicalOp> &operator_) override;
@@ -59,7 +79,7 @@ private:
    * Tuples message handler
    * @param message
    */
-  void onTuple(const TupleMessage &message);
+  void onTupleSet(const TupleSetMessage &message);
 
   /**
    * Adds the tuple set to the outbound buffer for the given slot
@@ -93,6 +113,8 @@ public:
                                f.field("opContext", op.opContext_),
                                f.field("producers", op.producers_),
                                f.field("consumers", op.consumers_),
+                               f.field("consumerToBloomFilterInfo", op.consumerToBloomFilterInfo_),
+                               f.field("isSeparated", op.isSeparated_),
                                f.field("shuffleColumnNames", op.shuffleColumnNames_),
                                f.field("consumerVec", op.consumerVec_));
   }

@@ -3,10 +3,20 @@
 //
 
 #include "fpdb/tuple/ArrayHasher.h"
-
+#include "fpdb/util/Util.h"
 #include <utility>
 
 using namespace fpdb::tuple;
+using namespace fpdb::util;
+
+size_t ArrayHasher::hash(const std::vector<std::shared_ptr<ArrayHasher>> &hashers, int64_t row) {
+  std::vector<size_t> hashes;
+  hashes.reserve(hashers.size());
+  for (const auto &hasher: hashers) {
+    hashes.emplace_back(hasher->hash(row));
+  }
+  return hashCombine(hashes);
+}
 
 tl::expected<std::shared_ptr<ArrayHasher>, std::string>
 ArrayHasher::make(const std::shared_ptr<::arrow::Array> &array) {

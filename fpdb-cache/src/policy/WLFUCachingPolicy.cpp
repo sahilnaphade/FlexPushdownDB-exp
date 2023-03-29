@@ -246,3 +246,12 @@ void WLFUCachingPolicy::onNewQuery() {
   freeSizeOTC_ = freeSize_;
   keysInCacheOTC_.assign(keysInCache_.begin(), keysInCache_.end());
 }
+
+void WLFUCachingPolicy::onClear() {
+  keysInCache_.clear();
+  keySetInCache_.clear();
+  keySet_.clear();
+  freeSizeOTC_ = 0;
+  keysInCacheOTC_.clear();
+  weightUpdatedKeys_.clear();
+}

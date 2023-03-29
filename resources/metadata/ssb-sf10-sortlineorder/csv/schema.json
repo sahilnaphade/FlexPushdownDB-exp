@@ -23,7 +23,7 @@
         },
         {
           "name": "d_month",
-          "type": "int64"
+          "type": "string"
         },
         {
           "name": "d_year",

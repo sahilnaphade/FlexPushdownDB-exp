@@ -7,7 +7,7 @@
 
 #include <fpdb/executor/physical/PhysicalOp.h>
 #include <fpdb/executor/message/CompleteMessage.h>
-#include <fpdb/executor/message/TupleMessage.h>
+#include <fpdb/executor/message/TupleSetMessage.h>
 #include <fpdb/tuple/TupleSet.h>
 #include <queue>
 
@@ -35,7 +35,7 @@ public:
 private:
   void onStart();
   void onComplete(const CompleteMessage &);
-  void onTuple(const TupleMessage &message);
+  void onTupleSet(const TupleSetMessage &message);
 
   void merge();
 
@@ -57,6 +57,8 @@ public:
                                f.field("opContext", op.opContext_),
                                f.field("producers", op.producers_),
                                f.field("consumers", op.consumers_),
+                               f.field("consumerToBloomFilterInfo", op.consumerToBloomFilterInfo_),
+                               f.field("isSeparated", op.isSeparated_),
                                f.field("leftProducerName", op.leftProducerName_),
                                f.field("rightProducerName", op.rightProducerName_));
   }

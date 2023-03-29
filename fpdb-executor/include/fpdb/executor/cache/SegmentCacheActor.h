@@ -10,7 +10,7 @@
 #include <fpdb/executor/message/cache/StoreRequestMessage.h>
 #include <fpdb/executor/message/cache/WeightRequestMessage.h>
 #include <fpdb/executor/message/cache/CacheMetricsMessage.h>
-#include <fpdb/executor/serialization/MessageSerializer.h>
+#include <fpdb/executor/caf-serialization/CAFMessageSerializer.h>
 #include <fpdb/cache/policy/CachingPolicy.h>
 #include <fpdb/cache/SegmentCache.h>
 #include <fpdb/plan/Mode.h>
@@ -26,6 +26,7 @@ CAF_ADD_ATOM(SegmentCacheActor, LoadAtom)
 CAF_ADD_ATOM(SegmentCacheActor, StoreAtom)
 CAF_ADD_ATOM(SegmentCacheActor, WeightAtom)
 CAF_ADD_ATOM(SegmentCacheActor, NewQueryAtom)
+CAF_ADD_ATOM(SegmentCacheActor, StopCacheAtom)
 CAF_ADD_ATOM(SegmentCacheActor, GetNumHitsAtom)
 CAF_ADD_ATOM(SegmentCacheActor, GetNumMissesAtom)
 CAF_ADD_ATOM(SegmentCacheActor, GetNumShardHitsAtom)
@@ -48,9 +49,9 @@ struct SegmentCacheActorState {
 class SegmentCacheActor {
 
 public:
-  [[maybe_unused]] static behavior makeBehaviour(stateful_actor<SegmentCacheActorState> *self,
-                                                 const std::optional<std::shared_ptr<CachingPolicy>> &cachingPolicy,
-                                                 const std::shared_ptr<Mode> &mode);
+  static behavior makeBehaviour(stateful_actor<SegmentCacheActorState> *self,
+                                std::shared_ptr<CachingPolicy> cachingPolicy,
+                                std::shared_ptr<Mode> mode);
 
   static std::shared_ptr<LoadResponseMessage> load(const LoadRequestMessage &msg,
                                                    stateful_actor<SegmentCacheActorState> *self,
@@ -58,6 +59,9 @@ public:
   static void store(const StoreRequestMessage &msg, stateful_actor<SegmentCacheActorState> *self);
   static void weight(const WeightRequestMessage &msg, stateful_actor<SegmentCacheActorState> *self);
   static void metrics(const CacheMetricsMessage &msg, stateful_actor<SegmentCacheActorState> *self);
+
+private:
+  static void stop(stateful_actor<SegmentCacheActorState> *self);
 
 };
 

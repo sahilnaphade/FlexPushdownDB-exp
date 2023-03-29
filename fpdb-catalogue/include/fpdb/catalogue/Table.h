@@ -6,7 +6,7 @@
 #define FPDB_FPDB_CATALOGUE_INCLUDE_FPDB_CATALOGUE_TABLE_H
 
 #include <fpdb/catalogue/CatalogueEntry.h>
-#include <fpdb/catalogue/format/Format.h>
+#include <fpdb/tuple/FileFormat.h>
 #include <arrow/type.h>
 #include <unordered_set>
 
@@ -20,7 +20,7 @@ class Table {
 public:
   Table(string name,
         const shared_ptr<arrow::Schema>& schema,
-        const shared_ptr<format::Format>& format,
+        const shared_ptr<fpdb::tuple::FileFormat>& format,
         const unordered_map<string, int> &apxColumnLengthMap,
         int apxRowLength,
         const unordered_set<string> &zonemapColumnNames);
@@ -31,7 +31,7 @@ public:
 
   const string &getName() const;
   const shared_ptr<arrow::Schema> &getSchema() const;
-  const shared_ptr<format::Format> &getFormat() const;
+  const shared_ptr<fpdb::tuple::FileFormat> &getFormat() const;
   vector<string> getColumnNames() const;
   int getApxColumnLength(const string &columnName) const;
   int getApxRowLength() const;
@@ -41,7 +41,7 @@ public:
 protected:
   string name_;
   shared_ptr<arrow::Schema> schema_;
-  shared_ptr<format::Format> format_;
+  shared_ptr<fpdb::tuple::FileFormat> format_;
   unordered_map<string, int> apxColumnLengthMap_;   // apx: approximate
   int apxRowLength_;
   unordered_set<string> zonemapColumnNames_;

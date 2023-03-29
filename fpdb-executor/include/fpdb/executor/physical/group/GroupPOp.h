@@ -5,11 +5,11 @@
 #ifndef FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_GROUP_GROUPPOP_H
 #define FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_GROUP_GROUPPOP_H
 
-#include <fpdb/executor/physical/group/GroupKernel.h>
+#include <fpdb/executor/physical/group/GroupAbstractKernel.h>
 #include <fpdb/executor/physical/PhysicalOp.h>
 #include <fpdb/executor/physical/aggregate/function/AggregateFunction.h>
 #include <fpdb/executor/message/CompleteMessage.h>
-#include <fpdb/executor/message/TupleMessage.h>
+#include <fpdb/executor/message/TupleSetMessage.h>
 #include <string>
 #include <vector>
 #include <memory>
@@ -38,6 +38,10 @@ public:
            int nodeId,
            const vector<string> &groupColumnNames,
            const vector<shared_ptr<aggregate::AggregateFunction>> &aggregateFunctions);
+  GroupPOp(const string &name,
+           const vector<string> &projectColumnNames,
+           int nodeId,
+           const std::shared_ptr<GroupAbstractKernel> &kernel);
   GroupPOp() = default;
   GroupPOp(const GroupPOp&) = default;
   GroupPOp& operator=(const GroupPOp&) = default;
@@ -46,12 +50,14 @@ public:
   void clear() override;
   std::string getTypeString() const override;
 
+  const std::shared_ptr<GroupAbstractKernel> &getKernel() const;
+
 private:
   void onStart();
-  void onTuple(const TupleMessage &msg);
+  void onTupleSet(const TupleSetMessage &msg);
   void onComplete(const CompleteMessage &msg);
 
-  GroupKernel kernel_;
+  std::shared_ptr<GroupAbstractKernel> kernel_;
 
 // caf inspect
 public:
@@ -65,6 +71,8 @@ public:
                                f.field("opContext", op.opContext_),
                                f.field("producers", op.producers_),
                                f.field("consumers", op.consumers_),
+                               f.field("consumerToBloomFilterInfo", op.consumerToBloomFilterInfo_),
+                               f.field("isSeparated", op.isSeparated_),
                                f.field("kernel", op.kernel_));
   }
 };

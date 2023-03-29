@@ -8,7 +8,7 @@
 #include <fpdb/executor/physical/Forward.h>
 #include <fpdb/executor/physical/POpActor2.h>
 #include <fpdb/executor/cache/SegmentCacheActor.h>
-#include <fpdb/executor/message/TupleMessage.h>
+#include <fpdb/executor/message/TupleSetMessage.h>
 #include <fpdb/caf/CAFUtil.h>
 
 using namespace fpdb::executor::physical;
@@ -89,9 +89,9 @@ protected:
   tl::expected<void, std::string> onEnvelope(CollateStatefulActor actor,
 											 const ::caf::strong_actor_ptr &messageSender,
 											 const Envelope &envelope) override {
-	if (envelope.message().type() == MessageType::TUPLE) {
-	  auto tupleMessage = dynamic_cast<const TupleMessage &>(envelope.message());
-	  return this->onTupleSet(actor, messageSender, tupleMessage.tuples());
+	if (envelope.message().type() == MessageType::TUPLESET) {
+	  auto tupleSetMessage = dynamic_cast<const TupleSetMessage &>(envelope.message());
+	  return this->onTupleSet(actor, messageSender, tupleSetMessage.tuples());
 	} else {
 	  return tl::make_unexpected(fmt::format("Unrecognized message type {}", envelope.message().getTypeString()));
 	}

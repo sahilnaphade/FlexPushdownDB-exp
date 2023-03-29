@@ -3,7 +3,7 @@
 //
 
 #include <fpdb/tuple/TupleSet.h>
-
+#include <fpdb/tuple/util/Util.h>
 #include <utility>
 #include <sstream>
 #include <cassert>
@@ -55,6 +55,16 @@ std::shared_ptr<TupleSet> TupleSet::make(const std::shared_ptr<arrow::Schema>& s
   auto chunkedArrays = Column::columnVectorToArrowChunkedArrayVector(columns);
   auto arrowTable = ::arrow::Table::Make(schema, chunkedArrays);
   return std::make_shared<TupleSet>(arrowTable);
+}
+
+tl::expected<std::shared_ptr<TupleSet>, std::string>
+TupleSet::make(const std::vector<std::shared_ptr<arrow::RecordBatch>> &recordBatches) {
+  auto expTable = ::arrow::Table::FromRecordBatches(recordBatches);
+  if (!expTable.ok()) {
+    return tl::make_unexpected(expTable.status().message());
+  }
+
+  return make(*expTable);
 }
 
 tl::expected<std::shared_ptr<TupleSet>, std::string>
@@ -136,55 +146,44 @@ void TupleSet::table(const std::shared_ptr<arrow::Table> &table) {
   table_ = table;
 }
 
-tl::expected<std::shared_ptr<TupleSet>,
-        std::string> TupleSet::concatenate(const std::vector<std::shared_ptr<TupleSet>> &tupleSets) {
-
-  // Make sure the tuple sets are valid and have the same schema
-  std::shared_ptr<TupleSet> tupleSet1;
-  std::vector<std::shared_ptr<TupleSet>> tupleSets1;
-  for(const auto & tupleSet : tupleSets){
-    if(!tupleSet->valid()){
-      return tl::make_unexpected("Cannot concatenate empty tuple sets");
+tl::expected<std::shared_ptr<TupleSet>, std::string>
+TupleSet::concatenate(const std::vector<std::shared_ptr<TupleSet>> &tupleSets) {
+  // remove empty tupleSets
+  std::vector<std::shared_ptr<TupleSet>> nonEmptyTupleSets;
+  for (const auto &tupleSet: tupleSets) {
+    // check valid first
+    if (!tupleSet->valid()){
+      return tl::make_unexpected("Cannot concatenate non-valid tupleSets");
     }
-    if(tupleSet1 == nullptr){
-      tupleSet1 = tupleSet;
-      tupleSets1.emplace_back(tupleSet);
-    }
-    else{
-      /**
-       * Need to make two schemas in the same order first, then compare
-       */
-      if(!tupleSet->table()->schema()->Equals(tupleSet1->table()->schema())){
-        // try to reorder the second table according the schema of the first table
-        auto reorderedColumns = std::make_shared<std::vector<std::shared_ptr<Column>>>();
-        auto schemaMap = std::make_shared<std::unordered_map<std::string, std::shared_ptr<::arrow::Field>>>();
-        for (auto const &field: tupleSet->schema()->fields()) {
-          schemaMap->insert({field->name(), field});
-        }
-
-        for (auto const &field1: tupleSet1->schema()->fields()) {
-          if (schemaMap->find(field1->name()) == schemaMap->end()) {
-            return tl::make_unexpected("Cannot concatenate tuple sets with different schemas");
-          } else {
-            reorderedColumns->emplace_back(tupleSet->getColumnByName(field1->name()).value());
-          }
-        }
-        tupleSets1.emplace_back(make(*reorderedColumns));
-      } else {
-        tupleSets1.emplace_back(tupleSet);
-      }
+    if (tupleSet->numRows() > 0) {
+      nonEmptyTupleSets.emplace_back(tupleSet);
     }
   }
 
-  // Create a vector of arrow tables to concatenate
-  std::vector<std::shared_ptr<::arrow::Table>> tableVector = tupleSetVectorToArrowTableVector(tupleSets1);
+  // if no or only one empty tupleSet
+  if (nonEmptyTupleSets.empty()) {
+    return tupleSets[0];
+  }
+  if (nonEmptyTupleSets.size() == 1) {
+    return nonEmptyTupleSets[0];
+  }
 
-  // Concatenate
-  auto tableResult = arrow::ConcatenateTables(tableVector);
-  if (tableResult.ok()) {
-    return std::make_shared<TupleSet>(*tableResult);
+  // real concatenation occurs here
+  const auto &schema = nonEmptyTupleSets[0]->schema();
+  std::vector<std::shared_ptr<arrow::Table>> tables{nonEmptyTupleSets[0]->table_};
+  for (size_t i = 1; i < nonEmptyTupleSets.size(); ++i) {
+    // try to calibrate schema first
+    auto expCalibratedTable = util::Util::calibrateSchema(nonEmptyTupleSets[i]->table_, schema);
+    if (!expCalibratedTable.has_value()) {
+      return tl::make_unexpected(expCalibratedTable.error());
+    }
+    tables.emplace_back(*expCalibratedTable);
+  }
+  auto expConcatenatedTable = arrow::ConcatenateTables(tables);
+  if (expConcatenatedTable.ok()) {
+    return std::make_shared<TupleSet>(expConcatenatedTable.ValueOrDie());
   } else {
-    return tl::make_unexpected(tableResult.status().ToString());
+    return tl::make_unexpected(expConcatenatedTable.status().message());
   }
 }
 
@@ -206,12 +205,11 @@ tl::expected<void, std::string> TupleSet::append(const std::shared_ptr<TupleSet>
 }
 
 tl::expected<std::shared_ptr<Column>, std::string> TupleSet::getColumnByName(const std::string &name) const {
-  auto canonicalColumnName = ColumnName::canonicalize(name);
-  auto columnArray = table_->GetColumnByName(canonicalColumnName);
+  auto columnArray = table_->GetColumnByName(name);
   if (columnArray == nullptr) {
-    return tl::make_unexpected("Column '" + canonicalColumnName + "' does not exist");
+    return tl::make_unexpected("Column '" + name + "' does not exist");
   } else {
-    auto column = Column::make(canonicalColumnName, columnArray);
+    auto column = Column::make(name, columnArray);
     return column;
   }
 }
@@ -236,10 +234,31 @@ TupleSet::projectExist(const std::vector<std::string> &columnNames) const {
       columns.emplace_back(expColumn.value());
     }
   }
-  if (columns.empty()) {
-    return tl::make_unexpected("No column exists.");
-  }
   return make(columns);
+}
+
+std::shared_ptr<arrow::RecordBatch> TupleSet::projectExist(const std::shared_ptr<arrow::RecordBatch> &recordBatch,
+                                                           const std::vector<std::string> &columnNames) {
+  return projectExist(*recordBatch, columnNames);
+}
+
+std::shared_ptr<arrow::RecordBatch> TupleSet::projectExist(const arrow::RecordBatch &recordBatch,
+                                                           const std::vector<std::string> &columnNames) {
+  ::arrow::FieldVector projectFields;
+  ::arrow::ArrayVector projectArrays;
+  for (const auto &projectColumnName: columnNames) {
+    auto projectField = recordBatch.schema()->GetFieldByName(projectColumnName);
+    if (projectField != nullptr) {
+      projectFields.emplace_back(projectField);
+    }
+    auto projectArray = recordBatch.GetColumnByName(projectColumnName);
+    if (projectArray != nullptr) {
+      projectArrays.emplace_back(projectArray);
+    }
+  }
+  return ::arrow::RecordBatch::Make(arrow::schema(projectFields),
+                                    recordBatch.num_rows(),
+                                    projectArrays);
 }
 
 tl::expected<std::shared_ptr<TupleSet>, std::string> TupleSet::project(const std::vector<int> &columnIds) const {

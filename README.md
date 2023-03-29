@@ -21,18 +21,17 @@ Compiler needed:
 - Linux: LLVM-12 or later versions.
 - Mac OS: LLVM-13.
 
-Set up AWS access credentials and config. Run `aws configure` or manually set `~/.aws/credentials` and `~/.aws/config`.
+#### To set up the system locally to develop:
 
-#### To set up the system in a single node (to develop):
-
-1. Install required dependency. For Ubuntu, ./tools/project/bin/ubuntu-prerequisites.sh. For other Linux OS or Mac OS, required dependencies listed in tools/project/bin/ubuntu-prerequisites.sh have to be manually installed.
-2. Build the system `./resources/script/build.sh -s` (Or using an IDE like Clion to build).
+1. Install required dependency. For Ubuntu, `./tools/project/bin/ubuntu-prerequisites.sh`. For other Linux OS or Mac OS, required dependencies listed in `tools/project/bin/ubuntu-prerequisites.sh` have to be manually installed.
+3. Set `RESOURCE_PATH` of `fpdb-calcite/java/main/resources/config/exec.conf` to the path of `resources`.
+3. Build the system `./resources/script/build.sh`.
 
 #### To set up the system in an EC2 cluster:
 
-1. Create a cluster of EC2 nodes (at least 2), within which one is the coordinator, the others are executors. The coordinator is not necessarily as powerful as the executor.
+1. Create a cluster of EC2 nodes, within which one is the coordinator, the others are executors. The coordinator is not necessarily as powerful as the executor.
 2. Log in the coordinator. Put public IP of all nodes (including the coordinator) into `resources/config/cluster_ips`. Each line is one IP.
-3. Set up the system `./resources/script/setup.sh`. If all required dependencies are already installed, the system can also be set up by `./resources/script/build.sh -d`, `./resources/script/deploy.sh`.
+3. Set up the system `./resources/script/setup.sh`. If all required dependencies are already installed, the system can also be set up by `./resources/script/build.sh`, `./resources/script/deploy.sh`.
 
 #### Configurable parameters in `resources/script/util.sh` used when setting up the system:
 
@@ -46,7 +45,7 @@ Set up AWS access credentials and config. Run `aws configure` or manually set `~
 
 
 ## Prepare Data and Metadata
-1. Make AWS access credentials and config are set.
+1. Set up AWS access credentials and config. Run `aws configure` or manually set `~/.aws/credentials` and `~/.aws/config`.
 2. Organize data files as follows on one S3 bucket: 
    1) Under `resources/metadata/`, create a directory of which the absolute path denotes the schema name, e.g. data files under `s3://tpch-sf0.01/csv/` belong to schema `tpch-sf0.01/csv/`.
    2) For each table `T` with a single partition, name the file as `T.tbl` for CSV format or `T.parquet` for Parquet format; for each table `T` with multiple partitions, create a directory `T_sharded/` and put partition files named as `T.tbl.0/T.parquet.0`, `T.tbl.1/T.parquet.1`... into it.
@@ -58,13 +57,13 @@ Set up AWS access credentials and config. Run `aws configure` or manually set `~
 
 ## Run End-to-end Tests
 
-#### To run tests in a single node:
+#### To run tests locally in a single node:
 1. Start the Calcite server `java -jar fpdb-calcite/java/target/flexpushdowndb.thrift.calcite-1.0-SNAPSHOT.jar &`.
 2. `cd <build directory>/fpdb-main`.
 3. Run tests `./fpdb-main-test -ts=<test-suite> -tc=<test-case>`, available single-node test suites are `ssb-sf1-single_node-no-parallel`, `tpch-sf0.01-single_node-no-parallel`, `tpch-sf0.01-single_node-parallel`.
 4. When finished, stop the Calcite server.
 
-#### To run tests in an EC2 cluster:
+#### To run tests in a cluster:
 1. Make sure the security group of your nodes allows inbound and outbound traffic for TCP protocol at `CAF_SERVER_PORT` (4242 by default, can be changed by instructions below). 
 2. `cd ~/FPDB-build/`.
 3. Start the system `./resources/script/start.sh`.
@@ -72,9 +71,11 @@ Set up AWS access credentials and config. Run `aws configure` or manually set `~
 5. Run tests `./fpdb-main-test -ts=<test-suite> -tc=<test-case>`, available test suites are `ssb-sf1-single_node-no-parallel`, `tpch-sf0.01-single_node-no-parallel`, `tpch-sf0.01-single_node-parallel`, `tpch-sf0.01-distributed`.
 6. When finished, stop the system `~/FPDB-build/resources/script/stop.sh`.
 
+#### Note:
+1. On large tests, check "ulimit -n", make sure the output number is high enough, otherwise it may throw "Too many open files" exception.
+
 
 ## System Configurations
-The configurations are used by `fpdb-main-client` by default. When writing test cases, you may input your parameters in your code or read from configuration files. For example, in `fpdb-main-test`, parameters of execution config are specified in the code, while parameters of AWS config are read from `aws.conf`. In this way your test cases can be more flexible and easy to be adjusted.
 
 #### Execution config (resources/config/exec.conf):
 - `S3_BUCKET` s3 bucket name where the data is in.
@@ -90,7 +91,6 @@ The configurations are used by `fpdb-main-client` by default. When writing test 
 
 #### AWS config (resources/config/aws.conf):
 - `S3_CLIENT_TYPE` type of S3 client, can be one of `S3`, `AIRMETTLE`, `MINIO`. For `AIRMETTLE` and `MINIO`, access key and endpoint need to be set in `fpdb-aws/src/AWSClient.cpp`.
-- `AWS_REGION` the region of the bucket that data lies in.
 - `NETWORK_LIMIT` used to throttle data loading from S3, set to 0 if not throttling.
 
 #### Calcite config cpp side (resources/config/calcite.conf):
@@ -101,16 +101,3 @@ The configurations are used by `fpdb-main-client` by default. When writing test 
 - `SERVER_PORT` port for the Calcite server, should be kept same as cpp side.
 - `RESOURCE_PATH` absolute path of `resources/` used for metadata fetching.
 - `exec.conf.ec2` is a fixed config for EC2 deployment and does not need to be changed.
-
-
-## To Do
-### Performance
-- Replace CAF built-in communication by Flight
-- Optimize Group Operator
-  1) optimize internally
-  2) add back the change of moving shuffle before to after parallel group
-
-### Features
-- Update the stale Parquet reader for scan operators.
-- Update the stale FileScan operator to support querying local files.
-- Update the stale BloomJoin and incorporate it into the physical query plan.

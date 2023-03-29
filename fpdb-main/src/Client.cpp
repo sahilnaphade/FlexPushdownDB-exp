@@ -3,14 +3,15 @@
 //
 
 #include <fpdb/main/Client.h>
-#include <fpdb/main/CAFInit.h>
+#include <fpdb/executor/caf/CAFInit.h>
 #include <fpdb/executor/physical/transform/PrePToPTransformer.h>
 #include <fpdb/plan/calcite/CalcitePlanJsonDeserializer.h>
-#include <fpdb/catalogue/s3/S3CatalogueEntryReader.h>
+#include <fpdb/catalogue/obj-store/ObjStoreCatalogueEntryReader.h>
+#include <fpdb/catalogue/obj-store/s3/S3Connector.h>
 #include <fpdb/util/Util.h>
 
 using namespace fpdb::plan::calcite;
-using namespace fpdb::catalogue::s3;
+using namespace fpdb::catalogue::obj_store;
 using namespace fpdb::util;
 
 namespace fpdb::main {
@@ -42,14 +43,14 @@ string Client::start() {
   SPDLOG_INFO("Calcite client started");
 
   // execution config
-  execConfig_ = ExecConfig::parseExecConfig(catalogue_, awsClient_);
+  execConfig_ = ExecConfig::parseExecConfig(catalogue_, make_shared<S3Connector>(awsClient_));
 
   // actor system config and actor system
   const auto &remoteIps = readRemoteIps();
   actorSystemConfig_ = make_shared<ActorSystemConfig>(execConfig_->getCAFServerPort(),
                                                       remoteIps,
                                                       false);
-  CAFInit::initCAFGlobalMetaObjects();
+  fpdb::executor::caf::CAFInit::initCAFGlobalMetaObjects();
   actorSystem_ = make_shared<::caf::actor_system>(*actorSystemConfig_);
 
   // connect to other nodes if any
@@ -121,10 +122,10 @@ shared_ptr<CatalogueEntry> Client::getCatalogueEntry(const string &schemaName) {
   if (expCatalogueEntry.has_value()) {
     return expCatalogueEntry.value();
   } else {
-    catalogueEntry = S3CatalogueEntryReader::readS3CatalogueEntry(catalogue_,
-                                                                  execConfig_->getS3Bucket(),
-                                                                  schemaName,
-                                                                  awsClient_->getS3Client());
+    catalogueEntry = ObjStoreCatalogueEntryReader::readCatalogueEntry(catalogue_,
+                                                                      execConfig_->getS3Bucket(),
+                                                                      schemaName,
+                                                                      make_shared<S3Connector>(awsClient_));
     catalogue_->putEntry(catalogueEntry);
     return catalogueEntry;
   }
@@ -135,19 +136,19 @@ shared_ptr<PhysicalPlan> Client::plan(const string &query, const shared_ptr<Cata
   string planResult = calciteClient_->planQuery(query, execConfig_->getSchemaName());
 
   // deserialize plan json string into prephysical plan
-  auto planDeserializer = make_shared<CalcitePlanJsonDeserializer>(planResult, catalogueEntry);
-  const auto &prePhysicalPlan = planDeserializer->deserialize();
+  auto prePhysicalPlan = CalcitePlanJsonDeserializer::deserialize(planResult, catalogueEntry);
 
   // trim unused fields (Calcite trimmer does not trim completely)
   prePhysicalPlan->populateAndTrimProjectColumns();
 
   // transform prephysical plan to physical plan
-  auto prePToPTransformer = make_shared<PrePToPTransformer>(prePhysicalPlan,
-                                                            awsClient_,
-                                                            execConfig_->getMode(),
-                                                            execConfig_->getParallelDegree(),
-                                                            nodes_.size() + 1);
-  const auto &physicalPlan = prePToPTransformer->transform();
+  auto s3Connector = make_shared<obj_store::S3Connector>(awsClient_);
+  auto physicalPlan = PrePToPTransformer::transform(prePhysicalPlan,
+                                                    catalogueEntry,
+                                                    s3Connector,
+                                                    execConfig_->getMode(),
+                                                    execConfig_->getParallelDegree(),
+                                                    nodes_.size() + 1);
 
   return physicalPlan;
 }

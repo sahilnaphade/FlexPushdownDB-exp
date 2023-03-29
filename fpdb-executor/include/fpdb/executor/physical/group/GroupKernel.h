@@ -5,10 +5,9 @@
 #ifndef FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_GROUP_GROUPKERNEL2_H
 #define FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_GROUP_GROUPKERNEL2_H
 
-#include <fpdb/executor/physical/aggregate/function/AggregateFunction.h>
+#include <fpdb/executor/physical/group/GroupAbstractKernel.h>
 #include <fpdb/executor/physical/aggregate/AggregateResult.h>
 #include <fpdb/tuple/TupleKey.h>
-#include <fpdb/tuple/TupleSet.h>
 #include <fpdb/tuple/ArrayAppender.h>
 #include <vector>
 #include <string>
@@ -47,11 +46,11 @@ using GroupFinalAggregateResultVectorMap = unordered_map<shared_ptr<TupleKey>,
         TupleKeyPointerHash,
         TupleKeyPointerPredicate>;
 
-class GroupKernel {
+class GroupKernel: public GroupAbstractKernel {
 
 public:
-  GroupKernel(const vector<string>& groupColumnNames,
-              vector<shared_ptr<AggregateFunction>> aggregateFunctions);
+  GroupKernel(const vector<string> &groupColumnNames,
+              const vector<shared_ptr<AggregateFunction>> &aggregateFunctions);
   GroupKernel() = default;
   GroupKernel(const GroupKernel&) = default;
   GroupKernel& operator=(const GroupKernel&) = default;
@@ -62,24 +61,21 @@ public:
    * @param tupleSet
    * @return
    */
-  [[nodiscard]] tl::expected<void, string> group(const TupleSet &tupleSet);
+  tl::expected<void, string> group(const std::shared_ptr<TupleSet> &tupleSet) override;
 
   /**
    * Computes final aggregates and generates output tuple set
    *
    * @return
    */
-  [[nodiscard]] tl::expected<shared_ptr<TupleSet>, string> finalise();
+  tl::expected<shared_ptr<TupleSet>, string> finalise() override;
 
   /**
    * Clear internal state
    */
-  void clear();
+  void clear() override;
 
 private:
-  vector<string> groupColumnNames_;
-  vector<shared_ptr<AggregateFunction>> aggregateFunctions_;
-
   vector<int> groupColumnIndices_;
   vector<int> aggregateColumnIndices_;
   std::optional<shared_ptr<arrow::Schema>> inputSchema_;
@@ -100,7 +96,7 @@ private:
    * @param tupleSet
    * @return
    */
-  tl::expected<void, string> cache(const TupleSet &tupleSet);
+  tl::expected<void, string> cache(const std::shared_ptr<TupleSet> &tupleSet);
 
   /**
    * Groups a single record batch
@@ -137,7 +133,8 @@ private:
 public:
   template <class Inspector>
   friend bool inspect(Inspector& f, GroupKernel& kernel) {
-    return f.object(kernel).fields(f.field("groupColumnNames", kernel.groupColumnNames_),
+    return f.object(kernel).fields(f.field("type", kernel.type_),
+                                   f.field("groupColumnNames", kernel.groupColumnNames_),
                                    f.field("aggregateFunctions", kernel.aggregateFunctions_));
   }
 };

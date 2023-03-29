@@ -1,47 +1,49 @@
 //
-// Created by matt on 12/8/20.
+// Created by Yifei Yang on 2/18/22.
 //
 
-#ifndef FPDB_FPDB_TUPLE_INCLUDE_FPDB_TUPLE_CSVREADER_H
-#define FPDB_FPDB_TUPLE_INCLUDE_FPDB_TUPLE_CSVREADER_H
+#ifndef FPDB_FPDB_TUPLE_INCLUDE_FPDB_TUPLE_CSV_CSVREADER_H
+#define FPDB_FPDB_TUPLE_INCLUDE_FPDB_TUPLE_CSV_CSVREADER_H
 
-#include <string>
-#include <memory>
+#include <fpdb/tuple/FileReader.h>
+#include <fpdb/tuple/TupleSet.h>
 
-#include <tl/expected.hpp>
-#include <arrow/io/api.h>
-#include <parquet/arrow/reader.h>
+namespace fpdb::tuple::csv {
 
-#include "fpdb/tuple/FileReader.h"
-#include "fpdb/tuple/TupleSet.h"
-
-namespace fpdb::tuple {
-
-class CSVReader : public FileReader {
+class CSVReader : virtual public FileReader {
 
 public:
-  explicit CSVReader(std::string path);
   CSVReader() = default;
-  CSVReader(const CSVReader&) = default;
-  CSVReader& operator=(const CSVReader&) = default;
+  virtual ~CSVReader() = default;
 
-  static tl::expected<std::shared_ptr<CSVReader>, std::string> make(const std::string &path);
+  tl::expected<std::shared_ptr<TupleSet>, std::string> read(const std::vector<std::string> &columnNames) override;
 
-  [[nodiscard]] tl::expected<std::shared_ptr<TupleSet>, std::string>
-  read(const std::vector<std::string> &columnNames, int64_t startPos, int64_t finishPos) override;
+protected:
+#ifdef __AVX2__
+  tl::expected<std::shared_ptr<TupleSet>, std::string>
+  readUsingSimdParserImpl(const std::vector<std::string> &columnNames,
+                          std::basic_istream<char, std::char_traits<char>> &inputStream);
+#endif
+
+  tl::expected<std::shared_ptr<TupleSet>, std::string>
+  readUsingArrowApiImpl(const std::vector<std::string> &columnNames,
+                        const std::shared_ptr<::arrow::io::InputStream> &inputStream);
+
+  tl::expected<std::shared_ptr<TupleSet>, std::string>
+  readRangeImpl(const std::vector<std::string> &columnNames,
+                int64_t startPos,
+                int64_t finishPos,
+                const std::shared_ptr<::arrow::io::RandomAccessFile> &inputStream);
 
 private:
-  std::string path_;
+  virtual tl::expected<std::shared_ptr<TupleSet>, std::string>
+  readUsingSimdParser(const std::vector<std::string> &columnNames) = 0;
 
-// caf inspect
-public:
-  template <class Inspector>
-  friend bool inspect(Inspector& f, CSVReader& reader) {
-    return f.object(reader).fields(f.field("type", reader.type_),
-                                   f.field("path", reader.path_));
-  }
+  virtual tl::expected<std::shared_ptr<TupleSet>, std::string>
+  readUsingArrowApi(const std::vector<std::string> &columnNames) = 0;
 };
 
 }
 
-#endif //FPDB_FPDB_TUPLE_INCLUDE_FPDB_TUPLE_CSVREADER_H
+
+#endif //FPDB_FPDB_TUPLE_INCLUDE_FPDB_TUPLE_CSV_CSVREADER_H

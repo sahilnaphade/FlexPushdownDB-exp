@@ -49,27 +49,27 @@ void NumericLiteral<arrow::Date64Type>::compile(const std::shared_ptr<arrow::Sch
 }
 
 template<>
-string NumericLiteral<arrow::Int32Type>::getTypeString() {
+std::string NumericLiteral<arrow::Int32Type>::getTypeString() const {
   return "NumericLiteral<Int32>";
 }
 
 template<>
-string NumericLiteral<arrow::Int64Type>::getTypeString() {
+std::string NumericLiteral<arrow::Int64Type>::getTypeString() const {
   return "NumericLiteral<Int64>";
 }
 
 template<>
-string NumericLiteral<arrow::DoubleType>::getTypeString() {
+std::string NumericLiteral<arrow::DoubleType>::getTypeString() const {
   return "NumericLiteral<Double>";
 }
 
 template<>
-string NumericLiteral<arrow::BooleanType>::getTypeString() {
+std::string NumericLiteral<arrow::BooleanType>::getTypeString() const {
   return "NumericLiteral<Boolean>";
 }
 
 template<>
-string NumericLiteral<arrow::Date64Type>::getTypeString() {
+std::string NumericLiteral<arrow::Date64Type>::getTypeString() const {
   return "NumericLiteral<Date64>";
 }
 

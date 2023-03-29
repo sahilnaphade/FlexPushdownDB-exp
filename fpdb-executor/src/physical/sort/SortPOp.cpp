@@ -20,9 +20,9 @@ std::string SortPOp::getTypeString() const {
 void SortPOp::onReceive(const Envelope &message) {
   if (message.message().type() == MessageType::START) {
     this->onStart();
-  } else if (message.message().type() == MessageType::TUPLE) {
-    auto tupleMessage = dynamic_cast<const TupleMessage &>(message.message());
-    this->onTuple(tupleMessage);
+  } else if (message.message().type() == MessageType::TUPLESET) {
+    auto tupleSetMessage = dynamic_cast<const TupleSetMessage &>(message.message());
+    this->onTupleSet(tupleSetMessage);
   } else if (message.message().type() == MessageType::COMPLETE) {
     auto completeMessage = dynamic_cast<const CompleteMessage &>(message.message());
     this->onComplete(completeMessage);
@@ -45,13 +45,13 @@ void SortPOp::onComplete(const CompleteMessage &) {
       throw std::runtime_error(expProjectTupleSet.error());
     }
 
-    shared_ptr<Message> tupleMessage = make_shared<TupleMessage>(expProjectTupleSet.value(), name());
+    shared_ptr<Message> tupleMessage = make_shared<TupleSetMessage>(expProjectTupleSet.value(), name());
     ctx()->tell(tupleMessage);
     ctx()->notifyComplete();
   }
 }
 
-void SortPOp::onTuple(const TupleMessage &message) {
+void SortPOp::onTupleSet(const TupleSetMessage &message) {
   buffer(message.tuples());
 }
 

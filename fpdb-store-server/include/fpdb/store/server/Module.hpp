@@ -2,10 +2,9 @@
 // Created by matt on 4/2/22.
 //
 
-#ifndef FPDB_MODULE_HPP
-#define FPDB_MODULE_HPP
+#ifndef FPDB_FPDB_STORE_SERVER_INCLUDE_FPDB_STORE_SERVER_MODULE_HPP
+#define FPDB_FPDB_STORE_SERVER_INCLUDE_FPDB_STORE_SERVER_MODULE_HPP
 
-namespace fpdb::store::server {
-}
+namespace fpdb::store::server {}
 
-#endif //FPDB_MODULE_HPP
+#endif // FPDB_FPDB_STORE_SERVER_INCLUDE_FPDB_STORE_SERVER_MODULE_HPP

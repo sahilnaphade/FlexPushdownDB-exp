@@ -20,6 +20,7 @@ public:
 private:
   std::shared_ptr<ActorSystemConfig> actorSystemConfig_;
   std::shared_ptr<::caf::actor_system> actorSystem_;
+  std::future<tl::expected<void, std::basic_string<char>>> flight_future_;
 
 };
 

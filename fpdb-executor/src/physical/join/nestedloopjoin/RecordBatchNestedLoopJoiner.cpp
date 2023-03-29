@@ -180,7 +180,7 @@ tl::expected<arrow::ArrayVector, string> RecordBatchNestedLoopJoiner::filter(con
   // build filter if not yet
   if (!filter_.has_value()){
     filter_ = make_shared<fpdb::expression::gandiva::Filter>(predicate_.value());
-    filter_.value()->compile(Schema::make(recordBatch->schema()));
+    filter_.value()->compile(recordBatch->schema(), outputSchema_);
   }
 
   // filter the record batch, here we don't do it in one call, we first compute selection vector then project using it,

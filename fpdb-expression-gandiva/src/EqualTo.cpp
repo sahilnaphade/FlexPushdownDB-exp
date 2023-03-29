@@ -3,9 +3,7 @@
 //
 
 #include "fpdb/expression/gandiva/EqualTo.h"
-
 #include <utility>
-
 #include "gandiva/selection_vector.h"
 #include <gandiva/tree_expr_builder.h>
 
@@ -32,8 +30,16 @@ std::string EqualTo::alias() {
   return genAliasForComparison("=");
 }
 
-std::string EqualTo::getTypeString() {
+std::string EqualTo::getTypeString() const {
   return "EqualTo";
+}
+
+tl::expected<std::shared_ptr<EqualTo>, std::string> EqualTo::fromJson(const nlohmann::json &jObj) {
+  auto expOperands = BinaryExpression::fromJson(jObj);
+  if (!expOperands.has_value()) {
+    return tl::make_unexpected(expOperands.error());
+  }
+  return std::make_shared<EqualTo>((*expOperands).first, (*expOperands).second);
 }
 
 std::shared_ptr<Expression> fpdb::expression::gandiva::eq(const std::shared_ptr<Expression>& Left, const std::shared_ptr<Expression>& Right) {

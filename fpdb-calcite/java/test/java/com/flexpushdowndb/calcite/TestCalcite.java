@@ -36,6 +36,7 @@ import org.apache.calcite.tools.RuleSets;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 
 public class TestCalcite {
@@ -48,7 +49,6 @@ public class TestCalcite {
   }
 
   public static void main(String[] args) throws Exception {
-    RelNode relNode;
     String sqlQuery = "SELECT T1.A FROM T5, T2, T3, T4, T1\n" +
             "WHERE T1.A = T2.A " +
             "AND T3.B = T2.B " +
@@ -104,14 +104,17 @@ public class TestCalcite {
                     "E", SqlTypeName.INTEGER),
             100);
     CalciteSchema rootSchema = CalciteSchema.createRootSchema(false, true);
-    SchemaImpl schema1 = new SchemaImpl("a", ImmutableMap.of());
+    SchemaImpl schema1 = new SchemaImpl("a", ImmutableMap.of(), new HashMap<>());
     rootSchema.add(schema1.getSchemaName(), schema1);
-    SchemaImpl schema = new SchemaImpl("MYSCHEMA", ImmutableMap.of(
-            t1.getTableName(), t1,
-            t2.getTableName(), t2,
-            t3.getTableName(), t3,
-            t4.getTableName(), t4,
-            t5.getTableName(), t5));
+    SchemaImpl schema = new SchemaImpl(
+            "MYSCHEMA",
+            ImmutableMap.of(
+                    t1.getTableName(), t1,
+                    t2.getTableName(), t2,
+                    t3.getTableName(), t3,
+                    t4.getTableName(), t4,
+                    t5.getTableName(), t5),
+            new HashMap<>());
     rootSchema.add(schema.getSchemaName(), schema);
 
     // Create an SQL parser and parse the query into AST

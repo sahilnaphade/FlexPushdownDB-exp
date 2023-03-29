@@ -61,6 +61,14 @@ template<>
 }
 
 template<>
+::arrow::Status ArrayAppenderWrapper<::arrow::Date32Type::c_type, ::arrow::Date32Type>::appendValues(
+        const std::shared_ptr<::arrow::Date32Builder> &builder,
+        const std::vector<::arrow::Date32Type::c_type> &buffer,
+        const std::vector<bool> &isValid) {
+  return builder->AppendValues(buffer, isValid);
+}
+
+template<>
 ::arrow::Status ArrayAppenderWrapper<::arrow::Date64Type::c_type, ::arrow::Date64Type>::appendValues(
         const std::shared_ptr<::arrow::Date64Builder> &builder,
         const std::vector<::arrow::Date64Type::c_type> &buffer,

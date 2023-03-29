@@ -257,7 +257,7 @@
         "name": "csv",
         "fieldDelimiter": "|"
       },
-      "numPartitions": 1,
+      "numPartitions": 2,
       "fields": [
         {
           "name": "l_orderkey",

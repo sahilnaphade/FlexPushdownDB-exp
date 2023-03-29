@@ -37,7 +37,7 @@ public:
   friend bool inspect(Inspector& f, ConnectMessage& msg) {
     return f.object(msg).fields(f.field("type", msg.type_),
                                 f.field("sender", msg.sender_),
-                                f.field("operatorConnections", msg.connections_));
+                                f.field("connections", msg.connections_));
   }
 };
 

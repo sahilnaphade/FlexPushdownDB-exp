@@ -12,27 +12,30 @@ add_library(fpdb-catalogue STATIC
         src/CatalogueEntry.cpp include/fpdb/catalogue/CatalogueEntry.h
         src/Table.cpp include/fpdb/catalogue/Table.h
         src/Partition.cpp include/fpdb/catalogue/Partition.h
-        src/s3/S3CatalogueEntry.cpp include/fpdb/catalogue/s3/S3CatalogueEntry.h
-        src/s3/S3Table.cpp include/fpdb/catalogue/s3/S3Table.h
-        src/s3/S3Partition.cpp include/fpdb/catalogue/s3/S3Partition.h
-        src/s3/S3CatalogueEntryReader.cpp include/fpdb/catalogue/s3/S3CatalogueEntryReader.h
         src/local-fs/LocalFSCatalogueEntry.cpp include/fpdb/catalogue/local-fs/LocalFSCatalogueEntry.h
         src/local-fs/LocalFSTable.cpp include/fpdb/catalogue/local-fs/LocalFSTable.h
         src/local-fs/LocalFSPartition.cpp include/fpdb/catalogue/local-fs/LocalFSPartition.h
-        include/fpdb/catalogue/format/FormatType.h
-        src/format/Format.cpp include/fpdb/catalogue/format/Format.h
-        src/format/CSVFormat.cpp include/fpdb/catalogue/format/CSVFormat.h
-        src/format/ParquetFormat.cpp include/fpdb/catalogue/format/ParquetFormat.h
-        include/fpdb/catalogue/serialization/PartitionSerializer.h
-        include/fpdb/catalogue/serialization/TableSerializer.h
-        include/fpdb/catalogue/serialization/FormatSerializer.h)
+        include/fpdb/catalogue/obj-store/ObjStoreType.h
+        src/obj-store/ObjStoreCatalogueEntry.cpp include/fpdb/catalogue/obj-store/ObjStoreCatalogueEntry.h
+        src/obj-store/ObjStoreTable.cpp include/fpdb/catalogue/obj-store/ObjStoreTable.h
+        src/obj-store/ObjStorePartition.cpp include/fpdb/catalogue/obj-store/ObjStorePartition.h
+        src/obj-store/ObjStoreCatalogueEntryReader.cpp include/fpdb/catalogue/obj-store/ObjStoreCatalogueEntryReader.h
+        src/obj-store/ObjStoreConnector.cpp include/fpdb/catalogue/obj-store/ObjStoreConnector.h
+        src/obj-store/s3/S3Connector.cpp include/fpdb/catalogue/obj-store/s3/S3Connector.h
+        src/obj-store/fpdb-store/FPDBStoreConnector.cpp include/fpdb/catalogue/obj-store/fpdb-store/FPDBStoreConnector.h
+        include/fpdb/catalogue/caf-serialization/CAFPartitionSerializer.h
+        include/fpdb/catalogue/caf-serialization/CAFTableSerializer.h
+        include/fpdb/catalogue/caf-serialization/CAFObjStoreConnectorSerializer.h)
 
 target_include_directories(fpdb-catalogue PUBLIC include)
 
-target_link_libraries(fpdb-catalogue PUBLIC nlohmann_json)
+set_target_properties(fpdb-catalogue PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
 target_link_libraries(fpdb-catalogue PUBLIC fpdb-tuple)
 target_link_libraries(fpdb-catalogue PUBLIC fpdb-aws)
 target_link_libraries(fpdb-catalogue PUBLIC fpdb-util)
+target_link_libraries(fpdb-catalogue PRIVATE fpdb-store-server-file)
+target_link_libraries(fpdb-catalogue PUBLIC nlohmann_json)
 
 
 #-----------------------------------------------------------------------------------------------------------------------

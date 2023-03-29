@@ -17,6 +17,10 @@ const shared_ptr<PrePhysicalOp> &PrePhysicalPlan::getRootOp() const {
   return rootOp_;
 }
 
+void PrePhysicalPlan::setRootOp(const shared_ptr<PrePhysicalOp> &rootOp) {
+  rootOp_ = rootOp;
+}
+
 const vector<string> &PrePhysicalPlan::getOutputColumnNames() const {
   return outputColumnNames_;
 }

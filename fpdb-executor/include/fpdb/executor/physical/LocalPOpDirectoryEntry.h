@@ -20,6 +20,7 @@ public:
   LocalPOpDirectoryEntry(std::string name,
                          ::caf::actor actor,
                          POpRelationshipType relationshipType,
+                         int nodeId,
                          bool complete);
   LocalPOpDirectoryEntry() = default;
   LocalPOpDirectoryEntry(const LocalPOpDirectoryEntry&) = default;
@@ -31,6 +32,7 @@ public:
   const std::string &name() const;
   void name(const std::string &name);
   const ::caf::actor &getActor() const;
+  int getNodeId() const;
   void destroyActor();
   POpRelationshipType relationshipType() const;
   void relationshipType(POpRelationshipType relationshipType);
@@ -39,6 +41,7 @@ private:
   std::string name_;
   ::caf::actor actor_;
   POpRelationshipType relationshipType_;
+  int nodeId_;
   bool complete_;
 
 // caf inspect
@@ -48,6 +51,7 @@ public:
     return f.object(entry).fields(f.field("name", entry.name_),
                                   f.field("actor", entry.actor_),
                                   f.field("relationshipType", entry.relationshipType_),
+                                  f.field("nodeId", entry.nodeId_),
                                   f.field("complete", entry.complete_));
   }
 };

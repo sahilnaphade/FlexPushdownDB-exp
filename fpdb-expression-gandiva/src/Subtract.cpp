@@ -30,8 +30,16 @@ std::string Subtract::alias() {
   return "?column?";
 }
 
-std::string Subtract::getTypeString() {
+std::string Subtract::getTypeString() const {
   return "Subtract";
+}
+
+tl::expected<std::shared_ptr<Subtract>, std::string> Subtract::fromJson(const nlohmann::json &jObj) {
+  auto expOperands = BinaryExpression::fromJson(jObj);
+  if (!expOperands.has_value()) {
+    return tl::make_unexpected(expOperands.error());
+  }
+  return std::make_shared<Subtract>((*expOperands).first, (*expOperands).second);
 }
 
 std::shared_ptr<Expression> fpdb::expression::gandiva::minus(const std::shared_ptr<Expression>& left,

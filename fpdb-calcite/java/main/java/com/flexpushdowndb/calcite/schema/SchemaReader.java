@@ -5,6 +5,7 @@ import org.apache.calcite.schema.Table;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.json.JSONObject;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
@@ -25,6 +26,10 @@ public class SchemaReader {
     Path statsPath = schemaDirPath.resolve("stats.json");
     Map<String, Double> rowCounts = readRowCounts(statsPath);
 
+    // Read hash keys if there is
+    Path hashKeysPath = schemaDirPath.resolve("fpdb_store_hash_keys.json");
+    Map<String, String> hashKeys = readHashKeys(hashKeysPath);
+
     // Construct tables
     Map<String, Table> tableMap = new HashMap<>();
     for (String tableName: fieldTypesMap.keySet()) {
@@ -33,7 +38,7 @@ public class SchemaReader {
       tableMap.put(tableName, new TableImpl(tableName, fieldTypes, rowCount));
     }
 
-    return new SchemaImpl(schemaName, tableMap);
+    return new SchemaImpl(schemaName, tableMap, hashKeys);
   }
 
   private static Map<String, Map<String, SqlTypeName>> readFieldTypes(Path schemaPath) throws Exception {
@@ -65,6 +70,21 @@ public class SchemaReader {
       rowCounts.put(tableName, rowCount);
     }
     return rowCounts;
+  }
+
+  private static Map<String, String> readHashKeys(Path hashKeysPath) throws Exception {
+    if (!Files.exists(hashKeysPath)) {
+      return new HashMap<>();
+    }
+    Map<String, String> hashKeys = new HashMap<>();
+    JSONObject jObj = new JSONObject(FileUtils.readFile(hashKeysPath));
+    for (Object o: jObj.getJSONArray("hashKeys")) {
+      JSONObject hashKeyJObj = (JSONObject) o;
+      String table = hashKeyJObj.getString("table");
+      String key = hashKeyJObj.getString("key");
+      hashKeys.put(table, key);
+    }
+    return hashKeys;
   }
 
   private static SqlTypeName stringToSqlTypeName(String typeString) {

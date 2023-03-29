@@ -23,13 +23,24 @@ public:
   AvgBase& operator=(const AvgBase&) = default;
 
   shared_ptr<arrow::DataType> returnType() const override;
+  static shared_ptr<arrow::DataType> defaultReturnType();
 
   tl::expected<shared_ptr<arrow::Scalar>, string>
   finalize(const vector<shared_ptr<AggregateResult>> &aggregateResults) override;
 
+  tl::expected<shared_ptr<arrow::ChunkedArray>, std::string> finalize(const shared_ptr<TupleSet> &tupleSet);
+
+  tl::expected<pair<shared_ptr<arrow::Field>, shared_ptr<arrow::ChunkedArray>>, std::string>
+  getIntermediateSumColumn(const shared_ptr<TupleSet> &tupleSet) const;
+  tl::expected<pair<shared_ptr<arrow::Field>, shared_ptr<arrow::ChunkedArray>>, std::string>
+  getIntermediateCountColumn(const shared_ptr<TupleSet> &tupleSet) const;
+
 protected:
   constexpr static const char *const SUM_RESULT_KEY = "SUM";
   constexpr static const char *const COUNT_RESULT_KEY = "COUNT";
+
+  std::string getIntermediateSumColumnName() const;
+  std::string getIntermediateCountColumnName() const;
 
 };
 

@@ -11,6 +11,7 @@
 #include <fpdb/executor/physical/collate/CollatePOp.h>
 #include <fpdb/executor/physical/collate/CollatePOp2.h>
 #include <fpdb/executor/physical/s3/S3SelectScanAbstractPOp.h>
+#include <fpdb/executor/metrics/DebugMetrics.h>
 #include <fpdb/tuple/TupleSet.h>
 #include <caf/all.hpp>
 #include <memory>
@@ -31,15 +32,15 @@ public:
   Execution(long queryId,
             const shared_ptr<::caf::actor_system> &actorSystem,
             const vector<::caf::node_id> &nodes,
-            const ::caf::actor &segmentCacheActor,
+            const ::caf::actor &localSegmentCacheActor,
+            const vector<::caf::actor> &remoteSegmentCacheActors,
             const shared_ptr<PhysicalPlan> &physicalPlan,
             bool isDistributed);
-  ~Execution();
+  virtual ~Execution();
+
+  virtual shared_ptr<TupleSet> execute();
 
   long getQueryId() const;
-
-  shared_ptr<TupleSet> execute();
-
   long getElapsedTime();
   shared_ptr<PhysicalOp> getPhysicalOp(const std::string &name);
   physical::s3::S3SelectScanStats getAggregateS3SelectScanStats();
@@ -48,20 +49,28 @@ public:
 
   void write_graph(const string &file);
 
-private:
+#if SHOW_DEBUG_METRICS == true
+  string showDebugMetrics() const;
+  const metrics::DebugMetrics &getDebugMetrics() const;
+#endif
+
+protected:
+  virtual void preExecute();
   void boot();
   void start();
-  void join();
+  virtual void join();
   void close();
 
   ::caf::actor localSpawn(const shared_ptr<PhysicalOp> &op);
   ::caf::actor remoteSpawn(const shared_ptr<PhysicalOp> &op, int nodeId);
+  virtual bool useDetached(const shared_ptr<PhysicalOp> &op);
 
   long queryId_;
   shared_ptr<::caf::actor_system> actorSystem_;
   vector<::caf::node_id> nodes_;
   shared_ptr<::caf::scoped_actor> rootActor_;
-  ::caf::actor segmentCacheActor_;
+  ::caf::actor localSegmentCacheActor_;             // used in single-node execution
+  vector<::caf::actor> remoteSegmentCacheActors_;   // used in distributed execution
   shared_ptr<PhysicalPlan> physicalPlan_;
   bool isDistributed_;
 
@@ -72,6 +81,11 @@ private:
   // for execution time
   chrono::steady_clock::time_point startTime_;
   chrono::steady_clock::time_point stopTime_;
+
+  // metrics
+#if SHOW_DEBUG_METRICS == true
+  metrics::DebugMetrics debugMetrics_;
+#endif
 
 };
 

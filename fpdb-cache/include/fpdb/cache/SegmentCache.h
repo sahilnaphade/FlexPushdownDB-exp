@@ -28,6 +28,7 @@ public:
   unsigned long remove(const std::function<bool(const SegmentKey& entry)>& predicate);
   std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> toCache(std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> segmentKeys);
   void newQuery();
+  void clear();
 
   size_t getSize() const;
   const std::shared_ptr<CachingPolicy> &getCachingPolicy() const;

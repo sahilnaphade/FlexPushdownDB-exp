@@ -23,6 +23,9 @@ class LFUCachingPolicy: public CachingPolicy {
 public:
   explicit LFUCachingPolicy(size_t maxSize,
                             std::shared_ptr<CatalogueEntry> catalogueEntry);
+  LFUCachingPolicy() = default;
+  LFUCachingPolicy(const LFUCachingPolicy&) = default;
+  LFUCachingPolicy& operator=(const LFUCachingPolicy&) = default;
 
   void onLoad(const std::shared_ptr<SegmentKey> &key) override;
   void onRemove(const std::shared_ptr<SegmentKey> &key) override;
@@ -32,6 +35,7 @@ public:
   std::shared_ptr<std::unordered_set<std::shared_ptr<SegmentKey>, SegmentKeyPointerHash, SegmentKeyPointerPredicate>> getKeysetInCachePolicy() override;
   std::string toString() override;
   void onNewQuery() override;
+  void onClear() override;
 
 private:
   std::unordered_map<int, std::list<std::shared_ptr<SegmentKey>>> freqMap_;
@@ -56,6 +60,15 @@ private:
    */
   void eraseFreqMap(int freq, std::list<std::shared_ptr<SegmentKey>>::iterator it);
   void insert(int freq, const std::shared_ptr<SegmentKey> &key);
+
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, LFUCachingPolicy& policy) {
+    return f.object(policy).fields(f.field("type", policy.type_),
+                                   f.field("maxSize", policy.maxSize_),
+                                   f.field("freeSize", policy.freeSize_));
+  }
 };
 
 }

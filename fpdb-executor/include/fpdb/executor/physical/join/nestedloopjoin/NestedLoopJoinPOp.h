@@ -7,7 +7,7 @@
 
 #include <fpdb/executor/physical/PhysicalOp.h>
 #include <fpdb/executor/physical/join/nestedloopjoin/NestedLoopJoinKernel.h>
-#include <fpdb/executor/message/TupleMessage.h>
+#include <fpdb/executor/message/TupleSetMessage.h>
 #include <fpdb/executor/message/CompleteMessage.h>
 #include <fpdb/executor/message/TupleSetIndexMessage.h>
 #include <fpdb/plan/prephysical/JoinType.h>
@@ -40,15 +40,15 @@ public:
 private:
   void onStart();
   void onComplete(const CompleteMessage &);
-  void onTuple(const TupleMessage &message);
+  void onTupleSet(const TupleSetMessage &message);
 
   NestedLoopJoinKernel makeKernel(const std::optional<shared_ptr<expression::gandiva::Expression>> &predicate,
                                   JoinType joinType);
   void send(bool force);
   void sendEmpty();
 
-  set<string> leftProducerNames_;
-  set<string> rightProducerName_;
+  set<string> leftProducers_;
+  set<string> rightProducers_;
 
   NestedLoopJoinKernel kernel_;
   bool sentResult = false;
@@ -65,8 +65,10 @@ public:
                                f.field("opContext", op.opContext_),
                                f.field("producers", op.producers_),
                                f.field("consumers", op.consumers_),
-                               f.field("leftProducerNames", op.leftProducerNames_),
-                               f.field("rightProducerName", op.rightProducerName_),
+                               f.field("consumerToBloomFilterInfo", op.consumerToBloomFilterInfo_),
+                               f.field("isSeparated", op.isSeparated_),
+                               f.field("leftProducers", op.leftProducers_),
+                               f.field("rightProducers", op.rightProducers_),
                                f.field("kernel", op.kernel_));
   }
 };

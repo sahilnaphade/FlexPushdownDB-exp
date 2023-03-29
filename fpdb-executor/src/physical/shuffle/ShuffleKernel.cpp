@@ -13,6 +13,10 @@ tl::expected<vector<shared_ptr<TupleSet>>, string>
 ShuffleKernel::shuffle(const vector<string> &columnNames,
                         size_t numSlots,
                         const TupleSet &tupleSet) {
+  // handle special case
+  if (numSlots == 1) {
+    return vector<shared_ptr<TupleSet>>{make_shared<TupleSet>(tupleSet)};
+  }
 
   ::arrow::Result<shared_ptr<::arrow::RecordBatch>> recordBatchResult;
   ::arrow::Status status;

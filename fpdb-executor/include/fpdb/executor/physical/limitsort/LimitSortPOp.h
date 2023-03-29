@@ -7,7 +7,7 @@
 
 #include <fpdb/executor/physical/PhysicalOp.h>
 #include <fpdb/executor/message/CompleteMessage.h>
-#include <fpdb/executor/message/TupleMessage.h>
+#include <fpdb/executor/message/TupleSetMessage.h>
 #include <fpdb/plan/prephysical/SortKey.h>
 #include <fpdb/tuple/serialization/ArrowSerializer.h>
 #include <arrow/compute/api.h>
@@ -38,7 +38,7 @@ public:
 private:
   void onStart();
   void onComplete(const CompleteMessage &);
-  void onTuple(const TupleMessage &message);
+  void onTupleSet(const TupleSetMessage &message);
 
   void makeArrowSelectKOptions();
   shared_ptr<TupleSet> makeInput(const shared_ptr<TupleSet> &tupleSet);
@@ -61,6 +61,8 @@ public:
                                f.field("opContext", op.opContext_),
                                f.field("producers", op.producers_),
                                f.field("consumers", op.consumers_),
+                               f.field("consumerToBloomFilterInfo", op.consumerToBloomFilterInfo_),
+                               f.field("isSeparated", op.isSeparated_),
                                f.field("k", op.k_),
                                f.field("sortKeys", op.sortKeys_));
   }

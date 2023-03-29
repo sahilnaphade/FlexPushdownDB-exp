@@ -8,13 +8,12 @@
 #include <fpdb/cache/policy/LFUSCachingPolicy.h>
 #include <fpdb/cache/policy/WLFUCachingPolicy.h>
 #include <fpdb/catalogue/CatalogueEntry.h>
-#include <fpdb/catalogue/s3/S3CatalogueEntryReader.h>
+#include <fpdb/catalogue/obj-store/ObjStoreCatalogueEntryReader.h>
 #include <fpdb/util/Util.h>
 #include <fmt/format.h>
 #include <string>
 #include <utility>
 
-using namespace fpdb::catalogue::s3;
 using namespace fpdb::util;
 
 namespace fpdb::main {
@@ -39,7 +38,7 @@ ExecConfig::ExecConfig(const shared_ptr<Mode> &mode,
   isDistributed_(isDistributed) {}
 
 shared_ptr<ExecConfig> ExecConfig::parseExecConfig(const shared_ptr<Catalogue> &catalogue,
-                                                   const shared_ptr<AWSClient> &awsClient) {
+                                                   const shared_ptr<ObjStoreConnector> &objStoreConnector) {
   // read config
   unordered_map<string, string> configMap = readConfig("exec.conf");
   string s3Bucket = configMap["S3_BUCKET"];
@@ -58,7 +57,10 @@ shared_ptr<ExecConfig> ExecConfig::parseExecConfig(const shared_ptr<Catalogue> &
   if (expCatalogueEntry.has_value()) {
     catalogueEntry = expCatalogueEntry.value();
   } else {
-    catalogueEntry = S3CatalogueEntryReader::readS3CatalogueEntry(catalogue, s3Bucket, schemaName, awsClient->getS3Client());
+    catalogueEntry = ObjStoreCatalogueEntryReader::readCatalogueEntry(catalogue,
+                                                                      s3Bucket,
+                                                                      schemaName,
+                                                                      objStoreConnector);
     catalogue->putEntry(catalogueEntry);
   }
 
@@ -79,6 +81,11 @@ shared_ptr<ExecConfig> ExecConfig::parseExecConfig(const shared_ptr<Catalogue> &
 int ExecConfig::parseCAFServerPort() {
   unordered_map<string, string> configMap = readConfig("exec.conf");
   return stoi(configMap["CAF_SERVER_PORT"]);
+}
+
+int ExecConfig::parseFlightPort() {
+  unordered_map<string, string> configMap = readConfig("exec.conf");
+  return stoi(configMap["FLIGHT_PORT"]);
 }
 
 size_t ExecConfig::parseCacheSize(const string& stringToParse) {

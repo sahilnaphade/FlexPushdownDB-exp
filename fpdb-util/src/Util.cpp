@@ -7,8 +7,7 @@
 #include <filesystem>
 #include <fstream>
 #include <sstream>
-
-using namespace fpdb::util;
+#include <thread>
 
 string fpdb::util::readFile(const string& filePath) {
   ifstream inFile(filePath);
@@ -36,6 +35,21 @@ vector<string> fpdb::util::readFileByLine(const string &filePath) {
   return lines;
 }
 
+void fpdb::util::writeFile(const string& filePath, const string& content) {
+  ofstream outFile(filePath);
+  if (!outFile.good()) {
+    throw runtime_error(fmt::format("Error when writing file: {}", filePath));
+  }
+  outFile << content;
+  outFile.flush();
+  outFile.close();
+}
+
+int64_t fpdb::util::getFileSize(const string& filePath) {
+  std::filesystem::path fsPath(filePath);
+  return std::filesystem::file_size(fsPath);
+}
+
 unordered_map<string, string> fpdb::util::readConfig(const string &fileName) {
   unordered_map<string, string> configMap;
   string configPath = filesystem::current_path()
@@ -56,22 +70,25 @@ unordered_map<string, string> fpdb::util::readConfig(const string &fileName) {
   return configMap;
 }
 
-vector<string> fpdb::util::readRemoteIps() {
+vector<string> fpdb::util::readRemoteIps(bool isCompute) {
+  // read cluster ips
+  string clusterIpFileName = isCompute ? "cluster_ips" : "fpdb-store_ips";
+  string clusterIpFilePath = filesystem::current_path()
+          .parent_path()
+          .append("resources/config")
+          .append(clusterIpFileName)
+          .string();
+  auto clusterIps = readFileByLine(clusterIpFilePath);
+
+  // need to remove local ip if it is for the compute cluster
+  if (isCompute == false) {
+    return clusterIps;
+  }
   auto expLocalIp = getLocalIp();
   if (!expLocalIp) {
     throw runtime_error(expLocalIp.error());
   }
-  const auto &localIp = *expLocalIp;
-
-  // read cluster ips
-  string clusterIpFilePath = filesystem::current_path()
-          .parent_path()
-          .append("resources/config/cluster_ips")
-          .string();
-  auto clusterIps = readFileByLine(clusterIpFilePath);
-
-  // remove local ip
-  auto localIpIt = std::find(clusterIps.begin(), clusterIps.end(), localIp);
+  auto localIpIt = std::find(clusterIps.begin(), clusterIps.end(), *expLocalIp);
   if (localIpIt != clusterIps.end()) {
     clusterIps.erase(localIpIt);
   }
@@ -95,13 +112,21 @@ size_t fpdb::util::hashCombine(const vector<size_t> &hashes) {
   return seed;
 }
 
+void fpdb::util::setBit(vector<int64_t> &bitmap, int64_t n) {
+  bitmap[n / 64] |= 1UL << (n % 64);
+}
+
+void fpdb::util::unsetBit(vector<int64_t> &bitmap, int64_t n) {
+  bitmap[n / 64] &= ~(1UL << (n % 64));
+}
+
+bool fpdb::util::getBit(const vector<int64_t> &bitmap, int64_t n) {
+  return (bitmap[n / 64] >> (n % 64)) & 1UL;
+}
+
 bool fpdb::util::isInteger(const string& str) {
-  try {
-    int parsedInt = stoi(str);
-  } catch (const logic_error& err) {
-    return false;
-  }
-  return true;
+  return !str.empty() && std::find_if(str.begin(), str.end(),
+                                      [](unsigned char c) { return !std::isdigit(c); }) == str.end();
 }
 
 tl::expected<string, string> fpdb::util::execCmd(const char *cmd) {

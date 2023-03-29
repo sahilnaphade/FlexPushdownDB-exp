@@ -22,7 +22,8 @@ enum CachingPolicyType {
   LFU,
   LFUS,
   WLFU,
-  BELADY
+  BELADY,
+  NONE
 };
 
 class CachingPolicy {
@@ -33,6 +34,9 @@ public:
                 size_t maxSize,
                 std::shared_ptr<CatalogueEntry> catalogueEntry,
                 bool readSegmentSize);
+  CachingPolicy() = default;
+  CachingPolicy(const CachingPolicy&) = default;
+  CachingPolicy& operator=(const CachingPolicy&) = default;
 
   virtual ~CachingPolicy() = default;
 
@@ -89,6 +93,11 @@ public:
    * Some updates (LFUS, WLFU) when a new query comes
    */
   virtual void onNewQuery() = 0;
+
+  /**
+   * Clear
+   */
+  virtual void onClear();
 
   size_t getFreeSize() const;
   CachingPolicyType getType() const;
