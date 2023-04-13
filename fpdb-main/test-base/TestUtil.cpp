@@ -15,9 +15,9 @@
 #include <fpdb/cache/policy/LFUSCachingPolicy.h>
 #include <fpdb/cache/policy/WLFUCachingPolicy.h>
 #include <fpdb/calcite/CalciteConfig.h>
+#include <fpdb/plan/Globals.h>
 #include <fpdb/plan/calcite/CalcitePlanJsonDeserializer.h>
 #include <fpdb/plan/prephysical/separable/SeparablePrePOpTransformer.h>
-#include <fpdb/plan/prephysical/separable/Globals.h>
 #include <fpdb/catalogue/obj-store/ObjStoreCatalogueEntryReader.h>
 #include <fpdb/catalogue/obj-store/s3/S3Connector.h>
 #include <fpdb/catalogue/obj-store/fpdb-store/FPDBStoreConnector.h>

@@ -5,7 +5,7 @@
 #ifndef FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_FLIGHT_FLIGHTHANDLER_H
 #define FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_FLIGHT_FLIGHTHANDLER_H
 
-#include <fpdb/executor/flight/TableCache.h>
+#include <fpdb/executor/cache/TableCache.h>
 #include <fpdb/store/server/flight/GetTableTicket.hpp>
 #include <arrow/api.h>
 #include <arrow/flight/api.h>
@@ -48,7 +48,7 @@ private:
 
   Location location_;
   std::string host_;
-  TableCache table_cache_;
+  cache::TableCache table_cache_;
 
 };
 

@@ -61,7 +61,7 @@ tl::expected<void, std::string> FlightHandler::wait() {
 
 void FlightHandler::putTable(long queryId, const std::string &producer, const std::string &consumer,
                              const std::shared_ptr<arrow::Table> &table) {
-  table_cache_.produceTable(TableCache::generateTableKey(queryId, producer, consumer), table);
+  table_cache_.produceTable(cache::TableCache::generateTableKey(queryId, producer, consumer), table);
 }
 
 ::arrow::Status FlightHandler::DoGet(const ServerCallContext& context, const Ticket& request,
@@ -101,7 +101,7 @@ tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::
   auto query_id = get_table_ticket->query_id();
   auto producer = get_table_ticket->producer();
   auto consumer = get_table_ticket->consumer();
-  auto table_key = TableCache::generateTableKey(query_id, producer, consumer);
+  auto table_key = cache::TableCache::generateTableKey(query_id, producer, consumer);
   auto exp_table = table_cache_.consumeTable(table_key);
   if (!exp_table.has_value()) {
     return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed, exp_table.error()));

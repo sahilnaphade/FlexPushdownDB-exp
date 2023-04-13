@@ -29,7 +29,7 @@
 #include "fpdb/store/server/flight/AdaptPushdownManager.hpp"
 #include "fpdb/store/server/flight/Util.hpp"
 #include "fpdb/store/server/caf/ActorManager.hpp"
-#include "fpdb/executor/flight/TableCache.h"
+#include "fpdb/executor/cache/TableCache.h"
 #include "fpdb/executor/physical/PhysicalPlan.h"
 
 using namespace ::arrow::flight;
@@ -398,7 +398,7 @@ private:
   BloomFilterCache bloom_filter_cache_;
 
   // table cache (e.x. for shuffle result)
-  executor::flight::TableCache table_cache_;
+  executor::cache::TableCache table_cache_;
 
   // mutex and cv for bitmap caches
   std::unordered_map<BitmapType, std::shared_ptr<std::mutex>> bitmap_mutex_map_;

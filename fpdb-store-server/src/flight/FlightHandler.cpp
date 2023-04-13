@@ -441,7 +441,8 @@ FlightHandler::run_select_object_content(long query_id,
           use_adapt_pushdown_actor_system_vec_ ? adapt_pushdown_actor_system_vec_.back() : actor_system_,
           physical_plan,
           [&] (const std::string &consumer, const std::shared_ptr<arrow::Table> &table) {
-            auto table_key = executor::flight::TableCache::generateTableKey(query_id, fpdb_store_super_pop, consumer);
+            auto table_key = executor::cache::TableCache::generateTableKey(
+                    query_id, fpdb_store_super_pop, consumer);
             put_table_into_cache(table_key, table);
           },
           [&] (const std::string &sender, const std::vector<int64_t> &bitmap) {
@@ -495,7 +496,7 @@ tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::
   auto producer = get_table_ticket->producer();
   auto consumer = get_table_ticket->consumer();
   auto wait_not_exist = get_table_ticket->wait_not_exist();
-  auto table_key = executor::flight::TableCache::generateTableKey(query_id, producer, consumer);
+  auto table_key = executor::cache::TableCache::generateTableKey(query_id, producer, consumer);
   auto exp_table = get_table_from_cache(table_key, wait_not_exist);
   if (!exp_table.has_value()) {
     return tl::make_unexpected(exp_table.error());
@@ -523,7 +524,7 @@ tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::
 
   // load tables and record lengths
   for (size_t i = 0; i < num_consumers; ++i) {
-    auto table_key = executor::flight::TableCache::generateTableKey(query_id, producer, consumers[i]);
+    auto table_key = executor::cache::TableCache::generateTableKey(query_id, producer, consumers[i]);
     auto exp_table = get_table_from_cache(table_key, false);
     if (!exp_table.has_value()) {
       return tl::make_unexpected(exp_table.error());
@@ -537,7 +538,7 @@ tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::
   if (!exp_concatenated_table.ok()) {
     return tl::make_unexpected(exp_concatenated_table.status());
   }
-  auto table_key = executor::flight::TableCache::generateTableKey(
+  auto table_key = executor::cache::TableCache::generateTableKey(
           query_id, get_batch_load_info_ticket->batch_load_pop(), "");
   table_cache_.produceTable(table_key, *exp_concatenated_table);
 

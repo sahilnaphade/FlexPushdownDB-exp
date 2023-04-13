@@ -2,10 +2,10 @@
 // Created by Yifei Yang on 9/28/22.
 //
 
-#include <fpdb/executor/flight/TableCache.h>
+#include <fpdb/executor/cache/TableCache.h>
 #include <fmt/format.h>
 
-namespace fpdb::executor::flight {
+namespace fpdb::executor::cache {
 
 std::string TableCache::generateTableKey(long queryId, const std::string &producer, const std::string &consumer) {
   return fmt::format("{}-{}-{}", std::to_string(queryId), producer, consumer);

@@ -29,8 +29,10 @@ add_library(fpdb-executor STATIC
         src/message/cache/LoadResponseMessage.cpp include/fpdb/executor/message/cache/LoadResponseMessage.h
         src/message/cache/StoreRequestMessage.cpp include/fpdb/executor/message/cache/StoreRequestMessage.h
         src/message/cache/WeightRequestMessage.cpp include/fpdb/executor/message/cache/WeightRequestMessage.h
-#        base physical operators, operator actors, segment cache actors and required sources
+#        cache related
         src/cache/SegmentCacheActor.cpp include/fpdb/executor/cache/SegmentCacheActor.h
+        src/cache/TableCache.cpp include/fpdb/executor/cache/TableCache.h
+#        base physical operators, operator actors, and required sources
         include/fpdb/executor/physical/Forward.h
         include/fpdb/executor/physical/POpRelationshipType.h
         src/physical/POpConnection.cpp include/fpdb/executor/physical/POpConnection.h
@@ -46,7 +48,6 @@ add_library(fpdb-executor STATIC
 #        table communication across the compute cluster using flight
         src/flight/FlightHandler.cpp include/fpdb/executor/flight/FlightHandler.h
         src/flight/FlightClients.cpp include/fpdb/executor/flight/FlightClients.h
-        src/flight/TableCache.cpp include/fpdb/executor/flight/TableCache.h
 #        physical operators
         include/fpdb/executor/physical/Globals.h
         src/physical/sort/SortPOp.cpp include/fpdb/executor/physical/sort/SortPOp.h

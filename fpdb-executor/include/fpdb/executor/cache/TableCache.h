@@ -2,8 +2,8 @@
 // Created by Yifei Yang on 9/28/22.
 //
 
-#ifndef FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_FLIGHT_TABLECACHE_H
-#define FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_FLIGHT_TABLECACHE_H
+#ifndef FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_CACHE_TABLECACHE_H
+#define FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_CACHE_TABLECACHE_H
 
 #include <arrow/api.h>
 #include <tl/expected.hpp>
@@ -12,7 +12,7 @@
 #include <shared_mutex>
 #include <queue>
 
-namespace fpdb::executor::flight {
+namespace fpdb::executor::cache {
 
 /**
  * A cache used for tables that will be transferred across the compute cluster using flight.
@@ -36,4 +36,4 @@ private:
 }
 
 
-#endif //FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_FLIGHT_TABLECACHE_H
+#endif //FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_CACHE_TABLECACHE_H
