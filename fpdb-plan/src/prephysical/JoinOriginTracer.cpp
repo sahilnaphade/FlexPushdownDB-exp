@@ -3,21 +3,19 @@
 //
 
 #include <fpdb/plan/prephysical/JoinOriginTracer.h>
+#include <unordered_map>
 
 namespace fpdb::plan::prephysical {
 
-std::vector<std::shared_ptr<JoinOrigin>> JoinOriginTracer::trace(const std::shared_ptr<PrePhysicalPlan> &plan) {
+std::unordered_set<std::shared_ptr<JoinOrigin>, JoinOriginPtrHash, JoinOriginPtrPred>
+JoinOriginTracer::trace(const std::shared_ptr<PrePhysicalPlan> &plan) {
   JoinOriginTracer tracer(plan);
   tracer.trace();
-  return tracer.getJoinOrigins();
+  return tracer.mergeSingleJoinOrigins();
 }
 
 JoinOriginTracer::JoinOriginTracer(const std::shared_ptr<PrePhysicalPlan> &plan):
   plan_(plan) {}
-
-const std::vector<std::shared_ptr<JoinOrigin>> &JoinOriginTracer::getJoinOrigins() const {
-  return joinOrigins_;
-}
 
 void JoinOriginTracer::trace() {
   std::vector<std::shared_ptr<ColumnOrigin>> emptyColumnOrigins{};
@@ -156,11 +154,15 @@ void JoinOriginTracer::traceHashJoin(const std::shared_ptr<HashJoinPrePOp> &op,
   for (int i = 0; i < op->getNumJoinColumnPairs(); ++i) {
     const auto &leftColumnOriginOp = leftColumnOrigins[i]->originOp_;
     const auto &rightColumnOriginOp = rightColumnOrigins[i]->originOp_;
+    const auto &leftColumn = leftColumnOrigins[i]->currName_;
+    const auto &rightColumn = rightColumnOrigins[i]->currName_;
     if (leftColumnOriginOp != nullptr && rightColumnOriginOp != nullptr) {
       if (leftColumnOriginOp->getRowCount() <= rightColumnOriginOp->getRowCount()) {
-        joinOrigins_.emplace_back(std::make_shared<JoinOrigin>(leftColumnOriginOp, rightColumnOriginOp));
+        singleJoinOrigins_.emplace_back(std::make_shared<SingleJoinOrigin>(
+                leftColumnOriginOp, rightColumnOriginOp, leftColumn, rightColumn));
       } else {
-        joinOrigins_.emplace_back(std::make_shared<JoinOrigin>(rightColumnOriginOp, leftColumnOriginOp));
+        singleJoinOrigins_.emplace_back(std::make_shared<SingleJoinOrigin>(
+                rightColumnOriginOp, leftColumnOriginOp, rightColumn, leftColumn));
       }
     }
   }
@@ -171,6 +173,22 @@ void JoinOriginTracer::traceNestedLoopJoin(const std::shared_ptr<NestedLoopJoinP
   // we cannot distinguish which of input column origins are in left, which are in right, so need to add to both
   traceDFS(op->getProducers()[0], columnOrigins);
   traceDFS(op->getProducers()[1], columnOrigins);
+}
+
+std::unordered_set<std::shared_ptr<JoinOrigin>, JoinOriginPtrHash, JoinOriginPtrPred>
+JoinOriginTracer::mergeSingleJoinOrigins() {
+  std::unordered_set<std::shared_ptr<JoinOrigin>, JoinOriginPtrHash, JoinOriginPtrPred> joinOrigins;
+  for (const auto &singleJoinOrigin: singleJoinOrigins_) {
+    auto newJoinOrigin = std::make_shared<JoinOrigin>(singleJoinOrigin->left_, singleJoinOrigin->right_);
+    auto joinOriginIt = joinOrigins.find(newJoinOrigin);
+    if (joinOriginIt != joinOrigins.end()) {
+      (*joinOriginIt)->addJoinColumnPair(singleJoinOrigin->leftColumn_, singleJoinOrigin->rightColumn_);
+    } else {
+      newJoinOrigin->addJoinColumnPair(singleJoinOrigin->leftColumn_, singleJoinOrigin->rightColumn_);
+      joinOrigins.emplace(newJoinOrigin);
+    }
+  }
+  return joinOrigins;
 }
 
 }
