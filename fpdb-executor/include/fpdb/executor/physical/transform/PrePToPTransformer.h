@@ -39,7 +39,7 @@ public:
                                             int parallelDegree,
                                             int numNodes);
 
-private:
+protected:
   PrePToPTransformer(const shared_ptr<PrePhysicalPlan> &prePhysicalPlan,
                      const shared_ptr<CatalogueEntry> &catalogueEntry,
                      const shared_ptr<ObjStoreConnector> &objStoreConnector,
@@ -106,6 +106,8 @@ private:
                         vector<shared_ptr<PhysicalOp>> &allPOps,
                         bool* isHashJoinArrowLeftConn = nullptr);
 
+  void clear();
+
   shared_ptr<PrePhysicalPlan> prePhysicalPlan_;
   shared_ptr<CatalogueEntry> catalogueEntry_;
   shared_ptr<ObjStoreConnector> objStoreConnector_;
@@ -113,6 +115,7 @@ private:
   int parallelDegree_;
   int numNodes_;
 
+  // state maintained during transformation
   unordered_map<string, shared_ptr<PhysicalOp>> physicalOps_;
 };
 

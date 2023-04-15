@@ -51,7 +51,8 @@ add_executable(fpdb-main-test
         test/TPCHFPDBStoreSameNodeTest.cpp
         test/CachingOnlyTest.cpp
         test/HybridTest.cpp
-        test/BitmapPushdownTest.cpp)
+        test/BitmapPushdownTest.cpp
+        test/PredTransTest.cpp)
 
 target_include_directories(fpdb-main-test PRIVATE test-base)
 

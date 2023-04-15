@@ -44,4 +44,8 @@ bool HashJoinPrePOp::isPushable() const {
   return pushable_;
 }
 
+int HashJoinPrePOp::getNumJoinColumnPairs() const {
+  return leftColumnNames_.size();
+}
+
 }

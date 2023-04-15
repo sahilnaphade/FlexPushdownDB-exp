@@ -26,6 +26,7 @@ public:
   const vector<string> &getLeftColumnNames() const;
   const vector<string> &getRightColumnNames() const;
   bool isPushable() const;
+  int getNumJoinColumnPairs() const;
 
 private:
   JoinType joinType_;

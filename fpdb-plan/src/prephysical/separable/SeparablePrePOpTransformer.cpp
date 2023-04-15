@@ -2,6 +2,7 @@
 // Created by Yifei Yang on 2/26/22.
 //
 
+#include <fpdb/plan/Globals.h>
 #include <fpdb/plan/prephysical/separable/SeparablePrePOpTransformer.h>
 #include <fpdb/plan/prephysical/HashJoinPrePOp.h>
 #include <fpdb/catalogue/obj-store/ObjStoreCatalogueEntry.h>
@@ -13,6 +14,11 @@ SeparablePrePOpTransformer::SeparablePrePOpTransformer(const std::shared_ptr<Cat
 }
 
 void SeparablePrePOpTransformer::transform(const std::shared_ptr<PrePhysicalPlan> &prePhysicalPlan) {
+  // FIXME: predicate transfer currently does not support pushdown
+  if (ENABLE_PRED_TRANS) {
+    return;
+  }
+
   // transform in DFS
   auto optSeparableSuperPrePOp = transformDfs(prePhysicalPlan->getRootOp());
 

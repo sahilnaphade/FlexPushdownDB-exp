@@ -7,6 +7,7 @@
 #include <fpdb/executor/caf/CAFInit.h>
 #include <fpdb/executor/caf/CAFAdaptPushdownUtil.h>
 #include <fpdb/executor/physical/transform/PrePToPTransformer.h>
+#include <fpdb/executor/physical/transform/PrePToPTransformerForPredTrans.h>
 #include <fpdb/executor/physical/Globals.h>
 #include <fpdb/executor/Globals.h>
 #include <fpdb/cache/Globals.h>
@@ -346,7 +347,14 @@ void TestUtil::executeQueryFile(const string &queryFileName) {
 
   // transform prephysical plan to physical plan
   int numNodes = isDistributed_ ? (int) nodes_.size() : 1;
-  auto physicalPlan = PrePToPTransformer::transform(prePhysicalPlan,
+  auto physicalPlan = ENABLE_PRED_TRANS ?
+                      PrePToPTransformerForPredTrans::transform(prePhysicalPlan,
+                                                                catalogueEntry_,
+                                                                objStoreConnector_,
+                                                                mode_,
+                                                                parallelDegree_,
+                                                                numNodes).first :
+                      PrePToPTransformer::transform(prePhysicalPlan,
                                                     catalogueEntry_,
                                                     objStoreConnector_,
                                                     mode_,

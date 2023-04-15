@@ -1203,4 +1203,8 @@ void PrePToPTransformer::batchLoadShuffle(const vector<shared_ptr<PhysicalOp>> &
   }
 }
 
+void PrePToPTransformer::clear() {
+  physicalOps_.clear();
+}
+
 }

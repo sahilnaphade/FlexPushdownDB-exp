@@ -6,6 +6,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.Sort;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.*;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -75,6 +76,9 @@ public final class RelJsonSerializer {
     jo.put("schema", scan.getTable().getQualifiedName().get(0));
     // table
     jo.put("table", scan.getTable().getQualifiedName().get(1));
+    // estimated row count, needed by predicate transfer
+    RelMetadataQuery mq = scan.getCluster().getMetadataQuery();
+    jo.put("rowCount", mq.getRowCount(scan));
     // input operators
     jo.put("inputs", serializeRelInputs(scan));
     return jo;
@@ -88,6 +92,9 @@ public final class RelJsonSerializer {
     jo.put("condition", RexJsonSerializer.serialize(filter.getCondition(),
                                                     filter.getRowType().getFieldNames(),
                                                     filter.getCluster().getRexBuilder()));
+    // estimated row count, needed by predicate transfer
+    RelMetadataQuery mq = filter.getCluster().getMetadataQuery();
+    jo.put("rowCount", mq.getRowCount(filter));
     // input operators
     jo.put("inputs", serializeRelInputs(filter));
     return jo;

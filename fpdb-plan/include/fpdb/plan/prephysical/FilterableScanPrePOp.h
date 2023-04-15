@@ -15,7 +15,7 @@ namespace fpdb::plan::prephysical {
 
 class FilterableScanPrePOp: public PrePhysicalOp {
 public:
-  FilterableScanPrePOp(uint id, const shared_ptr<Table> &table);
+  FilterableScanPrePOp(uint id, const shared_ptr<Table> &table, double rowCount);
 
   string getTypeString() override;
   set<string> getUsedColumnNames() override;
@@ -23,12 +23,14 @@ public:
 
   const shared_ptr<fpdb::expression::gandiva::Expression> &getPredicate() const;
   const shared_ptr<Table> &getTable() const;
-
+  double getRowCount() const;
   void setPredicate(const shared_ptr<fpdb::expression::gandiva::Expression> &predicate);
+  void setRowCount(double rowCount);
 
 private:
   shared_ptr<fpdb::expression::gandiva::Expression> predicate_;
   shared_ptr<Table> table_;
+  double rowCount_;   // used when predicate transfer is enabled
 };
 
 }

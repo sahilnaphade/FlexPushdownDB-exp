@@ -822,6 +822,9 @@ shared_ptr<prephysical::PrePhysicalOp> CalcitePlanJsonDeserializer::deserializeF
     // if the producer is filterable scan, then set its filter predicate
     const auto &filterableScan = static_pointer_cast<FilterableScanPrePOp>(producers[0]);
     filterableScan->setPredicate(predicate);
+    // row count, used by predicate transfer
+    double rowCount = jObj["rowCount"].get<double>();
+    filterableScan->setRowCount(rowCount);
     return filterableScan;
   }
 
@@ -850,7 +853,11 @@ shared_ptr<prephysical::FilterableScanPrePOp> CalcitePlanJsonDeserializer::deser
                                     catalogueEntry_->getType(), catalogueEntry_->getName()));
   }
 
-  auto filterableScanPrePOp = make_shared<prephysical::FilterableScanPrePOp>(pOpIdGenerator_.fetch_add(1), table);
+  // row count, used by predicate transfer
+  double rowCount = jObj["rowCount"].get<double>();
+
+  auto filterableScanPrePOp = make_shared<prephysical::FilterableScanPrePOp>(
+          pOpIdGenerator_.fetch_add(1), table, rowCount);
   filterableScanPrePOp->setProjectColumnNames(columnNameSet);
   return filterableScanPrePOp;
 }

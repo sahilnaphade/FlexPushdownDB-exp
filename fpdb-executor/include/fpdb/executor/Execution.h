@@ -11,6 +11,7 @@
 #include <fpdb/executor/physical/collate/CollatePOp.h>
 #include <fpdb/executor/physical/collate/CollatePOp2.h>
 #include <fpdb/executor/physical/s3/S3SelectScanAbstractPOp.h>
+#include <fpdb/executor/cache/TableCache.h>
 #include <fpdb/executor/metrics/DebugMetrics.h>
 #include <fpdb/tuple/TupleSet.h>
 #include <caf/all.hpp>
@@ -77,6 +78,10 @@ protected:
   POpDirectory opDirectory_;
   [[maybe_unused]] physical::collate::CollateActor collateActorHandle_;
   shared_ptr<physical::collate::CollatePOp> legacyCollateOperator_;
+
+  // for predicate transfer
+  shared_ptr<PhysicalPlan> predTransPlan_;
+  shared_ptr<cache::TableCache> predTransTableCache_;
 
   // for execution time
   chrono::steady_clock::time_point startTime_;
