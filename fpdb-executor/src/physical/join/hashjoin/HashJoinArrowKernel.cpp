@@ -179,13 +179,16 @@ tl::expected<void, std::string> HashJoinArrowKernel::makeOutputSchema() {
       arrowJoinType = arrow::compute::JoinType::FULL_OUTER;
       break;
     }
-    // calcite only emits left-semi join, corresponding to arrow's right-semi
-    case JoinType::SEMI: {
+    case JoinType::LEFT_SEMI: {
       arrowJoinType = arrow::compute::JoinType::RIGHT_SEMI;
       break;
     }
+    case JoinType::RIGHT_SEMI: {
+      arrowJoinType = arrow::compute::JoinType::LEFT_SEMI;
+      break;
+    }
     default: {
-      return tl::make_unexpected("Unknown join type");
+      return tl::make_unexpected(fmt::format("Unknown join type: {}", joinType_));
     }
   }
   hashJoinNodeOptions_ = arrow::compute::HashJoinNodeOptions{
@@ -208,7 +211,7 @@ tl::expected<void, std::string> HashJoinArrowKernel::makeArrowExecPlan() {
   if (!outputSchema_.has_value()) {
     return {};
   }
-  if (joinType_ == JoinType::INNER || joinType_ == JoinType::SEMI) {
+  if (joinType_ == JoinType::INNER || joinType_ == JoinType::LEFT_SEMI || joinType_ == JoinType::RIGHT_SEMI) {
     // for inner or semi join, do not make arrow exec plan until both sides have input
     if (!buildInputBuffer_.has_value() || !probeInputBuffer_.has_value()) {
       return {};

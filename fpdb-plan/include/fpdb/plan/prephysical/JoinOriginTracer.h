@@ -23,8 +23,10 @@ namespace fpdb::plan::prephysical {
   
 struct JoinOrigin {
   JoinOrigin(const std::shared_ptr<FilterableScanPrePOp> &left,
-             const std::shared_ptr<FilterableScanPrePOp> &right):
-    left_(left), right_(right) {}
+             const std::shared_ptr<FilterableScanPrePOp> &right,
+             JoinType joinType):
+    left_(left), right_(right),
+    joinType_(joinType) {}
     
   void addJoinColumnPair(const std::string &leftColumn, const std::string &rightColumn) {
     leftColumns_.emplace_back(leftColumn);
@@ -32,15 +34,17 @@ struct JoinOrigin {
   }
   
   size_t hash() const {
-    return fpdb::util::hashCombine({left_->getId(), right_->getId()});
+    return fpdb::util::hashCombine({left_->getId(), right_->getId(), joinType_});
   }
 
   bool equalTo(const std::shared_ptr<JoinOrigin> &other) const {
-    return left_->getId() == other->left_->getId() && right_->getId() == other->right_->getId();
+    return left_->getId() == other->left_->getId() && right_->getId() == other->right_->getId()
+        && joinType_ == other->joinType_;
   }
   
   std::shared_ptr<FilterableScanPrePOp> left_, right_;
   std::vector<std::string> leftColumns_, rightColumns_;
+  JoinType joinType_;
 };
 
 struct JoinOriginPtrHash {
@@ -66,12 +70,15 @@ private:
     SingleJoinOrigin(const std::shared_ptr<FilterableScanPrePOp> &left,
                      const std::shared_ptr<FilterableScanPrePOp> &right,
                      const std::string &leftColumn,
-                     const std::string &rightColumn):
+                     const std::string &rightColumn,
+                     JoinType joinType):
       left_(left), right_(right),
-      leftColumn_(leftColumn), rightColumn_(rightColumn) {}
+      leftColumn_(leftColumn), rightColumn_(rightColumn),
+      joinType_(joinType) {}
 
     std::shared_ptr<FilterableScanPrePOp> left_, right_;
     std::string leftColumn_, rightColumn_;
+    JoinType joinType_;
   };
   
   struct ColumnOrigin {

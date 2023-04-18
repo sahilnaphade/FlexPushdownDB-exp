@@ -15,8 +15,21 @@ enum JoinType {
   LEFT,
   RIGHT,
   FULL,
-  SEMI
+  LEFT_SEMI,
+  RIGHT_SEMI
 };
+
+inline tl::expected<JoinType, std::string> reverseJoinType(JoinType joinType) {
+  switch (joinType) {
+    case INNER:
+    case FULL: return joinType;
+    case LEFT: return RIGHT;
+    case RIGHT: return LEFT;
+    case LEFT_SEMI: return RIGHT_SEMI;
+    case RIGHT_SEMI: return LEFT_SEMI;
+    default: return tl::make_unexpected(fmt::format("Unsupported join type to reverse: {}", joinType));
+  }
+}
 
 inline tl::expected<std::string, std::string> joinTypeToStr(JoinType joinType) {
   switch (joinType) {
@@ -24,7 +37,8 @@ inline tl::expected<std::string, std::string> joinTypeToStr(JoinType joinType) {
     case LEFT: return "Left";
     case RIGHT: return "Right";
     case FULL: return "Full";
-    case SEMI: return "Semi";
+    case LEFT_SEMI: return "LeftSemi";
+    case RIGHT_SEMI: return "RightSemi";
     default: return tl::make_unexpected(fmt::format("Unknown join type: {}", joinType));
   }
 }
@@ -38,8 +52,10 @@ inline tl::expected<JoinType, std::string> strToJoinType(const std::string &join
     return JoinType::RIGHT;
   } else if (joinTypeStr == "Full") {
     return JoinType::FULL;
-  } else if (joinTypeStr == "Semi") {
-    return JoinType::SEMI;
+  } else if (joinTypeStr == "LeftSemi") {
+    return JoinType::LEFT_SEMI;
+  } else if (joinTypeStr == "RightSemi") {
+    return JoinType::RIGHT_SEMI;
   } else {
     return tl::make_unexpected(fmt::format("Unknown join type string: {}", joinTypeStr));
   }

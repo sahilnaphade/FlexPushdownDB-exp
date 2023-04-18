@@ -151,6 +151,7 @@ void JoinOriginTracer::traceHashJoin(const std::shared_ptr<HashJoinPrePOp> &op,
   traceDFS(op->getProducers()[1], rightColumnOrigins);
 
   // construct join origins when trace is finished
+  auto joinType = op->getJoinType();
   for (int i = 0; i < op->getNumJoinColumnPairs(); ++i) {
     const auto &leftColumnOriginOp = leftColumnOrigins[i]->originOp_;
     const auto &rightColumnOriginOp = rightColumnOrigins[i]->originOp_;
@@ -159,10 +160,14 @@ void JoinOriginTracer::traceHashJoin(const std::shared_ptr<HashJoinPrePOp> &op,
     if (leftColumnOriginOp != nullptr && rightColumnOriginOp != nullptr) {
       if (leftColumnOriginOp->getRowCount() <= rightColumnOriginOp->getRowCount()) {
         singleJoinOrigins_.emplace_back(std::make_shared<SingleJoinOrigin>(
-                leftColumnOriginOp, rightColumnOriginOp, leftColumn, rightColumn));
+                leftColumnOriginOp, rightColumnOriginOp, leftColumn, rightColumn, joinType));
       } else {
+        auto expReversedJoinType = reverseJoinType(joinType);
+        if (!expReversedJoinType.has_value()) {
+          throw std::runtime_error(expReversedJoinType.error());
+        }
         singleJoinOrigins_.emplace_back(std::make_shared<SingleJoinOrigin>(
-                rightColumnOriginOp, leftColumnOriginOp, rightColumn, leftColumn));
+                rightColumnOriginOp, leftColumnOriginOp, rightColumn, leftColumn, *expReversedJoinType));
       }
     }
   }
@@ -179,7 +184,8 @@ std::unordered_set<std::shared_ptr<JoinOrigin>, JoinOriginPtrHash, JoinOriginPtr
 JoinOriginTracer::mergeSingleJoinOrigins() {
   std::unordered_set<std::shared_ptr<JoinOrigin>, JoinOriginPtrHash, JoinOriginPtrPred> joinOrigins;
   for (const auto &singleJoinOrigin: singleJoinOrigins_) {
-    auto newJoinOrigin = std::make_shared<JoinOrigin>(singleJoinOrigin->left_, singleJoinOrigin->right_);
+    auto newJoinOrigin = std::make_shared<JoinOrigin>(
+            singleJoinOrigin->left_, singleJoinOrigin->right_, singleJoinOrigin->joinType_);
     auto joinOriginIt = joinOrigins.find(newJoinOrigin);
     if (joinOriginIt != joinOrigins.end()) {
       (*joinOriginIt)->addJoinColumnPair(singleJoinOrigin->leftColumn_, singleJoinOrigin->rightColumn_);

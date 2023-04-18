@@ -748,7 +748,7 @@ shared_ptr<prephysical::HashJoinPrePOp> CalcitePlanJsonDeserializer::deserialize
   } else if (joinTypeStr == "FULL") {
     joinType = FULL;
   } else if (joinTypeStr == "SEMI") {
-    joinType = SEMI;
+    joinType = LEFT_SEMI;
   } else {
     throw runtime_error(fmt::format("Unsupported hash join type, {}, from: {}", joinTypeStr, to_string(jObj)));
   }
