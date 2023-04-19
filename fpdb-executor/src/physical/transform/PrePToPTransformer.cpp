@@ -714,7 +714,8 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
 
   // check if using bloom filter, note bloom filter cannot be used for right joins
   bool useBloomFilter = USE_BLOOM_FILTER &&
-                        (joinType == JoinType::INNER || joinType == JoinType::LEFT || joinType == JoinType::SEMI);
+                        (joinType == JoinType::INNER || joinType == JoinType::LEFT
+                        || joinType == JoinType::LEFT_SEMI || joinType == JoinType::RIGHT_SEMI);
 
   // if using bloom filter
   if (useBloomFilter) {

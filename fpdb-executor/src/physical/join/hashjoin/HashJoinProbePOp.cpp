@@ -37,7 +37,7 @@ HashJoinProbePOp::HashJoinProbePOp(string name,
       kernel_ = HashJoinProbeKernel::make(pred, move(neededColumnNames), true, true);
       break;
     }
-    case SEMI: {
+    case LEFT_SEMI: {
       kernel_ = HashSemiJoinProbeKernel::make(pred, move(neededColumnNames));
       break;
     }

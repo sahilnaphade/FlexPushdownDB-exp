@@ -1195,7 +1195,8 @@ PrePToFPDBStorePTransformer::transformHashJoinNoPushdown(const shared_ptr<HashJo
   // bloom filter if enabled
   vector<shared_ptr<PhysicalOp>> bloomFilterCreatePOps, bloomFilterUsePOps;
   bool useBloomFilter = USE_BLOOM_FILTER &&
-          (joinType == JoinType::INNER || joinType == JoinType::LEFT || joinType == JoinType::SEMI);
+          (joinType == JoinType::INNER || joinType == JoinType::LEFT
+          || joinType == JoinType::LEFT_SEMI || joinType == JoinType::RIGHT_SEMI);
   if (useBloomFilter) {
     for (int i = 0; i < computeParallelDegree_ * numComputeNodes_; ++i) {
       auto bloomFilterCreatePOp = make_shared<bloomfilter::BloomFilterCreatePOp>(
@@ -1336,7 +1337,8 @@ PrePToFPDBStorePTransformer::transformHashJoinPushdown(const shared_ptr<HashJoin
   vector<vector<shared_ptr<PhysicalOp>>> bloomFilterCreatePOps{numFPDBStoreNodes_},
           bloomFilterUsePOps{numFPDBStoreNodes_};
   bool useBloomFilter = USE_BLOOM_FILTER &&
-          (joinType == JoinType::INNER || joinType == JoinType::LEFT || joinType == JoinType::SEMI);
+          (joinType == JoinType::INNER || joinType == JoinType::LEFT
+          || joinType == JoinType::LEFT_SEMI || joinType == JoinType::RIGHT_SEMI);
   if (useBloomFilter) {
     for (int i = 0; i < fpdbStoreParallelDegree_ * (int) numFPDBStoreNodes_; ++i) {
       int fpdbStoreNodeId = i / fpdbStoreParallelDegree_;
