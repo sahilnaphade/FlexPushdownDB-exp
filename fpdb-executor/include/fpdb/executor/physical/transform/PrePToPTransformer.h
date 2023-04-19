@@ -82,7 +82,7 @@ protected:
 
   vector<shared_ptr<PhysicalOp>> transformNestedLoopJoin(const shared_ptr<NestedLoopJoinPrePOp> &nestedLoopJoinPrePOp);
 
-  vector<shared_ptr<PhysicalOp>> transformFilterableScan(const shared_ptr<FilterableScanPrePOp> &filterableScanPrePOp);
+  virtual vector<shared_ptr<PhysicalOp>> transformFilterableScan(const shared_ptr<FilterableScanPrePOp> &filterableScanPrePOp);
 
   vector<shared_ptr<PhysicalOp>> transformSeparableSuper(const shared_ptr<SeparableSuperPrePOp> &separableSuperPrePOp);
 

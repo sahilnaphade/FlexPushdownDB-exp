@@ -34,16 +34,16 @@ void testPredTrans(const std::string &schemaName, const std::string &queryFileNa
 
 TEST_SUITE ("pred-trans" * doctest::skip(SKIP_SUITE)) {
 
-TEST_CASE ("pred-trans-tpch-q03" * doctest::skip(false || SKIP_SUITE)) {
-  testPredTrans("tpch-sf0.01/parquet/", "tpch/original/03.sql");
+TEST_CASE ("pred-trans-tpch-03" * doctest::skip(false || SKIP_SUITE)) {
+  testPredTrans("tpch-sf0.01-single-part/parquet/", "tpch/original/03.sql");
 }
 
-TEST_CASE ("pred-trans-tpch-q05" * doctest::skip(false || SKIP_SUITE)) {
-  testPredTrans("tpch-sf0.01/parquet/", "tpch/original/05.sql");
+TEST_CASE ("pred-trans-tpch-05" * doctest::skip(false || SKIP_SUITE)) {
+  testPredTrans("tpch-sf0.01-single-part/parquet/", "tpch/original/05.sql");
 }
 
-TEST_CASE ("pred-trans-tpch-q19" * doctest::skip(false || SKIP_SUITE)) {
-  testPredTrans("tpch-sf0.01/parquet/", "tpch/original/19.sql");
+TEST_CASE ("pred-trans-tpch-19" * doctest::skip(false || SKIP_SUITE)) {
+  testPredTrans("tpch-sf0.01-single-part/parquet/", "tpch/original/19.sql");
 }
 
 }
