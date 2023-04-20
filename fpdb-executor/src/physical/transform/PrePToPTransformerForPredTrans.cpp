@@ -153,6 +153,7 @@ void PrePToPTransformerForPredTrans::makeBloomFilterOps(
     if (ptUnitIt == ptUnits_.end()) {
       ++leftPTUnit->numBwBFUseToVisit_;
       ptUnits_.emplace(leftPTUnit);
+      origUpConnOpToPTUnit_[upLeftConnPOp->name()] = leftPTUnit;
     } else {
       leftPTUnit = *ptUnitIt;
       ++leftPTUnit->numBwBFUseToVisit_;
@@ -162,6 +163,7 @@ void PrePToPTransformerForPredTrans::makeBloomFilterOps(
     if (ptUnitIt == ptUnits_.end()) {
       ++rightPTUnit->numFwBFUseToVisit_;
       ptUnits_.emplace(rightPTUnit);
+      origUpConnOpToPTUnit_[upRightConnPOp->name()] = rightPTUnit;
     } else {
       rightPTUnit = *ptUnitIt;
       ++rightPTUnit->numFwBFUseToVisit_;
@@ -257,12 +259,26 @@ void PrePToPTransformerForPredTrans::connectBwBloomFilterOps() {
 }
 
 std::vector<std::shared_ptr<PhysicalOp>> PrePToPTransformerForPredTrans::transformExec() {
-  // TODO: currently just return the final ops of Phase 1
-  std::vector<std::shared_ptr<PhysicalOp>> connOps;
-  for (const auto &ptUnit: ptUnits_) {
-    connOps.emplace_back(ptUnit->currUpConnOp_);
+  // Update transformation results of FilterableScanPrePOp
+  updateFilterableScanTransRes();
+
+  // transform from root in dfs
+  return transformDfs(prePhysicalPlan_->getRootOp());
+}
+
+void PrePToPTransformerForPredTrans::updateFilterableScanTransRes() {
+  for (auto &transResIt: filterableScanTransRes_) {
+    std::vector<std::shared_ptr<PhysicalOp>> updatedTransRes;
+    for (const auto &origConnOp: transResIt.second) {
+      const auto &origUpConnOpToPTUnitIt = origUpConnOpToPTUnit_.find(origConnOp->name());
+      if (origUpConnOpToPTUnitIt == origUpConnOpToPTUnit_.end()) {
+        throw std::runtime_error(
+                fmt::format("OrigUpConnOp '{}' not found in origUpConnOpToPTUnit_", origConnOp->name()));
+      }
+      updatedTransRes.emplace_back(origUpConnOpToPTUnitIt->second->currUpConnOp_);
+    }
+    transResIt.second = updatedTransRes;
   }
-  return connOps;
 }
 
 }

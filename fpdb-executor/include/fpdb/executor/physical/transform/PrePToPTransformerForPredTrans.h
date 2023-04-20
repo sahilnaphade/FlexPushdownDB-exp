@@ -133,10 +133,23 @@ private:
    */
   std::vector<std::shared_ptr<PhysicalOp>> transformExec();
 
-  // state maintained during transformation
-  std::atomic<uint> bfIdGen_ = 0;     // generate unique id for bloom filter ops for each join origin
-                                      // note this is different from prePOpId used for other ops
+  // Update the ops that generate the input tables (predicate-transfer filtered) for Phase 2 plan.
+  // I.e., the ops are originally scan/local filter, and may be expanded to BF use by Phase 1 plan.
+  void updateFilterableScanTransRes();
+
+  /**
+   * states maintained during transformation
+   */
+  // generate unique id for bloom filter ops for each join origin
+  // note this is different from prePOpId used for other ops
+  std::atomic<uint> bfIdGen_ = 0;
+
+  // saved transformation results of FilterableScanPrePOp
+  // to keep track of the ops that generate the input tables (predicate-transfer filtered) for Phase 2 plan
   std::unordered_map<int, std::vector<std::shared_ptr<PhysicalOp>>> filterableScanTransRes_;
+  std::unordered_map<std::string, std::shared_ptr<PredTransUnit>> origUpConnOpToPTUnit_;
+
+  // used during predicate transfer, as a dependency graph
   std::unordered_set<std::shared_ptr<PredTransUnit>, PredTransUnitPtrHash, PredTransUnitPtrPred> ptUnits_;
   std::unordered_set<std::shared_ptr<PredTransGraphNode>, PredTransGraphNodePtrHash, PredTransGraphNodePtrPred>
       fwPTGraphNodes_, bwPTGraphNodes_;
