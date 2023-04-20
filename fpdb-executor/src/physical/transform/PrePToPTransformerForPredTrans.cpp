@@ -117,13 +117,14 @@ void PrePToPTransformerForPredTrans::makeBloomFilterOps(
     const auto &hashJoinPredicateStr = hashJoinPredicate.toString();
 
     // forward bloom filter
+    uint bfId = bfIdGen_.fetch_add(1);
     auto fwBFCreate = std::make_shared<bloomfilter::BloomFilterCreatePOp>(
-            fmt::format("BloomFilterCreate(F)-{}", hashJoinPredicateStr),
+            fmt::format("BloomFilterCreate(F)<{}>-{}", bfId, hashJoinPredicateStr),
             std::vector<std::string>{},
             0,
             joinOrigin->leftColumns_);
     auto fwBFUse = std::make_shared<bloomfilter::BloomFilterUsePOp>(
-            fmt::format("BloomFilterUse(F)-{}", hashJoinPredicateStr),
+            fmt::format("BloomFilterUse(F)<{}>-{}", bfId, hashJoinPredicateStr),
             std::vector<std::string>{},
             0,
             joinOrigin->rightColumns_);
@@ -132,12 +133,12 @@ void PrePToPTransformerForPredTrans::makeBloomFilterOps(
 
     // backward bloom filter
     auto bwBFCreate = std::make_shared<bloomfilter::BloomFilterCreatePOp>(
-            fmt::format("BloomFilterCreate(B)-{}", hashJoinPredicateStr),
+            fmt::format("BloomFilterCreate(B)<{}>-{}", bfId, hashJoinPredicateStr),
             std::vector<std::string>{},
             0,
             joinOrigin->rightColumns_);
     auto bwBFUse = std::make_shared<bloomfilter::BloomFilterUsePOp>(
-            fmt::format("BloomFilterUse(B)-{}", hashJoinPredicateStr),
+            fmt::format("BloomFilterUse(B)<{}>-{}", bfId, hashJoinPredicateStr),
             std::vector<std::string>{},
             0,
             joinOrigin->leftColumns_);

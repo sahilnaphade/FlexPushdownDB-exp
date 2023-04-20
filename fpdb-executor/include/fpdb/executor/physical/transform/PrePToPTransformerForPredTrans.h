@@ -134,6 +134,8 @@ private:
   std::vector<std::shared_ptr<PhysicalOp>> transformExec();
 
   // state maintained during transformation
+  std::atomic<uint> bfIdGen_ = 0;     // generate unique id for bloom filter ops for each join origin
+                                      // note this is different from prePOpId used for other ops
   std::unordered_map<int, std::vector<std::shared_ptr<PhysicalOp>>> filterableScanTransRes_;
   std::unordered_set<std::shared_ptr<PredTransUnit>, PredTransUnitPtrHash, PredTransUnitPtrPred> ptUnits_;
   std::unordered_set<std::shared_ptr<PredTransGraphNode>, PredTransGraphNodePtrHash, PredTransGraphNodePtrPred>
