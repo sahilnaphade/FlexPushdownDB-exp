@@ -67,8 +67,8 @@ void PrePToPTransformerForPredTrans::transformPredTrans() {
   connectBwBloomFilterOps();
 }
 
-vector<shared_ptr<PhysicalOp>>
-PrePToPTransformerForPredTrans::transformFilterableScan(const shared_ptr<FilterableScanPrePOp> &prePOp) {
+std::vector<std::shared_ptr<PhysicalOp>>
+PrePToPTransformerForPredTrans::transformFilterableScanPredTrans(const std::shared_ptr<FilterableScanPrePOp> &prePOp) {
   // check if this prepOp has already been visited, since one may be visited multiple times
   auto transformResIt = filterableScanTransRes_.find(prePOp->getId());
   if (transformResIt != filterableScanTransRes_.end()) {
@@ -99,8 +99,8 @@ void PrePToPTransformerForPredTrans::makeBloomFilterOps(
         const std::unordered_set<std::shared_ptr<JoinOrigin>, JoinOriginPtrHash, JoinOriginPtrPred> &joinOrigins) {
   for (const auto &joinOrigin: joinOrigins) {
     // transform the base table scan (+filter) ops
-    auto upLeftConnPOps = transformFilterableScan(joinOrigin->left_);
-    auto upRightConnPOps = transformFilterableScan(joinOrigin->right_);
+    auto upLeftConnPOps = transformFilterableScanPredTrans(joinOrigin->left_);
+    auto upRightConnPOps = transformFilterableScanPredTrans(joinOrigin->right_);
     // FIXME: currently only support single-partition tables
     if (upLeftConnPOps.size() != 1 || upRightConnPOps.size() != 1) {
       throw runtime_error("Currently only support single-partition tables");
@@ -278,6 +278,17 @@ void PrePToPTransformerForPredTrans::updateFilterableScanTransRes() {
       updatedTransRes.emplace_back(origUpConnOpToPTUnitIt->second->currUpConnOp_);
     }
     transResIt.second = updatedTransRes;
+  }
+}
+
+std::vector<std::shared_ptr<PhysicalOp>>
+PrePToPTransformerForPredTrans::transformFilterableScan(const std::shared_ptr<FilterableScanPrePOp> &prePOp) {
+  // this prepOp should have been visited in Phase 1
+  auto transformResIt = filterableScanTransRes_.find(prePOp->getId());
+  if (transformResIt != filterableScanTransRes_.end()) {
+    return transformResIt->second;
+  } else {
+    throw std::runtime_error(fmt::format("FilterableScanPrePOp '{}' not visited in Phase 1", prePOp->getId()));
   }
 }
 

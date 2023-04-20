@@ -53,8 +53,8 @@ private:
   };
 
   struct PredTransUnitPtrHash {
-    inline size_t operator()(const std::shared_ptr<PredTransUnit> &joinOrigin) const {
-      return joinOrigin->hash();
+    inline size_t operator()(const std::shared_ptr<PredTransUnit> &ptUnit) const {
+      return ptUnit->hash();
     }
   };
 
@@ -117,7 +117,8 @@ private:
   void transformPredTrans();
 
   // currently pushdown is not supported
-  vector<shared_ptr<PhysicalOp>> transformFilterableScan(const shared_ptr<FilterableScanPrePOp> &prePOp) override;
+  std::vector<std::shared_ptr<PhysicalOp>>
+  transformFilterableScanPredTrans(const std::shared_ptr<FilterableScanPrePOp> &prePOp);
 
   // Construct bloom filter ops from pairs of base table joins
   void makeBloomFilterOps(const std::unordered_set<std::shared_ptr<JoinOrigin>,
@@ -136,6 +137,10 @@ private:
   // Update the ops that generate the input tables (predicate-transfer filtered) for Phase 2 plan.
   // I.e., the ops are originally scan/local filter, and may be expanded to BF use by Phase 1 plan.
   void updateFilterableScanTransRes();
+
+  // currently pushdown is not supported
+  std::vector<std::shared_ptr<PhysicalOp>>
+  transformFilterableScan(const std::shared_ptr<FilterableScanPrePOp> &prePOp) override;
 
   /**
    * states maintained during transformation
