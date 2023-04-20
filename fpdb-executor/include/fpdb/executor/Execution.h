@@ -79,10 +79,6 @@ protected:
   [[maybe_unused]] physical::collate::CollateActor collateActorHandle_;
   shared_ptr<physical::collate::CollatePOp> legacyCollateOperator_;
 
-  // for predicate transfer
-  shared_ptr<PhysicalPlan> predTransPlan_;
-  shared_ptr<cache::TableCache> predTransTableCache_;
-
   // for execution time
   chrono::steady_clock::time_point startTime_;
   chrono::steady_clock::time_point stopTime_;

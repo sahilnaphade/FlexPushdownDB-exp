@@ -126,21 +126,24 @@ void CollatePOp::onTupleSetForward(const fpdb::executor::message::TupleSetMessag
 }
 
 void CollatePOp::onTupleSetRegular(const fpdb::executor::message::TupleSetMessage &message) {
-  if (!tuples_) {
-    assert(message.tuples());
-    tuples_ = message.tuples();
-  } else {
-    tables_.push_back(message.tuples()->table());
-    if (tables_.size() > tablesCutoff_) {
-      tables_.push_back(tuples_->table());
-      const arrow::Result<std::shared_ptr<arrow::Table>> &res = arrow::ConcatenateTables(tables_);
-      if (!res.ok()) {
-        ctx()->notifyError(res.status().message());
-      }
-      tuples_->table(*res);
-      tables_.clear();
-    }
-  }
+  tuples_ = message.tuples();
+  printf("%lld, schema:\n%s\n\n", tuples_->numRows(), tuples_->schema()->ToString().c_str());
+
+//  if (!tuples_) {
+//    assert(message.tuples());
+//    tuples_ = message.tuples();
+//  } else {
+//    tables_.push_back(message.tuples()->table());
+//    if (tables_.size() > tablesCutoff_) {
+//      tables_.push_back(tuples_->table());
+//      const arrow::Result<std::shared_ptr<arrow::Table>> &res = arrow::ConcatenateTables(tables_);
+//      if (!res.ok()) {
+//        ctx()->notifyError(res.status().message());
+//      }
+//      tuples_->table(*res);
+//      tables_.clear();
+//    }
+//  }
 }
 
 std::shared_ptr<TupleSet> CollatePOp::tuples() {

@@ -353,7 +353,7 @@ void TestUtil::executeQueryFile(const string &queryFileName) {
                                                                 objStoreConnector_,
                                                                 mode_,
                                                                 parallelDegree_,
-                                                                numNodes).first :
+                                                                numNodes) :
                       PrePToPTransformer::transform(prePhysicalPlan,
                                                     catalogueEntry_,
                                                     objStoreConnector_,

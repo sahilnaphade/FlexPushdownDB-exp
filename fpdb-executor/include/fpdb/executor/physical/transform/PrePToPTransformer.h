@@ -51,7 +51,7 @@ protected:
    * Impl of transformation
    * @return
    */
-  shared_ptr<PhysicalPlan> transform();
+  virtual shared_ptr<PhysicalPlan> transform();
 
   /**
    * Transform prephysical op to physical op in dfs style

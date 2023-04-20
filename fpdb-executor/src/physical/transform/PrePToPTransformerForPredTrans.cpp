@@ -6,9 +6,11 @@
 #include <fpdb/executor/physical/transform/PrePToFPDBStorePTransformer.h>
 #include <fpdb/executor/physical/transform/PrePToPTransformerUtil.h>
 #include <fpdb/executor/physical/join/hashjoin/HashJoinPredicate.h>
+#include <fpdb/executor/physical/collate/CollatePOp.h>
 #include <fpdb/plan/prephysical/separable/SeparableSuperPrePOp.h>
 #include <fpdb/catalogue/obj-store/ObjStoreCatalogueEntry.h>
 #include <fpdb/catalogue/obj-store/fpdb-store/FPDBStoreConnector.h>
+#include <queue>
 
 namespace fpdb::executor::physical {
 
@@ -21,23 +23,48 @@ PrePToPTransformerForPredTrans::PrePToPTransformerForPredTrans(
         int numNodes):
   PrePToPTransformer(prePhysicalPlan, catalogueEntry, objStoreConnector, mode, parallelDegree, numNodes) {}
 
-std::pair<std::shared_ptr<PhysicalPlan>, std::shared_ptr<PhysicalPlan>>
-PrePToPTransformerForPredTrans::transform(const shared_ptr<PrePhysicalPlan> &prePhysicalPlan,
-                                          const shared_ptr<CatalogueEntry> &catalogueEntry,
-                                          const shared_ptr<ObjStoreConnector> &objStoreConnector,
-                                          const shared_ptr<Mode> &mode,
-                                          int parallelDegree,
-                                          int numNodes) {
+std::shared_ptr<PhysicalPlan> PrePToPTransformerForPredTrans::transform(
+        const shared_ptr<PrePhysicalPlan> &prePhysicalPlan,
+        const shared_ptr<CatalogueEntry> &catalogueEntry,
+        const shared_ptr<ObjStoreConnector> &objStoreConnector,
+        const shared_ptr<Mode> &mode,
+        int parallelDegree,
+        int numNodes) {
   PrePToPTransformerForPredTrans transformer(prePhysicalPlan, catalogueEntry, objStoreConnector,
                                              mode, parallelDegree, numNodes);
-  return {transformer.transformPredTrans(), transformer.transformExec()};
+  return transformer.transform();
 }
 
-std::shared_ptr<PhysicalPlan> PrePToPTransformerForPredTrans::transformPredTrans() {
+std::shared_ptr<PhysicalPlan> PrePToPTransformerForPredTrans::transform() {
+  // Phase 1
+  transformPredTrans();
+
+  // Phase 2
+  auto upConnOps = transformExec();
+
+  // make the final plan
+  std::shared_ptr<PhysicalOp> collateOp = std::make_shared<collate::CollatePOp>(
+          "Collate",
+          ColumnName::canonicalize(prePhysicalPlan_->getOutputColumnNames()),
+          0);
+  PrePToPTransformerUtil::connectManyToOne(upConnOps, collateOp);
+  PrePToPTransformerUtil::addPhysicalOps({collateOp}, physicalOps_);
+
+  return std::make_shared<PhysicalPlan>(physicalOps_, collateOp->name());
+}
+
+void PrePToPTransformerForPredTrans::transformPredTrans() {
   // extract base table joins
   auto joinOrigins = JoinOriginTracer::trace(prePhysicalPlan_);
+
+  // create bloom filter ops (both forward and backward)
   makeBloomFilterOps(joinOrigins);
-  return nullptr;
+
+  // connect forward bloom filter ops
+  connectFwBloomFilterOps();
+
+  // connect backward bloom filter ops
+  connectBwBloomFilterOps();
 }
 
 vector<shared_ptr<PhysicalOp>>
@@ -123,30 +150,118 @@ void PrePToPTransformerForPredTrans::makeBloomFilterOps(
     auto leftPTUnit = std::make_shared<PredTransUnit>(upLeftConnPOp);
     auto ptUnitIt = ptUnits_.find(leftPTUnit);
     if (ptUnitIt == ptUnits_.end()) {
+      ++leftPTUnit->numBwBFUseToVisit_;
       ptUnits_.emplace(leftPTUnit);
     } else {
       leftPTUnit = *ptUnitIt;
+      ++leftPTUnit->numBwBFUseToVisit_;
     }
     auto rightPTUnit = std::make_shared<PredTransUnit>(upRightConnPOp);
     ptUnitIt = ptUnits_.find(rightPTUnit);
     if (ptUnitIt == ptUnits_.end()) {
-      ++rightPTUnit->numBFUseToVisit_;
+      ++rightPTUnit->numFwBFUseToVisit_;
       ptUnits_.emplace(rightPTUnit);
     } else {
       rightPTUnit = *ptUnitIt;
-      ++rightPTUnit->numBFUseToVisit_;
+      ++rightPTUnit->numFwBFUseToVisit_;
     }
     // make predicate transfer graph nodes
     auto fwPTGraphNode = std::make_shared<PredTransGraphNode>(fwBFCreate, fwBFUse, leftPTUnit, rightPTUnit);
     auto bwPTGraphNode = std::make_shared<PredTransGraphNode>(bwBFCreate, bwBFUse, rightPTUnit, leftPTUnit);
-    fwPTGraphNodes_.emplace_back(fwPTGraphNode);
-    bwPTGraphNodes_.emplace_back(bwPTGraphNode);
-    leftPTUnit->outPTNodes_.emplace_back(fwPTGraphNode);
+    fwPTGraphNodes_.emplace(fwPTGraphNode);
+    bwPTGraphNodes_.emplace(bwPTGraphNode);
+    leftPTUnit->fwOutPTNodes_.emplace_back(fwPTGraphNode);
+    rightPTUnit->bwOutPTNodes_.emplace_back(bwPTGraphNode);
   }
 }
 
-std::shared_ptr<PhysicalPlan> PrePToPTransformerForPredTrans::transformExec() {
-  return nullptr;
+void PrePToPTransformerForPredTrans::connectFwBloomFilterOps() {
+  // collect nodes with no bfUse to visit
+  std::queue<std::shared_ptr<PredTransGraphNode>> freeNodes;
+  for (const auto &node: fwPTGraphNodes_) {
+    if (node->bfCreatePTUnit_.lock()->numFwBFUseToVisit_ == 0) {
+      freeNodes.push(node);
+      fwPTGraphNodes_.erase(node);
+    }
+  }
+
+  // topological ordering
+  while (!freeNodes.empty()) {
+    const auto &node = freeNodes.front();
+    freeNodes.pop();
+
+    // connect for this node
+    auto bfCreatePTUnit = node->bfCreatePTUnit_.lock();
+    auto bfUsePTUnit = node->bfUsePTUnit_.lock();
+    std::shared_ptr<PhysicalOp> bfCreate = node->bfCreate_;
+    std::shared_ptr<PhysicalOp> bfUse = node->bfUse_;
+    PrePToPTransformerUtil::connectOneToOne(bfCreatePTUnit->currUpConnOp_, bfCreate);
+    PrePToPTransformerUtil::connectOneToOne(bfUsePTUnit->currUpConnOp_, bfUse);
+    bfUsePTUnit->currUpConnOp_ = bfUse;
+    ++bfUsePTUnit->numFwBFUseVisited_;
+
+    // update the outgoing neighbors of this node
+    if (bfUsePTUnit->numFwBFUseVisited_ == bfUsePTUnit->numFwBFUseToVisit_) {
+      for (const auto &outNode: bfUsePTUnit->fwOutPTNodes_) {
+        freeNodes.push(outNode);
+        fwPTGraphNodes_.erase(outNode);
+      }
+    }
+  }
+
+  // throw exception when there is a cycle
+  if (!fwPTGraphNodes_.empty()) {
+    throw std::runtime_error("The join origins (base table joins) contain cycles");
+  }
+}
+
+void PrePToPTransformerForPredTrans::connectBwBloomFilterOps() {
+  // collect nodes with no bfUse to visit
+  std::queue<std::shared_ptr<PredTransGraphNode>> freeNodes;
+  for (const auto &node: bwPTGraphNodes_) {
+    if (node->bfCreatePTUnit_.lock()->numBwBFUseToVisit_ == 0) {
+      freeNodes.push(node);
+      bwPTGraphNodes_.erase(node);
+    }
+  }
+
+  // topological ordering
+  while (!freeNodes.empty()) {
+    const auto &node = freeNodes.front();
+    freeNodes.pop();
+
+    // connect for this node
+    auto bfCreatePTUnit = node->bfCreatePTUnit_.lock();
+    auto bfUsePTUnit = node->bfUsePTUnit_.lock();
+    std::shared_ptr<PhysicalOp> bfCreate = node->bfCreate_;
+    std::shared_ptr<PhysicalOp> bfUse = node->bfUse_;
+    PrePToPTransformerUtil::connectOneToOne(bfCreatePTUnit->currUpConnOp_, bfCreate);
+    PrePToPTransformerUtil::connectOneToOne(bfUsePTUnit->currUpConnOp_, bfUse);
+    bfUsePTUnit->currUpConnOp_ = bfUse;
+    ++bfUsePTUnit->numBwBFUseVisited_;
+
+    // update the outgoing neighbors of this node
+    if (bfUsePTUnit->numBwBFUseVisited_ == bfUsePTUnit->numBwBFUseToVisit_) {
+      for (const auto &outNode: bfUsePTUnit->bwOutPTNodes_) {
+        freeNodes.push(outNode);
+        bwPTGraphNodes_.erase(outNode);
+      }
+    }
+  }
+
+  // throw exception when there is a cycle
+  if (!bwPTGraphNodes_.empty()) {
+    throw std::runtime_error("The join origins (base table joins) contain cycles");
+  }
+}
+
+std::vector<std::shared_ptr<PhysicalOp>> PrePToPTransformerForPredTrans::transformExec() {
+  // TODO: currently just return the final ops of Phase 1
+  std::vector<std::shared_ptr<PhysicalOp>> connOps;
+  for (const auto &ptUnit: ptUnits_) {
+    connOps.emplace_back(ptUnit->currUpConnOp_);
+  }
+  return connOps;
 }
 
 }
