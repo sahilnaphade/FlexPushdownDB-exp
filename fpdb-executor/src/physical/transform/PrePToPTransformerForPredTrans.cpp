@@ -6,6 +6,7 @@
 #include <fpdb/executor/physical/transform/PrePToFPDBStorePTransformer.h>
 #include <fpdb/executor/physical/transform/PrePToPTransformerUtil.h>
 #include <fpdb/executor/physical/join/hashjoin/HashJoinPredicate.h>
+#include <fpdb/executor/physical/filter/FilterPOp.h>
 #include <fpdb/executor/physical/collate/CollatePOp.h>
 #include <fpdb/plan/prephysical/separable/SeparableSuperPrePOp.h>
 #include <fpdb/catalogue/obj-store/ObjStoreCatalogueEntry.h>
@@ -42,6 +43,11 @@ std::shared_ptr<PhysicalPlan> PrePToPTransformerForPredTrans::transform() {
   // Phase 2
   auto upConnOps = transformExec();
 
+#if SHOW_DEBUG_METRICS == true
+  // collect predicate transfer metrics
+  collPredTransMetrics();
+#endif
+
   // make the final plan
   std::shared_ptr<PhysicalOp> collateOp = std::make_shared<collate::CollatePOp>(
           "Collate",
@@ -49,7 +55,6 @@ std::shared_ptr<PhysicalPlan> PrePToPTransformerForPredTrans::transform() {
           0);
   PrePToPTransformerUtil::connectManyToOne(upConnOps, collateOp);
   PrePToPTransformerUtil::addPhysicalOps({collateOp}, physicalOps_);
-
   return std::make_shared<PhysicalPlan>(physicalOps_, collateOp->name());
 }
 
@@ -101,6 +106,7 @@ void PrePToPTransformerForPredTrans::makeBloomFilterOps(
     // transform the base table scan (+filter) ops
     auto upLeftConnPOps = transformFilterableScanPredTrans(joinOrigin->left_);
     auto upRightConnPOps = transformFilterableScanPredTrans(joinOrigin->right_);
+
     // FIXME: currently only support single-partition tables
     if (upLeftConnPOps.size() != 1 || upRightConnPOps.size() != 1) {
       throw runtime_error("Currently only support single-partition tables");
@@ -147,8 +153,9 @@ void PrePToPTransformerForPredTrans::makeBloomFilterOps(
 
     // add ops
     PrePToPTransformerUtil::addPhysicalOps({fwBFCreate, fwBFUse, bwBFCreate, bwBFUse}, physicalOps_);
+
     // make predicate transfer units
-    auto leftPTUnit = std::make_shared<PredTransUnit>(upLeftConnPOp);
+    auto leftPTUnit = std::make_shared<PredTransUnit>(joinOrigin->left_->getId(), upLeftConnPOp);
     auto ptUnitIt = ptUnits_.find(leftPTUnit);
     if (ptUnitIt == ptUnits_.end()) {
       ++leftPTUnit->numBwBFUseToVisit_;
@@ -158,7 +165,8 @@ void PrePToPTransformerForPredTrans::makeBloomFilterOps(
       leftPTUnit = *ptUnitIt;
       ++leftPTUnit->numBwBFUseToVisit_;
     }
-    auto rightPTUnit = std::make_shared<PredTransUnit>(upRightConnPOp);
+
+    auto rightPTUnit = std::make_shared<PredTransUnit>(joinOrigin->right_->getId(), upRightConnPOp);
     ptUnitIt = ptUnits_.find(rightPTUnit);
     if (ptUnitIt == ptUnits_.end()) {
       ++rightPTUnit->numFwBFUseToVisit_;
@@ -168,6 +176,7 @@ void PrePToPTransformerForPredTrans::makeBloomFilterOps(
       rightPTUnit = *ptUnitIt;
       ++rightPTUnit->numFwBFUseToVisit_;
     }
+
     // make predicate transfer graph nodes
     auto fwPTGraphNode = std::make_shared<PredTransGraphNode>(fwBFCreate, fwBFUse, leftPTUnit, rightPTUnit);
     auto bwPTGraphNode = std::make_shared<PredTransGraphNode>(bwBFCreate, bwBFUse, rightPTUnit, leftPTUnit);
@@ -291,5 +300,33 @@ PrePToPTransformerForPredTrans::transformFilterableScan(const std::shared_ptr<Fi
     throw std::runtime_error(fmt::format("FilterableScanPrePOp '{}' not visited in Phase 1", prePOp->getId()));
   }
 }
+
+#if SHOW_DEBUG_METRICS == true
+void PrePToPTransformerForPredTrans::collPredTransMetrics() {
+  for (const auto &ptUnit: ptUnits_) {
+    auto currConnOp = ptUnit->currUpConnOp_;
+    uint prePOpId = ptUnit->prePOpId_;
+    switch (currConnOp->getType()) {
+      case POpType::LOCAL_FILE_SCAN:
+      case POpType::REMOTE_FILE_SCAN: {
+        std::static_pointer_cast<file::FileScanAbstractPOp>(currConnOp)->setCollPredTransMetrics(prePOpId);
+        break;
+      }
+      case POpType::FILTER: {
+        std::static_pointer_cast<filter::FilterPOp>(currConnOp)->setCollPredTransMetrics(prePOpId);
+        break;
+      }
+      case POpType::BLOOM_FILTER_USE: {
+        std::static_pointer_cast<bloomfilter::BloomFilterUsePOp>(currConnOp)->setCollPredTransMetrics(prePOpId);
+        break;
+      }
+      default: {
+        throw std::runtime_error(fmt::format("Invalid physical op type to collect predicate transfer metrics: '{}'",
+                                             currConnOp->getTypeString()));
+      }
+    }
+  }
+}
+#endif
 
 }

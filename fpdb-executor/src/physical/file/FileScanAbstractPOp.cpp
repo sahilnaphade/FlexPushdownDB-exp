@@ -32,6 +32,11 @@ const std::shared_ptr<FileScanKernel> &FileScanAbstractPOp::getKernel() const {
   return kernel_;
 }
 
+void FileScanAbstractPOp::setCollPredTransMetrics(uint prePOpId) {
+  collPredTransMetrics_ = true;
+  prePOpId_ = prePOpId;
+}
+
 void FileScanAbstractPOp::onReceive(const Envelope &message) {
   if (message.message().type() == MessageType::START) {
     this->onStart();
@@ -120,6 +125,15 @@ std::shared_ptr<TupleSet> FileScanAbstractPOp::readTuples(const std::vector<std:
   }
   ctx()->notifyRoot(execMetricsMsg);
   kernel_->clearBytesRead();
+
+  if (collPredTransMetrics_ && readTupleSet->numColumns() > 0) {
+    std::shared_ptr<Message> ptMetricsMessage = std::make_shared<PredTransMetricsMessage>(
+            metrics::PredTransMetrics::PTMetricsUnit(prePOpId_,
+                                                     readTupleSet->schema(),
+                                                     readTupleSet->numRows()),
+            name_);
+    ctx()->notifyRoot(ptMetricsMessage);
+  }
 #endif
 
   if (toCache_) {

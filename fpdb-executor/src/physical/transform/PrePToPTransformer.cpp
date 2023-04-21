@@ -28,6 +28,7 @@
 #include <fpdb/executor/physical/transform/PrePToPTransformerUtil.h>
 #include <fpdb/executor/physical/transform/StoreTransformTraits.h>
 #include <fpdb/executor/physical/Globals.h>
+#include <fpdb/executor/metrics/Globals.h>
 #include <fpdb/catalogue/obj-store/ObjStoreCatalogueEntry.h>
 #include <fpdb/catalogue/obj-store/s3/S3Connector.h>
 #include <fpdb/catalogue/obj-store/fpdb-store/FPDBStoreConnector.h>
@@ -112,7 +113,18 @@ vector<shared_ptr<PhysicalOp>> PrePToPTransformer::transformDfs(const shared_ptr
     }
     case PrePOpType::SEPARABLE_SUPER: {
       const auto &separableSuperPrePOp = std::static_pointer_cast<SeparableSuperPrePOp>(prePOp);
-      return transformSeparableSuper(separableSuperPrePOp);
+      const auto &transRes = transformSeparableSuper(separableSuperPrePOp);
+
+#if SHOW_DEBUG_METRICS == true
+    // collect predicate transfer metrics
+    for (const auto &op: transRes) {
+      if (op->getType() == POpType::FILTER) {
+        std::static_pointer_cast<filter::FilterPOp>(op)->setCollPredTransMetrics(prePOp->getId());
+      }
+    }
+#endif
+
+      return transRes;
     }
     default: {
       throw runtime_error(fmt::format("Unsupported prephysical operator type: {}", prePOp->getTypeString()));

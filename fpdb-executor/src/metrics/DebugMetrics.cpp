@@ -14,6 +14,10 @@ const DiskMetrics &DebugMetrics::getDiskMetrics() const {
   return diskMetrics_;
 }
 
+const PredTransMetrics &DebugMetrics::getPredTransMetrics() const {
+  return ptMetrics_;
+}
+
 int DebugMetrics::getNumPushdownFallBack() const {
   return numPushdownFallBack_;
 }
@@ -24,6 +28,10 @@ void DebugMetrics::add(const TransferMetrics &transferMetrics) {
 
 void DebugMetrics::add(const DiskMetrics &diskMetrics) {
   diskMetrics_.add(diskMetrics);
+}
+
+void DebugMetrics::add(const PredTransMetrics::PTMetricsUnit &ptMetricsUnit) {
+  ptMetrics_.add(ptMetricsUnit);
 }
 
 void DebugMetrics::incPushdownFallBack() {

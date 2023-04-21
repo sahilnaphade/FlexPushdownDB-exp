@@ -19,6 +19,7 @@ add_library(fpdb-executor STATIC
         src/message/TupleSetSizeMessage.cpp include/fpdb/executor/message/TupleSetSizeMessage.h
         src/message/TransferMetricsMessage.cpp include/fpdb/executor/message/TransferMetricsMessage.h
         src/message/DiskMetricsMessage.cpp include/fpdb/executor/message/DiskMetricsMessage.h
+        src/message/PredTransMetricsMessage.cpp include/fpdb/executor/message/PredTransMetricsMessage.h
         src/message/ErrorMessage.cpp include/fpdb/executor/message/ErrorMessage.h
         src/message/BloomFilterMessage.cpp include/fpdb/executor/message/BloomFilterMessage.h
         src/message/BitmapMessage.cpp include/fpdb/executor/message/BitmapMessage.h
@@ -156,6 +157,7 @@ add_library(fpdb-executor STATIC
         src/metrics/DebugMetrics.cpp include/fpdb/executor/metrics/DebugMetrics.h
         src/metrics/TransferMetrics.cpp include/fpdb/executor/metrics/TransferMetrics.h
         src/metrics/DiskMetrics.cpp include/fpdb/executor/metrics/DiskMetrics.h
+        src/metrics/PredTransMetrics.cpp include/fpdb/executor/metrics/PredTransMetrics.h
 #        executor
         src/Globals.cpp include/fpdb/executor/Globals.h
         src/Executor.cpp include/fpdb/executor/Executor.h

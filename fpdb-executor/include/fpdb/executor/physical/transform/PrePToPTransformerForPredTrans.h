@@ -8,6 +8,7 @@
 #include <fpdb/executor/physical/transform/PrePToPTransformer.h>
 #include <fpdb/executor/physical/bloomfilter/BloomFilterCreatePOp.h>
 #include <fpdb/executor/physical/bloomfilter/BloomFilterUsePOp.h>
+#include <fpdb/executor/metrics/PredTransMetrics.h>
 #include <fpdb/plan/prephysical/JoinOriginTracer.h>
 
 using namespace fpdb::plan::prephysical;
@@ -34,13 +35,15 @@ private:
   // basic unit for predicate transfer, i.e. ops (scan/local filter, BF create/use) corresponding to a single scan op
   // a unit can be viewed as a vertical chain from scan/local filter to subsequent BF use ops.
   struct PredTransUnit {
+    uint prePOpId_;       // the prephysical op id of the corresponding FilterableScanPrePOp
     std::shared_ptr<PhysicalOp> origUpConnOp_;    // the start of the vertical chain, also as the identifier
     std::shared_ptr<PhysicalOp> currUpConnOp_;    // the end of the vertical chain
     std::vector<std::shared_ptr<PredTransGraphNode>> fwOutPTNodes_, bwOutPTNodes_;  // in/out PT graph nodes
     int numFwBFUseToVisit_ = 0, numBwBFUseToVisit_ = 0;     // for dependencies
     int numFwBFUseVisited_ = 0, numBwBFUseVisited_ = 0;     // for dependencies
 
-    PredTransUnit(const std::shared_ptr<PhysicalOp> &upConnOp):
+    PredTransUnit(uint prePOpId, const std::shared_ptr<PhysicalOp> &upConnOp):
+      prePOpId_(prePOpId),
       origUpConnOp_(upConnOp), currUpConnOp_(upConnOp) {}
 
     size_t hash() const {
@@ -141,6 +144,13 @@ private:
   // currently pushdown is not supported
   std::vector<std::shared_ptr<PhysicalOp>>
   transformFilterableScan(const std::shared_ptr<FilterableScanPrePOp> &prePOp) override;
+
+#if SHOW_DEBUG_METRICS == true
+  /**
+   * For collecting predicate transfer metrics
+   */
+  void collPredTransMetrics();
+#endif
 
   /**
    * states maintained during transformation

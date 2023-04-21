@@ -113,7 +113,9 @@ pair<shared_ptr<TupleSet>, long> Executor::execute(
     cout << execution->showMetrics(showOpTimes_, showScanMetrics_) << endl;
   }
 #if SHOW_DEBUG_METRICS == true
-  cout << execution->showDebugMetrics() << endl;
+  if (metrics::hasMetricsToShow()) {
+    cout << execution->showDebugMetrics() << endl;
+  }
 #endif
 
   return make_pair(result, elapsedTime);

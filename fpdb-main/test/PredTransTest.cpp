@@ -3,7 +3,7 @@
 //
 
 #include <doctest/doctest.h>
-#include <fpdb/executor/physical/file/LocalFileScanPOp.h>
+#include <fpdb/executor/metrics/Globals.h>
 #include <fpdb/plan/Globals.h>
 #include "TestUtil.h"
 #include "Globals.h"
@@ -22,14 +22,19 @@ namespace fpdb::main::test {
 void testPredTrans(const std::string &schemaName, const std::string &queryFileName) {
   TestUtil::startFPDBStoreServer();
   bool OLD_ENABLE_PRED_TRANS = fpdb::plan::ENABLE_PRED_TRANS;
+  bool Old_SHOW_PRED_TRANS_METRICS = fpdb::executor::metrics::SHOW_PRED_TRANS_METRICS;
   fpdb::plan::ENABLE_PRED_TRANS = true;
+  fpdb::executor::metrics::SHOW_PRED_TRANS_METRICS = true;
+
   REQUIRE(TestUtil::e2eNoStartCalciteServer(schemaName,
                                             {queryFileName},
                                             PARALLEL_FPDB_STORE_SAME_NODE,
                                             false,
                                             ObjStoreType::FPDB_STORE));
+
   TestUtil::stopFPDBStoreServer();
   fpdb::plan::ENABLE_PRED_TRANS = OLD_ENABLE_PRED_TRANS;
+  fpdb::executor::metrics::SHOW_PRED_TRANS_METRICS = Old_SHOW_PRED_TRANS_METRICS;
 }
 
 TEST_SUITE ("pred-trans" * doctest::skip(SKIP_SUITE)) {

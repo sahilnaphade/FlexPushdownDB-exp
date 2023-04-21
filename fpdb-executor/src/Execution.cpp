@@ -11,6 +11,9 @@
 #include <fpdb/executor/physical/filter/FilterPOp.h>
 #include <fpdb/executor/caf-serialization/CAFPOpSerializer.h>
 #include <fpdb/executor/message/TransferMetricsMessage.h>
+#include <fpdb/executor/message/DiskMetricsMessage.h>
+#include <fpdb/executor/message/PredTransMetricsMessage.h>
+#include <fpdb/util/Util.h>
 #include <caf/io/all.hpp>
 #include <graphviz/gvc.h>
 
@@ -247,6 +250,12 @@ void Execution::join() {
               case MessageType::DISK_METRICS: {
                 auto diskMetricsMsg = ((DiskMetricsMessage &) msg);
                 debugMetrics_.add(diskMetricsMsg.getDiskMetrics());
+                break;
+              }
+
+              case MessageType::PRED_TRANS_METRICS: {
+                auto ptMetricsMsg = ((PredTransMetricsMessage &) msg);
+                debugMetrics_.add(ptMetricsMsg.getPTMetrics());
                 break;
               }
 #endif
@@ -663,46 +672,70 @@ string Execution::showMetrics(bool showOpTimes, bool showScanMetrics) {
 #if SHOW_DEBUG_METRICS == true
 string Execution::showDebugMetrics() const{
   stringstream ss;
-  ss << endl;
-  ss << "Debug Metrics |" << endl << endl;
 
-  stringstream formattedBytesFromStore;
-  int64_t bytesFromStore = debugMetrics_.getTransferMetrics().getBytesFromStore();
-  formattedBytesFromStore << bytesFromStore << " B" << " ("
-                          << ((double) bytesFromStore / 1024.0 / 1024.0 / 1024.0) << " GB)";
+  if (metrics::SHOW_TRANSFER_METRICS) {
+    ss << endl << "Data Transfer Metrics |" << endl << endl;
+    stringstream formattedBytesFromStore;
+    int64_t bytesFromStore = debugMetrics_.getTransferMetrics().getBytesFromStore();
+    formattedBytesFromStore << bytesFromStore << " B" << " ("
+                            << ((double) bytesFromStore / 1024.0 / 1024.0 / 1024.0) << " GB)";
 
-  ss << left << setw(60) << "Bytes transferred from store";
-  ss << left << setw(60) << formattedBytesFromStore.str();
-  ss << endl;
+    ss << left << setw(60) << "Bytes transferred from store";
+    ss << left << setw(60) << formattedBytesFromStore.str();
+    ss << endl;
 
-  stringstream formattedBytesToStore;
-  int64_t bytesToStore = debugMetrics_.getTransferMetrics().getBytesToStore();
-  formattedBytesToStore << bytesToStore << " B" << " ("
-                        << ((double) bytesToStore / 1024.0 / 1024.0 / 1024.0) << " GB)";
+    stringstream formattedBytesToStore;
+    int64_t bytesToStore = debugMetrics_.getTransferMetrics().getBytesToStore();
+    formattedBytesToStore << bytesToStore << " B" << " ("
+                          << ((double) bytesToStore / 1024.0 / 1024.0 / 1024.0) << " GB)";
 
-  ss << left << setw(60) << "Bytes transferred to store";
-  ss << left << setw(60) << formattedBytesToStore.str();
-  ss << endl;
+    ss << left << setw(60) << "Bytes transferred to store";
+    ss << left << setw(60) << formattedBytesToStore.str();
+    ss << endl;
 
-  stringstream formattedBytesInterCompute;
-  int64_t bytesInterCompute = debugMetrics_.getTransferMetrics().getBytesInterCompute();
-  formattedBytesInterCompute << bytesInterCompute << " B" << " ("
-                             << ((double) bytesInterCompute / 1024.0 / 1024.0 / 1024.0) << " GB)";
+    stringstream formattedBytesInterCompute;
+    int64_t bytesInterCompute = debugMetrics_.getTransferMetrics().getBytesInterCompute();
+    formattedBytesInterCompute << bytesInterCompute << " B" << " ("
+                               << ((double) bytesInterCompute / 1024.0 / 1024.0 / 1024.0) << " GB)";
 
-  ss << left << setw(60) << "Bytes transferred across compute nodes";
-  ss << left << setw(60) << formattedBytesInterCompute.str();
-  ss << endl;
+    ss << left << setw(60) << "Bytes transferred across compute nodes";
+    ss << left << setw(60) << formattedBytesInterCompute.str();
+    ss << endl;
 
-  stringstream formattedBytesRemote;
-  int64_t bytesRemote = bytesFromStore + bytesToStore + bytesInterCompute;
-  formattedBytesRemote << bytesRemote << " B" << " ("
-                       << ((double) bytesRemote / 1024.0 / 1024.0 / 1024.0) << " GB)";
+    stringstream formattedBytesRemote;
+    int64_t bytesRemote = bytesFromStore + bytesToStore + bytesInterCompute;
+    formattedBytesRemote << bytesRemote << " B" << " ("
+                         << ((double) bytesRemote / 1024.0 / 1024.0 / 1024.0) << " GB)";
 
-  ss << left << setw(60) << "Bytes transferred totally";
-  ss << left << setw(60) << formattedBytesRemote.str();
-  ss << endl;
+    ss << left << setw(60) << "Bytes transferred totally";
+    ss << left << setw(60) << formattedBytesRemote.str();
+    ss << endl;
+  }
 
-  if (ENABLE_ADAPTIVE_PUSHDOWN) {
+  if (metrics::SHOW_PRED_TRANS_METRICS) {
+    auto metrics = debugMetrics_.getPredTransMetrics().getMetrics();
+    if (!metrics.empty()) {
+      ss << endl << "Predicate Transfer Metrics |" << endl;
+      for (const auto &unit: metrics) {
+        ss << endl;
+        ss << left << setw(60) << "Prephysical Op ID";
+        ss << "[" << unit.prePOpId_ << "]";
+        ss << endl;
+
+        ss << left << setw(60) << "Rows after predicate transfer / local filters";
+        ss << unit.numRows_;
+        ss << endl;
+
+        ss << left << setw(60) << "Schema" << endl;
+        auto splitStr = fpdb::util::split(unit.schema_->ToString(), "\n");
+        for (const auto &str: splitStr) {
+          ss << "- " << str << endl;
+        }
+      }
+    }
+  }
+
+  if (ENABLE_ADAPTIVE_PUSHDOWN && metrics::SHOW_NUM_PUSHDOWN_FALL_BACK) {
     int numFPDBStoreSuperPOps = 0;
     for (const auto &opIt: physicalPlan_->getPhysicalOps()) {
       if (opIt.second->getType() == POpType::FPDB_STORE_SUPER) {

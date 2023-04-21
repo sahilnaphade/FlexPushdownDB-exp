@@ -4,6 +4,7 @@
 
 #include <fpdb/executor/physical/bloomfilter/BloomFilterUsePOp.h>
 #include <fpdb/executor/physical/bloomfilter/BloomFilterUseKernel.h>
+#include <fpdb/executor/metrics/Globals.h>
 
 namespace fpdb::executor::physical::bloomfilter {
 
@@ -43,6 +44,11 @@ const std::vector<std::string> &BloomFilterUsePOp::getBloomFilterColumnNames() c
 
 const std::optional<std::shared_ptr<BloomFilterBase>> &BloomFilterUsePOp::getBloomFilter() const {
   return bloomFilter_;
+}
+
+void BloomFilterUsePOp::setCollPredTransMetrics(uint prePOpId) {
+  collPredTransMetrics_ = true;
+  prePOpId_ = prePOpId;
 }
 
 void BloomFilterUsePOp::setBloomFilter(const std::shared_ptr<BloomFilterBase> &bloomFilter) {
@@ -124,10 +130,23 @@ tl::expected<void, std::string> BloomFilterUsePOp::filterAndSend() {
   if (!expFilteredTupleSet.has_value()) {
     return tl::make_unexpected(expFilteredTupleSet.error());
   }
+  auto filteredTupleSet = *expFilteredTupleSet;
 
   // Send
-  std::shared_ptr<Message> tupleSetMessage = std::make_shared<TupleSetMessage>(*expFilteredTupleSet, name());
+  std::shared_ptr<Message> tupleSetMessage = std::make_shared<TupleSetMessage>(filteredTupleSet, name());
   ctx()->tell(tupleSetMessage);
+
+#if SHOW_DEBUG_METRICS == true
+  // predicate transfer metrics
+  if (collPredTransMetrics_ && filteredTupleSet->numColumns() > 0) {
+    std::shared_ptr<Message> ptMetricsMessage = std::make_shared<PredTransMetricsMessage>(
+            metrics::PredTransMetrics::PTMetricsUnit(prePOpId_,
+                                                     filteredTupleSet->schema(),
+                                                     filteredTupleSet->numRows()),
+            name_);
+    ctx()->notifyRoot(ptMetricsMessage);
+  }
+#endif
 
   // Clear buffer
   receivedTupleSet_.reset();

@@ -50,6 +50,7 @@ public:
                             const std::string &host,
                             int port);
   void setBitmap(const std::optional<std::vector<int64_t>> &bitmap);
+  void setCollPredTransMetrics(uint prePOpId);
 
   [[nodiscard]] size_t getFilterTimeNS() const;
   [[nodiscard]] size_t getFilterInputBytes() const;
@@ -123,6 +124,12 @@ private:
    * It has value iff bitmap pushdown is enabled
    */
   std::optional<FPDBStoreFilterBitmapWrapper> bitmapWrapper_;
+
+  /**
+   * used to collect predicate transfer metrics
+   */
+  bool collPredTransMetrics_ = false;
+  uint prePOpId_;
 
 // caf inspect
 public:

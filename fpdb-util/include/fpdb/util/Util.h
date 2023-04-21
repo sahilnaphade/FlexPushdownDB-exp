@@ -113,6 +113,11 @@ namespace fpdb::util {
   bool getBit(const vector<int64_t> &bitmap, int64_t n);
 
   /**
+   * Split a string on a given delimiter
+   */
+  std::vector<std::string> split(const std::string &str, const std::string &delimiter);
+
+  /**
    * Given a start and finish number, will create pairs of numbers from start to finish (inclusive)
    * evenly split across the number of ranges given.
    *
