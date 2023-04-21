@@ -50,7 +50,7 @@ public:
                             const std::string &host,
                             int port);
   void setBitmap(const std::optional<std::vector<int64_t>> &bitmap);
-  void setCollPredTransMetrics(uint prePOpId);
+  void setCollPredTransMetrics(uint prePOpId, metrics::PredTransMetrics::PTMetricsUnitType ptMetricsType);
 
   [[nodiscard]] size_t getFilterTimeNS() const;
   [[nodiscard]] size_t getFilterInputBytes() const;
@@ -130,6 +130,7 @@ private:
    */
   bool collPredTransMetrics_ = false;
   uint prePOpId_;
+  metrics::PredTransMetrics::PTMetricsUnitType ptMetricsType_;
 
 // caf inspect
 public:

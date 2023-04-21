@@ -7,6 +7,7 @@
 
 #include <fpdb/executor/physical/PhysicalOp.h>
 #include <fpdb/executor/message/BloomFilterMessage.h>
+#include <fpdb/executor/metrics/PredTransMetrics.h>
 
 namespace fpdb::executor::physical::bloomfilter {
 
@@ -29,7 +30,7 @@ public:
 
   const std::vector<std::string> &getBloomFilterColumnNames() const;
   const std::optional<std::shared_ptr<BloomFilterBase>> &getBloomFilter() const;
-  void setCollPredTransMetrics(uint prePOpId);
+  void setCollPredTransMetrics(uint prePOpId, metrics::PredTransMetrics::PTMetricsUnitType ptMetricsType);
   void setBloomFilter(const std::shared_ptr<BloomFilterBase> &bloomFilter);
   bool receivedBloomFilter() const;
   void clearProducersExceptBloomFilterCreate();
@@ -52,6 +53,7 @@ private:
    */
   bool collPredTransMetrics_ = false;
   uint prePOpId_;
+  metrics::PredTransMetrics::PTMetricsUnitType ptMetricsType_;
 
 // caf inspect
 public:

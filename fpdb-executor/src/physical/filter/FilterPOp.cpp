@@ -79,9 +79,10 @@ void FilterPOp::setBitmap(const std::optional<std::vector<int64_t>> &bitmap) {
   bitmapWrapper_->bitmap_ = bitmap;
 }
 
-void FilterPOp::setCollPredTransMetrics(uint prePOpId) {
+void FilterPOp::setCollPredTransMetrics(uint prePOpId, metrics::PredTransMetrics::PTMetricsUnitType ptMetricsType) {
   collPredTransMetrics_ = true;
   prePOpId_ = prePOpId;
+  ptMetricsType_ = ptMetricsType;
 }
 
 void FilterPOp::onReceive(const Envelope &Envelope) {
@@ -487,6 +488,7 @@ void FilterPOp::sendTuples() {
   if (collPredTransMetrics_ && (*filtered_)->numColumns() > 0) {
     std::shared_ptr<Message> ptMetricsMessage = std::make_shared<PredTransMetricsMessage>(
             metrics::PredTransMetrics::PTMetricsUnit(prePOpId_,
+                                                     ptMetricsType_,
                                                      (*filtered_)->schema(),
                                                      (*filtered_)->numRows()),
             name_);

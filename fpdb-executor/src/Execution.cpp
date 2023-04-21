@@ -13,6 +13,7 @@
 #include <fpdb/executor/message/TransferMetricsMessage.h>
 #include <fpdb/executor/message/DiskMetricsMessage.h>
 #include <fpdb/executor/message/PredTransMetricsMessage.h>
+#include <fpdb/executor/metrics/PredTransMetrics.h>
 #include <fpdb/util/Util.h>
 #include <caf/io/all.hpp>
 #include <graphviz/gvc.h>
@@ -722,7 +723,11 @@ string Execution::showDebugMetrics() const{
         ss << "[" << unit.prePOpId_ << "]";
         ss << endl;
 
-        ss << left << setw(60) << "Rows after predicate transfer / local filters";
+        ss << left << setw(60) << "Predicate Transfer Type";
+        ss << metrics::PredTransMetrics::PTMetricsUnitTypeToStr(unit.type_);
+        ss << endl;
+
+        ss << left << setw(60) << "Rows after Predicate Transfer";
         ss << unit.numRows_;
         ss << endl;
 

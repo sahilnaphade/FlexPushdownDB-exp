@@ -313,15 +313,18 @@ void PrePToPTransformerForPredTrans::collPredTransMetrics() {
     switch (currConnOp->getType()) {
       case POpType::LOCAL_FILE_SCAN:
       case POpType::REMOTE_FILE_SCAN: {
-        std::static_pointer_cast<file::FileScanAbstractPOp>(currConnOp)->setCollPredTransMetrics(prePOpId);
+        std::static_pointer_cast<file::FileScanAbstractPOp>(currConnOp)
+                ->setCollPredTransMetrics(prePOpId, metrics::PredTransMetrics::PTMetricsUnitType::PRED_TRANS);
         break;
       }
       case POpType::FILTER: {
-        std::static_pointer_cast<filter::FilterPOp>(currConnOp)->setCollPredTransMetrics(prePOpId);
+        std::static_pointer_cast<filter::FilterPOp>(currConnOp)
+                ->setCollPredTransMetrics(prePOpId, metrics::PredTransMetrics::PTMetricsUnitType::PRED_TRANS);
         break;
       }
       case POpType::BLOOM_FILTER_USE: {
-        std::static_pointer_cast<bloomfilter::BloomFilterUsePOp>(currConnOp)->setCollPredTransMetrics(prePOpId);
+        std::static_pointer_cast<bloomfilter::BloomFilterUsePOp>(currConnOp)
+                ->setCollPredTransMetrics(prePOpId, metrics::PredTransMetrics::PTMetricsUnitType::PRED_TRANS);
         break;
       }
       default: {

@@ -4,7 +4,6 @@
 
 #include <fpdb/executor/physical/bloomfilter/BloomFilterUsePOp.h>
 #include <fpdb/executor/physical/bloomfilter/BloomFilterUseKernel.h>
-#include <fpdb/executor/metrics/Globals.h>
 
 namespace fpdb::executor::physical::bloomfilter {
 
@@ -46,9 +45,11 @@ const std::optional<std::shared_ptr<BloomFilterBase>> &BloomFilterUsePOp::getBlo
   return bloomFilter_;
 }
 
-void BloomFilterUsePOp::setCollPredTransMetrics(uint prePOpId) {
+void BloomFilterUsePOp::setCollPredTransMetrics(uint prePOpId,
+                                                metrics::PredTransMetrics::PTMetricsUnitType ptMetricsType) {
   collPredTransMetrics_ = true;
   prePOpId_ = prePOpId;
+  ptMetricsType_ = ptMetricsType;
 }
 
 void BloomFilterUsePOp::setBloomFilter(const std::shared_ptr<BloomFilterBase> &bloomFilter) {
@@ -141,6 +142,7 @@ tl::expected<void, std::string> BloomFilterUsePOp::filterAndSend() {
   if (collPredTransMetrics_ && filteredTupleSet->numColumns() > 0) {
     std::shared_ptr<Message> ptMetricsMessage = std::make_shared<PredTransMetricsMessage>(
             metrics::PredTransMetrics::PTMetricsUnit(prePOpId_,
+                                                     ptMetricsType_,
                                                      filteredTupleSet->schema(),
                                                      filteredTupleSet->numRows()),
             name_);

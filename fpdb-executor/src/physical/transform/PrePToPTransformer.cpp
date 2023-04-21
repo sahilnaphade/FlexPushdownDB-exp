@@ -29,6 +29,7 @@
 #include <fpdb/executor/physical/transform/StoreTransformTraits.h>
 #include <fpdb/executor/physical/Globals.h>
 #include <fpdb/executor/metrics/Globals.h>
+#include <fpdb/plan/prephysical/Util.h>
 #include <fpdb/catalogue/obj-store/ObjStoreCatalogueEntry.h>
 #include <fpdb/catalogue/obj-store/s3/S3Connector.h>
 #include <fpdb/catalogue/obj-store/fpdb-store/FPDBStoreConnector.h>
@@ -119,7 +120,11 @@ vector<shared_ptr<PhysicalOp>> PrePToPTransformer::transformDfs(const shared_ptr
     // collect predicate transfer metrics
     for (const auto &op: transRes) {
       if (op->getType() == POpType::FILTER) {
-        std::static_pointer_cast<filter::FilterPOp>(op)->setCollPredTransMetrics(prePOp->getId());
+        std::static_pointer_cast<filter::FilterPOp>(op)
+                ->setCollPredTransMetrics(prePOp->getId(), metrics::PredTransMetrics::PTMetricsUnitType::LOCAL_FILTER);
+      } else if (op->getType() == POpType::LOCAL_FILE_SCAN || op->getType() == POpType::REMOTE_FILE_SCAN) {
+        std::static_pointer_cast<file::FileScanAbstractPOp>(op)
+                ->setCollPredTransMetrics(prePOp->getId(), metrics::PredTransMetrics::PTMetricsUnitType::LOCAL_FILTER);
       }
     }
 #endif
@@ -843,20 +848,29 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
       // we cannot push down bloom filter
       // BloomFilterUsePOp
       for (int i = 0; i < parallelDegree_ * numNodes_; ++i) {
-        bloomFilterUsePOps.emplace_back(make_shared<bloomfilter::BloomFilterUsePOp>(
+        auto bloomFilterUsePOp = make_shared<bloomfilter::BloomFilterUsePOp>(
                 fmt::format("BloomFilterUse[{}]-{}-{}", prePOpId, hashJoinPredicateStr, i),
                 upRightConnPOps[0]->getProjectColumnNames(),
                 joinProbePOps[i]->getNodeId(),
-                rightColumnNames));
+                rightColumnNames);
+        bloomFilterUsePOps.emplace_back(bloomFilterUsePOp);
+
+        // connect bloom filter create to bloom filter use
+        static_pointer_cast<bloomfilter::BloomFilterCreatePOp>(bloomFilterCreatePOps[i])
+                ->addBloomFilterUsePOp(bloomFilterUsePOp);
+        bloomFilterUsePOp->consume(bloomFilterCreatePOps[i]);
+
+#if SHOW_DEBUG_METRICS == true
+        // collect predicate transfer metrics
+        auto optScanPrePOpId = fpdb::plan::prephysical::Util::traceScanOriginWithNoJoinInPath(
+                hashJoinPrePOp->getProducers()[1]);
+        if (optScanPrePOpId.has_value()) {
+          bloomFilterUsePOp->setCollPredTransMetrics(*optScanPrePOpId,
+                                                     metrics::PredTransMetrics::PTMetricsUnitType::BLOOM_FILTER);
+        }
+#endif
       }
       allPOps.insert(allPOps.end(), bloomFilterUsePOps.begin(), bloomFilterUsePOps.end());
-
-      // connect bloom filter create to bloom filter use
-      for (int i = 0; i < parallelDegree_ * numNodes_; ++i) {
-        static_pointer_cast<bloomfilter::BloomFilterCreatePOp>(bloomFilterCreatePOps[i])
-                ->addBloomFilterUsePOp(bloomFilterUsePOps[i]);
-        bloomFilterUsePOps[i]->consume(bloomFilterCreatePOps[i]);
-      }
 
       // connect bloom filter use to upstream and downstream (joinProbePOps)
       if (rightWithHashJoinPushdown && rightShufflePushed) {

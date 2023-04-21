@@ -61,13 +61,15 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-csv-pullup-04" * doctest::skip(fals
   TestUtil::stopFPDBStoreServer();
 }
 
+// FIXME: not considering key-foreign key constraint with filtering leads to a bad query plan
+//  currently manually specify the join order
 TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-csv-pullup-05" * doctest::skip(false || SKIP_SUITE)) {
   TestUtil::startFPDBStoreServer();
-  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/",
-                                            {"tpch/original/05.sql"},
-                                            PARALLEL_FPDB_STORE_SAME_NODE,
-                                            false,
-                                            ObjStoreType::FPDB_STORE));
+  REQUIRE(TestUtil::e2eNoStartCalciteServerNoHeuristicJoinOrdering("tpch-sf0.01/csv/",
+                                                                   {"tpch/original/05.sql"},
+                                                                   PARALLEL_FPDB_STORE_SAME_NODE,
+                                                                   false,
+                                                                   ObjStoreType::FPDB_STORE));
   TestUtil::stopFPDBStoreServer();
 }
 
@@ -289,14 +291,16 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-csv-pushdown-only-04" * doctest::sk
   TestUtil::stopFPDBStoreServer();
 }
 
+// FIXME: not considering key-foreign key constraint with filtering leads to a bad query plan
+//  currently manually specify the join order
 TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-csv-pushdown-only-05" * doctest::skip(false || SKIP_SUITE)) {
   TestUtil::startFPDBStoreServer();
-  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/",
-                                            {"tpch/original/05.sql"},
-                                            PARALLEL_FPDB_STORE_SAME_NODE,
-                                            false,
-                                            ObjStoreType::FPDB_STORE,
-                                            Mode::pushdownOnlyMode()));
+  REQUIRE(TestUtil::e2eNoStartCalciteServerNoHeuristicJoinOrdering("tpch-sf0.01/csv/",
+                                                                   {"tpch/original/05.sql"},
+                                                                   PARALLEL_FPDB_STORE_SAME_NODE,
+                                                                   false,
+                                                                   ObjStoreType::FPDB_STORE,
+                                                                   Mode::pushdownOnlyMode()));
   TestUtil::stopFPDBStoreServer();
 }
 
@@ -531,13 +535,15 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pullup-04" * doctest::skip(
   TestUtil::stopFPDBStoreServer();
 }
 
+// FIXME: not considering key-foreign key constraint with filtering leads to a bad query plan
+//  currently manually specify the join order
 TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pullup-05" * doctest::skip(false || SKIP_SUITE)) {
   TestUtil::startFPDBStoreServer();
-  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/parquet/",
-                                            {"tpch/original/05.sql"},
-                                            PARALLEL_FPDB_STORE_SAME_NODE,
-                                            false,
-                                            ObjStoreType::FPDB_STORE));
+  REQUIRE(TestUtil::e2eNoStartCalciteServerNoHeuristicJoinOrdering("tpch-sf0.01/parquet/",
+                                                                   {"tpch/original/05.sql"},
+                                                                   PARALLEL_FPDB_STORE_SAME_NODE,
+                                                                   false,
+                                                                   ObjStoreType::FPDB_STORE));
   TestUtil::stopFPDBStoreServer();
 }
 
@@ -771,14 +777,16 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pushdown-only-04" * doctest
   TestUtil::stopFPDBStoreServer();
 }
 
+// FIXME: not considering key-foreign key constraint with filtering leads to a bad query plan
+//  currently manually specify the join order
 TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pushdown-only-05" * doctest::skip(false || SKIP_SUITE)) {
   TestUtil::startFPDBStoreServer();
-  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/parquet/",
-                                            {"tpch/original/05.sql"},
-                                            PARALLEL_FPDB_STORE_SAME_NODE,
-                                            false,
-                                            ObjStoreType::FPDB_STORE,
-                                            Mode::pushdownOnlyMode()));
+  REQUIRE(TestUtil::e2eNoStartCalciteServerNoHeuristicJoinOrdering("tpch-sf0.01/parquet/",
+                                                                   {"tpch/original/05.sql"},
+                                                                   PARALLEL_FPDB_STORE_SAME_NODE,
+                                                                   false,
+                                                                   ObjStoreType::FPDB_STORE,
+                                                                   Mode::pushdownOnlyMode()));
   TestUtil::stopFPDBStoreServer();
 }
 

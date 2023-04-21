@@ -3,8 +3,26 @@
 //
 
 #include <fpdb/executor/metrics/PredTransMetrics.h>
+#include <fmt/format.h>
 
 namespace fpdb::executor::metrics {
+
+std::string PredTransMetrics::PTMetricsUnitTypeToStr(PTMetricsUnitType type) {
+  switch (type) {
+    case PTMetricsUnitType::LOCAL_FILTER: {
+      return "Local filter";
+    }
+    case PTMetricsUnitType::BLOOM_FILTER: {
+      return "Bloom filter";
+    }
+    case PTMetricsUnitType::PRED_TRANS: {
+      return "Predicate transfer";
+    }
+    default: {
+      throw std::runtime_error(fmt::format("Unknown PTMetricsUnitType: '{}'", type));
+    }
+  }
+}
 
 const std::unordered_set<PredTransMetrics::PTMetricsUnit,
                          PredTransMetrics::PTMetricsUnitHash,
