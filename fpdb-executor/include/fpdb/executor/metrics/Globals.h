@@ -16,7 +16,7 @@ namespace fpdb::executor::metrics {
  */
 inline bool SHOW_TRANSFER_METRICS = true;
 inline bool SHOW_DISK_METRICS = false;     // FIXME: currently this is only visible at the storage side
-inline bool SHOW_PRED_TRANS_METRICS = false;
+inline bool SHOW_PRED_TRANS_METRICS = true;
 inline bool SHOW_NUM_PUSHDOWN_FALL_BACK = false;
 
 inline bool hasMetricsToShow() {

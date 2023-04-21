@@ -190,10 +190,12 @@ void PrePToPTransformerForPredTrans::makeBloomFilterOps(
 void PrePToPTransformerForPredTrans::connectFwBloomFilterOps() {
   // collect nodes with no bfUse to visit
   std::queue<std::shared_ptr<PredTransGraphNode>> freeNodes;
-  for (const auto &node: fwPTGraphNodes_) {
-    if (node->bfCreatePTUnit_.lock()->numFwBFUseToVisit_ == 0) {
-      freeNodes.push(node);
-      fwPTGraphNodes_.erase(node);
+  for (auto nodeIt = fwPTGraphNodes_.begin(); nodeIt != fwPTGraphNodes_.end(); ) {
+    if ((*nodeIt)->bfCreatePTUnit_.lock()->numFwBFUseToVisit_ == 0) {
+      freeNodes.push(*nodeIt);
+      nodeIt = fwPTGraphNodes_.erase(nodeIt);
+    } else {
+      ++nodeIt;
     }
   }
 
@@ -223,17 +225,19 @@ void PrePToPTransformerForPredTrans::connectFwBloomFilterOps() {
 
   // throw exception when there is a cycle
   if (!fwPTGraphNodes_.empty()) {
-    throw std::runtime_error("The join origins (base table joins) contain cycles");
+    throw std::runtime_error("The join origins (base table joins) contain cycles (forward predicate transfer)");
   }
 }
 
 void PrePToPTransformerForPredTrans::connectBwBloomFilterOps() {
   // collect nodes with no bfUse to visit
   std::queue<std::shared_ptr<PredTransGraphNode>> freeNodes;
-  for (const auto &node: bwPTGraphNodes_) {
-    if (node->bfCreatePTUnit_.lock()->numBwBFUseToVisit_ == 0) {
-      freeNodes.push(node);
-      bwPTGraphNodes_.erase(node);
+  for (auto nodeIt = bwPTGraphNodes_.begin(); nodeIt != bwPTGraphNodes_.end(); ) {
+    if ((*nodeIt)->bfCreatePTUnit_.lock()->numBwBFUseToVisit_ == 0) {
+      freeNodes.push(*nodeIt);
+      nodeIt = bwPTGraphNodes_.erase(nodeIt);
+    } else {
+      ++nodeIt;
     }
   }
 
@@ -263,7 +267,7 @@ void PrePToPTransformerForPredTrans::connectBwBloomFilterOps() {
 
   // throw exception when there is a cycle
   if (!bwPTGraphNodes_.empty()) {
-    throw std::runtime_error("The join origins (base table joins) contain cycles");
+    throw std::runtime_error("The join origins (base table joins) contain cycles (backward predicate transfer)");
   }
 }
 
