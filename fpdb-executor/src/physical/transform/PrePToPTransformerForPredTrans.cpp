@@ -114,76 +114,113 @@ void PrePToPTransformerForPredTrans::makeBloomFilterOps(
     auto upLeftConnPOp = upLeftConnPOps[0];
     auto upRightConnPOp = upRightConnPOps[0];
 
-    // FIXME: currently only support inner and semi joins, but in fact can transfer in a single direction for left/right joins
-    if (joinOrigin->joinType_ != JoinType::INNER && joinOrigin->joinType_ != JoinType::LEFT_SEMI
-        && joinOrigin->joinType_ != JoinType::RIGHT_SEMI) {
+    // cannot transfer on FULL joins
+    if (joinOrigin->joinType_ == JoinType::FULL) {
       continue;
     }
-    join::HashJoinPredicate hashJoinPredicate(joinOrigin->leftColumns_, joinOrigin->rightColumns_);
-    const auto &hashJoinPredicateStr = hashJoinPredicate.toString();
 
-    // forward bloom filter
-    uint bfId = bfIdGen_.fetch_add(1);
-    auto fwBFCreate = std::make_shared<bloomfilter::BloomFilterCreatePOp>(
-            fmt::format("BloomFilterCreate(F)<{}>-{}", bfId, hashJoinPredicateStr),
-            std::vector<std::string>{},
-            0,
-            joinOrigin->leftColumns_);
-    auto fwBFUse = std::make_shared<bloomfilter::BloomFilterUsePOp>(
-            fmt::format("BloomFilterUse(F)<{}>-{}", bfId, hashJoinPredicateStr),
-            std::vector<std::string>{},
-            0,
-            joinOrigin->rightColumns_);
-    fwBFCreate->addBloomFilterUsePOp(fwBFUse);
-    fwBFUse->consume(fwBFCreate);
-
-    // backward bloom filter
-    auto bwBFCreate = std::make_shared<bloomfilter::BloomFilterCreatePOp>(
-            fmt::format("BloomFilterCreate(B)<{}>-{}", bfId, hashJoinPredicateStr),
-            std::vector<std::string>{},
-            0,
-            joinOrigin->rightColumns_);
-    auto bwBFUse = std::make_shared<bloomfilter::BloomFilterUsePOp>(
-            fmt::format("BloomFilterUse(B)<{}>-{}", bfId, hashJoinPredicateStr),
-            std::vector<std::string>{},
-            0,
-            joinOrigin->leftColumns_);
-    bwBFCreate->addBloomFilterUsePOp(bwBFUse);
-    bwBFUse->consume(bwBFCreate);
-
-    // add ops
-    PrePToPTransformerUtil::addPhysicalOps({fwBFCreate, fwBFUse, bwBFCreate, bwBFUse}, physicalOps_);
-
-    // make predicate transfer units
+    // make or find predicate transfer units
     auto leftPTUnit = std::make_shared<PredTransUnit>(joinOrigin->left_->getId(), upLeftConnPOp);
     auto ptUnitIt = ptUnits_.find(leftPTUnit);
     if (ptUnitIt == ptUnits_.end()) {
-      ++leftPTUnit->numBwBFUseToVisit_;
       ptUnits_.emplace(leftPTUnit);
       origUpConnOpToPTUnit_[upLeftConnPOp->name()] = leftPTUnit;
     } else {
       leftPTUnit = *ptUnitIt;
-      ++leftPTUnit->numBwBFUseToVisit_;
     }
-
     auto rightPTUnit = std::make_shared<PredTransUnit>(joinOrigin->right_->getId(), upRightConnPOp);
     ptUnitIt = ptUnits_.find(rightPTUnit);
     if (ptUnitIt == ptUnits_.end()) {
-      ++rightPTUnit->numFwBFUseToVisit_;
       ptUnits_.emplace(rightPTUnit);
       origUpConnOpToPTUnit_[upRightConnPOp->name()] = rightPTUnit;
     } else {
       rightPTUnit = *ptUnitIt;
+    }
+
+    // make bloom filter ops
+    join::HashJoinPredicate hashJoinPredicate(joinOrigin->leftColumns_, joinOrigin->rightColumns_);
+    const auto &hashJoinPredicateStr = hashJoinPredicate.toString();
+    uint bfId = bfIdGen_.fetch_add(1);
+
+    // forward bloom filter, blocked by right joins
+    if (joinOrigin->joinType_ != JoinType::RIGHT) {
+      auto fwBFCreate = std::make_shared<bloomfilter::BloomFilterCreatePOp>(
+              fmt::format("BloomFilterCreate(F)<{}>-{}", bfId, hashJoinPredicateStr),
+              std::vector<std::string>{},
+              0,
+              joinOrigin->leftColumns_);
+      auto fwBFUse = std::make_shared<bloomfilter::BloomFilterUsePOp>(
+              fmt::format("BloomFilterUse(F)<{}>-{}", bfId, hashJoinPredicateStr),
+              std::vector<std::string>{},
+              0,
+              joinOrigin->rightColumns_);
+      fwBFCreate->addBloomFilterUsePOp(fwBFUse);
+      fwBFUse->consume(fwBFCreate);
+
+      // add ops
+      PrePToPTransformerUtil::addPhysicalOps({fwBFCreate, fwBFUse}, physicalOps_);
+
+      // make predicate transfer graph nodes
+      auto fwPTGraphNode = std::make_shared<PredTransGraphNode>(fwBFCreate, fwBFUse, leftPTUnit, rightPTUnit);
+      fwPTGraphNodes_.emplace(fwPTGraphNode);
+      leftPTUnit->fwOutPTNodes_.emplace_back(fwPTGraphNode);
       ++rightPTUnit->numFwBFUseToVisit_;
     }
 
-    // make predicate transfer graph nodes
-    auto fwPTGraphNode = std::make_shared<PredTransGraphNode>(fwBFCreate, fwBFUse, leftPTUnit, rightPTUnit);
-    auto bwPTGraphNode = std::make_shared<PredTransGraphNode>(bwBFCreate, bwBFUse, rightPTUnit, leftPTUnit);
-    fwPTGraphNodes_.emplace(fwPTGraphNode);
-    bwPTGraphNodes_.emplace(bwPTGraphNode);
-    leftPTUnit->fwOutPTNodes_.emplace_back(fwPTGraphNode);
-    rightPTUnit->bwOutPTNodes_.emplace_back(bwPTGraphNode);
+    // backward bloom filter, blocked by left joins
+    if (joinOrigin->joinType_ != JoinType::LEFT) {
+      auto bwBFCreate = std::make_shared<bloomfilter::BloomFilterCreatePOp>(
+              fmt::format("BloomFilterCreate(B)<{}>-{}", bfId, hashJoinPredicateStr),
+              std::vector<std::string>{},
+              0,
+              joinOrigin->rightColumns_);
+      auto bwBFUse = std::make_shared<bloomfilter::BloomFilterUsePOp>(
+              fmt::format("BloomFilterUse(B)<{}>-{}", bfId, hashJoinPredicateStr),
+              std::vector<std::string>{},
+              0,
+              joinOrigin->leftColumns_);
+      bwBFCreate->addBloomFilterUsePOp(bwBFUse);
+      bwBFUse->consume(bwBFCreate);
+
+      // add ops
+      PrePToPTransformerUtil::addPhysicalOps({bwBFCreate, bwBFUse}, physicalOps_);
+
+      // make predicate transfer graph nodes
+      auto bwPTGraphNode = std::make_shared<PredTransGraphNode>(bwBFCreate, bwBFUse, rightPTUnit, leftPTUnit);
+      bwPTGraphNodes_.emplace(bwPTGraphNode);
+      rightPTUnit->bwOutPTNodes_.emplace_back(bwPTGraphNode);
+      ++leftPTUnit->numBwBFUseToVisit_;
+    }
+
+//    auto leftPTUnit = std::make_shared<PredTransUnit>(joinOrigin->left_->getId(), upLeftConnPOp);
+//    auto ptUnitIt = ptUnits_.find(leftPTUnit);
+//    if (ptUnitIt == ptUnits_.end()) {
+//      ++leftPTUnit->numBwBFUseToVisit_;
+//      ptUnits_.emplace(leftPTUnit);
+//      origUpConnOpToPTUnit_[upLeftConnPOp->name()] = leftPTUnit;
+//    } else {
+//      leftPTUnit = *ptUnitIt;
+//      ++leftPTUnit->numBwBFUseToVisit_;
+//    }
+//
+//    auto rightPTUnit = std::make_shared<PredTransUnit>(joinOrigin->right_->getId(), upRightConnPOp);
+//    ptUnitIt = ptUnits_.find(rightPTUnit);
+//    if (ptUnitIt == ptUnits_.end()) {
+//      ++rightPTUnit->numFwBFUseToVisit_;
+//      ptUnits_.emplace(rightPTUnit);
+//      origUpConnOpToPTUnit_[upRightConnPOp->name()] = rightPTUnit;
+//    } else {
+//      rightPTUnit = *ptUnitIt;
+//      ++rightPTUnit->numFwBFUseToVisit_;
+//    }
+//
+//    // make predicate transfer graph nodes
+//    auto fwPTGraphNode = std::make_shared<PredTransGraphNode>(fwBFCreate, fwBFUse, leftPTUnit, rightPTUnit);
+//    auto bwPTGraphNode = std::make_shared<PredTransGraphNode>(bwBFCreate, bwBFUse, rightPTUnit, leftPTUnit);
+//    fwPTGraphNodes_.emplace(fwPTGraphNode);
+//    bwPTGraphNodes_.emplace(bwPTGraphNode);
+//    leftPTUnit->fwOutPTNodes_.emplace_back(fwPTGraphNode);
+//    rightPTUnit->bwOutPTNodes_.emplace_back(bwPTGraphNode);
   }
 }
 
