@@ -10,13 +10,13 @@ namespace fpdb::executor::metrics {
 std::string PredTransMetrics::PTMetricsUnitTypeToStr(PTMetricsUnitType type) {
   switch (type) {
     case PTMetricsUnitType::LOCAL_FILTER: {
-      return "Local filter";
+      return "Local Filter";
     }
     case PTMetricsUnitType::BLOOM_FILTER: {
-      return "Bloom filter";
+      return "Bloom Filter";
     }
     case PTMetricsUnitType::PRED_TRANS: {
-      return "Predicate transfer";
+      return "Predicate Transfer";
     }
     default: {
       throw std::runtime_error(fmt::format("Unknown PTMetricsUnitType: '{}'", type));

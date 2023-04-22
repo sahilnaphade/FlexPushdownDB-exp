@@ -29,6 +29,7 @@
 #include <fpdb/executor/physical/transform/StoreTransformTraits.h>
 #include <fpdb/executor/physical/Globals.h>
 #include <fpdb/executor/metrics/Globals.h>
+#include <fpdb/plan/Globals.h>
 #include <fpdb/plan/prephysical/Util.h>
 #include <fpdb/catalogue/obj-store/ObjStoreCatalogueEntry.h>
 #include <fpdb/catalogue/obj-store/s3/S3Connector.h>
@@ -729,10 +730,11 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
   PrePToPTransformerUtil::addPhysicalOps(allPOps, physicalOps_);
   allPOps.clear();
 
-  // check if using bloom filter, note bloom filter cannot be used for right joins
-  bool useBloomFilter = USE_BLOOM_FILTER &&
-                        (joinType == JoinType::INNER || joinType == JoinType::LEFT
-                        || joinType == JoinType::LEFT_SEMI || joinType == JoinType::RIGHT_SEMI);
+  // check if using bloom filter, note:
+  //  - bloom filter is not needed after predicate transfer
+  //  - bloom filter cannot be used for right joins
+  bool useBloomFilter = USE_BLOOM_FILTER && !fpdb::plan::ENABLE_PRED_TRANS
+                        && joinType != JoinType::RIGHT && joinType != JoinType::FULL;
 
   // if using bloom filter
   if (useBloomFilter) {
