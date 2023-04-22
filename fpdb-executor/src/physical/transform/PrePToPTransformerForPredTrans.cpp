@@ -191,36 +191,6 @@ void PrePToPTransformerForPredTrans::makeBloomFilterOps(
       rightPTUnit->bwOutPTNodes_.emplace_back(bwPTGraphNode);
       ++leftPTUnit->numBwBFUseToVisit_;
     }
-
-//    auto leftPTUnit = std::make_shared<PredTransUnit>(joinOrigin->left_->getId(), upLeftConnPOp);
-//    auto ptUnitIt = ptUnits_.find(leftPTUnit);
-//    if (ptUnitIt == ptUnits_.end()) {
-//      ++leftPTUnit->numBwBFUseToVisit_;
-//      ptUnits_.emplace(leftPTUnit);
-//      origUpConnOpToPTUnit_[upLeftConnPOp->name()] = leftPTUnit;
-//    } else {
-//      leftPTUnit = *ptUnitIt;
-//      ++leftPTUnit->numBwBFUseToVisit_;
-//    }
-//
-//    auto rightPTUnit = std::make_shared<PredTransUnit>(joinOrigin->right_->getId(), upRightConnPOp);
-//    ptUnitIt = ptUnits_.find(rightPTUnit);
-//    if (ptUnitIt == ptUnits_.end()) {
-//      ++rightPTUnit->numFwBFUseToVisit_;
-//      ptUnits_.emplace(rightPTUnit);
-//      origUpConnOpToPTUnit_[upRightConnPOp->name()] = rightPTUnit;
-//    } else {
-//      rightPTUnit = *ptUnitIt;
-//      ++rightPTUnit->numFwBFUseToVisit_;
-//    }
-//
-//    // make predicate transfer graph nodes
-//    auto fwPTGraphNode = std::make_shared<PredTransGraphNode>(fwBFCreate, fwBFUse, leftPTUnit, rightPTUnit);
-//    auto bwPTGraphNode = std::make_shared<PredTransGraphNode>(bwBFCreate, bwBFUse, rightPTUnit, leftPTUnit);
-//    fwPTGraphNodes_.emplace(fwPTGraphNode);
-//    bwPTGraphNodes_.emplace(bwPTGraphNode);
-//    leftPTUnit->fwOutPTNodes_.emplace_back(fwPTGraphNode);
-//    rightPTUnit->bwOutPTNodes_.emplace_back(bwPTGraphNode);
   }
 }
 
