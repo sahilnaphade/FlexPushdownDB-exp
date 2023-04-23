@@ -9,6 +9,7 @@
 #include <fpdb/executor/physical/filter/FilterPOp.h>
 #include <fpdb/executor/physical/collate/CollatePOp.h>
 #include <fpdb/plan/prephysical/separable/SeparableSuperPrePOp.h>
+#include <fpdb/plan/prephysical/Util.h>
 #include <fpdb/catalogue/obj-store/ObjStoreCatalogueEntry.h>
 #include <fpdb/catalogue/obj-store/fpdb-store/FPDBStoreConnector.h>
 #include <queue>
@@ -61,6 +62,7 @@ std::shared_ptr<PhysicalPlan> PrePToPTransformerForPredTrans::transform() {
 void PrePToPTransformerForPredTrans::transformPredTrans() {
   // extract base table joins
   auto joinOrigins = JoinOriginTracer::trace(prePhysicalPlan_);
+  hasJoins_ = !joinOrigins.empty();
 
   // create bloom filter ops (both forward and backward)
   makeBloomFilterOps(joinOrigins);
@@ -102,6 +104,14 @@ PrePToPTransformerForPredTrans::transformFilterableScanPredTrans(const std::shar
 
 void PrePToPTransformerForPredTrans::makeBloomFilterOps(
         const std::unordered_set<std::shared_ptr<JoinOrigin>, JoinOriginPtrHash, JoinOriginPtrPred> &joinOrigins) {
+  // if there is no join, we need to visit all FilterableScanPrePOp here
+  if (!hasJoins_) {
+    for (const auto &op: Util::findAllOfType(prePhysicalPlan_->getRootOp(), PrePOpType::FILTERABLE_SCAN)) {
+      transformFilterableScanPredTrans(std::static_pointer_cast<FilterableScanPrePOp>(op));
+    }
+    return;
+  }
+
   for (const auto &joinOrigin: joinOrigins) {
     // transform the base table scan (+filter) ops
     auto upLeftConnPOps = transformFilterableScanPredTrans(joinOrigin->left_);
@@ -287,6 +297,11 @@ std::vector<std::shared_ptr<PhysicalOp>> PrePToPTransformerForPredTrans::transfo
 }
 
 void PrePToPTransformerForPredTrans::updateFilterableScanTransRes() {
+  // if there is no join, no need to update (origUpConnOpToPTUnit_ and ptUnit_ will be empty)
+  if (!hasJoins_) {
+    return;
+  }
+
   for (auto &transResIt: filterableScanTransRes_) {
     std::vector<std::shared_ptr<PhysicalOp>> updatedTransRes;
     for (const auto &origConnOp: transResIt.second) {

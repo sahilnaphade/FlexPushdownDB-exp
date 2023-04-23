@@ -16,4 +16,17 @@ std::optional<uint> Util::traceScanOriginWithNoJoinInPath(const std::shared_ptr<
   }
 }
 
+std::vector<std::shared_ptr<PrePhysicalOp>> Util::findAllOfType(const std::shared_ptr<PrePhysicalOp> &op,
+                                                                PrePOpType type) {
+  std::vector<std::shared_ptr<PrePhysicalOp>> res;
+  for (const auto &producer: op->getProducers()) {
+    const auto &subRes = findAllOfType(producer, type);
+    res.insert(res.end(), subRes.begin(), subRes.end());
+  }
+  if (op->getType() == type) {
+    res.emplace_back(op);
+  }
+  return res;
+}
+
 }

@@ -115,7 +115,7 @@ private:
   std::shared_ptr<PhysicalPlan> transform() override;
 
   /**
-   * Phase1: generate a partial plan for predicate transfer using bloom filters
+   * Phase 1: generate a partial plan for predicate transfer using bloom filters
    */
   void transformPredTrans();
 
@@ -155,6 +155,8 @@ private:
   /**
    * states maintained during transformation
    */
+  bool hasJoins_ = false;
+
   // generate unique id for bloom filter ops for each join origin
   // note this is different from prePOpId used for other ops
   std::atomic<uint> bfIdGen_ = 0;
