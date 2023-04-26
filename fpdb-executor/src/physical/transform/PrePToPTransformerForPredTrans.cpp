@@ -64,9 +64,11 @@ std::shared_ptr<PhysicalPlan> PrePToPTransformerForPredTrans::transform() {
 }
 
 void PrePToPTransformerForPredTrans::transformPredTrans() {
+  // transform all FilterableScanPrePOp
+  transformAllFilterableScanPredTrans();
+
   // extract base table joins
   auto joinOrigins = JoinOriginTracer::trace(prePhysicalPlan_);
-  hasJoins_ = !joinOrigins.empty();
 
   // create bloom filter ops (both forward and backward)
   makeBloomFilterOps(joinOrigins);
@@ -76,6 +78,13 @@ void PrePToPTransformerForPredTrans::transformPredTrans() {
 
   // connect backward bloom filter ops
   connectBwBloomFilterOps();
+}
+
+void PrePToPTransformerForPredTrans::transformAllFilterableScanPredTrans() {
+  auto a = Util::findAllOfType(prePhysicalPlan_->getRootOp(), PrePOpType::FILTERABLE_SCAN);
+  for (const auto &op: Util::findAllOfType(prePhysicalPlan_->getRootOp(), PrePOpType::FILTERABLE_SCAN)) {
+    transformFilterableScanPredTrans(std::static_pointer_cast<FilterableScanPrePOp>(op));
+  }
 }
 
 std::vector<std::shared_ptr<PhysicalOp>>
@@ -106,20 +115,22 @@ PrePToPTransformerForPredTrans::transformFilterableScanPredTrans(const std::shar
   return transformRes.first;
 }
 
+std::vector<std::shared_ptr<PhysicalOp>>
+PrePToPTransformerForPredTrans::getFilterableScanTransRes(const std::shared_ptr<FilterableScanPrePOp> &prePOp) {
+  auto transformResIt = filterableScanTransRes_.find(prePOp->getId());
+  if (transformResIt != filterableScanTransRes_.end()) {
+    return transformResIt->second;
+  } else {
+    throw std::runtime_error(fmt::format("FilterableScanPrePOp '{}' not transformed yet", prePOp->getId()));
+  }
+}
+
 void PrePToPTransformerForPredTrans::makeBloomFilterOps(
         const std::unordered_set<std::shared_ptr<JoinOrigin>, JoinOriginPtrHash, JoinOriginPtrPred> &joinOrigins) {
-  // if there is no join, we need to visit all FilterableScanPrePOp here
-  if (!hasJoins_) {
-    for (const auto &op: Util::findAllOfType(prePhysicalPlan_->getRootOp(), PrePOpType::FILTERABLE_SCAN)) {
-      transformFilterableScanPredTrans(std::static_pointer_cast<FilterableScanPrePOp>(op));
-    }
-    return;
-  }
-
   for (const auto &joinOrigin: joinOrigins) {
     // transform the base table scan (+filter) ops
-    auto upLeftConnPOps = transformFilterableScanPredTrans(joinOrigin->left_);
-    auto upRightConnPOps = transformFilterableScanPredTrans(joinOrigin->right_);
+    auto upLeftConnPOps = getFilterableScanTransRes(joinOrigin->left_);
+    auto upRightConnPOps = getFilterableScanTransRes(joinOrigin->right_);
 
     // FIXME: currently only support single-partition tables
     if (upLeftConnPOps.size() != 1 || upRightConnPOps.size() != 1) {
@@ -301,34 +312,29 @@ std::vector<std::shared_ptr<PhysicalOp>> PrePToPTransformerForPredTrans::transfo
 }
 
 void PrePToPTransformerForPredTrans::updateFilterableScanTransRes() {
-  // if there is no join, no need to update (origUpConnOpToPTUnit_ and ptUnit_ will be empty)
-  if (!hasJoins_) {
-    return;
-  }
-
+  // update the transform result of FilterableScanPrePOp, if it participates in predicate transfer
   for (auto &transResIt: filterableScanTransRes_) {
+    bool needToUpdate = true;
     std::vector<std::shared_ptr<PhysicalOp>> updatedTransRes;
     for (const auto &origConnOp: transResIt.second) {
       const auto &origUpConnOpToPTUnitIt = origUpConnOpToPTUnit_.find(origConnOp->name());
-      if (origUpConnOpToPTUnitIt == origUpConnOpToPTUnit_.end()) {
-        throw std::runtime_error(
-                fmt::format("OrigUpConnOp '{}' not found in origUpConnOpToPTUnit_", origConnOp->name()));
+      if (origUpConnOpToPTUnitIt != origUpConnOpToPTUnit_.end()) {
+        updatedTransRes.emplace_back(origUpConnOpToPTUnitIt->second->currUpConnOp_);
+      } else {
+        // no participation if predicate transfer
+        needToUpdate = false;
+        break;
       }
-      updatedTransRes.emplace_back(origUpConnOpToPTUnitIt->second->currUpConnOp_);
     }
-    transResIt.second = updatedTransRes;
+    if (needToUpdate) {
+      transResIt.second = updatedTransRes;
+    }
   }
 }
 
 std::vector<std::shared_ptr<PhysicalOp>>
 PrePToPTransformerForPredTrans::transformFilterableScan(const std::shared_ptr<FilterableScanPrePOp> &prePOp) {
-  // this prepOp should have been visited in Phase 1
-  auto transformResIt = filterableScanTransRes_.find(prePOp->getId());
-  if (transformResIt != filterableScanTransRes_.end()) {
-    return transformResIt->second;
-  } else {
-    throw std::runtime_error(fmt::format("FilterableScanPrePOp '{}' not visited in Phase 1", prePOp->getId()));
-  }
+  return getFilterableScanTransRes(prePOp);
 }
 
 }
