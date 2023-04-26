@@ -37,6 +37,24 @@ void POpContext::tell(const std::shared_ptr<Message> &msg,
   for (const auto &consumer: finalConsumers) {
     send_regular(msg, consumer);
   }
+
+#if SHOW_DEBUG_METRICS == true
+  // predicate transfer metrics
+  if (msg->type() == MessageType::TUPLESET) {
+    const auto &ptMetricsInfo = operatorActor_->operator_()->getPTMetricsInfo();
+    const auto &tupleSet = std::static_pointer_cast<TupleSetMessage>(msg)->tuples();
+    if (ptMetricsInfo.collPredTransMetrics_ && tupleSet->numColumns() > 0) {
+      std::shared_ptr<Message> ptMetricsMessage = std::make_shared<PredTransMetricsMessage>(
+              metrics::PredTransMetrics::PTMetricsUnit(ptMetricsInfo.prePOpId_,
+                                                       operatorActor_->operator_()->getTypeString(),
+                                                       ptMetricsInfo.ptMetricsType_,
+                                                       tupleSet->schema(),
+                                                       tupleSet->numRows()),
+              operatorActor_->name_);
+      operatorActor_->anon_send(rootActor_, Envelope(ptMetricsMessage));
+    }
+  }
+#endif
 }
 
 void POpContext::send(const std::shared_ptr<message::Message> &msg, const std::string& consumer) {
@@ -65,6 +83,24 @@ void POpContext::send(const std::shared_ptr<message::Message> &msg, const std::s
   } else {
     // regular message
     send_regular(msg, consumer);
+
+#if SHOW_DEBUG_METRICS == true
+    // predicate transfer metrics
+    if (msg->type() == MessageType::TUPLESET) {
+      const auto &ptMetricsInfo = operatorActor_->operator_()->getPTMetricsInfo();
+      const auto &tupleSet = std::static_pointer_cast<TupleSetMessage>(msg)->tuples();
+      if (ptMetricsInfo.collPredTransMetrics_ && tupleSet->numColumns() > 0) {
+        std::shared_ptr<Message> ptMetricsMessage = std::make_shared<PredTransMetricsMessage>(
+                metrics::PredTransMetrics::PTMetricsUnit(ptMetricsInfo.prePOpId_,
+                                                         operatorActor_->operator_()->getTypeString(),
+                                                         ptMetricsInfo.ptMetricsType_,
+                                                         tupleSet->schema(),
+                                                         tupleSet->numRows()),
+                operatorActor_->name_);
+        operatorActor_->anon_send(rootActor_, Envelope(ptMetricsMessage));
+      }
+    }
+#endif
   }
 }
 
@@ -115,24 +151,6 @@ void POpContext::send_regular(const std::shared_ptr<message::Message> &msg, cons
     }
 #endif
   }
-
-#if SHOW_DEBUG_METRICS == true
-  // predicate transfer metrics
-  if (appliedMsg->type() == MessageType::TUPLESET) {
-    const auto &ptMetricsInfo = operatorActor_->operator_()->getPTMetricsInfo();
-    const auto &tupleSet = std::static_pointer_cast<TupleSetMessage>(appliedMsg)->tuples();
-    if (ptMetricsInfo.collPredTransMetrics_ && tupleSet->numColumns() > 0) {
-      std::shared_ptr<Message> ptMetricsMessage = std::make_shared<PredTransMetricsMessage>(
-              metrics::PredTransMetrics::PTMetricsUnit(ptMetricsInfo.prePOpId_,
-                                                       operatorActor_->operator_()->getTypeString(),
-                                                       ptMetricsInfo.ptMetricsType_,
-                                                       tupleSet->schema(),
-                                                       tupleSet->numRows()),
-              operatorActor_->name_);
-      operatorActor_->anon_send(rootActor_, Envelope(ptMetricsMessage));
-    }
-  }
-#endif
 }
 
 /**

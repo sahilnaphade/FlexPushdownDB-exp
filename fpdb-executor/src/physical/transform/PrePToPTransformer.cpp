@@ -118,11 +118,13 @@ vector<shared_ptr<PhysicalOp>> PrePToPTransformer::transformDfs(const shared_ptr
       const auto &transRes = transformSeparableSuper(separableSuperPrePOp);
 
 #if SHOW_DEBUG_METRICS == true
-    // collect predicate transfer metrics
-    for (const auto &op: transRes) {
-      op->setCollPredTransMetrics(prePOp->getId(), metrics::PredTransMetrics::PTMetricsUnitType::LOCAL_FILTER);
+    // collect predicate transfer baseline metrics
+    if (!ENABLE_PRED_TRANS) {
+      for (const auto &op: transRes) {
+        op->setCollPredTransMetrics(prePOp->getId(), metrics::PredTransMetrics::PTMetricsUnitType::LOCAL_FILTER);
+      }
+      prePOpIdToConnOpsForPredTrans_[prePOp->getId()] = transRes;
     }
-    prePOpIdToConnOps_[prePOp->getId()] = transRes;
 #endif
 
       return transRes;
@@ -300,20 +302,22 @@ PrePToPTransformer::transformGroup(const shared_ptr<GroupPrePOp> &groupPrePOp) {
   }
 
 #if SHOW_DEBUG_METRICS == true
-  // update ops to collect predicate transfer metrics
-  auto optPrePOpId = prephysical::Util::traceScanOriginWithNoJoinInPath(groupPrePOp);
-  if (optPrePOpId.has_value()) {
-    // remove flog for former ops
-    auto transResIt = prePOpIdToConnOps_.find(*optPrePOpId);
-    if (transResIt != prePOpIdToConnOps_.end()) {
-      for (const auto &op: transResIt->second) {
-        op->unsetCollPredTransMetrics();
+  // update ops to collect predicate transfer baseline metrics
+  if (!ENABLE_PRED_TRANS) {
+    auto optPrePOpId = prephysical::Util::traceScanOriginWithNoJoinInPath(groupPrePOp);
+    if (optPrePOpId.has_value()) {
+      // remove flog for former ops
+      auto transResIt = prePOpIdToConnOpsForPredTrans_.find(*optPrePOpId);
+      if (transResIt != prePOpIdToConnOpsForPredTrans_.end()) {
+        for (const auto &op: transResIt->second) {
+          op->unsetCollPredTransMetrics();
+        }
       }
-    }
 
-    // set flag for latter ops
-    for (const auto &op: transRes) {
-      op->setCollPredTransMetrics(*optPrePOpId, metrics::PredTransMetrics::PTMetricsUnitType::LOCAL_FILTER);
+      // set flag for latter ops
+      for (const auto &op: transRes) {
+        op->setCollPredTransMetrics(*optPrePOpId, metrics::PredTransMetrics::PTMetricsUnitType::LOCAL_FILTER);
+      }
     }
   }
 #endif

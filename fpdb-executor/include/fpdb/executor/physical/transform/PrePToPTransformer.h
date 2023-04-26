@@ -121,7 +121,7 @@ protected:
 
 #if SHOW_DEBUG_METRICS == true
   // save transform results for some prephysical ops, used in predicate transfer metrics
-  unordered_map<uint, vector<shared_ptr<PhysicalOp>>> prePOpIdToConnOps_;
+  unordered_map<uint, vector<shared_ptr<PhysicalOp>>> prePOpIdToConnOpsForPredTrans_;
 #endif
 };
 
