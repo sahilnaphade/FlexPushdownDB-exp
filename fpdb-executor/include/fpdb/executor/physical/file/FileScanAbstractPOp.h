@@ -29,7 +29,6 @@ public:
   virtual ~FileScanAbstractPOp() = default;
 
   const std::shared_ptr<FileScanKernel> &getKernel() const;
-  void setCollPredTransMetrics(uint prePOpId, metrics::PredTransMetrics::PTMetricsUnitType ptMetricsType);
 
   void onReceive(const Envelope &message) override;
   void clear() override;
@@ -47,13 +46,6 @@ protected:
 
   // for metrics of adaptive pushdown
   bool getAdaptPushdownMetrics_ = false;
-
-  /**
-   * used to collect predicate transfer metrics
-   */
-  bool collPredTransMetrics_ = false;
-  uint prePOpId_;
-  metrics::PredTransMetrics::PTMetricsUnitType ptMetricsType_;
 };
 
 }

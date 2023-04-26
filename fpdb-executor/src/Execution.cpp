@@ -723,6 +723,10 @@ string Execution::showDebugMetrics() const{
         ss << "[" << unit.prePOpId_ << "]";
         ss << endl;
 
+        ss << left << setw(60) << "Collector POp Type";
+        ss << unit.collectorPOpTypeStr_;
+        ss << endl;
+
         ss << left << setw(60) << "Predicate Transfer Type";
         ss << metrics::PredTransMetrics::PTMetricsUnitTypeToStr(unit.type_);
         ss << endl;

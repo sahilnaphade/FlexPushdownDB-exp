@@ -30,7 +30,6 @@ public:
 
   const std::vector<std::string> &getBloomFilterColumnNames() const;
   const std::optional<std::shared_ptr<BloomFilterBase>> &getBloomFilter() const;
-  void setCollPredTransMetrics(uint prePOpId, metrics::PredTransMetrics::PTMetricsUnitType ptMetricsType);
   void setBloomFilter(const std::shared_ptr<BloomFilterBase> &bloomFilter);
   bool receivedBloomFilter() const;
   void clearProducersExceptBloomFilterCreate();
@@ -47,13 +46,6 @@ private:
 
   std::optional<std::shared_ptr<TupleSet>> receivedTupleSet_;
   std::optional<std::shared_ptr<BloomFilterBase>> bloomFilter_;
-
-  /**
-   * used to collect predicate transfer metrics
-   */
-  bool collPredTransMetrics_ = false;
-  uint prePOpId_;
-  metrics::PredTransMetrics::PTMetricsUnitType ptMetricsType_;
 
 // caf inspect
 public:

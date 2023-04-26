@@ -111,6 +111,10 @@ std::shared_ptr<POpContext> PhysicalOp::ctx() {
   return opContext_;
 }
 
+const metrics::PredTransMetrics::PTMetricsInfo &PhysicalOp::getPTMetricsInfo() const {
+  return ptMetricsInfo_;
+}
+
 void PhysicalOp::create(const std::shared_ptr<POpContext>& ctx) {
   assert (ctx);
   SPDLOG_DEBUG("Creating operator  |  name: '{}'", this->name_);
@@ -144,6 +148,19 @@ bool PhysicalOp::isSeparated() const {
 void PhysicalOp::setSeparated(bool isSeparated) {
   isSeparated_ = isSeparated;
 }
+
+#if SHOW_DEBUG_METRICS == true
+void PhysicalOp::setCollPredTransMetrics(uint prePOpId,
+                                         metrics::PredTransMetrics::PTMetricsUnitType ptMetricsType) {
+  ptMetricsInfo_.collPredTransMetrics_ = true;
+  ptMetricsInfo_.prePOpId_ = prePOpId;
+  ptMetricsInfo_.ptMetricsType_ = ptMetricsType;
+}
+
+void PhysicalOp::unsetCollPredTransMetrics() {
+  ptMetricsInfo_.collPredTransMetrics_ = false;
+}
+#endif
 
 } // namespace
 

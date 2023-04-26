@@ -79,12 +79,6 @@ void FilterPOp::setBitmap(const std::optional<std::vector<int64_t>> &bitmap) {
   bitmapWrapper_->bitmap_ = bitmap;
 }
 
-void FilterPOp::setCollPredTransMetrics(uint prePOpId, metrics::PredTransMetrics::PTMetricsUnitType ptMetricsType) {
-  collPredTransMetrics_ = true;
-  prePOpId_ = prePOpId;
-  ptMetricsType_ = ptMetricsType;
-}
-
 void FilterPOp::onReceive(const Envelope &Envelope) {
   const auto& message = Envelope.message();
 
@@ -482,19 +476,6 @@ void FilterPOp::sendTuples() {
   std::shared_ptr<Message> tupleSetMessage =
           std::make_shared<TupleSetMessage>(*filtered_, name());
   ctx()->tell(tupleSetMessage);
-
-#if SHOW_DEBUG_METRICS == true
-  // predicate transfer metrics
-  if (collPredTransMetrics_ && (*filtered_)->numColumns() > 0) {
-    std::shared_ptr<Message> ptMetricsMessage = std::make_shared<PredTransMetricsMessage>(
-            metrics::PredTransMetrics::PTMetricsUnit(prePOpId_,
-                                                     ptMetricsType_,
-                                                     (*filtered_)->schema(),
-                                                     (*filtered_)->numRows()),
-            name_);
-    ctx()->notifyRoot(ptMetricsMessage);
-  }
-#endif
 
   filtered_.reset();
 }

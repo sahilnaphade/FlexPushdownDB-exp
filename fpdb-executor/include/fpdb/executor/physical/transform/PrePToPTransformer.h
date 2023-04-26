@@ -6,6 +6,7 @@
 #define FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_TRANSFORM_PREPTOPTRANSFORMER_H
 
 #include <fpdb/executor/physical/PhysicalPlan.h>
+#include <fpdb/executor/metrics/Globals.h>
 #include <fpdb/plan/prephysical/PrePhysicalPlan.h>
 #include <fpdb/plan/prephysical/SortPrePOp.h>
 #include <fpdb/plan/prephysical/LimitSortPrePOp.h>
@@ -117,6 +118,11 @@ protected:
 
   // state maintained during transformation
   unordered_map<string, shared_ptr<PhysicalOp>> physicalOps_;
+
+#if SHOW_DEBUG_METRICS == true
+  // save transform results for some prephysical ops, used in predicate transfer metrics
+  unordered_map<uint, vector<shared_ptr<PhysicalOp>>> prePOpIdToConnOps_;
+#endif
 };
 
 }

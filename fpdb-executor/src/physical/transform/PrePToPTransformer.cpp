@@ -120,14 +120,9 @@ vector<shared_ptr<PhysicalOp>> PrePToPTransformer::transformDfs(const shared_ptr
 #if SHOW_DEBUG_METRICS == true
     // collect predicate transfer metrics
     for (const auto &op: transRes) {
-      if (op->getType() == POpType::FILTER) {
-        std::static_pointer_cast<filter::FilterPOp>(op)
-                ->setCollPredTransMetrics(prePOp->getId(), metrics::PredTransMetrics::PTMetricsUnitType::LOCAL_FILTER);
-      } else if (op->getType() == POpType::LOCAL_FILE_SCAN || op->getType() == POpType::REMOTE_FILE_SCAN) {
-        std::static_pointer_cast<file::FileScanAbstractPOp>(op)
-                ->setCollPredTransMetrics(prePOp->getId(), metrics::PredTransMetrics::PTMetricsUnitType::LOCAL_FILTER);
-      }
+      op->setCollPredTransMetrics(prePOp->getId(), metrics::PredTransMetrics::PTMetricsUnitType::LOCAL_FILTER);
     }
+    prePOpIdToConnOps_[prePOp->getId()] = transRes;
 #endif
 
       return transRes;
@@ -297,11 +292,33 @@ PrePToPTransformer::transformAggregate(const shared_ptr<AggregatePrePOp> &aggreg
 
 vector<shared_ptr<PhysicalOp>>
 PrePToPTransformer::transformGroup(const shared_ptr<GroupPrePOp> &groupPrePOp) {
+  vector<shared_ptr<PhysicalOp>> transRes;
   if (USE_TWO_PHASE_GROUP_BY) {
-    return transformGroupTwoPhase(groupPrePOp);
+    transRes = transformGroupTwoPhase(groupPrePOp);
   } else {
-    return transformGroupOnePhase(groupPrePOp);
+    transRes = transformGroupOnePhase(groupPrePOp);
   }
+
+#if SHOW_DEBUG_METRICS == true
+  // update ops to collect predicate transfer metrics
+  auto optPrePOpId = prephysical::Util::traceScanOriginWithNoJoinInPath(groupPrePOp);
+  if (optPrePOpId.has_value()) {
+    // remove flog for former ops
+    auto transResIt = prePOpIdToConnOps_.find(*optPrePOpId);
+    if (transResIt != prePOpIdToConnOps_.end()) {
+      for (const auto &op: transResIt->second) {
+        op->unsetCollPredTransMetrics();
+      }
+    }
+
+    // set flag for latter ops
+    for (const auto &op: transRes) {
+      op->setCollPredTransMetrics(*optPrePOpId, metrics::PredTransMetrics::PTMetricsUnitType::LOCAL_FILTER);
+    }
+  }
+#endif
+
+  return transRes;
 }
 
 vector<shared_ptr<PhysicalOp>>

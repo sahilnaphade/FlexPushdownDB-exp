@@ -46,7 +46,11 @@ std::shared_ptr<PhysicalPlan> PrePToPTransformerForPredTrans::transform() {
 
 #if SHOW_DEBUG_METRICS == true
   // collect predicate transfer metrics
-  collPredTransMetrics();
+  for (const auto &ptUnit: ptUnits_) {
+    auto currConnOp = ptUnit->currUpConnOp_;
+    uint prePOpId = ptUnit->prePOpId_;
+    currConnOp->setCollPredTransMetrics(prePOpId, metrics::PredTransMetrics::PTMetricsUnitType::PRED_TRANS);
+  }
 #endif
 
   // make the final plan
@@ -326,36 +330,5 @@ PrePToPTransformerForPredTrans::transformFilterableScan(const std::shared_ptr<Fi
     throw std::runtime_error(fmt::format("FilterableScanPrePOp '{}' not visited in Phase 1", prePOp->getId()));
   }
 }
-
-#if SHOW_DEBUG_METRICS == true
-void PrePToPTransformerForPredTrans::collPredTransMetrics() {
-  for (const auto &ptUnit: ptUnits_) {
-    auto currConnOp = ptUnit->currUpConnOp_;
-    uint prePOpId = ptUnit->prePOpId_;
-    switch (currConnOp->getType()) {
-      case POpType::LOCAL_FILE_SCAN:
-      case POpType::REMOTE_FILE_SCAN: {
-        std::static_pointer_cast<file::FileScanAbstractPOp>(currConnOp)
-                ->setCollPredTransMetrics(prePOpId, metrics::PredTransMetrics::PTMetricsUnitType::PRED_TRANS);
-        break;
-      }
-      case POpType::FILTER: {
-        std::static_pointer_cast<filter::FilterPOp>(currConnOp)
-                ->setCollPredTransMetrics(prePOpId, metrics::PredTransMetrics::PTMetricsUnitType::PRED_TRANS);
-        break;
-      }
-      case POpType::BLOOM_FILTER_USE: {
-        std::static_pointer_cast<bloomfilter::BloomFilterUsePOp>(currConnOp)
-                ->setCollPredTransMetrics(prePOpId, metrics::PredTransMetrics::PTMetricsUnitType::PRED_TRANS);
-        break;
-      }
-      default: {
-        throw std::runtime_error(fmt::format("Invalid physical op type to collect predicate transfer metrics: '{}'",
-                                             currConnOp->getTypeString()));
-      }
-    }
-  }
-}
-#endif
 
 }

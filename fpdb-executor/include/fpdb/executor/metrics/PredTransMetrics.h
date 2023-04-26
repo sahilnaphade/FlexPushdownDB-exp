@@ -23,14 +23,23 @@ public:
 
   static std::string PTMetricsUnitTypeToStr(PTMetricsUnitType type);
 
+  struct PTMetricsInfo {
+    bool collPredTransMetrics_ = false;
+    uint prePOpId_;
+    PTMetricsUnitType ptMetricsType_;
+  };
+
   struct PTMetricsUnit {
     uint prePOpId_;
+    std::string collectorPOpTypeStr_;
     PTMetricsUnitType type_;
     std::shared_ptr<arrow::Schema> schema_;
     mutable int64_t numRows_ = 0;
 
-    PTMetricsUnit(uint prePOpId, PTMetricsUnitType type, const std::shared_ptr<arrow::Schema> &schema, int64_t numRows):
-      prePOpId_(prePOpId), type_(type), schema_(schema), numRows_(numRows) {}
+    PTMetricsUnit(uint prePOpId, const std::string &collectorPOpTypeStr, PTMetricsUnitType type,
+                  const std::shared_ptr<arrow::Schema> &schema, int64_t numRows):
+      prePOpId_(prePOpId), collectorPOpTypeStr_(collectorPOpTypeStr), type_(type),
+      schema_(schema), numRows_(numRows) {}
 
     PTMetricsUnit() = default;
     PTMetricsUnit(const PTMetricsUnit&) = default;
@@ -38,11 +47,13 @@ public:
     ~PTMetricsUnit() = default;
 
     size_t hash() const {
-      return fpdb::util::hashCombine({prePOpId_, type_});
+      return fpdb::util::hashCombine({prePOpId_, std::hash<std::string>()(collectorPOpTypeStr_), type_});
     }
 
     bool equalTo(const PTMetricsUnit &other) const {
-      return prePOpId_ == other.prePOpId_ && type_ == other.type_;
+      return prePOpId_ == other.prePOpId_
+          && collectorPOpTypeStr_ == other.collectorPOpTypeStr_
+          && type_ == other.type_;
     }
 
     // caf inspect
@@ -56,6 +67,7 @@ public:
         return true;
       };
       return f.object(unit).fields(f.field("prePOpId", unit.prePOpId_),
+                                   f.field("collectorPOpTypeStr", unit.collectorPOpTypeStr_),
                                    f.field("type", unit.type_),
                                    f.field("schema", schemaToBytes, schemaFromBytes),
                                    f.field("numRows", unit.numRows_));

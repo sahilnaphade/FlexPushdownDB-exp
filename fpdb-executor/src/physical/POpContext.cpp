@@ -115,6 +115,24 @@ void POpContext::send_regular(const std::shared_ptr<message::Message> &msg, cons
     }
 #endif
   }
+
+#if SHOW_DEBUG_METRICS == true
+  // predicate transfer metrics
+  if (appliedMsg->type() == MessageType::TUPLESET) {
+    const auto &ptMetricsInfo = operatorActor_->operator_()->getPTMetricsInfo();
+    const auto &tupleSet = std::static_pointer_cast<TupleSetMessage>(appliedMsg)->tuples();
+    if (ptMetricsInfo.collPredTransMetrics_ && tupleSet->numColumns() > 0) {
+      std::shared_ptr<Message> ptMetricsMessage = std::make_shared<PredTransMetricsMessage>(
+              metrics::PredTransMetrics::PTMetricsUnit(ptMetricsInfo.prePOpId_,
+                                                       operatorActor_->operator_()->getTypeString(),
+                                                       ptMetricsInfo.ptMetricsType_,
+                                                       tupleSet->schema(),
+                                                       tupleSet->numRows()),
+              operatorActor_->name_);
+      operatorActor_->anon_send(rootActor_, Envelope(ptMetricsMessage));
+    }
+  }
+#endif
 }
 
 /**

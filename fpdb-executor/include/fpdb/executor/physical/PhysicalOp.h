@@ -8,9 +8,11 @@
 #include <fpdb/executor/physical/Forward.h>
 #include <fpdb/executor/physical/POpContext.h>
 #include <fpdb/executor/physical/POpType.h>
+#include <fpdb/executor/physical/fpdb-store/FPDBStoreBloomFilterInfo.h>
 #include <fpdb/executor/message/Message.h>
 #include <fpdb/executor/message/Envelope.h>
-#include <fpdb/executor/physical/fpdb-store/FPDBStoreBloomFilterInfo.h>
+#include <fpdb/executor/metrics/Globals.h>
+#include <fpdb/executor/metrics/PredTransMetrics.h>
 #include <caf/all.hpp>
 #include <string>
 #include <memory>
@@ -45,6 +47,7 @@ public:
   const std::unordered_map<std::string, std::shared_ptr<fpdb_store::FPDBStoreBloomFilterUseInfo>>&
           getConsumerToBloomFilterInfo() const;
   std::shared_ptr<POpContext> ctx();
+  const metrics::PredTransMetrics::PTMetricsInfo &getPTMetricsInfo() const;
 
   // setters
   void setName(const std::string &Name);
@@ -70,6 +73,11 @@ public:
   bool isSeparated() const;
   void setSeparated(bool isSeparated);
 
+#if SHOW_DEBUG_METRICS == true
+  void setCollPredTransMetrics(uint prePOpId, metrics::PredTransMetrics::PTMetricsUnitType ptMetricsType);
+  void unsetCollPredTransMetrics();
+#endif
+
   virtual void onReceive(const fpdb::executor::message::Envelope &msg) = 0;
   virtual void clear() = 0;
   void destroyActor();
@@ -91,6 +99,9 @@ protected:
   // whether this operator is used in hybrid execution
   bool isSeparated_;
 
+#if SHOW_DEBUG_METRICS == true
+  metrics::PredTransMetrics::PTMetricsInfo ptMetricsInfo_;
+#endif
 };
 
 } // namespace

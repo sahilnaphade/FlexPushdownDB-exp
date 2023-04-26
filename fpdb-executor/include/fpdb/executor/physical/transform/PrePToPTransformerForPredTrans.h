@@ -145,13 +145,6 @@ private:
   std::vector<std::shared_ptr<PhysicalOp>>
   transformFilterableScan(const std::shared_ptr<FilterableScanPrePOp> &prePOp) override;
 
-#if SHOW_DEBUG_METRICS == true
-  /**
-   * For collecting predicate transfer metrics
-   */
-  void collPredTransMetrics();
-#endif
-
   /**
    * states maintained during transformation
    */
