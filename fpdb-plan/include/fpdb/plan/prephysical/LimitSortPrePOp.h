@@ -15,6 +15,7 @@ namespace fpdb::plan::prephysical {
 class LimitSortPrePOp: public PrePhysicalOp {
 public:
   LimitSortPrePOp(uint id,
+                  double rowCount,
                   int64_t k,
                   const vector<SortKey> &sortKeys);
 

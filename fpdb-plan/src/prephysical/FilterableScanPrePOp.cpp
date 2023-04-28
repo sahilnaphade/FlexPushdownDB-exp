@@ -6,10 +6,9 @@
 
 namespace fpdb::plan::prephysical {
 
-FilterableScanPrePOp::FilterableScanPrePOp(uint id, const shared_ptr<Table> &table, double rowCount) :
-  PrePhysicalOp(id, FILTERABLE_SCAN),
-  table_(table),
-  rowCount_(rowCount) {}
+FilterableScanPrePOp::FilterableScanPrePOp(uint id, double rowCount, const shared_ptr<Table> &table) :
+  PrePhysicalOp(id, FILTERABLE_SCAN, rowCount),
+  table_(table) {}
 
 string FilterableScanPrePOp::getTypeString() {
   return "FilterableScanPrePOp";
@@ -41,16 +40,8 @@ const shared_ptr<Table> &FilterableScanPrePOp::getTable() const {
   return table_;
 }
 
-double FilterableScanPrePOp::getRowCount() const {
-  return rowCount_;
-}
-
 void FilterableScanPrePOp::setPredicate(const shared_ptr<fpdb::expression::gandiva::Expression> &predicate) {
   predicate_ = predicate;
-}
-
-void FilterableScanPrePOp::setRowCount(double rowCount) {
-  rowCount_ = rowCount;
 }
 
 }

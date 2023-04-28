@@ -13,6 +13,7 @@ namespace fpdb::plan::prephysical {
 class HashJoinPrePOp: public PrePhysicalOp {
 public:
   HashJoinPrePOp(uint id,
+                 double rowCount,
                  JoinType joinType,
                  const vector<string> &leftColumnNames,
                  const vector<string> &rightColumnNames,

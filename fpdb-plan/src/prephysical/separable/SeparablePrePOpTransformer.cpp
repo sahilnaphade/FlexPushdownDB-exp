@@ -89,7 +89,7 @@ SeparablePrePOpTransformer::transformDfs(const std::shared_ptr<PrePhysicalOp> &o
       newProducers.emplace_back(producerSeparablePrePOp->getRootOp());
     }
     op->setProducers(newProducers);
-    return std::make_shared<SeparableSuperPrePOp>(op->getId(), op);
+    return std::make_shared<SeparableSuperPrePOp>(op->getId(), op->getRowCount(), op);
   } else {
     // otherwise, just update producers
     op->setProducers(newProducers);

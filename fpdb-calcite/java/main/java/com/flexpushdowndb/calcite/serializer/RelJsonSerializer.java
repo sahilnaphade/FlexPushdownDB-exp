@@ -69,41 +69,29 @@ public final class RelJsonSerializer {
   }
 
   private JSONObject serializeEnumerableTableScan(EnumerableTableScan scan) {
-    JSONObject jo = new JSONObject();
-    // operator name
-    jo.put("operator", scan.getClass().getSimpleName());
+    JSONObject jo = serializeCommon(scan);
     // schema
     jo.put("schema", scan.getTable().getQualifiedName().get(0));
     // table
     jo.put("table", scan.getTable().getQualifiedName().get(1));
-    // estimated row count, needed by predicate transfer
-    RelMetadataQuery mq = scan.getCluster().getMetadataQuery();
-    jo.put("rowCount", mq.getRowCount(scan));
     // input operators
     jo.put("inputs", serializeRelInputs(scan));
     return jo;
   }
 
   private JSONObject serializeEnumerableFilter(EnumerableFilter filter) {
-    JSONObject jo = new JSONObject();
-    // operator name
-    jo.put("operator", filter.getClass().getSimpleName());
+    JSONObject jo = serializeCommon(filter);
     // filter condition
     jo.put("condition", RexJsonSerializer.serialize(filter.getCondition(),
                                                     filter.getRowType().getFieldNames(),
                                                     filter.getCluster().getRexBuilder()));
-    // estimated row count, needed by predicate transfer
-    RelMetadataQuery mq = filter.getCluster().getMetadataQuery();
-    jo.put("rowCount", mq.getRowCount(filter));
     // input operators
     jo.put("inputs", serializeRelInputs(filter));
     return jo;
   }
 
   private JSONObject serializeJoin(Join join) {
-    JSONObject jo = new JSONObject();
-    // operator name
-    jo.put("operator", join.getClass().getSimpleName());
+    JSONObject jo = serializeCommon(join);
 
     // join may incur field renames, if left and right inputs have overlapping field names
     List<String> leftFieldNames = join.getInput(0).getRowType().getFieldNames();
@@ -168,9 +156,7 @@ public final class RelJsonSerializer {
   }
 
   private JSONObject serializeEnumerableProject(EnumerableProject project) {
-    JSONObject jo = new JSONObject();
-    // operator name
-    jo.put("operator", project.getClass().getSimpleName());
+    JSONObject jo = serializeCommon(project);
 
     // project fields
     List<String> inputFieldNames = project.getInput().getRowType().getFieldNames();
@@ -192,9 +178,7 @@ public final class RelJsonSerializer {
   }
 
   private JSONObject serializeEnumerableAggregate(EnumerableAggregateBase aggregate) {
-    JSONObject jo = new JSONObject();
-    // operator name
-    jo.put("operator", aggregate.getClass().getSimpleName());
+    JSONObject jo = serializeCommon(aggregate);
 
     // group fields
     List<String> inputFieldNames = aggregate.getInput().getRowType().getFieldNames();
@@ -240,9 +224,7 @@ public final class RelJsonSerializer {
   }
 
   private JSONObject serializeEnumerableSort(EnumerableSort sort) {
-    JSONObject jo = new JSONObject();
-    // operator name
-    jo.put("operator", sort.getClass().getSimpleName());
+    JSONObject jo = serializeCommon(sort);
     // sort fields
     jo.put("sortFields", serializeSortFields(sort));
     // input operators
@@ -251,9 +233,7 @@ public final class RelJsonSerializer {
   }
 
   private JSONObject serializeEnumerableLimitSort(EnumerableLimitSort limitSort) {
-    JSONObject jo = new JSONObject();
-    // operator name
-    jo.put("operator", limitSort.getClass().getSimpleName());
+    JSONObject jo = serializeCommon(limitSort);
     // sort fields
     jo.put("sortFields", serializeSortFields(limitSort));
     // limit
@@ -261,6 +241,16 @@ public final class RelJsonSerializer {
     jo.put("limit", RexJsonSerializer.serialize(limitSort.fetch, null, limitSort.getCluster().getRexBuilder()));
     // input operators
     jo.put("inputs", serializeRelInputs(limitSort));
+    return jo;
+  }
+
+  private JSONObject serializeCommon(RelNode relNode) {
+    JSONObject jo = new JSONObject();
+    // operator name
+    jo.put("operator", relNode.getClass().getSimpleName());
+    // estimated row count, needed by predicate transfer
+    RelMetadataQuery mq = relNode.getCluster().getMetadataQuery();
+    jo.put("rowCount", mq.getRowCount(relNode));
     return jo;
   }
 }

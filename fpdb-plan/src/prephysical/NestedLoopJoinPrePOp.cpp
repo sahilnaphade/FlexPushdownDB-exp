@@ -7,9 +7,10 @@
 namespace fpdb::plan::prephysical {
 
 NestedLoopJoinPrePOp::NestedLoopJoinPrePOp(uint id,
+                                           double rowCount,
                                            JoinType joinType,
                                            const shared_ptr<fpdb::expression::gandiva::Expression> &predicate):
-  PrePhysicalOp(id, NESTED_LOOP_JOIN),
+  PrePhysicalOp(id, NESTED_LOOP_JOIN, rowCount),
   joinType_(joinType),
   predicate_(predicate) {}
 

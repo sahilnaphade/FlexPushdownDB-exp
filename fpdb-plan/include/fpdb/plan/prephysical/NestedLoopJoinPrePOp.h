@@ -15,6 +15,7 @@ class NestedLoopJoinPrePOp: public PrePhysicalOp {
 
 public:
   NestedLoopJoinPrePOp(uint id,
+                       double rowCount,
                        JoinType joinType,
                        const shared_ptr<fpdb::expression::gandiva::Expression> &predicate);
 

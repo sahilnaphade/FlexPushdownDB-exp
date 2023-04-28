@@ -7,8 +7,8 @@
 
 namespace fpdb::plan::prephysical::separable {
 
-SeparableSuperPrePOp::SeparableSuperPrePOp(uint id, const std::shared_ptr<PrePhysicalOp> &rootOp):
-  PrePhysicalOp(id, SEPARABLE_SUPER),
+SeparableSuperPrePOp::SeparableSuperPrePOp(uint id, double rowCount, const std::shared_ptr<PrePhysicalOp> &rootOp):
+  PrePhysicalOp(id, SEPARABLE_SUPER, rowCount),
   rootOp_(rootOp) {}
 
 const std::shared_ptr<PrePhysicalOp> &SeparableSuperPrePOp::getRootOp() const {

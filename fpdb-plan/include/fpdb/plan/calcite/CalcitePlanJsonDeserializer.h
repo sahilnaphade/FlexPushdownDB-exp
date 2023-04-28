@@ -45,6 +45,9 @@ private:
   shared_ptr<PrePhysicalOp> deserializeDfs(json &jObj);
   vector<shared_ptr<PrePhysicalOp>> deserializeProducers(const json &jObj);
 
+  // serialize common fields: <row count>
+  std::tuple<double> deserializeCommon(const json &jObj);
+
   shared_ptr<fpdb::expression::gandiva::Expression> deserializeInputRef(const json &jObj);
   shared_ptr<fpdb::expression::gandiva::Expression> deserializeLiteral(const json &jObj);
   shared_ptr<fpdb::expression::gandiva::Expression> deserializeOperation(const json &jObj);
