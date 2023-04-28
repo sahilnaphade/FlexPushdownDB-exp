@@ -23,17 +23,20 @@ PrePToPTransformerForPredTrans::PrePToPTransformerForPredTrans(
         const shared_ptr<Mode> &mode,
         int parallelDegree,
         int numNodes):
-  PrePToPTransformer(prePhysicalPlan, catalogueEntry, objStoreConnector, mode, parallelDegree, numNodes) {}
+  PrePToPTransformer(prePhysicalPlan, catalogueEntry, objStoreConnector, mode, parallelDegree, numNodes) {
+  type_ = PrePToPTransformerType::PRED_TRANS;
+}
 
 std::shared_ptr<PhysicalPlan> PrePToPTransformerForPredTrans::transform(
         const shared_ptr<PrePhysicalPlan> &prePhysicalPlan,
         const shared_ptr<CatalogueEntry> &catalogueEntry,
         const shared_ptr<ObjStoreConnector> &objStoreConnector,
-        const shared_ptr<Mode> &mode,
+        const shared_ptr<Mode> &,
         int parallelDegree,
         int numNodes) {
+  // currently pushdown is not supported
   PrePToPTransformerForPredTrans transformer(prePhysicalPlan, catalogueEntry, objStoreConnector,
-                                             mode, parallelDegree, numNodes);
+                                             Mode::pullupMode(), parallelDegree, numNodes);
   return transformer.transform();
 }
 
@@ -64,9 +67,6 @@ std::shared_ptr<PhysicalPlan> PrePToPTransformerForPredTrans::transform() {
 }
 
 void PrePToPTransformerForPredTrans::transformPredTrans() {
-  // transform all FilterableScanPrePOp
-  transformAllFilterableScanPredTrans();
-
   // extract base table joins
   auto joinOrigins = JoinOriginTracer::trace(prePhysicalPlan_);
 
@@ -80,61 +80,32 @@ void PrePToPTransformerForPredTrans::transformPredTrans() {
   connectBwBloomFilterOps();
 }
 
-void PrePToPTransformerForPredTrans::transformAllFilterableScanPredTrans() {
-  auto a = Util::findAllOfType(prePhysicalPlan_->getRootOp(), PrePOpType::FILTERABLE_SCAN);
-  for (const auto &op: Util::findAllOfType(prePhysicalPlan_->getRootOp(), PrePOpType::FILTERABLE_SCAN)) {
-    transformFilterableScanPredTrans(std::static_pointer_cast<FilterableScanPrePOp>(op));
-  }
-}
-
 std::vector<std::shared_ptr<PhysicalOp>>
-PrePToPTransformerForPredTrans::transformFilterableScanPredTrans(const std::shared_ptr<FilterableScanPrePOp> &prePOp) {
+PrePToPTransformerForPredTrans::transformDfs(const std::shared_ptr<PrePhysicalOp> &prePOp) {
   // check if this prepOp has already been visited, since one may be visited multiple times
-  auto transformResIt = filterableScanTransRes_.find(prePOp->getId());
-  if (transformResIt != filterableScanTransRes_.end()) {
+  auto transformResIt = prePOpToTransRes_.find(prePOp->getId());
+  if (transformResIt != prePOpToTransRes_.end()) {
     return transformResIt->second;
   }
 
-  if (catalogueEntry_->getType() != CatalogueEntryType::OBJ_STORE) {
-    throw runtime_error(fmt::format("Unsupported catalogue entry type for filterable scan prephysical operator during "
-                                    "predicate transfer: {}", catalogueEntry_->getTypeName()));
-  }
-  auto objStoreCatalogueEntry = std::static_pointer_cast<obj_store::ObjStoreCatalogueEntry>(catalogueEntry_);
-  if (objStoreCatalogueEntry->getStoreType() == ObjStoreType::S3) {
-    throw runtime_error(fmt::format("Unsupported object store type for filterable scan prephysical operator during "
-                                    "predicate transfer: {}", objStoreCatalogueEntry->getStoreTypeName()));
-  }
+  // transform calling the base-class impl
+  auto transRes = PrePToPTransformer::transformDfs(prePOp);
 
-  // transfer filterable scan in pullup mode
-  auto fpdbStoreConnector = static_pointer_cast<obj_store::FPDBStoreConnector>(objStoreConnector_);
-  auto separableSuperPrePOp = std::make_shared<SeparableSuperPrePOp>(prePOp->getId(), prePOp);
-  auto transformRes = PrePToFPDBStorePTransformer::transform(separableSuperPrePOp, Mode::pullupMode(), numNodes_,
-                                                             parallelDegree_, parallelDegree_, fpdbStoreConnector);
-  PrePToPTransformerUtil::addPhysicalOps(transformRes.second, physicalOps_);
-  filterableScanTransRes_[prePOp->getId()] = transformRes.first;
-  return transformRes.first;
-}
-
-std::vector<std::shared_ptr<PhysicalOp>>
-PrePToPTransformerForPredTrans::getFilterableScanTransRes(const std::shared_ptr<FilterableScanPrePOp> &prePOp) {
-  auto transformResIt = filterableScanTransRes_.find(prePOp->getId());
-  if (transformResIt != filterableScanTransRes_.end()) {
-    return transformResIt->second;
-  } else {
-    throw std::runtime_error(fmt::format("FilterableScanPrePOp '{}' not transformed yet", prePOp->getId()));
-  }
+  // save transformation results
+  prePOpToTransRes_[prePOp->getId()] = transRes;
+  return transRes;
 }
 
 void PrePToPTransformerForPredTrans::makeBloomFilterOps(
         const std::unordered_set<std::shared_ptr<JoinOrigin>, JoinOriginPtrHash, JoinOriginPtrPred> &joinOrigins) {
   for (const auto &joinOrigin: joinOrigins) {
-    // transform the base table scan (+filter) ops
-    auto upLeftConnPOps = getFilterableScanTransRes(joinOrigin->left_);
-    auto upRightConnPOps = getFilterableScanTransRes(joinOrigin->right_);
+    // transform the join origin ops
+    auto upLeftConnPOps = transformDfs(joinOrigin->left_);
+    auto upRightConnPOps = transformDfs(joinOrigin->right_);
 
-    // FIXME: currently only support single-partition tables
+    // FIXME: currently only support single-partition-table / single-thread-processing
     if (upLeftConnPOps.size() != 1 || upRightConnPOps.size() != 1) {
-      throw runtime_error("Currently only support single-partition tables");
+      throw std::runtime_error("Currently only support single-partition-table / single-thread-processing");
     }
     auto upLeftConnPOp = upLeftConnPOps[0];
     auto upRightConnPOp = upRightConnPOps[0];
@@ -304,16 +275,16 @@ void PrePToPTransformerForPredTrans::connectBwBloomFilterOps() {
 }
 
 std::vector<std::shared_ptr<PhysicalOp>> PrePToPTransformerForPredTrans::transformExec() {
-  // Update transformation results of FilterableScanPrePOp
-  updateFilterableScanTransRes();
+  // Update transformation results
+  updateTransRes();
 
   // transform from root in dfs
   return transformDfs(prePhysicalPlan_->getRootOp());
 }
 
-void PrePToPTransformerForPredTrans::updateFilterableScanTransRes() {
+void PrePToPTransformerForPredTrans::updateTransRes() {
   // update the transform result of FilterableScanPrePOp, if it participates in predicate transfer
-  for (auto &transResIt: filterableScanTransRes_) {
+  for (auto &transResIt: prePOpToTransRes_) {
     bool needToUpdate = true;
     std::vector<std::shared_ptr<PhysicalOp>> updatedTransRes;
     for (const auto &origConnOp: transResIt.second) {
@@ -330,11 +301,6 @@ void PrePToPTransformerForPredTrans::updateFilterableScanTransRes() {
       transResIt.second = updatedTransRes;
     }
   }
-}
-
-std::vector<std::shared_ptr<PhysicalOp>>
-PrePToPTransformerForPredTrans::transformFilterableScan(const std::shared_ptr<FilterableScanPrePOp> &prePOp) {
-  return getFilterableScanTransRes(prePOp);
 }
 
 }

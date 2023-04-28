@@ -16,14 +16,15 @@
 #include <fpdb/plan/prephysical/ProjectPrePOp.h>
 #include <fpdb/plan/prephysical/HashJoinPrePOp.h>
 #include <fpdb/plan/prephysical/NestedLoopJoinPrePOp.h>
+#include <fpdb/plan/prephysical/separable/SeparableSuperPrePOp.h>
 #include <fpdb/util/Util.h>
 #include <unordered_set>
 
 namespace fpdb::plan::prephysical {
   
 struct JoinOrigin {
-  JoinOrigin(const std::shared_ptr<FilterableScanPrePOp> &left,
-             const std::shared_ptr<FilterableScanPrePOp> &right,
+  JoinOrigin(const std::shared_ptr<PrePhysicalOp> &left,
+             const std::shared_ptr<PrePhysicalOp> &right,
              JoinType joinType):
     left_(left), right_(right),
     joinType_(joinType) {}
@@ -42,7 +43,7 @@ struct JoinOrigin {
         && joinType_ == other->joinType_;
   }
   
-  std::shared_ptr<FilterableScanPrePOp> left_, right_;
+  std::shared_ptr<PrePhysicalOp> left_, right_;
   std::vector<std::string> leftColumns_, rightColumns_;
   JoinType joinType_;
 };
@@ -67,8 +68,8 @@ public:
 
 private:
   struct SingleJoinOrigin {
-    SingleJoinOrigin(const std::shared_ptr<FilterableScanPrePOp> &left,
-                     const std::shared_ptr<FilterableScanPrePOp> &right,
+    SingleJoinOrigin(const std::shared_ptr<PrePhysicalOp> &left,
+                     const std::shared_ptr<PrePhysicalOp> &right,
                      const std::string &leftColumn,
                      const std::string &rightColumn,
                      JoinType joinType):
@@ -76,7 +77,7 @@ private:
       leftColumn_(leftColumn), rightColumn_(rightColumn),
       joinType_(joinType) {}
 
-    std::shared_ptr<FilterableScanPrePOp> left_, right_;
+    std::shared_ptr<PrePhysicalOp> left_, right_;
     std::string leftColumn_, rightColumn_;
     JoinType joinType_;
   };
@@ -87,32 +88,35 @@ private:
 
     std::string name_;      // original name from the join op
     std::string currName_;  // there may be project ops that rename columns, so need to keep track of the current name
-    std::shared_ptr<FilterableScanPrePOp> originOp_ = nullptr;
+    std::optional<std::string> unappliedCurrName_ = std::nullopt;   // latest currName_, but has not been applied with the change of originOp_
+                                                                    // e.g. in ProjectPrePOp, this is not used until "local filter" is further expanded to "group/limit sort"
+    std::shared_ptr<PrePhysicalOp> originOp_ = nullptr;
   };
 
   JoinOriginTracer(const std::shared_ptr<PrePhysicalPlan> &plan);
   
   void trace();
-  void traceDFS(const std::shared_ptr<PrePhysicalOp> &op,
-                const std::vector<std::shared_ptr<ColumnOrigin>> &columnOrigins);
-  void traceAggregate(const std::shared_ptr<AggregatePrePOp> &op,
-                      const std::vector<std::shared_ptr<ColumnOrigin>> &columnOrigins);
-  void traceGroup(const std::shared_ptr<GroupPrePOp> &op,
-                  const std::vector<std::shared_ptr<ColumnOrigin>> &columnOrigins);
-  void traceSort(const std::shared_ptr<SortPrePOp> &op,
-                 const std::vector<std::shared_ptr<ColumnOrigin>> &columnOrigins);
-  void traceLimitSort(const std::shared_ptr<LimitSortPrePOp> &op,
-                      const std::vector<std::shared_ptr<ColumnOrigin>> &columnOrigins);
-  void traceFilter(const std::shared_ptr<FilterPrePOp> &op,
-                   const std::vector<std::shared_ptr<ColumnOrigin>> &columnOrigins);
-  void traceFilterableScan(const std::shared_ptr<FilterableScanPrePOp> &op,
-                           const std::vector<std::shared_ptr<ColumnOrigin>> &columnOrigins);
-  void traceProject(const std::shared_ptr<ProjectPrePOp> &op,
-                    const std::vector<std::shared_ptr<ColumnOrigin>> &columnOrigins);
-  void traceHashJoin(const std::shared_ptr<HashJoinPrePOp> &op,
-                     const std::vector<std::shared_ptr<ColumnOrigin>> &columnOrigins);
-  void traceNestedLoopJoin(const std::shared_ptr<NestedLoopJoinPrePOp> &op,
-                           const std::vector<std::shared_ptr<ColumnOrigin>> &columnOrigins);
+  // return column origins that can be further processed by "local filters" (filter/project/group...) before joins
+  std::vector<std::shared_ptr<ColumnOrigin>> traceDFS(const std::shared_ptr<PrePhysicalOp> &op,
+                                                      const std::vector<std::shared_ptr<ColumnOrigin>> &columnOrigins);
+  std::vector<std::shared_ptr<ColumnOrigin>> traceFilterableScan(const std::shared_ptr<FilterableScanPrePOp> &op,
+                                                                 const std::vector<std::shared_ptr<ColumnOrigin>> &columnOrigins);
+  std::vector<std::shared_ptr<ColumnOrigin>> traceFilter(const std::shared_ptr<FilterPrePOp> &op,
+                                                         const std::vector<std::shared_ptr<ColumnOrigin>> &columnOrigins);
+  std::vector<std::shared_ptr<ColumnOrigin>> traceSort(const std::shared_ptr<SortPrePOp> &op,
+                                                       const std::vector<std::shared_ptr<ColumnOrigin>> &columnOrigins);
+  std::vector<std::shared_ptr<ColumnOrigin>> traceLimitSort(const std::shared_ptr<LimitSortPrePOp> &op,
+                                                            const std::vector<std::shared_ptr<ColumnOrigin>> &columnOrigins);
+  std::vector<std::shared_ptr<ColumnOrigin>> traceProject(const std::shared_ptr<ProjectPrePOp> &op,
+                                                          const std::vector<std::shared_ptr<ColumnOrigin>> &columnOrigins);
+  std::vector<std::shared_ptr<ColumnOrigin>> traceAggregate(const std::shared_ptr<AggregatePrePOp> &op,
+                                                            const std::vector<std::shared_ptr<ColumnOrigin>> &columnOrigins);
+  std::vector<std::shared_ptr<ColumnOrigin>> traceGroup(const std::shared_ptr<GroupPrePOp> &op,
+                                                        const std::vector<std::shared_ptr<ColumnOrigin>> &columnOrigins);
+  std::vector<std::shared_ptr<ColumnOrigin>> traceHashJoin(const std::shared_ptr<HashJoinPrePOp> &op,
+                                                           const std::vector<std::shared_ptr<ColumnOrigin>> &columnOrigins);
+  std::vector<std::shared_ptr<ColumnOrigin>> traceNestedLoopJoin(const std::shared_ptr<NestedLoopJoinPrePOp> &op,
+                                                                 const std::vector<std::shared_ptr<ColumnOrigin>> &columnOrigins);
 
   std::unordered_set<std::shared_ptr<JoinOrigin>, JoinOriginPtrHash, JoinOriginPtrPred> mergeSingleJoinOrigins();
 

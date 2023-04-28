@@ -119,7 +119,7 @@ vector<shared_ptr<PhysicalOp>> PrePToPTransformer::transformDfs(const shared_ptr
 
 #if SHOW_DEBUG_METRICS == true
     // collect predicate transfer baseline metrics
-    if (!ENABLE_PRED_TRANS) {
+    if (type_ == PrePToPTransformerType::REGULAR) {
       for (const auto &op: transRes) {
         op->setCollPredTransMetrics(prePOp->getId(), metrics::PredTransMetrics::PTMetricsUnitType::LOCAL_FILTER);
       }
@@ -303,7 +303,7 @@ PrePToPTransformer::transformGroup(const shared_ptr<GroupPrePOp> &groupPrePOp) {
 
 #if SHOW_DEBUG_METRICS == true
   // update ops to collect predicate transfer baseline metrics
-  if (!ENABLE_PRED_TRANS) {
+  if (type_ == PrePToPTransformerType::REGULAR) {
     auto optPrePOpId = prephysical::Util::traceScanOriginWithNoJoinInPath(groupPrePOp);
     if (optPrePOpId.has_value()) {
       // remove flog for former ops
@@ -1053,19 +1053,26 @@ PrePToPTransformer::transformNestedLoopJoin(const shared_ptr<NestedLoopJoinPrePO
 }
 
 vector<shared_ptr<PhysicalOp>>
-PrePToPTransformer::transformFilterableScan(const shared_ptr<FilterableScanPrePOp> &) {
-  switch (catalogueEntry_->getType()) {
-    case CatalogueEntryType::LOCAL_FS: {
-      throw runtime_error(fmt::format("Unsupported catalogue entry type for filterable scan prephysical operator: {}",
-                                      catalogueEntry_->getTypeName()));
-    }
-    case CatalogueEntryType::OBJ_STORE: {
-      throw runtime_error(fmt::format("Filterable scan should be contained by separable super prephysical operator for object store"));
-    }
-    default: {
-      throw runtime_error(fmt::format("Unknown catalogue entry type: {}", catalogueEntry_->getTypeName()));
-    }
+PrePToPTransformer::transformFilterableScan(const shared_ptr<FilterableScanPrePOp> &filterableScanPrePOp) {
+  if (catalogueEntry_->getType() != CatalogueEntryType::OBJ_STORE) {
+    throw std::runtime_error(fmt::format("Unsupported catalogue entry type for filterable scan prephysical operator "
+                                         "during predicate transfer: {}", catalogueEntry_->getTypeName()));
   }
+  auto objStoreCatalogueEntry = std::static_pointer_cast<obj_store::ObjStoreCatalogueEntry>(catalogueEntry_);
+  if (objStoreCatalogueEntry->getStoreType() == ObjStoreType::S3) {
+    throw std::runtime_error(fmt::format("Unsupported object store type for filterable scan prephysical operator during"
+                                         " predicate transfer: {}", objStoreCatalogueEntry->getStoreTypeName()));
+  }
+
+  // transfer filterable scan in pullup mode
+  auto fpdbStoreConnector = static_pointer_cast<obj_store::FPDBStoreConnector>(objStoreConnector_);
+  auto separableSuperPrePOp = std::make_shared<SeparableSuperPrePOp>(filterableScanPrePOp->getId(),
+                                                                     filterableScanPrePOp->getRowCount(),
+                                                                     filterableScanPrePOp);
+  auto transformRes = PrePToFPDBStorePTransformer::transform(separableSuperPrePOp, mode_, numNodes_,
+                                                             parallelDegree_, parallelDegree_, fpdbStoreConnector);
+  PrePToPTransformerUtil::addPhysicalOps(transformRes.second, physicalOps_);
+  return transformRes.first;
 }
 
 vector<shared_ptr<PhysicalOp>>

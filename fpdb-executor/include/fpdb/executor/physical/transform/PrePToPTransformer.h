@@ -30,6 +30,11 @@ using namespace fpdb::catalogue::obj_store;
 
 namespace fpdb::executor::physical {
 
+enum PrePToPTransformerType {
+  REGULAR,
+  PRED_TRANS
+};
+
 class PrePToPTransformer {
 
 public:
@@ -59,7 +64,7 @@ protected:
    * @param prePOp: prephysical op
    * @return physical ops to be connect to its consumers
    */
-  vector<shared_ptr<PhysicalOp>> transformDfs(const shared_ptr<PrePhysicalOp> &prePOp);
+  virtual vector<shared_ptr<PhysicalOp>> transformDfs(const shared_ptr<PrePhysicalOp> &prePOp);
 
   vector<vector<shared_ptr<PhysicalOp>>> transformProducers(const shared_ptr<PrePhysicalOp> &prePOp);
 
@@ -83,7 +88,7 @@ protected:
 
   vector<shared_ptr<PhysicalOp>> transformNestedLoopJoin(const shared_ptr<NestedLoopJoinPrePOp> &nestedLoopJoinPrePOp);
 
-  virtual vector<shared_ptr<PhysicalOp>> transformFilterableScan(const shared_ptr<FilterableScanPrePOp> &filterableScanPrePOp);
+  vector<shared_ptr<PhysicalOp>> transformFilterableScan(const shared_ptr<FilterableScanPrePOp> &filterableScanPrePOp);
 
   vector<shared_ptr<PhysicalOp>> transformSeparableSuper(const shared_ptr<SeparableSuperPrePOp> &separableSuperPrePOp);
 
@@ -109,6 +114,7 @@ protected:
 
   void clear();
 
+  PrePToPTransformerType type_ = PrePToPTransformerType::REGULAR;
   shared_ptr<PrePhysicalPlan> prePhysicalPlan_;
   shared_ptr<CatalogueEntry> catalogueEntry_;
   shared_ptr<ObjStoreConnector> objStoreConnector_;

@@ -113,18 +113,13 @@ private:
    * Main entry for transformation
    */
   std::shared_ptr<PhysicalPlan> transform() override;
+  // basically just add "transRes_" during the visit
+  std::vector<std::shared_ptr<PhysicalOp>> transformDfs(const std::shared_ptr<PrePhysicalOp> &prePOp) override;
 
   /**
    * Phase 1: generate a partial plan for predicate transfer using bloom filters
    */
   void transformPredTrans();
-
-  // currently pushdown is not supported
-  void transformAllFilterableScanPredTrans();
-  std::vector<std::shared_ptr<PhysicalOp>>
-  transformFilterableScanPredTrans(const std::shared_ptr<FilterableScanPrePOp> &prePOp);
-  std::vector<std::shared_ptr<PhysicalOp>>
-  getFilterableScanTransRes(const std::shared_ptr<FilterableScanPrePOp> &prePOp);
 
   // Construct bloom filter ops from pairs of base table joins
   void makeBloomFilterOps(const std::unordered_set<std::shared_ptr<JoinOrigin>,
@@ -142,11 +137,7 @@ private:
 
   // Update the ops that generate the input tables (predicate-transfer filtered) for Phase 2 plan.
   // I.e., the ops are originally scan/local filter, and may be expanded to BF use by Phase 1 plan.
-  void updateFilterableScanTransRes();
-
-  // currently pushdown is not supported
-  std::vector<std::shared_ptr<PhysicalOp>>
-  transformFilterableScan(const std::shared_ptr<FilterableScanPrePOp> &prePOp) override;
+  void updateTransRes();
 
   /**
    * states maintained during transformation
@@ -155,9 +146,9 @@ private:
   // note this is different from prePOpId used for other ops
   std::atomic<uint> bfIdGen_ = 0;
 
-  // saved transformation results of FilterableScanPrePOp
+  // saved transformation results
   // to keep track of the ops that generate the input tables (predicate-transfer filtered) for Phase 2 plan
-  std::unordered_map<int, std::vector<std::shared_ptr<PhysicalOp>>> filterableScanTransRes_;
+  std::unordered_map<int, std::vector<std::shared_ptr<PhysicalOp>>> prePOpToTransRes_;
   std::unordered_map<std::string, std::shared_ptr<PredTransUnit>> origUpConnOpToPTUnit_;
 
   // used during predicate transfer, as a dependency graph

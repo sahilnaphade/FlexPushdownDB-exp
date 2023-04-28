@@ -17,6 +17,7 @@ inline bool ENABLE_CO_LOCATED_JOIN_PUSHDOWN;
  * For predicate transfer.
  */
 inline bool ENABLE_PRED_TRANS = false;
+inline bool ENABLE_JOIN_ORIGIN_LOCAL_FILTER_EXPANSION = true;   // expand "local filters" (group/sort/project..) before joins
 
 }
 

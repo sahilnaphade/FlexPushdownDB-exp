@@ -3,6 +3,7 @@
 //
 
 #include <fpdb/plan/prephysical/JoinOriginTracer.h>
+#include <fpdb/plan/Globals.h>
 #include <unordered_map>
 
 namespace fpdb::plan::prephysical {
@@ -22,8 +23,9 @@ void JoinOriginTracer::trace() {
   traceDFS(plan_->getRootOp(), emptyColumnOrigins);
 }
 
-void JoinOriginTracer::traceDFS(const std::shared_ptr<PrePhysicalOp> &op,
-                                const std::vector<std::shared_ptr<ColumnOrigin>> &columnOrigins) {
+std::vector<std::shared_ptr<JoinOriginTracer::ColumnOrigin>>
+JoinOriginTracer::traceDFS(const std::shared_ptr<PrePhysicalOp> &op,
+                           const std::vector<std::shared_ptr<ColumnOrigin>> &columnOrigins) {
   switch (op->getType()) {
     case PrePOpType::AGGREGATE: {
       return traceAggregate(std::static_pointer_cast<AggregatePrePOp>(op), columnOrigins);
@@ -59,63 +61,78 @@ void JoinOriginTracer::traceDFS(const std::shared_ptr<PrePhysicalOp> &op,
   }
 }
 
-void JoinOriginTracer::traceAggregate(const std::shared_ptr<AggregatePrePOp> &op,
-                                      const std::vector<std::shared_ptr<ColumnOrigin>> &) {
-  // aggregate op invalidates input column origins
-  std::vector<std::shared_ptr<ColumnOrigin>> emptyColumnOrigins{};
-  traceDFS(op->getProducers()[0], emptyColumnOrigins);
-}
-
-void JoinOriginTracer::traceGroup(const std::shared_ptr<GroupPrePOp> &op,
-                                  const std::vector<std::shared_ptr<ColumnOrigin>> &columnOrigins) {
-  // only columns in group keys are valid
-  auto groupColumns = op->getGroupColumnNames();
-  std::set<std::string> groupColumnSet(groupColumns.begin(), groupColumns.end());
-  std::vector<std::shared_ptr<ColumnOrigin>> validColumnOrigins;
-  for (const auto &columnOrigin: columnOrigins) {
-    if (groupColumnSet.find(columnOrigin->currName_) != groupColumnSet.end()) {
-      validColumnOrigins.emplace_back(columnOrigin);
-    }
-  }
-  traceDFS(op->getProducers()[0], validColumnOrigins);
-}
-
-void JoinOriginTracer::traceSort(const std::shared_ptr<SortPrePOp> &op,
-                                 const std::vector<std::shared_ptr<ColumnOrigin>> &columnOrigins) {
-  // all columns are valid for sort op
-  traceDFS(op->getProducers()[0], columnOrigins);
-}
-
-void JoinOriginTracer::traceLimitSort(const std::shared_ptr<LimitSortPrePOp> &op,
+std::vector<std::shared_ptr<JoinOriginTracer::ColumnOrigin>>
+JoinOriginTracer::traceFilterableScan(const std::shared_ptr<FilterableScanPrePOp> &op,
                                       const std::vector<std::shared_ptr<ColumnOrigin>> &columnOrigins) {
-  // all columns are valid for limit sort op
-  traceDFS(op->getProducers()[0], columnOrigins);
-}
-
-
-void JoinOriginTracer::traceFilter(const std::shared_ptr<FilterPrePOp> &op,
-                                   const std::vector<std::shared_ptr<ColumnOrigin>> &columnOrigins) {
-  // all columns are valid for filter op
-  traceDFS(op->getProducers()[0], columnOrigins);
-}
-
-void JoinOriginTracer::traceFilterableScan(const std::shared_ptr<FilterableScanPrePOp> &op,
-                                           const std::vector<std::shared_ptr<ColumnOrigin>> &columnOrigins) {
+  std::vector<std::shared_ptr<ColumnOrigin>> localColumnOrigins;
   const auto &scanColumns = op->getProjectColumnNames();
   std::set<std::string> scanColumnSet(scanColumns.begin(), scanColumns.end());
   for (auto &columnOrigin: columnOrigins) {
     if (scanColumnSet.find(columnOrigin->currName_) != scanColumnSet.end()) {
       columnOrigin->originOp_ = op;
+      localColumnOrigins.emplace_back(columnOrigin);
     }
   }
+  return localColumnOrigins;
 }
 
-void JoinOriginTracer::traceProject(const std::shared_ptr<ProjectPrePOp> &op,
-                                    const std::vector<std::shared_ptr<ColumnOrigin>> &columnOrigins) {
-  // get a map for 'new name' -> 'old name'
-  std::unordered_map<std::string, std::string> newToOldName;
+std::vector<std::shared_ptr<JoinOriginTracer::ColumnOrigin>>
+JoinOriginTracer::traceFilter(const std::shared_ptr<FilterPrePOp> &op,
+                              const std::vector<std::shared_ptr<ColumnOrigin>> &columnOrigins) {
+  // all columns are valid for filter op
+  auto localColumnOrigins = traceDFS(op->getProducers()[0], columnOrigins);
+
+  // expand local filters before predicate transfer
+  if (ENABLE_JOIN_ORIGIN_LOCAL_FILTER_EXPANSION) {
+    for (const auto &columnOrigin: localColumnOrigins) {
+      columnOrigin->originOp_ = op;
+    }
+  }
+
+  // local column origins are unchanged
+  return localColumnOrigins;
+}
+
+std::vector<std::shared_ptr<JoinOriginTracer::ColumnOrigin>>
+JoinOriginTracer::traceSort(const std::shared_ptr<SortPrePOp> &op,
+                            const std::vector<std::shared_ptr<ColumnOrigin>> &columnOrigins) {
+  // all columns are valid for sort op
+  auto localColumnOrigins = traceDFS(op->getProducers()[0], columnOrigins);
+
+  // local column origins are unchanged
+  // here we don't need to expand "local filter" since sort does not reduce cardinality
+  return localColumnOrigins;
+}
+
+std::vector<std::shared_ptr<JoinOriginTracer::ColumnOrigin>>
+JoinOriginTracer::traceLimitSort(const std::shared_ptr<LimitSortPrePOp> &op,
+                                 const std::vector<std::shared_ptr<ColumnOrigin>> &columnOrigins) {
+  // all columns are valid for limit sort op
+  auto localColumnOrigins = traceDFS(op->getProducers()[0], columnOrigins);
+
+  // expand local filters, since limit sort reduces cardinality
+  if (ENABLE_JOIN_ORIGIN_LOCAL_FILTER_EXPANSION) {
+    for (const auto &columnOrigin: localColumnOrigins) {
+      if (columnOrigin->unappliedCurrName_.has_value()) {
+        columnOrigin->currName_ = *columnOrigin->unappliedCurrName_;
+        columnOrigin->unappliedCurrName_ = std::nullopt;
+      }
+      columnOrigin->originOp_ = op;
+    }
+  }
+
+  // local column origins are unchanged
+  return localColumnOrigins;
+}
+
+std::vector<std::shared_ptr<JoinOriginTracer::ColumnOrigin>>
+JoinOriginTracer::traceProject(const std::shared_ptr<ProjectPrePOp> &op,
+                               const std::vector<std::shared_ptr<ColumnOrigin>> &columnOrigins) {
+  // get a map for 'new name' <-> 'old name'
+  std::unordered_map<std::string, std::string> newToOldName, oldToNewName;
   for (const auto &rename: op->getProjectColumnNamePairs()) {
     newToOldName[rename.second] = rename.first;
+    oldToNewName[rename.first] = rename.second;
   }
 
   // convert currName_ for input column origins
@@ -127,11 +144,60 @@ void JoinOriginTracer::traceProject(const std::shared_ptr<ProjectPrePOp> &op,
   }
 
   // trace the parent node
-  traceDFS(op->getProducers()[0], columnOrigins);
+  auto localColumnOrigins = traceDFS(op->getProducers()[0], columnOrigins);
+
+  // update local column origin based on renames
+  // here we don't need to expand "local filter" since project does not reduce cardinality
+  for (const auto &columnOrigin: localColumnOrigins) {
+    auto oldToNewNameIt = oldToNewName.find(columnOrigin->currName_);
+    if (oldToNewNameIt != oldToNewName.end()) {
+      columnOrigin->unappliedCurrName_ = oldToNewNameIt->second;
+    }
+  }
+  return localColumnOrigins;
 }
 
-void JoinOriginTracer::traceHashJoin(const std::shared_ptr<HashJoinPrePOp> &op,
-                                     const std::vector<std::shared_ptr<ColumnOrigin>> &columnOrigins) {
+std::vector<std::shared_ptr<JoinOriginTracer::ColumnOrigin>>
+JoinOriginTracer::traceAggregate(const std::shared_ptr<AggregatePrePOp> &op,
+                                 const std::vector<std::shared_ptr<ColumnOrigin>> &) {
+  // aggregate op invalidates input column origins
+  std::vector<std::shared_ptr<ColumnOrigin>> emptyColumnOrigins{};
+  traceDFS(op->getProducers()[0], emptyColumnOrigins);
+
+  // aggregate op invalidates local column origins
+  return {};
+}
+
+std::vector<std::shared_ptr<JoinOriginTracer::ColumnOrigin>>
+JoinOriginTracer::traceGroup(const std::shared_ptr<GroupPrePOp> &op,
+                             const std::vector<std::shared_ptr<ColumnOrigin>> &columnOrigins) {
+  // only columns in group keys are valid
+  auto groupColumns = op->getGroupColumnNames();
+  std::set<std::string> groupColumnSet(groupColumns.begin(), groupColumns.end());
+  std::vector<std::shared_ptr<ColumnOrigin>> validColumnOrigins;
+  for (const auto &columnOrigin: columnOrigins) {
+    if (groupColumnSet.find(columnOrigin->currName_) != groupColumnSet.end()) {
+      validColumnOrigins.emplace_back(columnOrigin);
+    }
+  }
+
+  auto localColumnOrigins = traceDFS(op->getProducers()[0], validColumnOrigins);
+
+  // expand local filters, since group reduces cardinality
+  // local column origin are only group keys, but since the validation is already done above, we don't do again here
+  for (const auto &columnOrigin: localColumnOrigins) {
+    if (columnOrigin->unappliedCurrName_.has_value()) {
+      columnOrigin->currName_ = *columnOrigin->unappliedCurrName_;
+      columnOrigin->unappliedCurrName_ = std::nullopt;
+    }
+    columnOrigin->originOp_ = op;
+  }
+  return localColumnOrigins;
+}
+
+std::vector<std::shared_ptr<JoinOriginTracer::ColumnOrigin>>
+JoinOriginTracer::traceHashJoin(const std::shared_ptr<HashJoinPrePOp> &op,
+                                const std::vector<std::shared_ptr<ColumnOrigin>> &columnOrigins) {
   // construct left and right column origins
   std::vector<std::shared_ptr<ColumnOrigin>> leftColumnOrigins;
   std::vector<std::shared_ptr<ColumnOrigin>> rightColumnOrigins;
@@ -171,13 +237,20 @@ void JoinOriginTracer::traceHashJoin(const std::shared_ptr<HashJoinPrePOp> &op,
       }
     }
   }
+
+  // join blocks "local filters" expansion
+  return {};
 }
 
-void JoinOriginTracer::traceNestedLoopJoin(const std::shared_ptr<NestedLoopJoinPrePOp> &op,
-                                           const std::vector<std::shared_ptr<ColumnOrigin>> &columnOrigins) {
+std::vector<std::shared_ptr<JoinOriginTracer::ColumnOrigin>>
+JoinOriginTracer::traceNestedLoopJoin(const std::shared_ptr<NestedLoopJoinPrePOp> &op,
+                                      const std::vector<std::shared_ptr<ColumnOrigin>> &columnOrigins) {
   // we cannot distinguish which of input column origins are in left, which are in right, so need to add to both
   traceDFS(op->getProducers()[0], columnOrigins);
   traceDFS(op->getProducers()[1], columnOrigins);
+
+  // join blocks "local filters" expansion
+  return {};
 }
 
 std::unordered_set<std::shared_ptr<JoinOrigin>, JoinOriginPtrHash, JoinOriginPtrPred>
