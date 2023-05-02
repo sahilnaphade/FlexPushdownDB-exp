@@ -39,3 +39,5 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
   fi
 fi
 
+sudo ln -s /usr/bin/clang-12 /usr/bin/clang
+sudo ln -s /usr/bin/clang++-12 /usr/bin/clang++
