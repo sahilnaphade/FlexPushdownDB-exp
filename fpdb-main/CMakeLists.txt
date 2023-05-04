@@ -44,6 +44,7 @@ add_executable(fpdb-main-test
         test-base/TestUtil.cpp test-base/TestUtil.h
         test-base/BitmapPushdownTestUtil.cpp test-base/BitmapPushdownTestUtil.h
         test-base/AdaptPushdownTestUtil.cpp test-base/AdaptPushdownTestUtil.h
+        test-base/PredTransTestUtil.cpp test-base/PredTransTestUtil.h
         test/SSBTest.cpp
         test/SSBFPDBStoreSameNodeTest.cpp
         test/TPCHTest.cpp
@@ -79,13 +80,15 @@ add_executable(fpdb-main-bench
         test-base/TestUtil.cpp test-base/TestUtil.h
         test-base/BitmapPushdownTestUtil.cpp test-base/BitmapPushdownTestUtil.h
         test-base/AdaptPushdownTestUtil.cpp test-base/AdaptPushdownTestUtil.h
+        test-base/PredTransTestUtil.cpp test-base/PredTransTestUtil.h
         bench/SSBDistFPDBStoreBench.cpp
         bench/TPCHBench.cpp
         bench/TPCHDistBench.cpp
         bench/TPCHFPDBStoreDiffNodeBench.cpp
         bench/TPCHDistFPDBStoreBench.cpp
         bench/BytesReadBench.cpp
-        bench/BitmapPushdownBench.cpp)
+        bench/BitmapPushdownBench.cpp
+        bench/PredTransBench.cpp)
 
 target_include_directories(fpdb-main-bench PRIVATE test-base)
 

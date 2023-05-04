@@ -53,6 +53,18 @@ public:
                                       size_t cacheSize = 1L * 1024 * 1024 * 1024);
 
   /**
+   * Test with single thread execution
+   */
+  static bool e2eNoStartCalciteServerSingleThread(const string &schemaName,
+                                                  const vector<string> &queryFileNames,
+                                                  int parallelDegree,
+                                                  bool isDistributed,
+                                                  ObjStoreType objStoreType,
+                                                  const shared_ptr<Mode> &mode = Mode::pullupMode(),
+                                                  CachingPolicyType cachingPolicyType = CachingPolicyType::NONE,
+                                                  size_t cacheSize = 1L * 1024 * 1024 * 1024);
+
+  /**
    * Temp test for disabling heuristic join ordering by calcite
    */
   static bool e2eNoStartCalciteServerNoHeuristicJoinOrdering(
@@ -81,6 +93,7 @@ public:
            size_t cacheSize = 1L * 1024 * 1024 * 1024);
 
   double getCrtQueryHitRatio() const;
+  void setUseThreads(bool useThreads);
   void setUseHeuristicJoinOrdering(bool useHeuristicJoinOrdering);
   void setFixLayoutIndices(const set<int> &fixLayoutIndices);
   void setCollAdaptPushdownMetrics(bool collAdaptPushdownMetrics);
@@ -122,6 +135,9 @@ private:
   shared_ptr<::caf::actor_system> actorSystem_;
   vector<::caf::node_id> nodes_;
   shared_ptr<Executor> executor_;
+
+  // whether allowed using multiple threads, default to true
+  bool useThreads_ = true;
 
   // whether to use heuristic join ordering by calcite, true by default
   bool useHeuristicJoinOrdering_ = true;

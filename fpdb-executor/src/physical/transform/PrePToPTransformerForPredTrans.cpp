@@ -31,12 +31,15 @@ std::shared_ptr<PhysicalPlan> PrePToPTransformerForPredTrans::transform(
         const shared_ptr<PrePhysicalPlan> &prePhysicalPlan,
         const shared_ptr<CatalogueEntry> &catalogueEntry,
         const shared_ptr<ObjStoreConnector> &objStoreConnector,
-        const shared_ptr<Mode> &,
+        const shared_ptr<Mode> &mode,
         int parallelDegree,
         int numNodes) {
   // currently pushdown is not supported
+  if (mode->id() == ModeId::PUSHDOWN_ONLY || mode->id() == ModeId::HYBRID) {
+    throw std::runtime_error("Predicate transfer with pushdown is not supported");
+  }
   PrePToPTransformerForPredTrans transformer(prePhysicalPlan, catalogueEntry, objStoreConnector,
-                                             Mode::pullupMode(), parallelDegree, numNodes);
+                                             mode, parallelDegree, numNodes);
   return transformer.transform();
 }
 

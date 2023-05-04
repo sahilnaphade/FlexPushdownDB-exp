@@ -85,6 +85,32 @@ bool TestUtil::e2eNoStartCalciteServer(const string &schemaName,
   }
 }
 
+bool TestUtil::e2eNoStartCalciteServerSingleThread(const string &schemaName,
+                                                   const vector<string> &queryFileNames,
+                                                   int parallelDegree,
+                                                   bool isDistributed,
+                                                   ObjStoreType objStoreType,
+                                                   const shared_ptr<Mode> &mode,
+                                                   CachingPolicyType cachingPolicyType,
+                                                   size_t cacheSize) {
+  TestUtil testUtil(schemaName,
+                    queryFileNames,
+                    parallelDegree,
+                    isDistributed,
+                    objStoreType,
+                    mode,
+                    cachingPolicyType,
+                    cacheSize);
+  testUtil.setUseThreads(false);
+  try {
+    testUtil.runTest();
+    return true;
+  } catch (const runtime_error &err) {
+    cout << err.what() << endl;
+    return false;
+  }
+}
+
 bool TestUtil::e2eNoStartCalciteServerNoHeuristicJoinOrdering(const string &schemaName,
                                                               const vector<string> &queryFileNames, int parallelDegree,
                                                               bool isDistributed, ObjStoreType objStoreType,
@@ -159,6 +185,10 @@ void TestUtil::stopFPDBStoreServer() {
 
 double TestUtil::getCrtQueryHitRatio() const {
   return crtQueryHitRatio_;
+}
+
+void TestUtil::setUseThreads(bool useThreads) {
+  useThreads_ = useThreads;
 }
 
 void TestUtil::setUseHeuristicJoinOrdering(bool useHeuristicJoinOrdering) {
@@ -302,6 +332,9 @@ void TestUtil::makeExecutor() {
   const auto &remoteIps = readRemoteIps();
   int CAFServerPort = ExecConfig::parseCAFServerPort();
   actorSystemConfig_ = make_shared<ActorSystemConfig>(CAFServerPort, remoteIps, false);
+  if (!useThreads_) {
+    actorSystemConfig_ -> set("caf.scheduler.max-threads", 1);
+  }
   fpdb::executor::caf::CAFInit::initCAFGlobalMetaObjects();
   actorSystem_ = make_shared<::caf::actor_system>(*actorSystemConfig_);
 
