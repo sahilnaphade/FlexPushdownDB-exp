@@ -38,7 +38,7 @@ private:
    * Updated parameters: physicalOps, prePOpToTransRes
    */
   virtual void orderPredTrans(const std::unordered_set<std::shared_ptr<JoinOrigin>, JoinOriginPtrHash,
-                              JoinOriginPtrPred> &joinOrigins) = 0;
+          JoinOriginPtrPred> &joinOrigins) = 0;
 
   PredTransOrderType type_;
 
