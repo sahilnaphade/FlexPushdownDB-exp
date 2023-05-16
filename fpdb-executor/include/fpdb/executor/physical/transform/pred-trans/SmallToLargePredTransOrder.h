@@ -1,32 +1,21 @@
 //
-// Created by Yifei Yang on 4/11/23.
+// Created by Yifei Yang on 5/15/23.
 //
 
-#ifndef FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_TRANSFORM_PREPTOPTRANSFORMERFORPREDTRANS_H
-#define FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_TRANSFORM_PREPTOPTRANSFORMERFORPREDTRANS_H
+#ifndef FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_TRANSFORM_PRED_TRANS_SMALLTOLARGEPREDTRANSORDER_H
+#define FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_TRANSFORM_PRED_TRANS_SMALLTOLARGEPREDTRANSORDER_H
 
-#include <fpdb/executor/physical/transform/PrePToPTransformer.h>
+#include <fpdb/executor/physical/transform/pred-trans/PredTransOrder.h>
 #include <fpdb/executor/physical/bloomfilter/BloomFilterCreatePOp.h>
 #include <fpdb/executor/physical/bloomfilter/BloomFilterUsePOp.h>
-#include <fpdb/executor/metrics/PredTransMetrics.h>
-#include <fpdb/plan/prephysical/JoinOriginTracer.h>
-
-using namespace fpdb::plan::prephysical;
 
 namespace fpdb::executor::physical {
 
-/**
- * Used specifically for predicate transfer
- */
-class PrePToPTransformerForPredTrans: public PrePToPTransformer {
+class SmallToLargePredTransOrder: public PredTransOrder {
 
 public:
-  static std::shared_ptr<PhysicalPlan> transform(const shared_ptr<PrePhysicalPlan> &prePhysicalPlan,
-                                                 const shared_ptr<CatalogueEntry> &catalogueEntry,
-                                                 const shared_ptr<ObjStoreConnector> &objStoreConnector,
-                                                 const shared_ptr<Mode> &mode,
-                                                 int parallelDegree,
-                                                 int numNodes);
+  SmallToLargePredTransOrder(PrePToPTransformerForPredTrans* transformer);
+  ~SmallToLargePredTransOrder() override = default;
 
 private:
   struct PredTransUnit;
@@ -43,8 +32,8 @@ private:
     int numFwBFUseVisited_ = 0, numBwBFUseVisited_ = 0;     // for dependencies
 
     PredTransUnit(uint prePOpId, const std::shared_ptr<PhysicalOp> &upConnOp):
-      prePOpId_(prePOpId),
-      origUpConnOp_(upConnOp), currUpConnOp_(upConnOp) {}
+            prePOpId_(prePOpId),
+            origUpConnOp_(upConnOp), currUpConnOp_(upConnOp) {}
 
     size_t hash() const {
       return std::hash<std::string>()(origUpConnOp_->name());
@@ -78,7 +67,7 @@ private:
                        const std::shared_ptr<bloomfilter::BloomFilterUsePOp> &bfUse,
                        const std::shared_ptr<PredTransUnit> &bfCreatePTUnit,
                        const std::shared_ptr<PredTransUnit> &bfUsePTUnit):
-      bfCreate_(bfCreate), bfUse_(bfUse), bfCreatePTUnit_(bfCreatePTUnit), bfUsePTUnit_(bfUsePTUnit) {}
+            bfCreate_(bfCreate), bfUse_(bfUse), bfCreatePTUnit_(bfCreatePTUnit), bfUsePTUnit_(bfUsePTUnit) {}
 
     size_t hash() const {
       return std::hash<std::string>()(bfCreate_->name() + " - " + bfUse_->name());
@@ -102,61 +91,34 @@ private:
     }
   };
 
-  PrePToPTransformerForPredTrans(const shared_ptr<PrePhysicalPlan> &prePhysicalPlan,
-                                 const shared_ptr<CatalogueEntry> &catalogueEntry,
-                                 const shared_ptr<ObjStoreConnector> &objStoreConnector,
-                                 const shared_ptr<Mode> &mode,
-                                 int parallelDegree,
-                                 int numNodes);
-
-  /**
-   * Main entry for transformation
-   */
-  std::shared_ptr<PhysicalPlan> transform() override;
-  // basically just add "transRes_" during the visit
-  std::vector<std::shared_ptr<PhysicalOp>> transformDfs(const std::shared_ptr<PrePhysicalOp> &prePOp) override;
-
-  /**
-   * Phase 1: generate a partial plan for predicate transfer using bloom filters
-   */
-  void transformPredTrans();
+  void orderPredTrans(const std::unordered_set<std::shared_ptr<JoinOrigin>, JoinOriginPtrHash,
+          JoinOriginPtrPred> &joinOrigins) override;
 
   // Construct bloom filter ops from pairs of base table joins
-  void makeBloomFilterOps(const std::unordered_set<std::shared_ptr<JoinOrigin>,
-          JoinOriginPtrHash, JoinOriginPtrPred> &joinOrigins);
+  void makeBloomFilterOps(
+          const std::unordered_set<std::shared_ptr<JoinOrigin>, JoinOriginPtrHash, JoinOriginPtrPred> &joinOrigins);
 
   // Connect bloom filter ops created above, in a topological order
   void connectFwBloomFilterOps();
   void connectBwBloomFilterOps();
-
-  /**
-   * Phase 2: generate a partial plan for execution after predicate transfer, and connect to the partial plan of Phase 1
-   * @return physical ops to be connected to the final collate op
-   */
-  std::vector<std::shared_ptr<PhysicalOp>> transformExec();
 
   // Update the ops that generate the input tables (predicate-transfer filtered) for Phase 2 plan.
   // I.e., the ops are originally scan/local filter, and may be expanded to BF use by Phase 1 plan.
   void updateTransRes();
 
   /**
-   * states maintained during transformation
+   * extra states maintained during transformation
    */
-  // generate unique id for bloom filter ops for each join origin
-  // note this is different from prePOpId used for other ops
-  std::atomic<uint> bfIdGen_ = 0;
-
-  // saved transformation results
-  // to keep track of the ops that generate the input tables (predicate-transfer filtered) for Phase 2 plan
-  std::unordered_map<int, std::vector<std::shared_ptr<PhysicalOp>>> prePOpToTransRes_;
+  // keep track of the ops that generate the input tables (predicate-transfer filtered) for Phase 2 plan
   std::unordered_map<std::string, std::shared_ptr<PredTransUnit>> origUpConnOpToPTUnit_;
 
   // used during predicate transfer, as a dependency graph
   std::unordered_set<std::shared_ptr<PredTransUnit>, PredTransUnitPtrHash, PredTransUnitPtrPred> ptUnits_;
   std::unordered_set<std::shared_ptr<PredTransGraphNode>, PredTransGraphNodePtrHash, PredTransGraphNodePtrPred>
-      fwPTGraphNodes_, bwPTGraphNodes_;
+          fwPTGraphNodes_, bwPTGraphNodes_;
 };
 
 }
 
-#endif //FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_TRANSFORM_PREPTOPTRANSFORMERFORPREDTRANS_H
+
+#endif //FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_TRANSFORM_PRED_TRANS_SMALLTOLARGEPREDTRANSORDER_H

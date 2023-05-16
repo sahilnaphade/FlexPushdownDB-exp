@@ -1,54 +1,29 @@
 //
-// Created by Yifei Yang on 4/11/23.
+// Created by Yifei Yang on 5/15/23.
 //
 
-#include <fpdb/executor/physical/transform/PrePToPTransformerForPredTrans.h>
-#include <fpdb/executor/physical/transform/PrePToFPDBStorePTransformer.h>
+#include <fpdb/executor/physical/transform/pred-trans/SmallToLargePredTransOrder.h>
 #include <fpdb/executor/physical/transform/PrePToPTransformerUtil.h>
 #include <fpdb/executor/physical/join/hashjoin/HashJoinPredicate.h>
-#include <fpdb/executor/physical/filter/FilterPOp.h>
-#include <fpdb/executor/physical/collate/CollatePOp.h>
-#include <fpdb/plan/prephysical/separable/SeparableSuperPrePOp.h>
-#include <fpdb/plan/prephysical/Util.h>
-#include <fpdb/catalogue/obj-store/ObjStoreCatalogueEntry.h>
-#include <fpdb/catalogue/obj-store/fpdb-store/FPDBStoreConnector.h>
-#include <queue>
 
 namespace fpdb::executor::physical {
 
-PrePToPTransformerForPredTrans::PrePToPTransformerForPredTrans(
-        const shared_ptr<PrePhysicalPlan> &prePhysicalPlan,
-        const shared_ptr<CatalogueEntry> &catalogueEntry,
-        const shared_ptr<ObjStoreConnector> &objStoreConnector,
-        const shared_ptr<Mode> &mode,
-        int parallelDegree,
-        int numNodes):
-  PrePToPTransformer(prePhysicalPlan, catalogueEntry, objStoreConnector, mode, parallelDegree, numNodes) {
-  type_ = PrePToPTransformerType::PRED_TRANS;
-}
+SmallToLargePredTransOrder::SmallToLargePredTransOrder(PrePToPTransformerForPredTrans* transformer):
+  PredTransOrder(PredTransOrderType::SMALL_TO_LARGE, transformer) {}
 
-std::shared_ptr<PhysicalPlan> PrePToPTransformerForPredTrans::transform(
-        const shared_ptr<PrePhysicalPlan> &prePhysicalPlan,
-        const shared_ptr<CatalogueEntry> &catalogueEntry,
-        const shared_ptr<ObjStoreConnector> &objStoreConnector,
-        const shared_ptr<Mode> &mode,
-        int parallelDegree,
-        int numNodes) {
-  // currently pushdown is not supported
-  if (mode->id() == ModeId::PUSHDOWN_ONLY || mode->id() == ModeId::HYBRID) {
-    throw std::runtime_error("Predicate transfer with pushdown is not supported");
-  }
-  PrePToPTransformerForPredTrans transformer(prePhysicalPlan, catalogueEntry, objStoreConnector,
-                                             mode, parallelDegree, numNodes);
-  return transformer.transform();
-}
+void SmallToLargePredTransOrder::orderPredTrans(
+        const std::unordered_set<std::shared_ptr<JoinOrigin>, JoinOriginPtrHash, JoinOriginPtrPred> &joinOrigins) {
+  // create bloom filter ops (both forward and backward)
+  makeBloomFilterOps(joinOrigins);
 
-std::shared_ptr<PhysicalPlan> PrePToPTransformerForPredTrans::transform() {
-  // Phase 1
-  transformPredTrans();
+  // connect forward bloom filter ops
+  connectFwBloomFilterOps();
 
-  // Phase 2
-  auto upConnOps = transformExec();
+  // connect backward bloom filter ops
+  connectBwBloomFilterOps();
+
+  // update transformation results
+  updateTransRes();
 
 #if SHOW_DEBUG_METRICS == true
   // collect predicate transfer metrics
@@ -58,53 +33,14 @@ std::shared_ptr<PhysicalPlan> PrePToPTransformerForPredTrans::transform() {
     currConnOp->setCollPredTransMetrics(prePOpId, metrics::PredTransMetrics::PTMetricsUnitType::PRED_TRANS);
   }
 #endif
-
-  // make the final plan
-  std::shared_ptr<PhysicalOp> collateOp = std::make_shared<collate::CollatePOp>(
-          "Collate",
-          ColumnName::canonicalize(prePhysicalPlan_->getOutputColumnNames()),
-          0);
-  PrePToPTransformerUtil::connectManyToOne(upConnOps, collateOp);
-  PrePToPTransformerUtil::addPhysicalOps({collateOp}, physicalOps_);
-  return std::make_shared<PhysicalPlan>(physicalOps_, collateOp->name());
 }
 
-void PrePToPTransformerForPredTrans::transformPredTrans() {
-  // extract base table joins
-  auto joinOrigins = JoinOriginTracer::trace(prePhysicalPlan_);
-
-  // create bloom filter ops (both forward and backward)
-  makeBloomFilterOps(joinOrigins);
-
-  // connect forward bloom filter ops
-  connectFwBloomFilterOps();
-
-  // connect backward bloom filter ops
-  connectBwBloomFilterOps();
-}
-
-std::vector<std::shared_ptr<PhysicalOp>>
-PrePToPTransformerForPredTrans::transformDfs(const std::shared_ptr<PrePhysicalOp> &prePOp) {
-  // check if this prepOp has already been visited, since one may be visited multiple times
-  auto transformResIt = prePOpToTransRes_.find(prePOp->getId());
-  if (transformResIt != prePOpToTransRes_.end()) {
-    return transformResIt->second;
-  }
-
-  // transform calling the base-class impl
-  auto transRes = PrePToPTransformer::transformDfs(prePOp);
-
-  // save transformation results
-  prePOpToTransRes_[prePOp->getId()] = transRes;
-  return transRes;
-}
-
-void PrePToPTransformerForPredTrans::makeBloomFilterOps(
+void SmallToLargePredTransOrder::makeBloomFilterOps(
         const std::unordered_set<std::shared_ptr<JoinOrigin>, JoinOriginPtrHash, JoinOriginPtrPred> &joinOrigins) {
   for (const auto &joinOrigin: joinOrigins) {
     // transform the join origin ops
-    auto upLeftConnPOps = transformDfs(joinOrigin->left_);
-    auto upRightConnPOps = transformDfs(joinOrigin->right_);
+    auto upLeftConnPOps = transformer_->transformDfs(joinOrigin->left_);
+    auto upRightConnPOps = transformer_->transformDfs(joinOrigin->right_);
 
     // FIXME: currently only support single-partition-table / single-thread-processing
     if (upLeftConnPOps.size() != 1 || upRightConnPOps.size() != 1) {
@@ -157,7 +93,7 @@ void PrePToPTransformerForPredTrans::makeBloomFilterOps(
       fwBFUse->consume(fwBFCreate);
 
       // add ops
-      PrePToPTransformerUtil::addPhysicalOps({fwBFCreate, fwBFUse}, physicalOps_);
+      PrePToPTransformerUtil::addPhysicalOps({fwBFCreate, fwBFUse}, transformer_->physicalOps_);
 
       // make predicate transfer graph nodes
       auto fwPTGraphNode = std::make_shared<PredTransGraphNode>(fwBFCreate, fwBFUse, leftPTUnit, rightPTUnit);
@@ -182,7 +118,7 @@ void PrePToPTransformerForPredTrans::makeBloomFilterOps(
       bwBFUse->consume(bwBFCreate);
 
       // add ops
-      PrePToPTransformerUtil::addPhysicalOps({bwBFCreate, bwBFUse}, physicalOps_);
+      PrePToPTransformerUtil::addPhysicalOps({bwBFCreate, bwBFUse}, transformer_->physicalOps_);
 
       // make predicate transfer graph nodes
       auto bwPTGraphNode = std::make_shared<PredTransGraphNode>(bwBFCreate, bwBFUse, rightPTUnit, leftPTUnit);
@@ -193,7 +129,7 @@ void PrePToPTransformerForPredTrans::makeBloomFilterOps(
   }
 }
 
-void PrePToPTransformerForPredTrans::connectFwBloomFilterOps() {
+void SmallToLargePredTransOrder::connectFwBloomFilterOps() {
   // collect nodes with no bfUse to visit
   std::queue<std::shared_ptr<PredTransGraphNode>> freeNodes;
   for (auto nodeIt = fwPTGraphNodes_.begin(); nodeIt != fwPTGraphNodes_.end(); ) {
@@ -235,7 +171,7 @@ void PrePToPTransformerForPredTrans::connectFwBloomFilterOps() {
   }
 }
 
-void PrePToPTransformerForPredTrans::connectBwBloomFilterOps() {
+void SmallToLargePredTransOrder::connectBwBloomFilterOps() {
   // collect nodes with no bfUse to visit
   std::queue<std::shared_ptr<PredTransGraphNode>> freeNodes;
   for (auto nodeIt = bwPTGraphNodes_.begin(); nodeIt != bwPTGraphNodes_.end(); ) {
@@ -277,17 +213,9 @@ void PrePToPTransformerForPredTrans::connectBwBloomFilterOps() {
   }
 }
 
-std::vector<std::shared_ptr<PhysicalOp>> PrePToPTransformerForPredTrans::transformExec() {
-  // Update transformation results
-  updateTransRes();
-
-  // transform from root in dfs
-  return transformDfs(prePhysicalPlan_->getRootOp());
-}
-
-void PrePToPTransformerForPredTrans::updateTransRes() {
+void SmallToLargePredTransOrder::updateTransRes() {
   // update the transform result of FilterableScanPrePOp, if it participates in predicate transfer
-  for (auto &transResIt: prePOpToTransRes_) {
+  for (auto &transResIt: transformer_->prePOpToTransRes_) {
     bool needToUpdate = true;
     std::vector<std::shared_ptr<PhysicalOp>> updatedTransRes;
     for (const auto &origConnOp: transResIt.second) {

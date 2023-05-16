@@ -134,9 +134,12 @@ add_library(fpdb-executor STATIC
         src/physical/transform/PrePToPTransformer.cpp include/fpdb/executor/physical/transform/PrePToPTransformer.h
         src/physical/transform/PrePToS3PTransformer.cpp include/fpdb/executor/physical/transform/PrePToS3PTransformer.h
         src/physical/transform/PrePToFPDBStorePTransformer.cpp include/fpdb/executor/physical/transform/PrePToFPDBStorePTransformer.h
-        src/physical/transform/PrePToPTransformerForPredTrans.cpp include/fpdb/executor/physical/transform/PrePToPTransformerForPredTrans.h
         src/physical/transform/PrePToPTransformerUtil.cpp include/fpdb/executor/physical/transform/PrePToPTransformerUtil.h
         src/physical/transform/StoreTransformTraits.cpp include/fpdb/executor/physical/transform/StoreTransformTraits.h
+        src/physical/transform/pred-trans/PrePToPTransformerForPredTrans.cpp include/fpdb/executor/physical/transform/pred-trans/PrePToPTransformerForPredTrans.h
+        src/physical/transform/pred-trans/PredTransOrder.cpp include/fpdb/executor/physical/transform/pred-trans/PredTransOrder.h
+        src/physical/transform/pred-trans/SmallToLargePredTransOrder.cpp include/fpdb/executor/physical/transform/pred-trans/SmallToLargePredTransOrder.h
+        src/physical/transform/pred-trans/BFSPredTransOrder.cpp include/fpdb/executor/physical/transform/pred-trans/BFSPredTransOrder.h
 #        CAF serialization
         include/fpdb/executor/caf-serialization/CAFMessageSerializer.h
         include/fpdb/executor/caf-serialization/CAFPOpSerializer.h

@@ -345,7 +345,7 @@ tl::expected<void, std::string> HashJoinArrowKernel::doFinalizeInput(bool isBuil
   // arrow's impl cannot handle the case of no input (crash), we have to check and put an empty batch into it
   if (numInputBatches == 0) {
     auto& inputSchema = isBuildSide ? *buildInputSchema_ : *probeInputSchema_;
-    auto expEmptyRecordBatch = util::Util::makeEmptyRecordBatch(inputSchema);
+    auto expEmptyRecordBatch = tuple::util::Util::makeEmptyRecordBatch(inputSchema);
     if (!expEmptyRecordBatch.has_value()) {
       return tl::make_unexpected(expEmptyRecordBatch.error());
     }

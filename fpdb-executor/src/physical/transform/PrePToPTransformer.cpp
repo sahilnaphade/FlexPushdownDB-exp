@@ -5,6 +5,7 @@
 #include <fpdb/executor/physical/transform/PrePToPTransformer.h>
 #include <fpdb/executor/physical/transform/PrePToS3PTransformer.h>
 #include <fpdb/executor/physical/transform/PrePToFPDBStorePTransformer.h>
+#include <fpdb/executor/physical/transform/pred-trans/PrePToPTransformerForPredTrans.h>
 #include <fpdb/executor/physical/sort/SortPOp.h>
 #include <fpdb/executor/physical/limitsort/LimitSortPOp.h>
 #include <fpdb/executor/physical/aggregate/AggregatePOp.h>
@@ -55,9 +56,19 @@ shared_ptr<PhysicalPlan> PrePToPTransformer::transform(const shared_ptr<PrePhysi
                                                        const shared_ptr<ObjStoreConnector> &objStoreConnector,
                                                        const shared_ptr<Mode> &mode,
                                                        int parallelDegree,
-                                                       int numNodes) {
-  PrePToPTransformer transformer(prePhysicalPlan, catalogueEntry, objStoreConnector, mode, parallelDegree, numNodes);
-  return transformer.transform();
+                                                       int numNodes,
+                                                       bool enablePredTrans) {
+  if (enablePredTrans) {
+    return PrePToPTransformerForPredTrans::transform(prePhysicalPlan,
+                                                     catalogueEntry,
+                                                     objStoreConnector,
+                                                     mode,
+                                                     parallelDegree,
+                                                     numNodes);
+  } else {
+    PrePToPTransformer transformer(prePhysicalPlan, catalogueEntry, objStoreConnector, mode, parallelDegree, numNodes);
+    return transformer.transform();
+  }
 }
 
 shared_ptr<PhysicalPlan> PrePToPTransformer::transform() {

@@ -43,7 +43,8 @@ public:
                                             const shared_ptr<ObjStoreConnector> &objStoreConnector,
                                             const shared_ptr<Mode> &mode,
                                             int parallelDegree,
-                                            int numNodes);
+                                            int numNodes,
+                                            bool enablePredTrans = false);
 
 protected:
   PrePToPTransformer(const shared_ptr<PrePhysicalPlan> &prePhysicalPlan,
