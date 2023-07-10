@@ -11,7 +11,8 @@ namespace fpdb::executor::physical {
 void PredTransOrder::orderPredTrans(
         PredTransOrderType type,
         PrePToPTransformerForPredTrans* transformer,
-        const std::unordered_set<std::shared_ptr<JoinOrigin>, JoinOriginPtrHash, JoinOriginPtrPred> &joinOrigins) {
+        const std::unordered_set<std::shared_ptr<JoinOrigin>, JoinOriginPtrHash, JoinOriginPtrPred> &joinOrigins,
+        bool isYannakakis) {
   std::shared_ptr<PredTransOrder> predTransOrder;
   switch (type) {
     case PredTransOrderType::SMALL_TO_LARGE: {
@@ -19,7 +20,7 @@ void PredTransOrder::orderPredTrans(
       break;
     }
     case PredTransOrderType::BFS: {
-      predTransOrder = std::make_shared<BFSPredTransOrder>(transformer);
+      predTransOrder = std::make_shared<BFSPredTransOrder>(transformer, isYannakakis);
       break;
     }
     default: {
@@ -36,6 +37,27 @@ PredTransOrder::PredTransOrder(PredTransOrderType type,
 
 PredTransOrderType PredTransOrder::getType() const {
   return type_;
+}
+
+void PredTransOrder::updateTransRes() {
+  // update the transform result of FilterableScanPrePOp, if it participates in predicate transfer
+  for (auto &transResIt: transformer_->prePOpToTransRes_) {
+    bool needToUpdate = true;
+    std::vector<std::shared_ptr<PhysicalOp>> updatedTransRes;
+    for (const auto &origConnOp: transResIt.second) {
+      const auto &origUpConnOpToPTUnitIt = origUpConnOpToPTUnit_.find(origConnOp->name());
+      if (origUpConnOpToPTUnitIt != origUpConnOpToPTUnit_.end()) {
+        updatedTransRes.emplace_back(origUpConnOpToPTUnitIt->second->currUpConnOp_);
+      } else {
+        // no participation if predicate transfer
+        needToUpdate = false;
+        break;
+      }
+    }
+    if (needToUpdate) {
+      transResIt.second = updatedTransRes;
+    }
+  }
 }
 
 }

@@ -13,7 +13,8 @@ namespace fpdb::executor::physical {
 class BFSPredTransOrder: public PredTransOrder {
 
 public:
-  BFSPredTransOrder(PrePToPTransformerForPredTrans* transformer);
+  BFSPredTransOrder(PrePToPTransformerForPredTrans* transformer,
+                    bool isYannakakis);
   ~BFSPredTransOrder() override = default;
 
 private:
@@ -23,54 +24,76 @@ private:
     BOTH
   };
 
+  struct PredTransUnit;
+  struct PredTransNeighbor;     // neighbors in the join graph
+
   struct PredTransUnit {
-    uint prePOpId_;       // the prephysical op id of the corresponding FilterableScanPrePOp
-    std::shared_ptr<PhysicalOp> origUpConnOp_;    // the start of the vertical chain, also as the identifier
-    std::shared_ptr<PhysicalOp> currUpConnOp_;    // the end of the vertical chain
-    std::vector<std::pair<std::weak_ptr<PredTransUnit>, TransferDir>> neighbors_;     // neighbors in the join graph
+    std::shared_ptr<PredTransUnitBase> base_;
+    std::vector<std::shared_ptr<PredTransNeighbor>> neighbors_;          // neighbors
 
     PredTransUnit(uint prePOpId, const std::shared_ptr<PhysicalOp> &upConnOp):
-      prePOpId_(prePOpId),
-      origUpConnOp_(upConnOp), currUpConnOp_(upConnOp) {}
-
-    size_t hash() const {
-      return std::hash<std::string>()(origUpConnOp_->name());
-    }
-
-    bool equalTo(const std::shared_ptr<PredTransUnit> &other) const {
-      return origUpConnOp_->name() == other->origUpConnOp_->name();
-    }
+      base_(std::make_shared<PredTransUnitBase>(prePOpId, upConnOp)) {}
   };
 
   struct PredTransUnitPtrHash {
     inline size_t operator()(const std::shared_ptr<PredTransUnit> &ptUnit) const {
-      return ptUnit->hash();
+      return ptUnit->base_->hash();
     }
   };
 
   struct PredTransUnitPtrPred {
     inline bool operator()(const std::shared_ptr<PredTransUnit> &lhs, const std::shared_ptr<PredTransUnit> &rhs) const {
-      return lhs->equalTo(rhs);
+      return lhs->base_->equalTo(rhs->base_);
     }
   };
 
-  struct BFSPredTransPair {
-    std::shared_ptr<PredTransUnit> leftPTUnit_;
-    std::shared_ptr<PredTransUnit> rightPTUnit_;
-    TransferDir dir_;
+  struct PredTransNeighbor {
+    std::weak_ptr<PredTransUnit> ptUnit_;       // neighbor ptUnit
+    TransferDir transferDir_;                   // transfer dir from source to neighbor (this)
+    std::vector<std::string> leftColumns_;      // join columns in source
+    std::vector<std::string> rightColumns_;     // join columns in neighbor (this)
 
-    BFSPredTransPair(const std::shared_ptr<PredTransUnit> &leftPTUnit,
-                     const std::shared_ptr<PredTransUnit> &rightPTUnit,
-                     TransferDir dir):
-      leftPTUnit_(leftPTUnit), rightPTUnit_(rightPTUnit), dir_(dir) {}
+    PredTransNeighbor(const std::shared_ptr<PredTransUnit> &ptUnit, TransferDir transferDir,
+                      const std::vector<std::string> &leftColumns, const std::vector<std::string> &rightColumns):
+      ptUnit_(ptUnit), transferDir_(transferDir),
+      leftColumns_(leftColumns), rightColumns_(rightColumns) {}
   };
 
+  struct BFSPredTransPair {
+    std::shared_ptr<PredTransUnit> srcPTUnit_;
+    std::shared_ptr<PredTransUnit> tgtPTUnit_;
+    std::vector<std::string> srcColumns_;
+    std::vector<std::string> tgtColumns_;
+    bool forward_;
+    bool backward_;
+
+    BFSPredTransPair(const std::shared_ptr<PredTransUnit> &srcPTUnit,
+                     const std::shared_ptr<PredTransUnit> &tgtPTUnit,
+                     const std::vector<std::string> &srcColumns,
+                     const std::vector<std::string> &tgtColumns,
+                     bool forward,
+                     bool backward):
+      srcPTUnit_(srcPTUnit), tgtPTUnit_(tgtPTUnit),
+      srcColumns_(srcColumns), tgtColumns_(tgtColumns),
+      forward_(forward), backward_(backward) {}
+  };
+
+  // main entry
   void orderPredTrans(const std::unordered_set<std::shared_ptr<JoinOrigin>, JoinOriginPtrHash,
           JoinOriginPtrPred> &joinOrigins) override;
 
+  // construct pred-trans units
   void makePTUnits(
           const std::unordered_set<std::shared_ptr<JoinOrigin>, JoinOriginPtrHash, JoinOriginPtrPred> &joinOrigins);
+  
+  // get an order of pred-trans between ptUnits
   void bfsSearch();
+  
+  // connect pairs ptUnits by pred-trans operators (i.e. bloom filter / semi-join)
+  void connectPTUnits();
+  void connectPTUnits(bool isForward);
+
+  bool isYannakakis_;     // whether this is Yannakakis algorithm
 
   /**
    * extra states maintained during transformation
@@ -78,10 +101,12 @@ private:
   // pred-trans units
   std::unordered_set<std::shared_ptr<PredTransUnit>, PredTransUnitPtrHash, PredTransUnitPtrPred> ptUnits_;
   std::shared_ptr<PredTransUnit> rootPTUnit_;
-  double rootPTUnitRowCount_;
+  double rootPTUnitRowCount_;     // only used to find the largest base table
 
   // BFS ordering result, the order is the reverse of BFS search so use a stack here
-  std::stack<std::shared_ptr<BFSPredTransPair>> bfsPredTransOrder_;
+  // forward is constructed during BFS ordering, backward is construct during the visit of the forward one
+  std::stack<std::shared_ptr<BFSPredTransPair>> forwardOrder_;
+  std::stack<std::shared_ptr<BFSPredTransPair>> backwardOrder_;
 };
 
 }

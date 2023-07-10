@@ -21,38 +21,26 @@ private:
   struct PredTransUnit;
   struct PredTransGraphNode;
 
-  // basic unit for predicate transfer, i.e. ops (scan/local filter, BF create/use) corresponding to a single scan op
-  // a unit can be viewed as a vertical chain from scan/local filter to subsequent BF use ops.
+  // basic unit for predicate transfer, extending PredTransUnitBase
   struct PredTransUnit {
-    uint prePOpId_;       // the prephysical op id of the corresponding FilterableScanPrePOp
-    std::shared_ptr<PhysicalOp> origUpConnOp_;    // the start of the vertical chain, also as the identifier
-    std::shared_ptr<PhysicalOp> currUpConnOp_;    // the end of the vertical chain
+    std::shared_ptr<PredTransUnitBase> base_;
     std::vector<std::shared_ptr<PredTransGraphNode>> fwOutPTNodes_, bwOutPTNodes_;  // in/out PT graph nodes
     int numFwBFUseToVisit_ = 0, numBwBFUseToVisit_ = 0;     // for dependencies
     int numFwBFUseVisited_ = 0, numBwBFUseVisited_ = 0;     // for dependencies
 
     PredTransUnit(uint prePOpId, const std::shared_ptr<PhysicalOp> &upConnOp):
-            prePOpId_(prePOpId),
-            origUpConnOp_(upConnOp), currUpConnOp_(upConnOp) {}
-
-    size_t hash() const {
-      return std::hash<std::string>()(origUpConnOp_->name());
-    }
-
-    bool equalTo(const std::shared_ptr<PredTransUnit> &other) const {
-      return origUpConnOp_->name() == other->origUpConnOp_->name();
-    }
+      base_(std::make_shared<PredTransUnitBase>(prePOpId, upConnOp)) {}
   };
 
   struct PredTransUnitPtrHash {
     inline size_t operator()(const std::shared_ptr<PredTransUnit> &ptUnit) const {
-      return ptUnit->hash();
+      return ptUnit->base_->hash();
     }
   };
 
   struct PredTransUnitPtrPred {
     inline bool operator()(const std::shared_ptr<PredTransUnit> &lhs, const std::shared_ptr<PredTransUnit> &rhs) const {
-      return lhs->equalTo(rhs);
+      return lhs->base_->equalTo(rhs->base_);
     }
   };
 
@@ -91,6 +79,7 @@ private:
     }
   };
 
+  // Main entry
   void orderPredTrans(const std::unordered_set<std::shared_ptr<JoinOrigin>, JoinOriginPtrHash,
           JoinOriginPtrPred> &joinOrigins) override;
 
@@ -102,16 +91,9 @@ private:
   void connectFwBloomFilterOps();
   void connectBwBloomFilterOps();
 
-  // Update the ops that generate the input tables (predicate-transfer filtered) for Phase 2 plan.
-  // I.e., the ops are originally scan/local filter, and may be expanded to BF use by Phase 1 plan.
-  void updateTransRes();
-
   /**
    * extra states maintained during transformation
    */
-  // keep track of the ops that generate the input tables (predicate-transfer filtered) for Phase 2 plan
-  std::unordered_map<std::string, std::shared_ptr<PredTransUnit>> origUpConnOpToPTUnit_;
-
   // used during predicate transfer, as a dependency graph
   std::unordered_set<std::shared_ptr<PredTransUnit>, PredTransUnitPtrHash, PredTransUnitPtrPred> ptUnits_;
   std::unordered_set<std::shared_ptr<PredTransGraphNode>, PredTransGraphNodePtrHash, PredTransGraphNodePtrPred>

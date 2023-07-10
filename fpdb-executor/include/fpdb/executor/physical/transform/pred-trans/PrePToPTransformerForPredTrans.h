@@ -28,6 +28,7 @@ public:
 
   friend class SmallToLargePredTransOrder;
   friend class BFSPredTransOrder;
+  friend class PredTransOrder;
 
 private:
   PrePToPTransformerForPredTrans(const shared_ptr<PrePhysicalPlan> &prePhysicalPlan,

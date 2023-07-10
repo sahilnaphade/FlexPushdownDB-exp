@@ -28,8 +28,8 @@ void SmallToLargePredTransOrder::orderPredTrans(
 #if SHOW_DEBUG_METRICS == true
   // collect predicate transfer metrics
   for (const auto &ptUnit: ptUnits_) {
-    auto currConnOp = ptUnit->currUpConnOp_;
-    uint prePOpId = ptUnit->prePOpId_;
+    auto currConnOp = ptUnit->base_->currUpConnOp_;
+    uint prePOpId = ptUnit->base_->prePOpId_;
     currConnOp->setCollPredTransMetrics(prePOpId, metrics::PredTransMetrics::PTMetricsUnitType::PRED_TRANS);
   }
 #endif
@@ -59,7 +59,7 @@ void SmallToLargePredTransOrder::makeBloomFilterOps(
     auto ptUnitIt = ptUnits_.find(leftPTUnit);
     if (ptUnitIt == ptUnits_.end()) {
       ptUnits_.emplace(leftPTUnit);
-      origUpConnOpToPTUnit_[upLeftConnPOp->name()] = leftPTUnit;
+      origUpConnOpToPTUnit_[upLeftConnPOp->name()] = leftPTUnit->base_;
     } else {
       leftPTUnit = *ptUnitIt;
     }
@@ -67,7 +67,7 @@ void SmallToLargePredTransOrder::makeBloomFilterOps(
     ptUnitIt = ptUnits_.find(rightPTUnit);
     if (ptUnitIt == ptUnits_.end()) {
       ptUnits_.emplace(rightPTUnit);
-      origUpConnOpToPTUnit_[upRightConnPOp->name()] = rightPTUnit;
+      origUpConnOpToPTUnit_[upRightConnPOp->name()] = rightPTUnit->base_;
     } else {
       rightPTUnit = *ptUnitIt;
     }
@@ -75,7 +75,7 @@ void SmallToLargePredTransOrder::makeBloomFilterOps(
     // make bloom filter ops
     join::HashJoinPredicate hashJoinPredicate(joinOrigin->leftColumns_, joinOrigin->rightColumns_);
     const auto &hashJoinPredicateStr = hashJoinPredicate.toString();
-    uint bfId = bfIdGen_.fetch_add(1);
+    uint bfId = ptOpIdGen_.fetch_add(1);
 
     // forward bloom filter, blocked by right joins
     if (joinOrigin->joinType_ != JoinType::RIGHT) {
@@ -151,9 +151,9 @@ void SmallToLargePredTransOrder::connectFwBloomFilterOps() {
     auto bfUsePTUnit = node->bfUsePTUnit_.lock();
     std::shared_ptr<PhysicalOp> bfCreate = node->bfCreate_;
     std::shared_ptr<PhysicalOp> bfUse = node->bfUse_;
-    PrePToPTransformerUtil::connectOneToOne(bfCreatePTUnit->currUpConnOp_, bfCreate);
-    PrePToPTransformerUtil::connectOneToOne(bfUsePTUnit->currUpConnOp_, bfUse);
-    bfUsePTUnit->currUpConnOp_ = bfUse;
+    PrePToPTransformerUtil::connectOneToOne(bfCreatePTUnit->base_->currUpConnOp_, bfCreate);
+    PrePToPTransformerUtil::connectOneToOne(bfUsePTUnit->base_->currUpConnOp_, bfUse);
+    bfUsePTUnit->base_->currUpConnOp_ = bfUse;
     ++bfUsePTUnit->numFwBFUseVisited_;
 
     // update the outgoing neighbors of this node
@@ -193,9 +193,9 @@ void SmallToLargePredTransOrder::connectBwBloomFilterOps() {
     auto bfUsePTUnit = node->bfUsePTUnit_.lock();
     std::shared_ptr<PhysicalOp> bfCreate = node->bfCreate_;
     std::shared_ptr<PhysicalOp> bfUse = node->bfUse_;
-    PrePToPTransformerUtil::connectOneToOne(bfCreatePTUnit->currUpConnOp_, bfCreate);
-    PrePToPTransformerUtil::connectOneToOne(bfUsePTUnit->currUpConnOp_, bfUse);
-    bfUsePTUnit->currUpConnOp_ = bfUse;
+    PrePToPTransformerUtil::connectOneToOne(bfCreatePTUnit->base_->currUpConnOp_, bfCreate);
+    PrePToPTransformerUtil::connectOneToOne(bfUsePTUnit->base_->currUpConnOp_, bfUse);
+    bfUsePTUnit->base_->currUpConnOp_ = bfUse;
     ++bfUsePTUnit->numBwBFUseVisited_;
 
     // update the outgoing neighbors of this node
@@ -210,27 +210,6 @@ void SmallToLargePredTransOrder::connectBwBloomFilterOps() {
   // throw exception when there is a cycle
   if (!bwPTGraphNodes_.empty()) {
     throw std::runtime_error("The join origins (base table joins) contain cycles (backward predicate transfer)");
-  }
-}
-
-void SmallToLargePredTransOrder::updateTransRes() {
-  // update the transform result of FilterableScanPrePOp, if it participates in predicate transfer
-  for (auto &transResIt: transformer_->prePOpToTransRes_) {
-    bool needToUpdate = true;
-    std::vector<std::shared_ptr<PhysicalOp>> updatedTransRes;
-    for (const auto &origConnOp: transResIt.second) {
-      const auto &origUpConnOpToPTUnitIt = origUpConnOpToPTUnit_.find(origConnOp->name());
-      if (origUpConnOpToPTUnitIt != origUpConnOpToPTUnit_.end()) {
-        updatedTransRes.emplace_back(origUpConnOpToPTUnitIt->second->currUpConnOp_);
-      } else {
-        // no participation if predicate transfer
-        needToUpdate = false;
-        break;
-      }
-    }
-    if (needToUpdate) {
-      transResIt.second = updatedTransRes;
-    }
   }
 }
 
