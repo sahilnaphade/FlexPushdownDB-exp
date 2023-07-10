@@ -71,6 +71,7 @@ static constexpr std::string_view PushdownOpNamePrefix = "FPDBStoreSuper";
  * For predicate transfer
  */
 inline PredTransOrderType PRED_TRANS_ORDER_TYPE = PredTransOrderType::SMALL_TO_LARGE;
+inline bool ENABLE_YANNAKAKIS = false;      // only used by BFSPredTransOrder
 
 }
 

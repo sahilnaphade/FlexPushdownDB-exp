@@ -4,6 +4,7 @@
 
 #include <fpdb/executor/physical/transform/pred-trans/SmallToLargePredTransOrder.h>
 #include <fpdb/executor/physical/transform/pred-trans/BFSPredTransOrder.h>
+#include <fpdb/executor/physical/Globals.h>
 #include <fmt/format.h>
 
 namespace fpdb::executor::physical {
@@ -11,8 +12,7 @@ namespace fpdb::executor::physical {
 void PredTransOrder::orderPredTrans(
         PredTransOrderType type,
         PrePToPTransformerForPredTrans* transformer,
-        const std::unordered_set<std::shared_ptr<JoinOrigin>, JoinOriginPtrHash, JoinOriginPtrPred> &joinOrigins,
-        bool isYannakakis) {
+        const std::unordered_set<std::shared_ptr<JoinOrigin>, JoinOriginPtrHash, JoinOriginPtrPred> &joinOrigins) {
   std::shared_ptr<PredTransOrder> predTransOrder;
   switch (type) {
     case PredTransOrderType::SMALL_TO_LARGE: {
@@ -20,7 +20,7 @@ void PredTransOrder::orderPredTrans(
       break;
     }
     case PredTransOrderType::BFS: {
-      predTransOrder = std::make_shared<BFSPredTransOrder>(transformer, isYannakakis);
+      predTransOrder = std::make_shared<BFSPredTransOrder>(transformer, ENABLE_YANNAKAKIS);
       break;
     }
     default: {

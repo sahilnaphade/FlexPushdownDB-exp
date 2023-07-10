@@ -384,8 +384,7 @@ void TestUtil::executeQueryFile(const string &queryFileName) {
                                                     objStoreConnector_,
                                                     mode_,
                                                     parallelDegree_,
-                                                    numNodes,
-                                                    ENABLE_PRED_TRANS);
+                                                    numNodes);
 
   // execute
   const auto &execRes = objStoreConnector_->getStoreType() == ObjStoreType::FPDB_STORE ?

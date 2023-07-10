@@ -24,8 +24,7 @@ public:
   static void orderPredTrans(
           PredTransOrderType type,
           PrePToPTransformerForPredTrans* transformer,
-          const std::unordered_set<std::shared_ptr<JoinOrigin>, JoinOriginPtrHash, JoinOriginPtrPred> &joinOrigins,
-          bool isYannakakis = false   /* only used by BFSPredTransOrder */);
+          const std::unordered_set<std::shared_ptr<JoinOrigin>, JoinOriginPtrHash, JoinOriginPtrPred> &joinOrigins);
 
   PredTransOrder(PredTransOrderType type,
                  PrePToPTransformerForPredTrans* transformer);

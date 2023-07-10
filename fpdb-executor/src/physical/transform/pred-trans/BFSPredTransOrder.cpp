@@ -151,10 +151,11 @@ void BFSPredTransOrder::connectPTUnits() {
 }
 
 void BFSPredTransOrder::connectPTUnits(bool isForward) {
-  const auto &orderToVisit = isForward ? forwardOrder_ : backwardOrder_;
+  auto &orderToVisit = isForward ? forwardOrder_ : backwardOrder_;
   std::string dirNameTag = isForward ? "F" : "B";
   while (!orderToVisit.empty()) {
-    const auto &ptPair = orderToVisit.top();
+    auto ptPair = orderToVisit.top();
+    orderToVisit.pop();
     if (ptPair->forward_) {
       join::HashJoinPredicate hashJoinPredicate(ptPair->srcColumns_, ptPair->tgtColumns_);
       const auto &hashJoinPredicateStr = hashJoinPredicate.toString();

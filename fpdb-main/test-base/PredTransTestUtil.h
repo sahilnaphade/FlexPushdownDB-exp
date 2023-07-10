@@ -18,7 +18,7 @@ public:
    * if "enablePredTrans" is set to false, then it's measuring the baseline
    */
   static void testPredTrans(const std::string &schemaName, const std::string &queryFileName,
-                            bool enablePredTrans = true);
+                            bool enablePredTrans = true, bool enableYannakakis = false);
 };
 
 }

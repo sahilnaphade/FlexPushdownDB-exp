@@ -56,9 +56,8 @@ shared_ptr<PhysicalPlan> PrePToPTransformer::transform(const shared_ptr<PrePhysi
                                                        const shared_ptr<ObjStoreConnector> &objStoreConnector,
                                                        const shared_ptr<Mode> &mode,
                                                        int parallelDegree,
-                                                       int numNodes,
-                                                       bool enablePredTrans) {
-  if (enablePredTrans) {
+                                                       int numNodes) {
+  if (ENABLE_PRED_TRANS) {
     return PrePToPTransformerForPredTrans::transform(prePhysicalPlan,
                                                      catalogueEntry,
                                                      objStoreConnector,
