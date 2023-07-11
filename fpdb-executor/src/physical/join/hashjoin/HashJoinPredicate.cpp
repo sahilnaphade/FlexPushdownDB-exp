@@ -25,6 +25,14 @@ const vector<string> &HashJoinPredicate::getRightColumnNames() const {
   return rightColumnNames_;
 }
 
+void HashJoinPredicate::setLeftColumnNames(const vector<string> &leftColumnNames) {
+  leftColumnNames_ = leftColumnNames;
+}
+
+void HashJoinPredicate::setRightColumnNames(const vector<string> &rightColumnNames) {
+  rightColumnNames_ = rightColumnNames;
+}
+
 string HashJoinPredicate::toString() const {
   stringstream ss;
   for (uint i = 0; i < leftColumnNames_.size(); ++i) {
