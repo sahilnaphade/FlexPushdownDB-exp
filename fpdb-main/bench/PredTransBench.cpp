@@ -200,4 +200,96 @@ TEST_CASE ("no-pred-trans-tpch-sf1-22" * doctest::skip(false || SKIP_SUITE)) {
 
 }
 
+TEST_SUITE ("yannakakis-tpch-sf1" * doctest::skip(SKIP_SUITE)) {
+
+TEST_CASE ("yannakakis-tpch-sf1-01" * doctest::skip(false || SKIP_SUITE)) {
+  PredTransTestUtil::testPredTrans("tpch-sf1/parquet/", "tpch/original/01.sql", true, true);
+}
+
+TEST_CASE ("yannakakis-tpch-sf1-02" * doctest::skip(false || SKIP_SUITE)) {
+  PredTransTestUtil::testPredTrans("tpch-sf1/parquet/", "tpch/original/02.sql", true, true);
+}
+
+TEST_CASE ("yannakakis-tpch-sf1-03" * doctest::skip(false || SKIP_SUITE)) {
+  PredTransTestUtil::testPredTrans("tpch-sf1/parquet/", "tpch/original/03.sql", true, true);
+}
+
+TEST_CASE ("yannakakis-tpch-sf1-04" * doctest::skip(false || SKIP_SUITE)) {
+  PredTransTestUtil::testPredTrans("tpch-sf1/parquet/", "tpch/original/04.sql", true, true);
+}
+
+TEST_CASE ("yannakakis-tpch-sf1-05" * doctest::skip(false || SKIP_SUITE)) {
+  PredTransTestUtil::testPredTrans("tpch-sf1/parquet/", "tpch/original/05.sql", true, true);
+}
+
+TEST_CASE ("yannakakis-tpch-sf1-06" * doctest::skip(false || SKIP_SUITE)) {
+  PredTransTestUtil::testPredTrans("tpch-sf1/parquet/", "tpch/original/06.sql", true, true);
+}
+
+TEST_CASE ("yannakakis-tpch-sf1-07" * doctest::skip(false || SKIP_SUITE)) {
+  PredTransTestUtil::testPredTrans("tpch-sf1/parquet/", "tpch/original/07.sql", true, true);
+}
+
+TEST_CASE ("yannakakis-tpch-sf1-08" * doctest::skip(false || SKIP_SUITE)) {
+  PredTransTestUtil::testPredTrans("tpch-sf1/parquet/", "tpch/original/08.sql", true, true);
+}
+
+TEST_CASE ("yannakakis-tpch-sf1-09" * doctest::skip(false || SKIP_SUITE)) {
+  PredTransTestUtil::testPredTrans("tpch-sf1/parquet/", "tpch/original/09.sql", true, true);
+}
+
+TEST_CASE ("yannakakis-tpch-sf1-10" * doctest::skip(false || SKIP_SUITE)) {
+  PredTransTestUtil::testPredTrans("tpch-sf1/parquet/", "tpch/original/10.sql", true, true);
+}
+
+TEST_CASE ("yannakakis-tpch-sf1-11" * doctest::skip(false || SKIP_SUITE)) {
+  PredTransTestUtil::testPredTrans("tpch-sf1/parquet/", "tpch/original/11.sql", true, true);
+}
+
+TEST_CASE ("yannakakis-tpch-sf1-12" * doctest::skip(false || SKIP_SUITE)) {
+  PredTransTestUtil::testPredTrans("tpch-sf1/parquet/", "tpch/original/12.sql", true, true);
+}
+
+TEST_CASE ("yannakakis-tpch-sf1-13" * doctest::skip(false || SKIP_SUITE)) {
+  PredTransTestUtil::testPredTrans("tpch-sf1/parquet/", "tpch/original/13.sql", true, true);
+}
+
+TEST_CASE ("yannakakis-tpch-sf1-14" * doctest::skip(false || SKIP_SUITE)) {
+  PredTransTestUtil::testPredTrans("tpch-sf1/parquet/", "tpch/original/14.sql", true, true);
+}
+
+TEST_CASE ("yannakakis-tpch-sf1-15" * doctest::skip(false || SKIP_SUITE)) {
+  PredTransTestUtil::testPredTrans("tpch-sf1/parquet/", "tpch/original/15.sql", true, true);
+}
+
+TEST_CASE ("yannakakis-tpch-sf1-16" * doctest::skip(false || SKIP_SUITE)) {
+  PredTransTestUtil::testPredTrans("tpch-sf1/parquet/", "tpch/original/16.sql", true, true);
+}
+
+TEST_CASE ("yannakakis-tpch-sf1-17" * doctest::skip(false || SKIP_SUITE)) {
+  PredTransTestUtil::testPredTrans("tpch-sf1/parquet/", "tpch/original/17.sql", true, true);
+}
+
+TEST_CASE ("yannakakis-tpch-sf1-18" * doctest::skip(false || SKIP_SUITE)) {
+  PredTransTestUtil::testPredTrans("tpch-sf1/parquet/", "tpch/original/18.sql", true, true);
+}
+
+TEST_CASE ("yannakakis-tpch-sf1-19" * doctest::skip(false || SKIP_SUITE)) {
+  PredTransTestUtil::testPredTrans("tpch-sf1/parquet/", "tpch/original/19.sql", true, true);
+}
+
+TEST_CASE ("yannakakis-tpch-sf1-20" * doctest::skip(false || SKIP_SUITE)) {
+  PredTransTestUtil::testPredTrans("tpch-sf1/parquet/", "tpch/original/20.sql", true, true);
+}
+
+TEST_CASE ("yannakakis-tpch-sf1-21" * doctest::skip(false || SKIP_SUITE)) {
+  PredTransTestUtil::testPredTrans("tpch-sf1/parquet/", "tpch/original/21.sql", true, true);
+}
+
+TEST_CASE ("yannakakis-tpch-sf1-22" * doctest::skip(false || SKIP_SUITE)) {
+  PredTransTestUtil::testPredTrans("tpch-sf1/parquet/", "tpch/original/22.sql", true, true);
+}
+
+}
+
 }
