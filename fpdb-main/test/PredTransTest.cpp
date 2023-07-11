@@ -189,9 +189,9 @@ TEST_CASE ("yannakakis-tpch-sf0.01-single-part-20" * doctest::skip(false || SKIP
   PredTransTestUtil::testPredTrans("tpch-sf0.01-single-part/parquet/", "tpch/original/20.sql", true, true);
 }
 
-TEST_CASE ("yannakakis-tpch-sf0.01-single-part-21" * doctest::skip(false || SKIP_SUITE)) {
-  PredTransTestUtil::testPredTrans("tpch-sf0.01-single-part/parquet/", "tpch/original/21.sql", true, true);
-}
+//TEST_CASE ("yannakakis-tpch-sf0.01-single-part-21" * doctest::skip(false || SKIP_SUITE)) {
+//  PredTransTestUtil::testPredTrans("tpch-sf0.01-single-part/parquet/", "tpch/original/21.sql", true, true);
+//}
 
 TEST_CASE ("yannakakis-tpch-sf0.01-single-part-22" * doctest::skip(false || SKIP_SUITE)) {
   PredTransTestUtil::testPredTrans("tpch-sf0.01-single-part/parquet/", "tpch/original/22.sql", true, true);

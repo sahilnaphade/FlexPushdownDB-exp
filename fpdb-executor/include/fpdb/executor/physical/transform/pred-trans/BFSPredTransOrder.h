@@ -29,10 +29,12 @@ private:
 
   struct PredTransUnit {
     std::shared_ptr<PredTransUnitBase> base_;
+    double rowCount_;
     std::vector<std::shared_ptr<PredTransNeighbor>> neighbors_;          // neighbors
 
-    PredTransUnit(uint prePOpId, const std::shared_ptr<PhysicalOp> &upConnOp):
-      base_(std::make_shared<PredTransUnitBase>(prePOpId, upConnOp)) {}
+    PredTransUnit(uint prePOpId, const std::shared_ptr<PhysicalOp> &upConnOp, double rowCount):
+      base_(std::make_shared<PredTransUnitBase>(prePOpId, upConnOp)),
+      rowCount_(rowCount) {}
   };
 
   struct PredTransUnitPtrHash {
@@ -46,6 +48,8 @@ private:
       return lhs->base_->equalTo(rhs->base_);
     }
   };
+
+  using PTUnitSet = std::unordered_set<std::shared_ptr<PredTransUnit>, PredTransUnitPtrHash, PredTransUnitPtrPred>;
 
   struct PredTransNeighbor {
     std::weak_ptr<PredTransUnit> ptUnit_;       // neighbor ptUnit
@@ -85,10 +89,11 @@ private:
   // construct pred-trans units
   void makePTUnits(
           const std::unordered_set<std::shared_ptr<JoinOrigin>, JoinOriginPtrHash, JoinOriginPtrPred> &joinOrigins);
-  
+
   // get an order of pred-trans between ptUnits
   void bfsSearch();
-  
+  void doBfsSearch(PTUnitSet &ptUnitsToVisit, const std::shared_ptr<PredTransUnit> &root);
+
   // connect pairs ptUnits by pred-trans operators (i.e. bloom filter / semi-join)
   void connectPTUnits();
   void connectPTUnits(bool isForward);
@@ -99,9 +104,7 @@ private:
    * extra states maintained during transformation
    */
   // pred-trans units
-  std::unordered_set<std::shared_ptr<PredTransUnit>, PredTransUnitPtrHash, PredTransUnitPtrPred> ptUnits_;
-  std::shared_ptr<PredTransUnit> rootPTUnit_;
-  double rootPTUnitRowCount_;     // only used to find the largest base table
+  PTUnitSet ptUnits_;
 
   // BFS ordering result, the order is the reverse of BFS search so use a stack here
   // forward is constructed during BFS ordering, backward is construct during the visit of the forward one

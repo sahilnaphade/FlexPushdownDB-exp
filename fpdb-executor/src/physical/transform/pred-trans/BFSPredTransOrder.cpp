@@ -13,8 +13,8 @@ namespace fpdb::executor::physical {
 
 BFSPredTransOrder::BFSPredTransOrder(PrePToPTransformerForPredTrans* transformer,
                                      bool isYannakakis):
-  PredTransOrder(PredTransOrderType::BFS, transformer),
-  isYannakakis_(isYannakakis) {}
+        PredTransOrder(PredTransOrderType::BFS, transformer),
+        isYannakakis_(isYannakakis) {}
 
 void BFSPredTransOrder::orderPredTrans(
         const std::unordered_set<std::shared_ptr<JoinOrigin>, JoinOriginPtrHash, JoinOriginPtrPred> &joinOrigins) {
@@ -42,6 +42,7 @@ void BFSPredTransOrder::orderPredTrans(
 
 void BFSPredTransOrder::makePTUnits(
         const std::unordered_set<std::shared_ptr<JoinOrigin>, JoinOriginPtrHash, JoinOriginPtrPred> &joinOrigins) {
+  // traverse join edges
   for (const auto &joinOrigin: joinOrigins) {
     // transform the join origin ops
     auto upLeftConnPOps = transformer_->transformDfs(joinOrigin->left_);
@@ -60,7 +61,9 @@ void BFSPredTransOrder::makePTUnits(
     }
 
     // make or find predicate transfer units
-    auto leftPTUnit = std::make_shared<PredTransUnit>(joinOrigin->left_->getId(), upLeftConnPOp);
+    auto leftPTUnit = std::make_shared<PredTransUnit>(joinOrigin->left_->getId(),
+                                                      upLeftConnPOp,
+                                                      joinOrigin->left_->getRowCount());
     auto ptUnitIt = ptUnits_.find(leftPTUnit);
     if (ptUnitIt == ptUnits_.end()) {
       ptUnits_.emplace(leftPTUnit);
@@ -68,7 +71,9 @@ void BFSPredTransOrder::makePTUnits(
     } else {
       leftPTUnit = *ptUnitIt;
     }
-    auto rightPTUnit = std::make_shared<PredTransUnit>(joinOrigin->right_->getId(), upRightConnPOp);
+    auto rightPTUnit = std::make_shared<PredTransUnit>(joinOrigin->right_->getId(),
+                                                       upRightConnPOp,
+                                                       joinOrigin->right_->getRowCount());
     ptUnitIt = ptUnits_.find(rightPTUnit);
     if (ptUnitIt == ptUnits_.end()) {
       ptUnits_.emplace(rightPTUnit);
@@ -91,57 +96,66 @@ void BFSPredTransOrder::makePTUnits(
             rightPTUnit, leftTransferDir, joinOrigin->leftColumns_, joinOrigin->rightColumns_));
     rightPTUnit->neighbors_.emplace_back(std::make_shared<PredTransNeighbor>(
             leftPTUnit, rightTransferDir, joinOrigin->rightColumns_, joinOrigin->leftColumns_));
-
-    if (isYannakakis_) {
-      // Yannakakis does not specify the root so we just pick the first one
-      if (rootPTUnit_ == nullptr) {
-        rootPTUnit_ = leftPTUnit;
-      }
-    } else {
-      // in pred-trans, we specify the root as the ptUnit with the largest table
-      double leftRowCount = joinOrigin->left_->getRowCount();
-      double rightRowCount = joinOrigin->right_->getRowCount();
-      auto largerPTUnit = leftRowCount > rightRowCount ? leftPTUnit : rightPTUnit;
-      double largerPTUnitRowCount = leftRowCount > rightRowCount ? leftRowCount : rightRowCount;
-      if (rootPTUnit_ == nullptr || largerPTUnitRowCount > rootPTUnitRowCount_) {
-        rootPTUnit_ = largerPTUnit;
-        rootPTUnitRowCount_ = largerPTUnitRowCount;
-      }
-    }
   }
 }
 
 void BFSPredTransOrder::bfsSearch() {
-  std::queue<std::shared_ptr<PredTransUnit>> ptUnitsToVisit;
-  ptUnitsToVisit.push(rootPTUnit_);
-  ptUnits_.erase(rootPTUnit_);
+  // skip if there is no joins
+  if (ptUnits_.empty()) {
+    return;
+  }
+  auto ptUnitsToVisit = ptUnits_;        // use a copy since we erase elements below
+  std::shared_ptr<PredTransUnit> root;
+
+  // keep doing bfs search until all are visited, one bfs search may not visit all nodes, since there may be multiple
+  // connected components in the join graph, i.e., some joins are not equi-joins so no transfer can happen,
+  // in such case we need to start another bfs search on the rest nodes until all are visited
+  while (!ptUnitsToVisit.empty()) {
+    // get the root node
+    if (isYannakakis_) {
+      // Yannakakis does not specify the root so we just pick the first one
+      root = *ptUnitsToVisit.begin();
+    } else {
+      // in pred-trans, we specify the root as the ptUnit with the largest table
+      double rootRowCount_ = -1;
+      for (const auto &ptUnit: ptUnitsToVisit) {
+        if (ptUnit->rowCount_ > rootRowCount_) {
+          root = ptUnit;
+          rootRowCount_ = ptUnit->rowCount_;
+        }
+      }
+    }
+    // actual bfs happens here
+    doBfsSearch(ptUnitsToVisit, root);
+  }
+}
+
+void BFSPredTransOrder::doBfsSearch(PTUnitSet &ptUnitsToVisit, const std::shared_ptr<PredTransUnit> &root) {
+  std::queue<std::shared_ptr<PredTransUnit>> bfsQueue;
+  bfsQueue.push(root);
+  ptUnitsToVisit.erase(root);
 
   // BFS search
-  while (!ptUnitsToVisit.empty()) {
-    const auto &ptUnit = ptUnitsToVisit.front();
-    ptUnitsToVisit.pop();
+  while (!bfsQueue.empty()) {
+    const auto &ptUnit = bfsQueue.front();
+    bfsQueue.pop();
     for (const auto &neighbor: ptUnit->neighbors_) {
       auto nextPtUnit = neighbor->ptUnit_.lock();
-      if (ptUnits_.find(nextPtUnit) == ptUnits_.end()) {
+      if (ptUnitsToVisit.find(nextPtUnit) == ptUnitsToVisit.end()) {
         // this node has been visited
         continue;
       }
       // get whether the forward or backward transfer is doable, or both are
       bool forward = neighbor->transferDir_ == TransferDir::BOTH ||
-              neighbor->transferDir_ == TransferDir::FORWARD_ONLY;
+                     neighbor->transferDir_ == TransferDir::FORWARD_ONLY;
       bool backward = neighbor->transferDir_ == TransferDir::BOTH ||
-              neighbor->transferDir_ == TransferDir::BACKWARD_ONLY;
+                      neighbor->transferDir_ == TransferDir::BACKWARD_ONLY;
       forwardOrder_.push(std::make_shared<BFSPredTransPair>(nextPtUnit, ptUnit,
                                                             neighbor->rightColumns_, neighbor->leftColumns_,
                                                             backward, forward));
-      ptUnitsToVisit.push(nextPtUnit);
-      ptUnits_.erase(nextPtUnit);
+      bfsQueue.push(nextPtUnit);
+      ptUnitsToVisit.erase(nextPtUnit);
     }
-  }
-
-  // elements in ptUnits_ should all be visited
-  if (!ptUnits_.empty()) {
-    throw std::runtime_error("BFS search does not visit all elements in ptUnits_");
   }
 }
 
@@ -173,6 +187,8 @@ void BFSPredTransOrder::connectPTUnits(bool isForward) {
                 ->addBuildProducer(ptPair->srcPTUnit_->base_->currUpConnOp_);
         std::static_pointer_cast<join::HashJoinArrowPOp>(hashJoin)
                 ->addProbeProducer(ptPair->tgtPTUnit_->base_->currUpConnOp_);
+        ptPair->srcPTUnit_->base_->currUpConnOp_->produce(hashJoin);
+        ptPair->tgtPTUnit_->base_->currUpConnOp_->produce(hashJoin);
         PrePToPTransformerUtil::addPhysicalOps({hashJoin}, transformer_->physicalOps_);
         // update currUpConnOp for ptUnit
         ptPair->tgtPTUnit_->base_->currUpConnOp_ = hashJoin;
