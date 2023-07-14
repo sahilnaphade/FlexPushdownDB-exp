@@ -67,6 +67,13 @@ void PrePToPTransformerForPredTrans::transformPredTrans() {
 
   // predicate transfer ordering
   PredTransOrder::orderPredTrans(PRED_TRANS_ORDER_TYPE, this, joinOrigins);
+
+#if SHOW_DEBUG_METRICS == true
+  // classify ops so far into pred-trans phase
+  for (const auto &op: physicalOps_) {
+    op.second->setInPredTransPhase(true);
+  }
+#endif
 }
 
 std::vector<std::shared_ptr<PhysicalOp>>

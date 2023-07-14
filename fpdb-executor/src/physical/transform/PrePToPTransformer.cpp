@@ -132,6 +132,8 @@ vector<shared_ptr<PhysicalOp>> PrePToPTransformer::transformDfs(const shared_ptr
     if (type_ == PrePToPTransformerType::REGULAR) {
       for (const auto &op: transRes) {
         op->setCollPredTransMetrics(prePOp->getId(), metrics::PredTransMetrics::PTMetricsUnitType::LOCAL_FILTER);
+        // classify ops into pred-trans phase since they are applied to base tables
+        op->setInPredTransPhase(true);
       }
       prePOpIdToConnOpsForPredTrans_[prePOp->getId()] = transRes;
     }
@@ -316,7 +318,7 @@ PrePToPTransformer::transformGroup(const shared_ptr<GroupPrePOp> &groupPrePOp) {
   if (type_ == PrePToPTransformerType::REGULAR) {
     auto optPrePOpId = prephysical::Util::traceScanOriginWithNoJoinInPath(groupPrePOp);
     if (optPrePOpId.has_value()) {
-      // remove flog for former ops
+      // remove flag for former ops
       auto transResIt = prePOpIdToConnOpsForPredTrans_.find(*optPrePOpId);
       if (transResIt != prePOpIdToConnOpsForPredTrans_.end()) {
         for (const auto &op: transResIt->second) {
@@ -327,6 +329,8 @@ PrePToPTransformer::transformGroup(const shared_ptr<GroupPrePOp> &groupPrePOp) {
       // set flag for latter ops
       for (const auto &op: transRes) {
         op->setCollPredTransMetrics(*optPrePOpId, metrics::PredTransMetrics::PTMetricsUnitType::LOCAL_FILTER);
+        // classify ops into pred-trans phase since they are applied to base tables
+        op->setInPredTransPhase(true);
       }
     }
   }
@@ -879,6 +883,13 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
       }
     } else {
       // we cannot push down bloom filter
+
+#if SHOW_DEBUG_METRICS == true
+      // check if the join is between two base tables, i.e. neither input is not a joined table
+      auto optScanPrePOpId = fpdb::plan::prephysical::Util::traceScanOriginWithNoJoinInPath(
+              hashJoinPrePOp->getProducers()[1]);
+#endif
+      
       // BloomFilterUsePOp
       for (int i = 0; i < parallelDegree_ * numNodes_; ++i) {
         auto bloomFilterUsePOp = make_shared<bloomfilter::BloomFilterUsePOp>(
@@ -895,11 +906,12 @@ PrePToPTransformer::transformHashJoin(const shared_ptr<HashJoinPrePOp> &hashJoin
 
 #if SHOW_DEBUG_METRICS == true
         // collect predicate transfer metrics
-        auto optScanPrePOpId = fpdb::plan::prephysical::Util::traceScanOriginWithNoJoinInPath(
-                hashJoinPrePOp->getProducers()[1]);
         if (optScanPrePOpId.has_value()) {
           bloomFilterUsePOp->setCollPredTransMetrics(*optScanPrePOpId,
                                                      metrics::PredTransMetrics::PTMetricsUnitType::BLOOM_FILTER);
+          // classify ops into pred-trans phase since they are applied to base tables
+          bloomFilterCreatePOps[i]->setInPredTransPhase(true);
+          bloomFilterUsePOp->setInPredTransPhase(true);
         }
 #endif
       }

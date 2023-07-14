@@ -425,16 +425,6 @@ string Execution::showMetrics(bool showOpTimes, bool showScanMetrics) {
 
   ss << endl;
   ss << "Metrics |" << endl << endl;
-  long totalProcessingTime = 0;
-  for (auto &entry : opDirectory_) {
-    (*rootActor_)->request(entry.second.getActorHandle(), ::caf::infinite, GetProcessingTimeAtom_v).receive(
-            [&](long processingTime) {
-              totalProcessingTime += processingTime;
-            },
-            [&](const ::caf::error&  error){
-              throw runtime_error(to_string(error));
-            });
-  }
 
   if (showOpTimes) {
     auto totalExecutionTime = getElapsedTime();
@@ -445,6 +435,8 @@ string Execution::showMetrics(bool showOpTimes, bool showScanMetrics) {
     ss << left << setw(60) << formattedExecutionTime.str();
     ss << endl;
     ss << endl;
+
+    fetchOpExecTimes();
 
     ss << left << setw(120) << "Operator Execution Times" << endl;
     ss << setfill(' ');
@@ -464,15 +456,7 @@ string Execution::showMetrics(bool showOpTimes, bool showScanMetrics) {
 
     for (auto &entry : opDirectory_) {
       auto operatorName = entry.first;
-
-      long processingTime;
-      (*rootActor_)->request(entry.second.getActorHandle(), ::caf::infinite, GetProcessingTimeAtom_v).receive(
-              [&](long time) {
-                processingTime = time;
-              },
-              [&](const ::caf::error &error) {
-                throw runtime_error(to_string(error));
-              });
+      long processingTime = opExecTimes_[operatorName];
 
       auto op = entry.second.getDef();
       string typeString = op->getTypeString();
@@ -482,7 +466,7 @@ string Execution::showMetrics(bool showOpTimes, bool showScanMetrics) {
         opTypeToRuntime[typeString] = opTypeToRuntime[typeString] + processingTime;
       }
 
-      auto processingFraction = (double) processingTime / (double) totalProcessingTime;
+      auto processingFraction = (double) processingTime / (double) totalOpExecTime_;
       stringstream formattedProcessingTime;
       formattedProcessingTime << processingTime << " \u33B1" << " (" << ((double) processingTime / 1000000000.0)
                               << " secs)";
@@ -503,7 +487,7 @@ string Execution::showMetrics(bool showOpTimes, bool showScanMetrics) {
       formattedOpTime << ((double) opTime.second / 1000000000.0) << " secs";
       ss << left << setw(60) << opTime.first;
       ss << left << setw(40) << formattedOpTime.str();
-      ss << left << setw(20) << ((double) opTime.second / (double) totalProcessingTime) * 100.0;
+      ss << left << setw(20) << ((double) opTime.second / (double) totalOpExecTime_) * 100.0;
       ss << endl;
     }
 
@@ -511,7 +495,7 @@ string Execution::showMetrics(bool showOpTimes, bool showScanMetrics) {
     ss << setfill(' ');
 
     stringstream formattedProcessingTime;
-    formattedProcessingTime << totalProcessingTime << " \u33B1" << " (" << ((double) totalProcessingTime / 1000000000.0)
+    formattedProcessingTime << totalOpExecTime_ << " \u33B1" << " (" << ((double) totalOpExecTime_ / 1000000000.0)
                             << " secs)";
     ss << left << setw(60) << "Total ";
     ss << left << setw(40) << formattedProcessingTime.str();
@@ -671,7 +655,7 @@ string Execution::showMetrics(bool showOpTimes, bool showScanMetrics) {
 }
 
 #if SHOW_DEBUG_METRICS == true
-string Execution::showDebugMetrics() const{
+string Execution::showDebugMetrics() {
   stringstream ss;
 
   if (metrics::SHOW_TRANSFER_METRICS) {
@@ -715,8 +699,30 @@ string Execution::showDebugMetrics() const{
 
   if (metrics::SHOW_PRED_TRANS_METRICS) {
     auto metrics = debugMetrics_.getPredTransMetrics().getMetrics();
+    ss << endl << "Predicate Transfer Metrics |" << endl;
+
     if (!metrics.empty()) {
-      ss << endl << "Predicate Transfer Metrics |" << endl;
+      fetchOpExecTimes();
+
+      stringstream formattedPredTransTime;
+      formattedPredTransTime << ((double) totalPredTransOpTime_ / 1000000000.0) << " secs" << " ("
+                             << setprecision(3)
+                             << ((double) totalPredTransOpTime_) * 100 / ((double) totalOpExecTime_) << "%)";
+      stringstream formattedPostPredTransTime;
+      formattedPostPredTransTime << ((double) totalPostPredTransOpTime_ / 1000000000.0) << " secs" << " ("
+                                 << setprecision(3)
+                                 << ((double) totalPostPredTransOpTime_) * 100 / ((double) totalOpExecTime_) << "%)";
+
+      ss << endl;
+      ss << left << setw(60) << "Predicate Transfer Time";
+      ss << formattedPredTransTime.str();
+      ss << endl;
+
+      ss << endl;
+      ss << left << setw(60) << "Post Predicate Transfer (Join Phase) Time";
+      ss << formattedPostPredTransTime.str();
+      ss << endl;
+
       for (const auto &unit: metrics) {
         ss << endl;
         ss << left << setw(60) << "Prephysical Op ID";
@@ -768,5 +774,29 @@ const metrics::DebugMetrics &Execution::getDebugMetrics() const {
   return debugMetrics_;
 }
 #endif
+
+void Execution::fetchOpExecTimes() {
+  if (isOpExecTimeFetched) {
+    return;
+  }
+  for (auto &entry : opDirectory_) {
+    (*rootActor_)->request(entry.second.getActorHandle(), ::caf::infinite, GetProcessingTimeAtom_v).receive(
+            [&](long processingTime) {
+              totalOpExecTime_ += processingTime;
+              opExecTimes_[entry.first] = processingTime;
+#if SHOW_DEBUG_METRICS == true
+              if (entry.second.getDef()->inPredTransPhase()) {
+                totalPredTransOpTime_ += processingTime;
+              } else {
+                totalPostPredTransOpTime_ += processingTime;
+              }
+#endif
+            },
+            [&](const ::caf::error&  error){
+              throw runtime_error(to_string(error));
+            });
+  }
+  isOpExecTimeFetched = true;
+}
 
 }

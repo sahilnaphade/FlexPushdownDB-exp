@@ -51,7 +51,7 @@ public:
   void write_graph(const string &file);
 
 #if SHOW_DEBUG_METRICS == true
-  string showDebugMetrics() const;
+  string showDebugMetrics();    // should be called after "showMetrics()"
   const metrics::DebugMetrics &getDebugMetrics() const;
 #endif
 
@@ -65,6 +65,8 @@ protected:
   ::caf::actor localSpawn(const shared_ptr<PhysicalOp> &op);
   ::caf::actor remoteSpawn(const shared_ptr<PhysicalOp> &op, int nodeId);
   virtual bool useDetached(const shared_ptr<PhysicalOp> &op);
+
+  void fetchOpExecTimes();
 
   long queryId_;
   shared_ptr<::caf::actor_system> actorSystem_;
@@ -83,9 +85,16 @@ protected:
   chrono::steady_clock::time_point startTime_;
   chrono::steady_clock::time_point stopTime_;
 
+  // recorded op execution time, saved to avoid duplicate fetch
+  bool isOpExecTimeFetched = false;
+  long totalOpExecTime_ = 0;      // this is the sum of all op exec times, not query exec time
+  std::unordered_map<std::string, long> opExecTimes_;
+
   // metrics
 #if SHOW_DEBUG_METRICS == true
   metrics::DebugMetrics debugMetrics_;
+  long totalPredTransOpTime_ = 0;
+  long totalPostPredTransOpTime_ = 0;
 #endif
 
 };

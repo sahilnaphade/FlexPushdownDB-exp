@@ -47,7 +47,6 @@ public:
   const std::unordered_map<std::string, std::shared_ptr<fpdb_store::FPDBStoreBloomFilterUseInfo>>&
           getConsumerToBloomFilterInfo() const;
   std::shared_ptr<POpContext> ctx();
-  const metrics::PredTransMetrics::PTMetricsInfo &getPTMetricsInfo() const;
 
   // setters
   void setName(const std::string &Name);
@@ -74,8 +73,11 @@ public:
   void setSeparated(bool isSeparated);
 
 #if SHOW_DEBUG_METRICS == true
+  const metrics::PredTransMetrics::PTMetricsInfo &getPTMetricsInfo() const;
+  bool inPredTransPhase() const;
   void setCollPredTransMetrics(uint prePOpId, metrics::PredTransMetrics::PTMetricsUnitType ptMetricsType);
   void unsetCollPredTransMetrics();
+  void setInPredTransPhase(bool inPredTransPhase);
 #endif
 
   virtual void onReceive(const fpdb::executor::message::Envelope &msg) = 0;
@@ -101,6 +103,7 @@ protected:
 
 #if SHOW_DEBUG_METRICS == true
   metrics::PredTransMetrics::PTMetricsInfo ptMetricsInfo_;
+  bool inPredTransPhase_ = false;     // whether this operator is classified as pred-trans phase or exec phase
 #endif
 };
 
