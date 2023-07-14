@@ -91,7 +91,8 @@ bool TestUtil::e2eNoStartCalciteServerSingleThread(const string &schemaName,
                                                    ObjStoreType objStoreType,
                                                    const shared_ptr<Mode> &mode,
                                                    CachingPolicyType cachingPolicyType,
-                                                   size_t cacheSize) {
+                                                   size_t cacheSize,
+                                                   bool useHeuristicJoinOrdering) {
   TestUtil testUtil(schemaName,
                     queryFileNames,
                     parallelDegree,
@@ -101,6 +102,7 @@ bool TestUtil::e2eNoStartCalciteServerSingleThread(const string &schemaName,
                     cachingPolicyType,
                     cacheSize);
   testUtil.setUseThreads(false);
+  testUtil.setUseHeuristicJoinOrdering(useHeuristicJoinOrdering);
   try {
     testUtil.runTest();
     return true;

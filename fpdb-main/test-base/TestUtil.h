@@ -62,7 +62,8 @@ public:
                                                   ObjStoreType objStoreType,
                                                   const shared_ptr<Mode> &mode = Mode::pullupMode(),
                                                   CachingPolicyType cachingPolicyType = CachingPolicyType::NONE,
-                                                  size_t cacheSize = 1L * 1024 * 1024 * 1024);
+                                                  size_t cacheSize = 1L * 1024 * 1024 * 1024,
+                                                  bool useHeuristicJoinOrdering = true);
 
   /**
    * Temp test for disabling heuristic join ordering by calcite

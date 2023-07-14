@@ -106,6 +106,11 @@ TEST_CASE ("pred-trans-tpch-sf1-22" * doctest::skip(false || SKIP_SUITE)) {
   PredTransTestUtil::testPredTrans("tpch-sf1/parquet/", "tpch/original/22.sql");
 }
 
+// Try a different join order
+TEST_CASE ("pred-trans-tpch-sf1-09-jo" * doctest::skip(false || SKIP_SUITE)) {
+  PredTransTestUtil::testPredTrans("tpch-sf1/parquet/", "tpch/modified/09-jo.sql", true, false, false);
+}
+
 }
 
 TEST_SUITE ("no-pred-trans-tpch-sf1" * doctest::skip(SKIP_SUITE)) {
@@ -198,6 +203,11 @@ TEST_CASE ("no-pred-trans-tpch-sf1-22" * doctest::skip(false || SKIP_SUITE)) {
   PredTransTestUtil::testPredTrans("tpch-sf1/parquet/", "tpch/original/22.sql", false);
 }
 
+// Try a different join order
+TEST_CASE ("no-pred-trans-tpch-sf1-09-jo" * doctest::skip(false || SKIP_SUITE)) {
+  PredTransTestUtil::testPredTrans("tpch-sf1/parquet/", "tpch/modified/09-jo.sql", false, false, false);
+}
+
 }
 
 TEST_SUITE ("yannakakis-tpch-sf1" * doctest::skip(SKIP_SUITE)) {
@@ -288,6 +298,11 @@ TEST_CASE ("yannakakis-tpch-sf1-21" * doctest::skip(false || SKIP_SUITE)) {
 
 TEST_CASE ("yannakakis-tpch-sf1-22" * doctest::skip(false || SKIP_SUITE)) {
   PredTransTestUtil::testPredTrans("tpch-sf1/parquet/", "tpch/original/22.sql", true, true);
+}
+
+// Try a different join order
+TEST_CASE ("yannakakis-tpch-sf1-09-jo" * doctest::skip(false || SKIP_SUITE)) {
+  PredTransTestUtil::testPredTrans("tpch-sf1/parquet/", "tpch/modified/09-jo.sql", true, true, false);
 }
 
 }

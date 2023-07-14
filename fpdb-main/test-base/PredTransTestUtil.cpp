@@ -14,7 +14,8 @@
 namespace fpdb::main::test {
 
 void PredTransTestUtil::testPredTrans(const std::string &schemaName, const std::string &queryFileName,
-                                      bool enablePredTrans, bool enableYannakakis) {
+                                      bool enablePredTrans, bool enableYannakakis,
+                                      bool useHeuristicJoinOrdering) {
   TestUtil::startFPDBStoreServer();
   bool oldEnablePredTrans = fpdb::plan::ENABLE_PRED_TRANS;
   bool oldEnableYannakakis = fpdb::executor::physical::ENABLE_YANNAKAKIS;
@@ -35,7 +36,8 @@ void PredTransTestUtil::testPredTrans(const std::string &schemaName, const std::
                                                         ObjStoreType::FPDB_STORE,
                                                         Mode::cachingOnlyMode(),
                                                         CachingPolicyType::LFU,
-                                                        std::numeric_limits<size_t>::max()));
+                                                        std::numeric_limits<size_t>::max(),
+                                                        useHeuristicJoinOrdering));
 
   TestUtil::stopFPDBStoreServer();
   fpdb::plan::ENABLE_PRED_TRANS = oldEnablePredTrans;
