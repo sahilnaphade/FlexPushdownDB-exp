@@ -107,6 +107,14 @@ TEST_CASE ("pred-trans-tpch-sf1-22" * doctest::skip(false || SKIP_SUITE)) {
 }
 
 // Try different join orders
+TEST_CASE ("pred-trans-tpch-sf1-05-jo1" * doctest::skip(false || SKIP_SUITE)) {
+  PredTransTestUtil::testPredTrans("tpch-sf1/parquet/", "tpch/modified/05-jo1.sql", true, false, false);
+}
+
+TEST_CASE ("pred-trans-tpch-sf1-05-jo2" * doctest::skip(false || SKIP_SUITE)) {
+  PredTransTestUtil::testPredTrans("tpch-sf1/parquet/", "tpch/modified/05-jo2.sql", true, false, false);
+}
+
 TEST_CASE ("pred-trans-tpch-sf1-09-jo1" * doctest::skip(false || SKIP_SUITE)) {
   PredTransTestUtil::testPredTrans("tpch-sf1/parquet/", "tpch/modified/09-jo1.sql", true, false, false);
 }
@@ -208,6 +216,14 @@ TEST_CASE ("no-pred-trans-tpch-sf1-22" * doctest::skip(false || SKIP_SUITE)) {
 }
 
 // Try different join orders
+TEST_CASE ("no-pred-trans-tpch-sf1-05-jo1" * doctest::skip(false || SKIP_SUITE)) {
+  PredTransTestUtil::testPredTrans("tpch-sf1/parquet/", "tpch/modified/05-jo1.sql", false, false, false);
+}
+
+TEST_CASE ("no-pred-trans-tpch-sf1-05-jo2" * doctest::skip(false || SKIP_SUITE)) {
+  PredTransTestUtil::testPredTrans("tpch-sf1/parquet/", "tpch/modified/05-jo2.sql", false, false, false);
+}
+
 TEST_CASE ("no-pred-trans-tpch-sf1-09-jo1" * doctest::skip(false || SKIP_SUITE)) {
   PredTransTestUtil::testPredTrans("tpch-sf1/parquet/", "tpch/modified/09-jo1.sql", false, false, false);
 }
@@ -309,6 +325,14 @@ TEST_CASE ("yannakakis-tpch-sf1-22" * doctest::skip(false || SKIP_SUITE)) {
 }
 
 // Try different join orders
+TEST_CASE ("yannakakis-tpch-sf1-05-jo1" * doctest::skip(false || SKIP_SUITE)) {
+  PredTransTestUtil::testPredTrans("tpch-sf1/parquet/", "tpch/modified/05-jo1.sql", true, true, false);
+}
+
+TEST_CASE ("yannakakis-tpch-sf1-05-jo2" * doctest::skip(false || SKIP_SUITE)) {
+  PredTransTestUtil::testPredTrans("tpch-sf1/parquet/", "tpch/modified/05-jo2.sql", true, true, false);
+}
+
 TEST_CASE ("yannakakis-tpch-sf1-09-jo1" * doctest::skip(false || SKIP_SUITE)) {
   PredTransTestUtil::testPredTrans("tpch-sf1/parquet/", "tpch/modified/09-jo1.sql", true, true, false);
 }
