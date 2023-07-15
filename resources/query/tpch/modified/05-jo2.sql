@@ -5,8 +5,8 @@ select
 from
   supplier s,
   lineitem l,
-  customer c,
   orders o,
+  customer c,
   nation n,
   region r
 

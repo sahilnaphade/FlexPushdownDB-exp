@@ -28,7 +28,7 @@ public class TPCHTest {
   // FIXME: not considering key-foreign key constraint with filtering leads to a bad query plan
   //  currently manually specify the join order
   public void testTPCH_Q05() throws Exception {
-    TestUtil.testNoHeuristicJoinOrdering("tpch-sf0.01/csv", "tpch/modified/05-jo2.sql", true);
+    TestUtil.testNoHeuristicJoinOrdering("tpch-sf0.01/csv", "tpch/original/05.sql", true);
   }
 
   @Test
