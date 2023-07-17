@@ -750,6 +750,40 @@ string Execution::showDebugMetrics() {
     }
   }
 
+  if (metrics::SHOW_HASH_JOIN_METRICS) {
+    ss << endl << "Hash Join Metrics |" << endl;
+
+    ss << left << setw(110) << setfill('-') << "" << endl;
+    ss << setfill(' ');
+    ss << left << setw(65) << "Operator";
+    ss << left << setw(15) << "Time (ms)";
+    ss << left << setw(15) << "Build Size";
+    ss << left << setw(15) << "Probe Size";
+    ss << endl;
+    ss << left << setw(110) << setfill('-') << "" << endl;
+    ss << setfill(' ');
+
+    fetchOpExecTimes();
+
+    for (auto &entry : opDirectory_) {
+      auto operatorName = entry.first;
+      auto op = entry.second.getDef();
+      if (op->getType() == POpType::HASH_JOIN_ARROW) {
+        long processingTime = opExecTimes_[operatorName];
+        auto typedOp = std::static_pointer_cast<join::HashJoinArrowPOp>(op);
+        ss << left << setw(65) << operatorName;
+        ss << left << setw(15) << setprecision(3) << ((double) processingTime / 1000000.0);
+        ss << left << setw(15) << typedOp->getNumRowsBuild();
+        ss << left << setw(15) << typedOp->getNumRowsProbe();
+        ss << endl;
+      }
+    }
+
+    ss << left << setw(110) << setfill('-') << "" << endl;
+    ss << setfill(' ');
+    ss << endl;
+  }
+
   if (ENABLE_ADAPTIVE_PUSHDOWN && metrics::SHOW_NUM_PUSHDOWN_FALL_BACK) {
     int numFPDBStoreSuperPOps = 0;
     for (const auto &opIt: physicalPlan_->getPhysicalOps()) {

@@ -119,8 +119,14 @@ void HashJoinArrowPOp::onTupleSet(const TupleSetMessage &message) {
   // put input into kernel according to build/probe side
   tl::expected<void, string> result;
   if (buildProducers_.find(sender) != buildProducers_.end()) {
+#if SHOW_DEBUG_METRICS == true
+    numRowsBuild_ += tupleSet->numRows();
+#endif
     result = kernel_.joinBuildTupleSet(tupleSet);
   } else if (probeProducers_.find(sender) != probeProducers_.end()) {
+#if SHOW_DEBUG_METRICS == true
+    numRowsProbe_ += tupleSet->numRows();
+#endif
     result = kernel_.joinProbeTupleSet(tupleSet);
   } else {
     ctx()->notifyError(fmt::format("Unknown sender '{}', neither build nor probe producer", sender));
@@ -159,5 +165,15 @@ void HashJoinArrowPOp::sendEmpty() {
 void HashJoinArrowPOp::clear() {
   kernel_.clear();
 }
+
+#if SHOW_DEBUG_METRICS == true
+int64_t HashJoinArrowPOp::getNumRowsBuild() const {
+  return numRowsBuild_;
+}
+
+int64_t HashJoinArrowPOp::getNumRowsProbe() const {
+  return numRowsProbe_;
+}
+#endif
 
 }
