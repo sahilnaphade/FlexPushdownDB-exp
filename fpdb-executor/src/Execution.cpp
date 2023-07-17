@@ -765,6 +765,8 @@ string Execution::showDebugMetrics() {
 
     fetchOpExecTimes();
 
+    int64_t totalNumBuild = 0;
+    int64_t totalNumProbe = 0;
     for (auto &entry : opDirectory_) {
       auto operatorName = entry.first;
       auto op = entry.second.getDef();
@@ -776,11 +778,74 @@ string Execution::showDebugMetrics() {
         ss << left << setw(15) << typedOp->getNumRowsBuild();
         ss << left << setw(15) << typedOp->getNumRowsProbe();
         ss << endl;
+        totalNumBuild += typedOp->getNumRowsBuild();
+        totalNumProbe += typedOp->getNumRowsProbe();
       }
     }
 
     ss << left << setw(110) << setfill('-') << "" << endl;
     ss << setfill(' ');
+    ss << endl;
+
+    ss << endl;
+    ss << left << setw(60) << "Total num hash table build";
+    ss << totalNumBuild;
+    ss << endl;
+
+    ss << endl;
+    ss << left << setw(60) << "Total num hash table probe";
+    ss << totalNumProbe;
+    ss << endl;
+  }
+
+  if (metrics::SHOW_BLOOM_FILTER_METRICS) {
+    ss << endl << "Hash Join Metrics |" << endl;
+
+    ss << left << setw(95) << setfill('-') << "" << endl;
+    ss << setfill(' ');
+    ss << left << setw(65) << "Operator";
+    ss << left << setw(15) << "Time (ms)";
+    ss << left << setw(15) << "Input Size";
+    ss << endl;
+    ss << left << setw(95) << setfill('-') << "" << endl;
+    ss << setfill(' ');
+
+    fetchOpExecTimes();
+
+    int64_t totalNumInsert = 0;
+    int64_t totalNumFind = 0;
+    for (auto &entry : opDirectory_) {
+      auto operatorName = entry.first;
+      auto op = entry.second.getDef();
+      if (op->getType() == POpType::BLOOM_FILTER_CREATE || op->getType() == POpType::BLOOM_FILTER_USE) {
+        long processingTime = opExecTimes_[operatorName];
+        ss << left << setw(65) << operatorName;
+        ss << left << setw(15) << setprecision(3) << ((double) processingTime / 1000000.0);
+        if (op->getType() == POpType::BLOOM_FILTER_CREATE) {
+          int64_t numRowsInput = std::static_pointer_cast<bloomfilter::BloomFilterCreatePOp>(op)->getNumRowsInput();
+          ss << left << setw(15) << numRowsInput;
+          totalNumInsert += numRowsInput;
+        } else {
+          int64_t numRowsInput = std::static_pointer_cast<bloomfilter::BloomFilterUsePOp>(op)->getNumRowsInput();
+          ss << left << setw(15) << numRowsInput;
+          totalNumFind += numRowsInput;
+        }
+        ss << endl;
+      }
+    }
+
+    ss << left << setw(95) << setfill('-') << "" << endl;
+    ss << setfill(' ');
+    ss << endl;
+
+    ss << endl;
+    ss << left << setw(60) << "Total num BF insert";
+    ss << totalNumInsert;
+    ss << endl;
+
+    ss << endl;
+    ss << left << setw(60) << "Total num BF find";
+    ss << totalNumFind;
     ss << endl;
   }
 

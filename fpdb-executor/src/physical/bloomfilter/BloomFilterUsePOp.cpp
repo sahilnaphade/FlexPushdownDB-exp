@@ -71,6 +71,11 @@ void BloomFilterUsePOp::onStart() {
 void BloomFilterUsePOp::onTupleSet(const TupleSetMessage &msg) {
   // Buffer tupleSet
   auto tupleSet = msg.tuples();
+
+#if SHOW_DEBUG_METRICS == true
+  numRowsInput_ += tupleSet->numRows();
+#endif
+
   if (!receivedTupleSet_.has_value()) {
     receivedTupleSet_ = tupleSet;
   }
@@ -140,5 +145,11 @@ void BloomFilterUsePOp::clear() {
   receivedTupleSet_.reset();
   bloomFilter_.reset();
 }
+
+#if SHOW_DEBUG_METRICS == true
+int64_t BloomFilterUsePOp::getNumRowsInput() const {
+  return numRowsInput_;
+}
+#endif
 
 }
