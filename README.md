@@ -6,12 +6,15 @@ A research cloud OLAP engine using hybrid caching and computation pushdown.
 
 [1] Yifei Yang, Matt Youill, Matthew Woicik, Yizhou Liu, Xiangyao Yu, Marco Serafini, Ashraf Aboulnaga, Michael Stonebraker, FlexPushdownDB: Hybrid Pushdown and Caching in a Cloud DBMS, VLDB 2021.
 
+[2] Yifei Yang, Hangdong Zhao, Xiangyao Yu, Paraschos Koutris, Predicate Transfer: Efficient Pre-Filtering on Multi-Join Queries, CIDR 2024.
 
+
+## Instructions below are stale, to be updated...
 ## Clone the Repo
 
 ```
-git clone https://github.com/cloud-olap/FlexPushdownDB-Dev.git
-cd FlexPushdownDB-Dev
+git clone https://github.com/cloud-olap/FlexPushdownDB.git
+cd FlexPushdownDB
 ```
 
 
